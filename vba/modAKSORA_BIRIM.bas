@@ -191,6 +191,9 @@ End Sub
 Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
     If mYonlendirme Then AKSORA_BIRIM_OLAY = True: Exit Function
     If Not TypeOf sh Is Worksheet Then Exit Function
+    On Error Resume Next
+    application.MoveAfterReturn = (sh.Name <> "M_MALZEME_ARA")
+    On Error GoTo 0
     If AKSORA_MUSTERI_TEMA_SAYFA(sh) Then
         AKSORA_MUSTERI_TEMA_GORUNUM sh
         AKSORA_BIRIM_OLAY = True

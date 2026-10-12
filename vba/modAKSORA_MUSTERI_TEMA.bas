@@ -730,7 +730,7 @@ End Sub
 
 Private Sub TEMA_ARAMA_KPI_FORMULLER(ByVal ws As Worksheet)
     Dim son As Long, a As String, b As String, e As String, g As String, k As String, m As String
-    son = application.Max(200, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    son = application.Max(200, AKSORA_M_SON(ws))
     If Not ws.AutoFilterMode Then ws.Range("A12:M" & son).AutoFilter
     a = "$A$13:$A$" & son: b = "$B$13:$B$" & son
     e = "$E$13:$E$" & son: g = "$G$13:$G$" & son
@@ -1104,6 +1104,8 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     ' Gecis sirasinda ekran tek seferde cizilir (titreme olmaz).
     sc = application.ScreenUpdating
     application.ScreenUpdating = False
+    On Error Resume Next
+    application.MoveAfterReturn = (ws.Name <> "M_MALZEME_ARA")
     On Error GoTo Hata
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
     If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then GoTo Cikis
@@ -1185,7 +1187,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_KPI_HESAPLA(ByVal ws As Worksheet)
     On Error GoTo Hata
     application.EnableEvents = False
     AKSORA_SAYI_AYIRACLARI
-    son = application.Max(13, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    son = application.Max(13, AKSORA_M_SON(ws))
     adet = TEMA_GORUNUR_DEPO_SAYISI(ws, son)
     korumali = ws.ProtectContents
     If korumali Then ws.Unprotect ""

@@ -27,6 +27,7 @@ Private mHizliSatir As Long
 Private mStandartSatir As Long
 Private mSapSatir As Long
 Private mListeSatir As Long
+Private mStandartOnay As Boolean
 Private mCalisiyor As Boolean
 Private mBas As Double
 Private mDurum As String
@@ -101,6 +102,93 @@ Private Sub MS_SapDeger(ByRef buf As Variant, ByVal r As Long)
         buf(r, 11) = vbNullString
     End If
 End Sub
+
+'----------------------------------------------------------
+' SAP TESHIS VE PENCERE YARDIMCILARI
+'----------------------------------------------------------
+Private Function MS_TeshisYolu() As String
+    Dim k As String
+    k = ThisWorkbook.Path
+    If Len(k) = 0 Or Left$(k, 4) = "http" Then k = Environ$("TEMP")
+    MS_TeshisYolu = k & application.PathSeparator & "AKSORA_SAP_TESHIS.txt"
+End Function
+
+Private Sub MS_Teshis(ByVal metin As String)
+    Dim f As Integer
+    On Error Resume Next
+    f = FreeFile
+    Open MS_TeshisYolu() For Append As #f
+    Print #f, metin
+    Close #f
+    On Error GoTo 0
+End Sub
+
+Private Sub MS_Agac(ByVal kok As Object, ByVal derinlik As Long)
+    Dim i As Long, c As Object, t As String, adet As Long
+    If derinlik > 7 Then Exit Sub
+    On Error Resume Next
+    adet = kok.Children.Count
+    For i = 0 To adet - 1
+        Set c = Nothing
+        Set c = kok.Children(i)
+        If Not c Is Nothing Then
+            t = vbNullString: t = c.Text
+            MS_Teshis String$(derinlik * 2, " ") & c.Type & " | " & c.Id & " | " & c.Name & " | " & Left$(t, 60)
+            If c.ContainerType Then MS_Agac c, derinlik + 1
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Function MS_AlanBul(ByVal kok As Object, ByVal ad As String) As Object
+    Dim i As Long, c As Object, alt As Object, adet As Long
+    On Error Resume Next
+    adet = kok.Children.Count
+    For i = 0 To adet - 1
+        Set c = Nothing
+        Set c = kok.Children(i)
+        If Not c Is Nothing Then
+            If UCase$(c.Name) = ad Then Set MS_AlanBul = c: Exit Function
+            If c.ContainerType Then
+                Set alt = Nothing
+                Set alt = MS_AlanBul(c, ad)
+                If Not alt Is Nothing Then Set MS_AlanBul = alt: Exit Function
+            End If
+        End If
+    Next i
+    On Error GoTo 0
+End Function
+
+Private Sub MS_Topla(ByVal kok As Object, ByVal tip As String, ByVal liste As Collection)
+    Dim i As Long, c As Object, adet As Long
+    On Error Resume Next
+    adet = kok.Children.Count
+    For i = 0 To adet - 1
+        Set c = Nothing
+        Set c = kok.Children(i)
+        If Not c Is Nothing Then
+            If c.Type = tip Then liste.Add c
+            If c.ContainerType Then MS_Topla c, tip, liste
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Function MS_PencereBekle(ByVal ses As Object, ByVal saniye As Double) As Object
+    Dim bas As Double, w As Object
+    bas = Timer
+    Do
+        Set w = Nothing
+        On Error Resume Next
+        Set w = ses.FindById("wnd[1]", False)
+        On Error GoTo 0
+        If Not w Is Nothing Then
+            If Not ses.Busy Then Set MS_PencereBekle = w: Exit Function
+        End If
+        If MS_Gecen(bas) > saniye Then Exit Function
+        DoEvents: MS_Sleep 100
+    Loop
+End Function
 
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
@@ -383,7 +471,7 @@ End Sub
 Private Sub MS_Yaz(ByVal ws As Worksheet, ByRef a As Variant)
     Dim son As Long, n As Long, s As Shape
     If IsEmpty(a) Then n = 0 Else n = UBound(a, 1)
-    son = application.Max(7, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    son = application.Max(7, AKSORA_M_SON(ws))
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
@@ -416,6 +504,7 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     End If
     mCalisiyor = True: mBas = Timer: mSeritZaman = 0
     mHizliSebep = vbNullString: mHizliSatir = 0: mStandartSatir = 0: mSapSatir = 0: mListeSatir = 0
+    mStandartOnay = False
     MS_OleUyariKapat
     AKSORA_MUSTERI_PANEL_YENILE True
     AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
@@ -503,6 +592,7 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     Dim buf() As Variant, sonuc() As Variant, satir(1 To 14) As Variant
     Dim zorunlu As Variant, x As Variant, tekrar As Long, hataNo As Long, hataMetni As String
     Dim tamam As Boolean, ozet As Boolean, asama As String, ilk As Long, hizli As Variant
+    Dim tumBaslik As String, nb As String, adayDeger As String
     Set alv = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell")
     On Error Resume Next
     alv.PressToolbarButton "&DELETE_FILTER"
@@ -523,7 +613,25 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
                 Err.Raise vbObjectError + 1922, , "ALV'de ayný alana uyan birden fazla sütun var: " & ids(no) & "/" & id
             ids(no) = id
         End If
+        tumBaslik = vbNullString
+        On Error Resume Next
+        Set basliklar = Nothing
+        Set basliklar = alv.GetColumnTitles(id)
+        For j = 0 To CLng(basliklar.Count) - 1
+            tumBaslik = tumBaslik & " / " & CStr(basliklar.Item(j))
+        Next j
+        On Error GoTo 0
+        MS_Teshis "ALV kolon " & CStr(i) & ": " & id & " -> alan " & CStr(no) & tumBaslik
+        If no = 0 And Len(ids(11)) = 0 Then
+            nb = MS_Norm(id & tumBaslik)
+            If (InStr(nb, "DEGER") > 0 And InStr(nb, "DEGERLEME") = 0 And InStr(nb, "DEGERLTUR") = 0) Or _
+               InStr(nb, "TUTAR") > 0 Then adayDeger = id
+        End If
     Next i
+    If Len(ids(11)) = 0 And Len(adayDeger) > 0 Then
+        ids(11) = adayDeger
+        MS_Teshis "Deðer sütunu (benzer ad): " & adayDeger
+    End If
     If fiyat Then zorunlu = Array(1, 2, 5, 7, 8, 11) Else zorunlu = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     For Each x In zorunlu
         If Len(ids(CLng(x))) = 0 Then Err.Raise vbObjectError + 1923, , "ALV düzeninde gerekli alan bulunamadý: " & CStr(x)
@@ -540,6 +648,15 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
         MS_Durum asama & " | " & CStr(UBound(hizli, 1)) & " satýr okundu"
         MS_ALV_Oku = hizli
         Exit Function
+    End If
+    MS_Teshis "Hýzlý okuma kullanýlamadý: " & mHizliSebep
+    If Not mStandartOnay Then
+        If MsgBox("Hýzlý okuma kullanýlamadý: " & mHizliSebep & vbCrLf & vbCrLf & _
+            "Standart okuma yaklaþýk 11 dakika sürer. Devam edilsin mi?" & vbCrLf & vbCrLf & _
+            "Teþhis dosyasý: " & MS_TeshisYolu(), vbQuestion + vbYesNo + vbDefaultButton2, "AKSORA") = vbNo Then
+            Err.Raise vbObjectError + 1999, , "Güncelleme durduruldu. Teþhis dosyasý: " & MS_TeshisYolu()
+        End If
+        mStandartOnay = True
     End If
     MS_Durum asama & IIf(Len(mHizliSebep) > 0, " | standart okuma (" & mHizliSebep & ")", "")
     blok = application.Min(30, CLng(alv.VisibleRowCount))
@@ -622,7 +739,7 @@ Public Sub AKSORA_MUSTERI_FIYATLARI_UYGULA(Optional ByVal sessiz As Boolean = Tr
     adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
     For i = 0 To 2
         Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
-        son = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+        son = AKSORA_M_SON(ws)
         If son >= 7 Then
             a = ws.Range("A7:N" & son).Value2
             For r = 1 To UBound(a, 1)
@@ -698,6 +815,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     Dim pos(1 To 11) As Long, sira As Object, buf() As Variant, sonuc() As Variant
     Dim satir(1 To 14) As Variant, ozet As Boolean, x As Variant, k As Long, dogru As Boolean
     Dim kontrol As Variant, a As String, b As String, y As Variant, rb As Object, sonVeri As Long
+    Dim pen As Object, yolAlan As Object, radyolar As Collection
     On Error GoTo Hata
     mHizliSebep = "kolon eþleþmesi"
     kc = CLng(kolonlar.Count)
@@ -715,39 +833,52 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     dosya = "AKSORA_7155_" & Format$(Now, "yyyymmddhhnnss") & "_" & CStr(Int(Timer * 100) Mod 100000) & ".txt"
     yol = klasor & dosya
     If Len(Dir$(yol)) > 0 Then Kill yol
-    ' Liste > Disa aktar > Yerel dosya > Sekmeli metin
+    ' Liste > Disa aktar > Yerel dosya > Sekmeli metin (pencereler adla bulunur)
     mHizliSebep = "dýþa aktar menüsü"
+    MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | Dýþa aktarma | ALV satýr " & CStr(n)
     On Error Resume Next
     alv.PressToolbarContextButton "&MB_EXPORT"
-    alv.SelectContextMenuItem "&PC"
+    If Err.Number = 0 Then alv.SelectContextMenuItem "&PC"
     If Err.Number <> 0 Then
+        MS_Teshis "Baðlam menüsü: " & Err.Description & " -> %PC deneniyor"
         Err.Clear
         ses.FindById("wnd[0]/tbar[0]/okcd").Text = "%PC"
         ses.FindById("wnd[0]").SendVKey 0
     End If
     Err.Clear
     On Error GoTo Hata
+    Set pen = MS_PencereBekle(ses, 10)
+    If pen Is Nothing Then mHizliSebep = "dýþa aktarma penceresi açýlmadý": GoTo Temizle
+    MS_Teshis "Pencere: " & pen.Text
+    MS_Agac pen, 0
     mHizliSebep = "biçim penceresi"
-    Set o = Nothing
-    For i = 0 To 9
-        Set rb = Nothing
-        Set rb = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[" & i & ",0]", False)
-        If rb Is Nothing Then Exit For
-        a = AKFIX_NORMAL(CStr(rb.Text))
-        If InStr(a, "TAB") > 0 Or InStr(a, "SEKME") > 0 Then Set o = rb: Exit For
-    Next i
-    If o Is Nothing Then Set o = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]", False)
-    If o Is Nothing Then GoTo Temizle
-    o.Select
-    ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    If yolAlan Is Nothing Then
+        Set radyolar = New Collection
+        MS_Topla pen, "GuiRadioButton", radyolar
+        Set o = Nothing
+        For Each rb In radyolar
+            a = AKFIX_NORMAL(CStr(rb.Text))
+            If InStr(a, "TAB") > 0 Or InStr(a, "SEKME") > 0 Then Set o = rb: Exit For
+        Next rb
+        If o Is Nothing And radyolar.Count >= 2 Then Set o = radyolar(2)
+        If o Is Nothing Then GoTo Temizle
+        MS_Teshis "Seçilen biçim: " & o.Text
+        o.Select
+        ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+        Set pen = MS_PencereBekle(ses, 10)
+        If pen Is Nothing Then mHizliSebep = "dosya penceresi açýlmadý": GoTo Temizle
+        MS_Teshis "Pencere: " & pen.Text
+        MS_Agac pen, 0
+        Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    End If
     mHizliSebep = "dosya penceresi"
-    Set o = Nothing
-    Set o = ses.FindById("wnd[1]/usr/ctxtDY_PATH", False)
+    If yolAlan Is Nothing Then GoTo Temizle
+    yolAlan.Text = klasor
+    Set o = MS_AlanBul(pen, "DY_FILENAME")
     If o Is Nothing Then GoTo Temizle
-    o.Text = klasor
-    ses.FindById("wnd[1]/usr/ctxtDY_FILENAME").Text = dosya
-    Set o = Nothing
-    Set o = ses.FindById("wnd[1]/usr/ctxtDY_FILE_ENCODING", False)
+    o.Text = dosya
+    Set o = MS_AlanBul(pen, "DY_FILE_ENCODING")
     If Not o Is Nothing Then o.Text = "4110": utf = True
     ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
     mHizliSebep = "dosya oluþmadý"

@@ -53,8 +53,11 @@ Private Sub M_BAGLA(ByVal ws As Worksheet, ByVal s As Shape)
 End Sub
 
 Public Sub AKSORA_MUSTERI_SAYFA_HAZIRLA(ByVal ws As Worksheet)
-    Dim s As Shape, ev As Boolean, koruma As Boolean, hataNo As Long, hataMetni As String
+    Dim s As Shape, ev As Boolean, koruma As Boolean, hataNo As Long, hataMetni As String, imza As String
     If mHazir Or Not M_SAYFA(ws.Name) Then Exit Sub
+    ' Veri degismediyse sayfa yeniden kurulmaz (gecisler aninda olur).
+    imza = M_IMZA(ws)
+    If CStr(ws.Range("BX11").Value2) = imza Then Exit Sub
     mHazir = True: ev = application.EnableEvents
     On Error GoTo Hata
     application.EnableEvents = False
@@ -71,6 +74,7 @@ Public Sub AKSORA_MUSTERI_SAYFA_HAZIRLA(ByVal ws As Worksheet)
     Next s
     AKSORA_MUSTERI_SAP_BAGLA ws
     If ws.Name = "M_ANA PANEL" Then M_PANEL_KUR ws, False
+    ws.Range("BX11").Value2 = imza
 Cikis:
     On Error Resume Next
     If koruma Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
@@ -180,7 +184,7 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
         .WrapText = False: .ShrinkToFit = True
     End With
-    son = application.Max(7, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    son = application.Max(7, AKSORA_M_SON(ws))
     M_FILTRE_ALANI ws, son
     ws.Range("C3").Formula = "=SUBTOTAL(103,E7:E" & son & ")"
     ws.Range("C4").Formula = "=SUBTOTAL(109,K7:K" & son & ")"
@@ -338,7 +342,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     If ws.Name = "M_CDP_RAPOR" Then kol = 4 Else kol = 5
     ' Depo bazli ozet: ad, satir, deger, fiyatsiz satir, seri numarali satir
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
-    son = kaynak.Cells(kaynak.Rows.Count, "E").End(xlUp).Row
+    son = AKSORA_M_SON(kaynak)
     If son >= 7 Then
         veri = kaynak.Range("A7:N" & son).Value2
         For r = 1 To UBound(veri, 1)
@@ -576,7 +580,7 @@ Public Sub AKSORA_MUSTERI_DEPO_SEC()
     Set s = ws.Shapes(CStr(application.Caller))
     depo = CStr(s.ControlFormat.List(s.ControlFormat.Value))
     ws.Unprotect ""
-    If Not ws.AutoFilterMode Then M_FILTRE_ALANI ws, application.Max(7, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    If Not ws.AutoFilterMode Then M_FILTRE_ALANI ws, application.Max(7, AKSORA_M_SON(ws))
     If ws.AutoFilter.Filters(2).On Then ws.AutoFilter.Range.AutoFilter Field:=2
     If depo = "TÜMÜ" Then
         ws.AutoFilter.Range.AutoFilter Field:=3
@@ -609,7 +613,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     kod = CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)
     For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
         Set kaynak = ThisWorkbook.Worksheets(CStr(ad))
-        son = kaynak.Cells(kaynak.Rows.Count, "E").End(xlUp).Row
+        son = AKSORA_M_SON(kaynak)
         If son >= 7 Then
             veri = kaynak.Range("A7:N" & son).Value2
             For r = 1 To UBound(veri, 1)
@@ -633,7 +637,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
-    eski = application.Max(13, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    eski = application.Max(13, AKSORA_M_SON(ws))
     ws.Range("A13:N" & eski).ClearContents
     If n > 0 Then
         ReDim sonuc(1 To n, 1 To 14)
@@ -822,7 +826,7 @@ Private Sub M_KAYNAK_OZET(ByVal ad As String, ByRef satir As Long, ByRef deger A
     On Error GoTo 0
     If sh Is Nothing Then Exit Sub
     If IsDate(sh.Range("C2").Value) Then tarih = CDate(sh.Range("C2").Value)
-    son = sh.Cells(sh.Rows.Count, "E").End(xlUp).Row
+    son = AKSORA_M_SON(sh)
     If son < 7 Then Exit Sub
     v = sh.Range("A7:N" & son).Value2
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
@@ -1046,7 +1050,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_TEMIZLE()
     application.EnableEvents = False
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
-    eski = application.Max(13, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    eski = application.Max(13, AKSORA_M_SON(ws))
     ws.Range("A13:N" & eski).ClearContents
     ws.Range("B6").MergeArea.ClearContents
     M_TABLO_BICIM ws, 13, 12, 13, "", ""
@@ -1104,7 +1108,7 @@ Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
         Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": ilk = 7
         Case Else: Exit Sub
     End Select
-    son = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+    son = AKSORA_M_SON(ws)
     If son < ilk Then Exit Sub
     mesgul = True: ev = application.EnableEvents
     On Error GoTo Hata
@@ -1142,3 +1146,42 @@ Cikis:
 Hata:
     Resume Cikis
 End Sub
+
+'----------------------------------------------------------
+' Son veri satiri: filtreyle gizlenen satirlar da sayilir.
+'----------------------------------------------------------
+Public Function AKSORA_M_SON(ByVal ws As Worksheet) As Long
+    Dim c As Range
+    On Error Resume Next
+    Set c = ws.Columns(5).Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
+        SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
+    On Error GoTo 0
+    If c Is Nothing Then AKSORA_M_SON = 1 Else AKSORA_M_SON = c.Row
+End Function
+
+Private Function M_KAYNAK_IMZA(ByVal ad As String) As String
+    Dim sh As Worksheet
+    On Error Resume Next
+    Set sh = ThisWorkbook.Worksheets(ad)
+    If sh Is Nothing Then Exit Function
+    M_KAYNAK_IMZA = "|" & CStr(AKSORA_M_SON(sh)) & "|" & CStr(sh.Range("C2").Value2)
+    On Error GoTo 0
+End Function
+
+Private Function M_IMZA(ByVal ws As Worksheet) As String
+    Dim t As String, wsF As Worksheet
+    t = "IMZA_V1|" & ws.Name
+    Select Case ws.Name
+        Case "M_CDP_STOK", "M_CDP_RAPOR": t = t & M_KAYNAK_IMZA("M_CDP_STOK")
+        Case "M_ÝLÇE_STOK", "M_ÝLÇE_RAPOR": t = t & M_KAYNAK_IMZA("M_ÝLÇE_STOK")
+        Case "M_YÜKLENÝCÝ_STOK", "M_YÜKLENÝCÝ_RAPOR": t = t & M_KAYNAK_IMZA("M_YÜKLENÝCÝ_STOK")
+        Case Else
+            t = t & M_KAYNAK_IMZA("M_CDP_STOK") & M_KAYNAK_IMZA("M_ÝLÇE_STOK") & M_KAYNAK_IMZA("M_YÜKLENÝCÝ_STOK")
+            t = t & "|" & CStr(CLng(Date)) & "|" & CStr(ws.Range("BX10").Value2)
+    End Select
+    On Error Resume Next
+    Set wsF = ThisWorkbook.Worksheets("_FIYAT_LISTESI")
+    If Not wsF Is Nothing Then t = t & "|" & CStr(wsF.Range("J4").Value2)
+    On Error GoTo 0
+    M_IMZA = t
+End Function

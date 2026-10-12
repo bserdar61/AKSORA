@@ -24,7 +24,9 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     End If
     On Error Resume Next
     application.ScreenUpdating = False
+    application.MoveAfterReturn = False
     Me.Range("B6").Select
+    ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
     application.ScreenUpdating = True
 End Sub
 

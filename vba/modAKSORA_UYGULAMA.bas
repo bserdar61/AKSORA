@@ -111,6 +111,7 @@ Public Sub UYGULAMA_MODU_KAPAT()
     If ANA_SESSIZ_MOD Then Exit Sub
 
     application.UseSystemSeparators = True
+    application.MoveAfterReturn = True
 
 
     If mDurumKaydedildi Then
