@@ -190,6 +190,87 @@ Private Function MS_PencereBekle(ByVal ses As Object, ByVal saniye As Double) As
     Loop
 End Function
 
+'----------------------------------------------------------
+' Disa aktarma penceresini acar: arac cubugu, menu cubugu, %PC.
+'----------------------------------------------------------
+Private Sub MS_MenuTopla(ByVal kok As Object, ByVal yol As String, ByVal liste As Collection, ByVal derinlik As Long)
+    Dim i As Long, c As Object, adet As Long, t As String, alt As Long
+    If derinlik > 4 Then Exit Sub
+    On Error Resume Next
+    adet = kok.Children.Count
+    For i = 0 To adet - 1
+        Set c = Nothing
+        Set c = kok.Children(i)
+        If Not c Is Nothing Then
+            t = vbNullString: t = c.Text
+            alt = -1: alt = c.Children.Count
+            If alt > 0 Then
+                MS_MenuTopla c, yol & " > " & t, liste, derinlik + 1
+            Else
+                liste.Add Array(c.Id, yol & " > " & t)
+            End If
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boolean
+    Dim i As Long, adet As Long, bid As String, ipucu As String, tip As String, t As String
+    Dim menuler As Collection, m As Variant, secim As String, puan As Long, enIyi As Long
+    ' 1) ALV arac cubugu
+    On Error Resume Next
+    adet = alv.ToolbarButtonCount
+    For i = 0 To adet - 1
+        bid = vbNullString: ipucu = vbNullString: tip = vbNullString
+        bid = alv.GetToolbarButtonId(i): ipucu = alv.GetToolbarButtonTooltip(i): tip = alv.GetToolbarButtonType(i)
+        MS_Teshis "Araç düðmesi: " & bid & " | " & tip & " | " & ipucu
+        t = AKFIX_NORMAL(bid & " " & ipucu)
+        If InStr(t, "EXPORT") > 0 Or InStr(t, "DISA AKTAR") > 0 Or InStr(t, "&PC") > 0 Then
+            Err.Clear
+            If tip = "Button" Then
+                alv.PressToolbarButton bid
+            Else
+                alv.PressToolbarContextButton bid
+                alv.SelectContextMenuItem "&PC"
+                If Err.Number <> 0 Then Err.Clear: alv.SelectContextMenuItemByText "Yerel dosya..."
+                If Err.Number <> 0 Then Err.Clear: alv.SelectContextMenuItemByText "Local File..."
+            End If
+            If Err.Number = 0 Then
+                If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+            End If
+            MS_Teshis "Araç düðmesi denemesi sonuçsuz: " & bid & " " & Err.Description
+            Err.Clear
+        End If
+    Next i
+    ' 2) Menu cubugu: Yerel dosya / Kaydet > Dosya
+    Set menuler = New Collection
+    MS_MenuTopla ses.FindById("wnd[0]/mbar"), "Menü", menuler, 0
+    For Each m In menuler
+        MS_Teshis "Menü öðesi: " & m(0) & " | " & m(1)
+        t = AKFIX_NORMAL(CStr(m(1))): puan = 0
+        If InStr(t, "YEREL DOSYA") > 0 Or InStr(t, "LOCAL FILE") > 0 Then puan = 3
+        If puan = 0 And (InStr(t, "KAYDET") > 0 Or InStr(t, "SAVE") > 0) And (InStr(t, "> DOSYA") > 0 Or InStr(t, "> FILE") > 0) Then puan = 2
+        If puan = 0 And (InStr(t, "DISA AKTAR") > 0 Or InStr(t, "EXPORT") > 0) And (InStr(t, "DOSYA") > 0 Or InStr(t, "FILE") > 0) Then puan = 1
+        If puan > enIyi Then enIyi = puan: secim = CStr(m(0))
+    Next m
+    If Len(secim) > 0 Then
+        Err.Clear
+        MS_Teshis "Menü seçiliyor: " & secim
+        ses.FindById(secim).Select
+        If Err.Number = 0 Then
+            If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+        End If
+        MS_Teshis "Menü denemesi sonuçsuz: " & Err.Description
+        Err.Clear
+    End If
+    ' 3) %PC komutu
+    ses.FindById("wnd[0]/tbar[0]/okcd").Text = "%PC"
+    ses.FindById("wnd[0]").SendVKey 0
+    If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+    MS_Teshis "%PC sonuçsuz " & Err.Description
+    On Error GoTo 0
+End Function
+
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
     If IsError(v) Then Exit Function
@@ -836,17 +917,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     ' Liste > Disa aktar > Yerel dosya > Sekmeli metin (pencereler adla bulunur)
     mHizliSebep = "dýþa aktar menüsü"
     MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | Dýþa aktarma | ALV satýr " & CStr(n)
-    On Error Resume Next
-    alv.PressToolbarContextButton "&MB_EXPORT"
-    If Err.Number = 0 Then alv.SelectContextMenuItem "&PC"
-    If Err.Number <> 0 Then
-        MS_Teshis "Baðlam menüsü: " & Err.Description & " -> %PC deneniyor"
-        Err.Clear
-        ses.FindById("wnd[0]/tbar[0]/okcd").Text = "%PC"
-        ses.FindById("wnd[0]").SendVKey 0
-    End If
-    Err.Clear
-    On Error GoTo Hata
+    If Not MS_DisaAktarAc(ses, alv) Then mHizliSebep = "dýþa aktarma penceresi açýlmadý": GoTo Temizle
     Set pen = MS_PencereBekle(ses, 10)
     If pen Is Nothing Then mHizliSebep = "dýþa aktarma penceresi açýlmadý": GoTo Temizle
     MS_Teshis "Pencere: " & pen.Text
