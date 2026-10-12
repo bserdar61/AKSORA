@@ -684,6 +684,113 @@ Private Function MS_YeniDosyaBul(ByVal bas As Date) As String
     MS_YeniDosyaBul = yol
 End Function
 
+' Listeyi "Yerel dosya" (sekmeli metin) olarak C:\TEMP'e kaydedip okur.
+' SAP bu yontemde program acmaz; Excel islemi olusmaz. Basarisizsa Empty doner.
+Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
+    Dim kol As String, pen As Object, yolAlan As Object, o As Object, rb As Object, radyolar As Collection
+    Dim klasor As String, dosya As String, tam As String, bas As Double, boy As Long, eskiBoy As Long
+    Dim metin As String, satirlar As Variant, alanlar As Variant, r As Long, c As Long, n As Long, enCok As Long
+    Dim v() As Variant, a As String, ofs As Long
+    On Error GoTo Hata
+    klasor = "C:\TEMP"
+    If Len(Dir$(klasor, vbDirectory)) = 0 Then klasor = Environ$("TEMP")
+    dosya = "AKSORA_" & etiket & "_" & Format$(Now, "yyyymmddhhnnss") & ".txt"
+    tam = klasor & "\" & dosya
+    kol = MS_IlkKolon(alv)
+    alv.SetCurrentCell -1, kol
+    alv.SelectColumn kol
+    alv.ContextMenu
+    alv.SelectContextMenuItem "&PC"
+    Set pen = MS_PencereBekle(ses, 10)
+    If pen Is Nothing Then MS_Teshis etiket & " yerel dosya penceresi açýlmadý": GoTo Temizle
+    MS_Teshis etiket & " yerel dosya penceresi: " & pen.Text
+    Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    If yolAlan Is Nothing Then
+        Set radyolar = New Collection
+        MS_Topla pen, "GuiRadioButton", radyolar
+        Set o = Nothing
+        For Each rb In radyolar
+            a = AKFIX_NORMAL(CStr(rb.Text))
+            If InStr(a, "TAB") > 0 Or InStr(a, "SEKME") > 0 Then Set o = rb: Exit For
+        Next rb
+        If o Is Nothing And radyolar.Count >= 2 Then Set o = radyolar(2)
+        If o Is Nothing Then MS_Agac pen, 0: GoTo Temizle
+        MS_Teshis etiket & " biçim: " & o.Text
+        o.Select
+        ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+        Set pen = MS_PencereBekle(ses, 10)
+        If pen Is Nothing Then MS_Teshis etiket & " dosya adý penceresi açýlmadý": GoTo Temizle
+        Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    End If
+    If yolAlan Is Nothing Then MS_Agac pen, 0: GoTo Temizle
+    yolAlan.Text = klasor & "\"
+    Set o = MS_AlanBul(pen, "DY_FILENAME")
+    If o Is Nothing Then GoTo Temizle
+    o.Text = dosya
+    Set o = MS_AlanBul(pen, "DY_FILE_ENCODING")
+    If Not o Is Nothing Then o.Text = "4110"
+    ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    bas = Timer: eskiBoy = -1
+    Do
+        DoEvents: MS_Sleep 250
+        If Len(Dir$(tam)) > 0 Then
+            boy = FileLen(tam)
+            If boy > 0 And boy = eskiBoy And Not ses.Busy Then Exit Do
+            eskiBoy = boy
+        End If
+        If MS_Gecen(bas) > 180 Then MS_Teshis etiket & " metin dosyasý oluþmadý: " & tam: GoTo Temizle
+    Loop
+    If MS_DosyaBom(tam) = "utf-8" Or MS_DosyaBom(tam) = vbNullString Then
+        metin = MS_DosyaMetni(tam, "utf-8")
+        If InStr(metin, ChrW(&HFFFD)) > 0 Then metin = MS_DosyaMetni(tam, "windows-1254")
+    Else
+        metin = MS_DosyaMetni(tam, MS_DosyaBom(tam))
+    End If
+    metin = Replace(Replace(metin, vbCrLf, vbLf), vbCr, vbLf)
+    If Left$(metin, 1) = ChrW(&HFEFF) Then metin = Mid$(metin, 2)
+    satirlar = Split(metin, vbLf)
+    For r = 0 To UBound(satirlar)
+        c = UBound(Split(satirlar(r), vbTab)) + 1
+        If c > enCok Then enCok = c
+    Next r
+    If enCok < 4 Then MS_Teshis etiket & " metin dosyasý sekmeli deðil": GoTo Temizle
+    ReDim v(1 To UBound(satirlar) + 1, 1 To enCok)
+    For r = 0 To UBound(satirlar)
+        If Len(Trim$(Replace(satirlar(r), vbTab, ""))) > 0 Then
+            n = n + 1
+            alanlar = Split(satirlar(r), vbTab)
+            For c = 0 To UBound(alanlar)
+                v(n, c + 1) = Trim$(alanlar(c))
+            Next c
+        End If
+    Next r
+    ' Basta bos sutun varsa kaydirilir.
+    ofs = 1
+    For r = 1 To n
+        If Len(CStr(v(r, 1))) > 0 Then ofs = 0: Exit For
+    Next r
+    If ofs = 1 Then
+        For r = 1 To n
+            For c = 1 To enCok - 1: v(r, c) = v(r, c + 1): Next c
+            v(r, enCok) = Empty
+        Next r
+    End If
+    MS_Teshis etiket & " yerel dosya okundu: " & CStr(n) & " satýr, " & AKSORA_SAYI_METNI(MS_Gecen(bas), "0.0") & " sn"
+    On Error Resume Next
+    Kill tam
+    On Error GoTo 0
+    MS_AlvMetin = MS_Kirp(v, n, enCok)
+    Exit Function
+Hata:
+    MS_Teshis etiket & " yerel dosya hatasý: " & Err.Description
+    Resume Temizle
+Temizle:
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+    If Len(Dir$(tam)) > 0 Then Kill tam
+    MS_AlvMetin = Empty
+End Function
+
 ' Listeyi Tablo hesaplama (&XXL) ile Excel'e aktarir; acilan kitabin verisini dondurur.
 Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
     Dim eski As Object, wb As Workbook, sh As Worksheet, en As Worksheet, bas As Double, kol As String
@@ -838,7 +945,11 @@ Private Function MS_IQ09_Oku(ByVal ses As Object) As Variant
     MS_DuzenSec ses, alv, Array("/PANEL", "PANEL", "/AKSORA", "AKSORA"), "IQ09"
     Set alv = MS_GridBekle(ses, 60)
     MS_Durum "IQ09 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvExcel(ses, alv, "IQ09")
+    v = MS_AlvMetin(ses, alv, "IQ09")
+    If Not IsArray(v) Then
+        Set alv = MS_GridBekle(ses, 30)
+        v = MS_AlvExcel(ses, alv, "IQ09")
+    End If
     If Not IsArray(v) Then Err.Raise vbObjectError + 1961, , "IQ09 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1962, , "IQ09 listesinde baþlýk bulunamadý."
@@ -881,7 +992,11 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL"), "MB52"
     Set alv = MS_GridBekle(ses, 60)
     MS_Durum "MB52 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvExcel(ses, alv, "MB52")
+    v = MS_AlvMetin(ses, alv, "MB52")
+    If Not IsArray(v) Then
+        Set alv = MS_GridBekle(ses, 30)
+        v = MS_AlvExcel(ses, alv, "MB52")
+    End If
     If Not IsArray(v) Then Err.Raise vbObjectError + 1971, , "MB52 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1972, , "MB52 listesinde baþlýk bulunamadý."
