@@ -1041,7 +1041,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     Dim d As Object, mgOf As Object, brOf As Object, adOf As Object, sayac As Object
     Dim r As Long, n As Long, h As Long, k As String, ks As String, t As Variant, mg As String
     Dim depo As String, malz As String, parti As String, birim As Double, ad As String, fark As Long
-    Dim cikti() As Variant, nIq As Long, nMb As Long, x As Variant
+    Dim cikti() As Variant, nIq As Long, nMb As Long, x As Variant, mbTop(1 To 3) As Double, akTop(1 To 3) As Double, i As Long
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set mgOf = CreateObject("Scripting.Dictionary"): mgOf.CompareMode = vbTextCompare
     Set brOf = CreateObject("Scripting.Dictionary"): brOf.CompareMode = vbTextCompare
@@ -1090,7 +1090,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
                 End If
                 If d.Exists(k) Then
                     t = d(k)
-                    If CDbl(t(0)) <> 0 Then cikti(n, 11) = Round(CDbl(t(1)) / CDbl(t(0)), 2): cikti(n, 13) = "SAP"
+                    If CDbl(t(0)) <> 0 Then cikti(n, 11) = CDbl(t(1)) / CDbl(t(0)): cikti(n, 13) = "SAP"
                 End If
             End If
         End If
@@ -1099,6 +1099,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     For r = 1 To UBound(mb, 1)
         depo = CStr(mb(r, 2)): h = MS_Hedef(depo): mg = CStr(mb(r, 4))
         malz = MS_Malzeme(mb(r, 6)): parti = AKFIX_NORMAL(CStr(mb(r, 5)))
+        If h > 0 And (h <> 2 Or MS_GrupSeri(mg) Or mg = "M03550100") Then mbTop(h) = mbTop(h) + CDbl(mb(r, 10))
         If h > 0 And MS_GrupSeri(mg) Then
             k = depo & "|" & malz & "|" & parti
             If CLng(CDbl(mb(r, 8))) <> CLng(sayac(k)) Then
@@ -1118,6 +1119,15 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     Next r
     ozet = "IQ09 seri numaralý " & AKSORA_SAYI_METNI(nIq, "#,##0") & " satýr  |  MB52 toplu " & _
         AKSORA_SAYI_METNI(nMb, "#,##0") & " satýr" & IIf(fark > 0, "  |  IQ09/MB52 adet farký: " & fark & " kalem", "")
+    For r = 1 To n
+        h = MS_Hedef(CStr(cikti(r, 2)))
+        If h > 0 And Not IsEmpty(cikti(r, 11)) Then akTop(h) = akTop(h) + CDbl(cikti(r, 11))
+    Next r
+    For i = 1 To 3
+        ozet = ozet & vbCrLf & Choose(i, "CDP", "Ýlçe", "Yüklenici") & ":  AKSORA " & AKSORA_SAYI_METNI(akTop(i), "#,##0.00") & _
+            " TL  |  MB52 " & AKSORA_SAYI_METNI(mbTop(i), "#,##0.00") & " TL  |  fark " & _
+            AKSORA_SAYI_METNI(akTop(i) - mbTop(i), "#,##0.00") & " TL"
+    Next i
     MS_Teshis ozet
     If n = 0 Then Err.Raise vbObjectError + 1980, , "IQ09 ve MB52'den müþteri depolarýna ait stok bulunamadý."
     MS_Sirala cikti, n
