@@ -13,6 +13,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim q As String
     If Intersect(Target, Me.Range("B6:J6")) Is Nothing Then Exit Sub
     If AKSORA_V11_MESGUL Then Exit Sub
+    application.ScreenUpdating = False
     On Error Resume Next
     q = Trim$(CStr(Me.Range("B6").Value2))
     On Error GoTo 0
@@ -22,7 +23,9 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         AKSORA_MUSTERI_YEREL_ARA
     End If
     On Error Resume Next
+    application.ScreenUpdating = False
     Me.Range("B6").Select
+    application.ScreenUpdating = True
 End Sub
 
 Private Sub Worksheet_Calculate()

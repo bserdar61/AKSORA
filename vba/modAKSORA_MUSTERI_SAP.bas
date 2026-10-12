@@ -439,7 +439,7 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     Dim n As Long, adet As Long, blok As Long, bas As Long, bitis As Long, r As Long
     Dim buf() As Variant, sonuc() As Variant, satir(1 To 14) As Variant
     Dim zorunlu As Variant, x As Variant, tekrar As Long, hataNo As Long, hataMetni As String
-    Dim tamam As Boolean, ozet As Boolean, asama As String, ilk As Long
+    Dim tamam As Boolean, ozet As Boolean, asama As String, ilk As Long, hizli As Variant
     Set alv = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell")
     On Error Resume Next
     alv.PressToolbarButton "&DELETE_FILTER"
@@ -468,6 +468,16 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     If fiyat Then mFiyatTur = (Len(ids(9)) > 0)
     n = CLng(alv.RowCount)
     If n < 1 Or n > 250000 Then Err.Raise vbObjectError + 1924, , "ALV stok satýr sayýsý geçersiz: " & CStr(n)
+    ' Once hizli yol: listeyi dosyaya aktarip tek seferde oku.
+    asama = mDurum
+    MS_Durum asama & " | Liste dosyaya aktarýlýyor..."
+    hizli = MS_ALV_Dosya(ses, alv, kolonlar, ids, n, fiyat)
+    If IsArray(hizli) Then
+        MS_Durum asama & " | " & CStr(UBound(hizli, 1)) & " satýr okundu"
+        MS_ALV_Oku = hizli
+        Exit Function
+    End If
+    MS_Durum asama
     blok = application.Min(30, CLng(alv.VisibleRowCount))
     If blok < 1 Then Err.Raise vbObjectError + 1925, , "ALV görünür satýr sayýsý okunamadý."
     ReDim buf(1 To n, 1 To 14)
@@ -586,3 +596,194 @@ Public Sub AKSORA_MUSTERI_FIYAT_KONTROL()
     If wsF Is Nothing Then Exit Sub
     If CStr(wsF.Range("J4").Value2) <> CStr(wsF.Range("J3").Value2) Then AKSORA_MUSTERI_FIYATLARI_UYGULA True
 End Sub
+
+'==========================================================
+' HIZLI OKUMA: ALV listesi yerel dosyaya (sekmeyle ayrilmis metin)
+' aktarilir ve tek seferde okunur. Herhangi bir adim dogrulanamazsa
+' Empty doner; cagiran hucre hucre okumaya devam eder.
+'==========================================================
+Private Function MS_DosyaMetni(ByVal yol As String, ByVal karakter As String) As String
+    Dim st As Object
+    Set st = CreateObject("ADODB.Stream")
+    st.Type = 2: st.Charset = karakter: st.Open
+    st.LoadFromFile yol
+    MS_DosyaMetni = st.ReadText(-1)
+    st.Close
+End Function
+
+Private Function MS_DosyaBom(ByVal yol As String) As String
+    Dim st As Object, b As Variant
+    Set st = CreateObject("ADODB.Stream")
+    st.Type = 1: st.Open: st.LoadFromFile yol
+    If st.Size >= 3 Then
+        b = st.Read(3)
+        If b(0) = &HEF And b(1) = &HBB And b(2) = &HBF Then MS_DosyaBom = "utf-8"
+        If b(0) = &HFF And b(1) = &HFE Then MS_DosyaBom = "unicode"
+    End If
+    st.Close
+End Function
+
+Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal kolonlar As Object, _
+    ByRef ids() As String, ByVal n As Long, ByVal fiyat As Boolean) As Variant
+    Dim klasor As String, dosya As String, yol As String, o As Object, bas As Double
+    Dim boy As Long, eskiBoy As Long, utf As Boolean, deneme As Variant, karakter As String
+    Dim metin As String, satirlar As Variant, alanlar As Variant, kc As Long, ofs As Long
+    Dim baslik As Long, i As Long, j As Long, c As Long, r As Long, adet As Long, veri As Long
+    Dim pos(1 To 11) As Long, sira As Object, buf() As Variant, sonuc() As Variant
+    Dim satir(1 To 14) As Variant, ozet As Boolean, x As Variant, k As Long, dogru As Boolean
+    Dim kontrol As Variant, a As String, b As String, y As Variant
+    On Error GoTo Hata
+    kc = CLng(kolonlar.Count)
+    Set sira = CreateObject("Scripting.Dictionary")
+    For i = 0 To kc - 1: sira(CStr(kolonlar.Item(i))) = i: Next i
+    For c = 1 To 11
+        pos(c) = -1
+        If Len(ids(c)) > 0 Then
+            If Not sira.Exists(ids(c)) Then Exit Function
+            pos(c) = sira(ids(c))
+        End If
+    Next c
+    klasor = Environ$("TEMP")
+    If Right$(klasor, 1) <> "\" Then klasor = klasor & "\"
+    dosya = "AKSORA_7155_" & Format$(Now, "yyyymmddhhnnss") & "_" & CStr(Int(Timer * 100) Mod 100000) & ".txt"
+    yol = klasor & dosya
+    If Len(Dir$(yol)) > 0 Then Kill yol
+    ' Liste > Disa aktar > Yerel dosya > Sekmeli metin
+    alv.PressToolbarContextButton "&MB_EXPORT"
+    alv.SelectContextMenuItem "&PC"
+    Set o = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]", False)
+    If o Is Nothing Then GoTo Temizle
+    o.Select
+    ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    ses.FindById("wnd[1]/usr/ctxtDY_PATH").Text = klasor
+    ses.FindById("wnd[1]/usr/ctxtDY_FILENAME").Text = dosya
+    Set o = Nothing
+    Set o = ses.FindById("wnd[1]/usr/ctxtDY_FILE_ENCODING", False)
+    If Not o Is Nothing Then o.Text = "4110": utf = True
+    ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    bas = Timer: eskiBoy = -1
+    Do
+        DoEvents: MS_Sleep 200
+        If MS_Gecen(bas) > 120 Then GoTo Temizle
+        If Len(Dir$(yol)) > 0 Then
+            boy = FileLen(yol)
+            If boy > 0 And boy = eskiBoy And Not ses.Busy Then Exit Do
+            eskiBoy = boy
+        End If
+    Loop
+    karakter = MS_DosyaBom(yol)
+    If Len(karakter) > 0 Then
+        deneme = Array(karakter)
+    ElseIf utf Then
+        deneme = Array("utf-8", "windows-1254")
+    Else
+        deneme = Array("windows-1254", "utf-8")
+    End If
+    For Each x In deneme
+        metin = MS_DosyaMetni(yol, CStr(x))
+        metin = Replace(metin, vbCrLf, vbLf): metin = Replace(metin, vbCr, vbLf)
+        If Left$(metin, 1) = ChrW(&HFEFF) Then metin = Mid$(metin, 2)
+        satirlar = Split(metin, vbLf)
+        ' Baslik: ilk dolu satir; alan sayisi ALV kolon sayisiyla eslesmeli.
+        baslik = -1
+        For i = 0 To UBound(satirlar)
+            If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then baslik = i: Exit For
+        Next i
+        If baslik < 0 Then GoTo Temizle
+        alanlar = Split(satirlar(baslik), vbTab)
+        If UBound(alanlar) + 1 = kc Then
+            ofs = 0
+        ElseIf UBound(alanlar) + 1 >= kc + 1 And Len(Trim$(alanlar(0))) = 0 Then
+            ofs = 1
+        Else
+            GoTo Temizle
+        End If
+        veri = 0
+        For i = baslik + 1 To UBound(satirlar)
+            If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then veri = veri + 1
+        Next i
+        If veri <> n Then GoTo Temizle
+        ' Ornek satirlar SAP ekranindaki degerlerle birebir karsilastirilir.
+        dogru = True
+        kontrol = Array(0, n \ 2, n - 1)
+        r = -1: k = 0
+        For i = baslik + 1 To UBound(satirlar)
+            If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then
+                r = r + 1
+                For Each y In kontrol
+                    If CLng(y) = r Then
+                        alanlar = Split(satirlar(i), vbTab)
+                        alv.FirstVisibleRow = application.Min(r, application.Max(0, n - CLng(alv.VisibleRowCount)))
+                        DoEvents
+                        For c = 1 To 11
+                            If pos(c) >= 0 Then
+                                a = vbNullString
+                                If pos(c) + ofs <= UBound(alanlar) Then a = Trim$(alanlar(pos(c) + ofs))
+                                b = Trim$(CStr(alv.GetCellValue(r, ids(c))))
+                                If c = 5 Then
+                                    a = MS_Malzeme(a): b = MS_Malzeme(b)
+                                ElseIf (c = 7 Or c = 11) And Len(a) > 0 And Len(b) > 0 Then
+                                    a = CStr(MS_Sayi(a)): b = CStr(MS_Sayi(b))
+                                End If
+                                If a <> b Then dogru = False
+                            End If
+                        Next c
+                    End If
+                Next y
+            End If
+        Next i
+        If dogru Then Exit For
+    Next x
+    If Not dogru Then GoTo Temizle
+    ReDim buf(1 To n, 1 To 14)
+    For i = baslik + 1 To UBound(satirlar)
+        If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then
+            alanlar = Split(satirlar(i), vbTab)
+            For c = 1 To 14: satir(c) = Empty: Next c
+            For c = 1 To 11
+                If pos(c) >= 0 Then
+                    If pos(c) + ofs <= UBound(alanlar) Then satir(c) = alanlar(pos(c) + ofs) Else satir(c) = vbNullString
+                End If
+            Next c
+            ozet = (Len(Trim$(CStr(satir(1)))) = 0 And Len(Trim$(CStr(satir(5)))) = 0)
+            If Not ozet Then
+                If Trim$(CStr(satir(1))) <> "7155" Or Len(Trim$(CStr(satir(5)))) = 0 Then GoTo Temizle
+                adet = adet + 1
+                For c = 1 To 11: buf(adet, c) = satir(c): Next c
+                buf(adet, 7) = MS_Sayi(buf(adet, 7))
+                If fiyat Then
+                    If Len(Trim$(CStr(buf(adet, 11)))) > 0 Then buf(adet, 11) = MS_Sayi(buf(adet, 11))
+                Else
+                    buf(adet, 10) = Trim$(CStr(satir(10)))
+                End If
+                For Each x In Array(1, 2, 3, 4, 5, 6, 8, 9)
+                    buf(adet, CLng(x)) = Trim$(CStr(buf(adet, CLng(x))))
+                Next x
+            End If
+        End If
+    Next i
+    If adet = 0 Then GoTo Temizle
+    ReDim sonuc(1 To adet, 1 To 14)
+    For r = 1 To adet
+        For c = 1 To 14: sonuc(r, c) = buf(r, c): Next c
+    Next r
+    On Error Resume Next
+    Kill yol
+    On Error GoTo 0
+    MS_ALV_Dosya = sonuc
+    Exit Function
+Hata:
+    Resume Temizle
+Temizle:
+    On Error Resume Next
+    Set o = Nothing
+    Set o = ses.FindById("wnd[1]", False)
+    If Not o Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+    Set o = Nothing
+    Set o = ses.FindById("wnd[1]", False)
+    If Not o Is Nothing Then o.Close
+    If Len(yol) > 0 Then
+        If Len(Dir$(yol)) > 0 Then Kill yol
+    End If
+    MS_ALV_Dosya = Empty
+End Function
