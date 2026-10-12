@@ -601,7 +601,7 @@ End Sub
 Private Function MS_YeniDosyaBul(ByVal bas As Date) As String
     Dim klasorler As Variant, k As Variant, uzantilar As Variant, u As Variant, f As String
     Dim yol As String, enYeni As Date, t As Date
-    klasorler = Array(Environ$("TEMP"), Environ$("TMP"), _
+    klasorler = Array("C:\TEMP", "C:\TMP", Environ$("TEMP"), Environ$("TMP"), _
         Environ$("APPDATA") & "\SAP\SAP GUI\tmp", Environ$("LOCALAPPDATA") & "\SAP\SAP GUI\tmp", _
         Environ$("USERPROFILE") & "\Documents\SAP\SAP GUI", Environ$("USERPROFILE") & "\Documents", _
         Environ$("USERPROFILE") & "\OneDrive\Documents\SAP\SAP GUI", Environ$("USERPROFILE") & "\Downloads")
@@ -670,7 +670,9 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
                 On Error GoTo Hata
                 If boy > 0 And boy = eskiBoy Then
                     MS_Teshis etiket & " dosya bulundu: " & dosya & " (" & CStr(boy) & " bayt)"
+                    application.DisplayAlerts = False
                     Set wb = Workbooks.Open(Filename:=dosya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+                    application.DisplayAlerts = True
                     kendimiz = True
                     GoTo Bulundu
                 End If
