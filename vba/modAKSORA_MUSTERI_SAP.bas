@@ -493,6 +493,442 @@ Private Sub MS_Mb52Uygula(ByRef a As Variant, ByVal d As Object)
     Next r
 End Sub
 
+Private Function MS_DepoAdi(ByVal uy As String, ByVal depo As String) As String
+    ' Depo hafizasi: 7151-7155 tum depolar (kod -> ad).
+    Static d As Object
+    Dim s As String, p As Variant, x As Variant
+    If d Is Nothing Then
+        Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+        s = s & "0001|0001|Lager 0001;0001|0088|Lager 0088 (WM);0001|0100|Lagerort WM&HU;0001|0200|SCM-EWM;0003|0001|Lager 0001;0003|0088|Lager 0088 (WM);7151|B201|Kullaným dýþý.;7151|B301|Kullaným dýþý;7151|BO01|14.53.OB.01;7151|BO02|15.53.OB.01;7151|BO03|15.01.ÝNAL;7151|BO04|18.01.KORDON;7151|BO05|21.53.OB.01;7151|D001|Ýþletme Ambarý;7151|D002|Yatýrým Ambarý;7151|D003|Müþ.Bað.Ambarý;7151|D004|Atýl Malzeme Amb;7151|D006|Arýza Mlz. Ambar;7151|D007|Demontaj Ambarý;7151|D008|Hurda Ambarý;7151|D009|ÝSG-HIRDAVAT-ÞEB;7151|D010|ÝSG-HIRDAVAT-MÜÞ;7151|E001|BAÐLANTI Ekip1;7151|E002|BAÐLANTI Ekip2;7151|E003|BAÐLANTI Ekip3;7151|E004|BAÐLANTI Ekip4;7151|E005|BAÐLANTI Ekip5;7151|E006|BAÐLANTI Ekip6;"
+        s = s & "7151|EM23|23.53.EMANET;7151|EM24|24.53.EMANET;7151|G001|Ýl Müdürlüðü Dp;7151|G002|ÝDARÝ ÝÞ-FÝLO-BT;7151|G004|EDAÞ EMANET ÞEB;7151|G005|EMANET DEPO YTRM;7151|G006|AFAD;7151|K001|BAÐLANTI TES. KA;7151|K002|ARDEÞEN KA;7151|K003|ÇAMLIHEMÞÝN KA;7151|K004|ÇAYELÝ KA;7151|K005|DEREPAZARI KA;7151|K006|FINDIKLI KA;7151|K007|GÜNDOÐDU KA;7151|K008|GÜNEYSU KA;7151|K009|HAT BAKIM KA;7151|K010|HEMÞÝN KA;7151|K011|ÝKÝZDERE KA;7151|K012|ÝYÝDERE KA;7151|K013|KALKANDERE KA;7151|K014|KÖY ARIZA KA;7151|K015|PAZAR KA;7151|K016|ÞEHÝR ARIZA KA;7151|K017|Trafo Bakým KA;7151|M001|19.GR.02.MARMRÝS;7151|M002|20.GR.01.OKAN;7151|M003|20.GR.02.KORDON;7151|M004|22.53.EMANET;7151|M005|21.GR.01.KAMERÝM;"
+        s = s & "7151|M006|Kullaným dýþý;7151|M007|21.KET1.SEKMAN;7151|M008|21.KET2.TUGAY;7151|M009|21.KET4.DÝLMAÇ;7151|M010|21.53.AYKOL.E06;7151|M011|22.53.KET.01;7151|M012|22.53.KET.02;7151|M014|22.GR.01.KORD(A);7151|M015|22.GR.02.ENER(A);7151|M016|22.GR.03.TUGA(A);7151|M017|22.GR.04.DÝLM(A);7151|M018|22.GR.05.ENER(A);7151|M019|22.KET6.ENER(A);7151|M020|23.GR.01.ENER;7151|M021|23.GR.02.ENER;7151|M022|23.KET.4.DÝLMAÇ;7151|M023|23.KET.1.TUGAY;7151|M024|23.KET.2.ENER;7151|M027|13.GR.01 MERCAN;7151|M028|13.KET.DOÐUSU;7151|M029|14.GR.01 KORDON;7151|M030|19.GR.01 TUGAY;7151|M031|19.KET1.SEKMAN;7151|M032|20.53.BAÐL.ADA;7151|M033|20.GR.02 KORD(Y);7151|M034|20.KET1.SEKMAN;7151|M035|20.KET2.TÜRKMEN;"
+        s = s & "7151|M036|21.53.AYKOL.E01;7151|M037|21.53.AYKOL.E02;7151|M038|21.53.AYKOL.E03;7151|M039|21.53.AYKOL.E04;7151|M040|21.53.AYKOL.E05;7151|M041|21.GR.01.KAME(Y);7151|M042|21.GR.02.KAME(Y);7151|M043|21.KET1.SEKMA(Y);7151|M044|21.KET2.TUGAY(Y);7151|M045|21.KET4.DÝLM(Y);7151|M046|21.KET5.TUG(Y);7151|M047|22.GR.01.KORDO(Y;7151|M048|22.GR.02.ENER(Y);7151|M049|22.GR.03.TUGA(Y);7151|M050|22.GR.05.ENER(Y);7151|M051|22.KET2.TUGAY(Y);7151|M052|22.KET3.TUYLU(Y);7151|M053|22.KET6.ENER(Y);7151|M054|21.53.AYKOL;7151|M055|13.BAÐL.ERSAN;7151|M056|13.GR.01 MERCAN;7151|M057|13.GR.02 AKSU;7151|M058|13.GR.03 ELKAR;7151|M059|13.BAÐL.ERSAN;7151|M060|22.GR04.DÝLMAÇ;7151|M096|24.KET.01 KORDON;7151|M097|24.KET.02 TUGAY;"
+        s = s & "7151|M098|24.GR.01 TUGAY;7151|M142|23.KET.08 TUGAY;7151|M143|23.KET.03 KORDON;7151|M144|22.GR.05.ENER;7151|M145|21.KET.1 SEKMAN2;7151|P001|12.08.OSOS;7151|P002|Kullaným dýþý;7151|P003|17.53.SCADA;7151|P004|KOMP.53.YEDEK;7151|PB01|PB MERKEZ KA;7151|PB02|PLANLIBAKIM S3-1;7151|S001|S.AYAR MASASI D.;7152|B201|Kullaným dýþý.;7152|B202|Kullaným dýþý;7152|B203|Kullaným dýþý;7152|B204|Kullaným dýþý;7152|B205|Kullaným dýþý;7152|B206|Kullaným dýþý;7152|BO01|18.OB.PNRALTI;7152|BO02|Kullaným Dýþý;7152|BO03|21.61.OB.01;7152|BO04|19.OB.PNRALTI;7152|BO05|20.OB.PNARALT;7152|BO06|21.61.OB.02;7152|BO07|22.61.OB.01;7152|BO08|22.61.OB.02;7152|BO09|23.61.OB.01;7152|D001|Ýþletme Ambarý;7152|D002|Yatýrým Ambarý;"
+        s = s & "7152|D003|Müþ.Bað.Ambarý;7152|D004|Atýl Malzeme Amb;7152|D006|Arýza Mlz. Ambar;7152|D007|Demontaj Ambarý;7152|D008|Hurda Ambarý;7152|D009|ÝSG-HIRDAVAT-ÞEB;7152|D010|ÝSG-HIRDAVAT-MÜÞ;7152|E001|BAÐLANTI Ekip1;7152|E002|BAÐLANTI Ekip2;7152|E003|BAÐLANTI Ekip3;7152|E004|BAÐLANTI Ekip4;7152|E005|BAÐLANTI Ekip5;7152|E006|BAÐLANTI Ekip6;7152|E007|BAÐLANTI Ekip7;7152|E008|BAÐLANTI Ekip8;7152|EM21|21.61.EMANET;7152|EM23|23.61.EMANET;7152|EM24|24.61.EMANET;7152|G001|Þirket-Ýl Müd.Dp;7152|G002|ÝDARÝ ÝÞ-FÝLO-BT;7152|G003|Ýstanbul Deposu;7152|G004|EDAÞ EMANET ÞEB;7152|G005|EMANET DEPO YTRM;7152|G006|AFAD;7152|K001|BAÐLANTI TES. KA;7152|K002|AKÇAABAT KA;7152|K003|ARAKLI KA;7152|K004|ARSÝN KA;"
+        s = s & "7152|K005|BEÞÝKDÜZÜ KA;7152|K006|ÇARÞIBAÞI KA;7152|K007|ÇAYKARA KA;7152|K008|DERNEKPAZARI KA;7152|K009|DÜZKÖY KA;7152|K010|HAT BAKIM KA;7152|K011|HAYRAT KA;7152|K012|KÖPRÜBAÞI KA;7152|K013|KÖY ARIZA KA;7152|K014|MAÇKA KA;7152|K015|OF KA;7152|K016|SÜRMENE KA;7152|K017|ÞALPAZARI KA;7152|K018|ÞEHÝR ARIZA KA;7152|K019|TONYA KA;7152|K020|TRAFO BAKIM KA;7152|K021|VAKFIKEBÝR KA;7152|K022|YOMRA KA;7152|M001|17.61.GR.04.PINA;7152|M002|Kullaným dýþý;7152|M003|18.GR.03 DEMÝRAY;7152|M004|18.KET.1.SEKMAN;7152|M005|Kullaným dýþý;7152|M007|19.GR.02.ÇINARAL;7152|M008|19.GR.02.ENGÝND.;7152|M009|19.GR.03.ÇINARAL;7152|M010|19.GR.04.TEKÝNAL;7152|M011|Kullaným dýþý;7152|M012|Kullaným dýþý;"
+        s = s & "7152|M013|19.KET.3.PINARAL;7152|M014|20.GR.01.KAMERÝM;7152|M015|20.GR.02.PINARAL;7152|M016|20.GR.03.PINARAL;7152|M017|20.GR.04.TÜRKMEN;7152|M018|20.KET.2.TEKINAL;7152|M019|20.KET.3.DEMIR;7152|M020|21.61.GR.02.PINA;7152|M021|Kullaným dýþý;7152|M022|Kullaným dýþý;7152|M026|Kullaným dýþý;7152|M027|21.KET.1.EKÝM;7152|M028|21.KET2.TEKÝNAL;7152|M029|21.KET3.DEMÝR;7152|M033|Kullaným dýþý;7152|M035|Kullaným dýþý;7152|M036|22.GR.03.ORÝM;7152|M038|Kullaným dýþý;7152|M039|22.KET.3 HASANOK;7152|M040|22.KET.4 ORÝM;7152|M041|22.KET.5.KUBAY;7152|M042|23.GR.02.FÝBER;7152|M043|23.GR.03.FÝBER;7152|M044|23.GR.04.TÜRKMEN;7152|M045|23.GR.05.KUBAY;7152|M046|23.GR.07.KUBAY;7152|M047|23.61.GR-08;"
+        s = s & "7152|M048|23.GR.10.ENGÝNDE;7152|M049|23.GR.12.DEMÝR;7152|M050|23.KET.2.ERKE;7152|M051|23.KET.3.ORÝM;7152|M052|23.KET.4.ERKE;7152|M053|23.KET.5.KUBAY;7152|M054|23.GR.11 ORÝM;7152|M055|12.GR.03.DOÐUSU;7152|M056|12.KET Doðusu;7152|M057|19.GR.01PINARALT;7152|M058|20.KET1.EKÝM;7152|M059|21.61.AYKOL;7152|M060|21.61.AYKOL.E01;7152|M061|21.61.AYKOL.E02;7152|M062|21.61.AYKOL.E03;7152|M063|21.61.AYKOL.E04;7152|M064|21.61.AYKOL.E05;7152|M065|21.61.AYKOL.E06;7152|M067|21.61.AYKOL.E07;7152|M068|21.61.AYKOL.E08;7152|M069|21.61.AYKOL.E09;7152|M070|21.61.AYKOL.E10;7152|M071|21.61.AYKOL.E11;7152|M072|21.61.AYKOL.E12;7152|M077|22.61.GR.01(S);7152|M078|22.61.GR.02(S);7152|M079|22.61.GR.03(S);"
+        s = s & "7152|M080|22.61.KET.01(S);7152|M081|22.61.KET.02(S);7152|M082|22.61.KET.04(S);7152|M083|22.61.KET.05(S);7152|M084|22.61.KET/06;7152|M085|22.GR.01.ERKE(A);7152|M086|22.GR.02.DEMÝ(A);7152|M089|22.KET.5 KUBAY;7152|M090|21.61.AYKOL.ÖZAY;7152|M091|21.61.AYKOL.E13;7152|M092|23.GR.13 PINARAL;7152|M096|24.KET.01 DEMÝR;7152|M097|24.KET.02 ONENER;7152|M098|24.KET.03 KUBAY;7152|M099|21.GR.04.KUBAY;7152|P001|12.08.OSOS;7152|P002|15.GUC KALITE IZ;7152|P003|17.61.SCADA;7152|P004|KOMP.61.YEDEK;7152|PB01|PB OF KA;7152|PB02|PB SÜRMENE KA;7152|PB03|PB ARSÝN KA;7152|PB04|PB MRKZ ÞEHÝR KA;7152|PB05|PB AKÇAABAT KA;7152|PB06|PB VAKFIKEBÝR KA;7152|PB07|PLANLIBAKIM S3-1;7152|S001|S.AYAR MASASI D.;"
+        s = s & "7153|B201|Kullaným dýþý;7153|BO01|15.29.OB.01;7153|BO02|23.29.OB.01;7153|D001|Ýþletme Ambarý;7153|D002|Yatýrým Ambarý;7153|D003|Müþ.Bað.Ambarý;7153|D004|Atýl Malzeme Amb;7153|D006|Arýza Mlz. Ambar;7153|D007|Demontaj Ambarý;7153|D008|Hurda Ambarý;7153|D009|ÝSG-HIRDAVAT-ÞEB;7153|D010|ÝSG-HIRDAVAT-MÜÞ;7153|E001|BAÐLANTI Ekip1;7153|E002|BAÐLANTI Ekip2;7153|E003|BAÐLANTI Ekip3;7153|E004|BAÐLANTI Ekip4;7153|EM23|23.29.EMANET;7153|EM24|24.29.EMANET;7153|G001|Ýl Müdürlüðü Dp;7153|G002|ÝDARÝ ÝÞ-FÝLO-BT;7153|G004|EDAÞ EMANET ÞEB;7153|G005|EMANET DEPO YTRM;7153|K001|BAÐLANTI TES. KA;7153|K002|HAT BAKIM KA;7153|K003|KELKÝT KA;7153|K004|KÖSE KA;7153|K005|KÜRTÜN KA;7153|K006|MERKEZ KA;7153|K007|ÞÝRAN KA;"
+        s = s & "7153|K008|TORUL KA;7153|K009|TRAFO BAKIM KA;7153|K010|MERKEZ BAGLANTI;7153|M001|22.KET.1 HASANOK;7153|M002|23.GR.01.ERKYAP;7153|M003|23.KET.1.ERKYAP;7153|M004|23.GR.01 ERKYAP;7153|M005|23.29 KET.02;7153|M007|20.29.GR.02 TÜRK;7153|M008|21.29.AYKOL.E01;7153|M009|21.29.AYKOL.E02;7153|M010|22.KET1.HASAN(Y);7153|M011|22.GR.01.ÝÞBÝ(A);7153|M012|21.29.AYKOL;7153|M013|21.29.AYKOL.E03;7153|M096|24.KET.01 ENGÝND;7153|P001|12.08.OSOS;7153|P002|Kullaným dýþý;7153|P003|17.29.SCADA;7153|P004|KOMP.29.YEDEK;7153|PB01|PB MERKEZ KA;7153|PB02|PLANLIBAKIM S3-1;7153|S001|S.AYAR MASASI D.;7154|B201|Kullaným dýþý;7154|B202|Kullaným dýþý;7154|B203|Kullaným dýþý;7154|B204|Kullaným dýþý;7154|B205|Kullaným dýþý;"
+        s = s & "7154|B206|Kullaným dýþý;7154|B301|Kullaným dýþý;7154|BO01|13.01.NETKAYA;7154|BO02|14.28.OB.01;7154|BO03|19.28.OB.3SEKMAN;7154|BO04|Kullaným dýþý;7154|BO05|22.28.OB.01 KAME;7154|BO06|23.OB.01.AHMET;7154|BO08|23.28.HEYELAN.OB;7154|D001|Ýþletme Ambarý;7154|D002|Yatýrým Ambarý;7154|D003|Müþ.Bað.Ambarý;7154|D004|Atýl Malzeme Amb;7154|D006|Arýza Mlz. Ambar;7154|D007|Demontaj Ambarý;7154|D008|Hurda Ambarý;7154|D009|ÝSG-HIRDAVAT-ÞEB;7154|D010|ÝSG-HIRDAVAT-MÜÞ;7154|E001|BAÐLANTI Ekip1;7154|E002|BAÐLANTI Ekip2;7154|E003|BAÐLANTI Ekip3;7154|E004|BAÐLANTI Ekip4;7154|E005|BAÐLANTI Ekip5;7154|E006|BAÐLANTI Ekip6;7154|E007|BAÐLANTI Ekip7;7154|EM23|23.28.EMANET;7154|EM24|24.28.EMANET;"
+        s = s & "7154|G001|Ýl Müdürlüðü Dp;7154|G002|ÝDARÝ ÝÞ-FÝLO-BT;7154|G004|EDAÞ EMANET ÞEB;7154|G005|EMANET DEPO YTRM;7154|K001|BAÐLANTI TES. KA;7154|K002|ALUCRA KA;7154|K003|BULANCAK KA;7154|K004|ÇAMOLUK KA;7154|K005|ÇANAKÇI KA;7154|K006|DERELÝ KA;7154|K007|DOÐANKENT KA;7154|K008|ESPÝYE KA;7154|K009|EYNESÝL KA;7154|K010|GÖRELE KA;7154|K011|GÜCE KA;7154|K012|KEÞAP KA;7154|K013|KÖY ARIZA KA;7154|K014|PÝRAZÝZ KA;7154|K015|Þ.KARAHÝSAR KA;7154|K016|ÞEHÝR ARIZA KA;7154|K017|TÝREBOLU KA;7154|K018|TRAFO BAKIM KA;7154|K019|YAÐLIDERE KA;7154|M001|07.YAP SANEL;7154|M002|20.GR.03 TEKÝNAL;7154|M003|21.GR.03.ÝÞBÝL;7154|M005|Kullaným dýþý;7154|M006|Kullaným dýþý;7154|M007|22.GR.03.ON E(A);7154|M008|Kullaným dýþý;"
+        s = s & "7154|M009|Kullaným dýþý;7154|M010|23.GR.01.KURALAY;7154|M011|23.GR.03.KURALAY;7154|M012|23.GR.04.ELSAN;7154|M013|23.KET.1 KURALAY;7154|M014|23.KET.2 KURALAY;7154|M015|Kullaným dýþý;7154|M016|Kullaným dýþý;7154|M017|Kullaným dýþý;7154|M018|13.GR.01_DEMÝRYÜ;7154|M019|20.GR.02 ELSAN;7154|M020|20.GR.03 TEKÝ(Y);7154|M021|21.28.AYKOL.E01;7154|M022|21.28.AYKOL.E02;7154|M023|21.28.AYKOL.E03;7154|M024|21.28.AYKOL.E04;7154|M025|21.28.AYKOL.E05;7154|M026|21.28.AYKOL.E06;7154|M027|21.GR.01 ONEN(Y);7154|M028|21.GR.03.ALÖZ;7154|M029|22.GR.03 ONEN(Y);7154|M030|POWERLINE 477;7154|M031|21.28.AYKOL;7154|M096|24.28.KET.01 KUR;7154|M097|24.GR.01 KURALAY;7154|P001|12.08.OSOS;7154|P002|15.GUC KALITE IZ;"
+        s = s & "7154|P003|17.28.SCADA;7154|P004|KOMP.28.YEDEK;7154|PB01|PB Þ.KARAHÝSR KA;7154|PB02|PB MERKEZ KA;7154|PB03|PB BULANCAK KA;7154|PB04|PB TÝREBOLU KA;7154|PB05|PB ESPÝYE KA;7154|PB06|PB GÖRELE KA;7154|PB07|PLANLIBAKIM S3-1;7154|S001|S.AYAR MASASI D.;7155|B301|Kullaným dýþý;7155|BO01|21.08.OB.01;7155|BO02|22.08.OB.01GUKAS;7155|BO03|23.OB.01.ENER;7155|D001|Ýþletme Ambarý;7155|D002|Yatýrým Ambarý;7155|D003|Müþ.Bað.Ambarý;7155|D004|Atýl Malzeme Amb;7155|D006|Arýza Mlz. Ambar;7155|D007|Demontaj Ambarý;7155|D008|Hurda Ambarý;7155|D009|ÝSG-HIRDAVAT-ÞEB;7155|D010|ÝSG-HIRDAVAT-MÜÞ;7155|E001|BAÐLANTI EKÝP1;7155|E002|BAÐLANTI EKÝP2;7155|E003|BAÐLANTI EKÝP3;7155|E004|BAÐLANTI Ekip4;7155|EM14|14.08.EMANET;"
+        s = s & "7155|EM21|21.08.EMANET;7155|EM22|22.08.EMANET;7155|EM23|23.08.EMANET;7155|EM24|24.08.EMANET;7155|G001|Ýl Müdürlüðü Dp;7155|G002|ÝDARÝ ÝÞ-FÝLO-BT;7155|G004|EDAÞ EMANET ÞEB;7155|G005|EMANET DEPO YTRM;7155|K001|Ardanuç KA;7155|K002|Arhavi KA;7155|K003|Borçka KA;7155|K004|Hopa KA;7155|K005|Kemalpaþa KA;7155|K006|Merkez KA;7155|K007|Murgul KA;7155|K008|Þavþat KA;7155|K009|Trafo Bakým KA;7155|K010|Yusufeli KA;7155|K011|BAÐLANTI TES KA;7155|K012|MERKEZ BAGLANTI;7155|M001|20.GR.01.ASÝÞ;7155|M002|20.GR.02 KAMERÝM;7155|M003|Kullaným dýþý;7155|M004|Kullaným dýþý;7155|M005|Kullaným dýþý;7155|M006|22.GR.01.F.TÜRK;7155|M007|22.KET.1 TÜRKMEN;7155|M008|23.KET.01 GÜKAÞ;7155|M011|17.GR.02NETKAYA;"
+        s = s & "7155|M012|20.GR.01 ASÝÞ(Y);7155|M013|20.GR.02 KAME(Y);7155|M014|21.08.AYKOL;7155|M015|21.GR.01.KAME(Y);7155|M016|22.GR.01.FÝBE(S);7155|M017|22.KET.1 TÜRK(S);7155|M018|21.08.AYKOL.E01;7155|M019|21.08.AYKOL.E02;7155|M020|23.08.GR.01;7155|M021|23.GR.02 KABADAY;7155|M096|24.KET.01.JYN;7155|M114|kullaným dýþý;7155|P001|12.08.OSOS;7155|P002|Kullaným dýþý;7155|P003|17.08.SCADA;7155|P004|KOMP.08.YEDEK;7155|PB01|PB MERKEZ KA;7155|PB02|PLANLIBAKIM S3-1;7155|S001|S.AYAR MASASI D.;7155|S002|Kullaným Dýþý;7155|S003|Kullaným Dýþý;7155|S004|Kullaným Dýþý;7155|S005|Kullaným Dýþý;7155|S006|Kullaným Dýþý;"
+        For Each p In Split(s, ";")
+            If Len(p) > 0 Then
+                x = Split(p, "|")
+                d(x(0) & "|" & x(1)) = x(2)
+            End If
+        Next p
+    End If
+    If d.Exists(Trim$(uy) & "|" & UCase$(Trim$(depo))) Then MS_DepoAdi = d(Trim$(uy) & "|" & UCase$(Trim$(depo)))
+End Function
+'==========================================================
+' YENI MOTOR: IQ09 (seri numarali stok) + MB52 (toplu stok ve deger)
+' Liste SAP'den "Tablo hesaplama" (&XXL) ile Excel'e aktarilip okunur.
+'==========================================================
+Private Function MS_GridBekle(ByVal ses As Object, ByVal saniye As Double) As Object
+    Dim bas As Double, g As Object
+    bas = Timer
+    Do
+        Set g = Nothing
+        On Error Resume Next
+        Set g = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False)
+        On Error GoTo 0
+        If Not g Is Nothing Then
+            If Not ses.Busy Then Set MS_GridBekle = g: Exit Function
+        End If
+        If MS_Gecen(bas) > saniye Then Exit Function
+        DoEvents: MS_Sleep 100
+    Loop
+End Function
+
+Private Function MS_IlkKolon(ByVal alv As Object) As String
+    On Error Resume Next
+    MS_IlkKolon = CStr(alv.ColumnOrder.Item(0))
+    On Error GoTo 0
+End Function
+
+' Duzen secimi: aday adlardan biri bulunursa o, bulunamazsa SAP'nin varsayilan secili satiri.
+Private Sub MS_DuzenSec(ByVal ses As Object, ByVal alv As Object, ByVal adaylar As Variant, ByVal etiket As String)
+    Dim g As Object, r As Long, ad As String, tx As String, secim As Long, kol As String, y As Variant
+    On Error Resume Next
+    kol = MS_IlkKolon(alv)
+    alv.SetCurrentCell -1, kol
+    alv.SelectColumn kol
+    alv.ContextMenu
+    alv.SelectContextMenuItem "&COL0"
+    ses.FindById("wnd[1]/tbar[0]/btn[36]").Press
+    Set g = ses.FindById("wnd[1]/usr/tabsG_TS_ALV/tabpALV_M_R9/ssubSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell", False)
+    If g Is Nothing Then
+        Err.Clear
+        If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+        ses.FindById("wnd[0]/tbar[1]/btn[33]").Press
+        Set g = ses.FindById("wnd[1]/usr/subSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell", False)
+    End If
+    If g Is Nothing Then
+        MS_Teshis etiket & " düzen penceresi bulunamadý"
+        If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+        Exit Sub
+    End If
+    secim = -1
+    For r = 0 To CLng(g.RowCount) - 1
+        ad = vbNullString: tx = vbNullString
+        ad = Trim$(CStr(g.GetCellValue(r, "VARIANT"))): tx = Trim$(CStr(g.GetCellValue(r, "TEXT")))
+        MS_Teshis etiket & " düzen " & CStr(r) & ": " & ad & " | " & tx
+        For Each y In adaylar
+            If secim < 0 And (StrComp(ad, CStr(y), vbTextCompare) = 0 Or StrComp(tx, CStr(y), vbTextCompare) = 0) Then secim = r
+        Next y
+    Next r
+    If secim >= 0 Then
+        g.SetCurrentCell secim, "TEXT"
+        g.SelectedRows = CStr(secim)
+        MS_Teshis etiket & " düzen seçildi: " & CStr(secim)
+    Else
+        g.CurrentCellColumn = "TEXT"
+        MS_Teshis etiket & " düzen: SAP varsayýlan satýrý"
+    End If
+    g.ClickCurrentCell
+    MS_Sleep 300
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    On Error GoTo 0
+End Sub
+
+' Listeyi Tablo hesaplama (&XXL) ile Excel'e aktarir; acilan kitabin verisini dondurur.
+Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
+    Dim eski As Object, wb As Workbook, sh As Worksheet, en As Worksheet, bas As Double, kol As String
+    Dim w As Object, basildi As Long
+    On Error GoTo Hata
+    Set eski = MS_AcikKitaplar()
+    kol = MS_IlkKolon(alv)
+    alv.SetCurrentCell -1, kol
+    alv.SelectColumn kol
+    alv.ContextMenu
+    alv.SelectContextMenuItem "&XXL"
+    bas = Timer
+    Do
+        DoEvents
+        For Each wb In application.Workbooks
+            If Not wb Is ThisWorkbook Then
+                If Not eski.Exists(wb.Name) Then GoTo Bulundu
+            End If
+        Next wb
+        Set wb = Nothing
+        If basildi < 4 Then
+            Set w = Nothing
+            On Error Resume Next
+            Set w = ses.FindById("wnd[1]", False)
+            If Not w Is Nothing Then
+                If Not ses.Busy Then
+                    MS_Teshis etiket & " aktarým penceresi: " & w.Text
+                    If basildi = 0 Then ses.FindById("wnd[1]/tbar[0]/btn[20]").Press
+                    Err.Clear
+                    ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+                    basildi = basildi + 1
+                End If
+            End If
+            On Error GoTo Hata
+        End If
+        If MS_Gecen(bas) > 180 Then
+            MS_Teshis etiket & ": Excel'e aktarýlan liste 180 sn içinde açýlmadý"
+            Exit Function
+        End If
+        MS_Sleep 150
+    Loop
+Bulundu:
+    For Each sh In wb.Worksheets
+        If en Is Nothing Then
+            Set en = sh
+        ElseIf sh.UsedRange.Rows.Count > en.UsedRange.Rows.Count Then
+            Set en = sh
+        End If
+    Next sh
+    MS_AlvExcel = en.UsedRange.Value2
+    MS_Teshis etiket & " Excel'e aktarýldý: " & CStr(en.UsedRange.Rows.Count) & " satýr, " & _
+        AKSORA_SAYI_METNI(MS_Gecen(bas), "0.0") & " sn"
+    wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    Exit Function
+Hata:
+    MS_Teshis etiket & " Excel aktarým hatasý: " & Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+End Function
+
+Private Function MS_BaslikSatiri(ByVal v As Variant) As Long
+    Dim r As Long, c As Long, dolu As Long
+    For r = 1 To application.Min(10, UBound(v, 1))
+        dolu = 0
+        For c = 1 To UBound(v, 2)
+            If Len(MS_Metin(v(r, c))) > 0 Then dolu = dolu + 1
+        Next c
+        If dolu >= 4 Then MS_BaslikSatiri = r: Exit Function
+    Next r
+End Function
+
+' tur: UY, DEPO, DEPOAD, MG, PARTI, MALZ, METIN, SERI, MIKTAR, BIRIM, DEGER
+Private Function MS_KolonBul(ByVal v As Variant, ByVal h As Long, ByVal tur As String) As Long
+    Dim c As Long, t As String
+    For c = 1 To UBound(v, 2)
+        t = MS_Norm(MS_Metin(v(h, c)))
+        Select Case tur
+            Case "UY": If t = "URETIMYERI" Or t = "UY" Or t = "URETIMYR" Then MS_KolonBul = c
+            Case "DEPO": If t = "DEPOYERI" Or t = "DPYR" Or t = "DEPO" Then MS_KolonBul = c
+            Case "DEPOAD": If t = "DEPOYERITANIMI" Or t = "DEPOFIKTIFGUMRUKTANIMI" Or t = "DEPOTANIMI" Then MS_KolonBul = c
+            Case "MG": If t = "MALGRUBU" Then MS_KolonBul = c
+            Case "PARTI": If t = "PARTI" Or t = "DEGERLEMETURU" Or t = "DRLTURU" Or t = "DEGERLTURU" Then MS_KolonBul = c
+            Case "MALZ": If t = "MALZEME" Or t = "MALZEMENO" Then MS_KolonBul = c
+            Case "METIN": If t = "MALZEMEKISAMETNI" Or t = "MALZEMETANIMI" Or t = "TANIM" Then MS_KolonBul = c
+            Case "SERI": If t = "SERINUMARASI" Or t = "SERINO" Then MS_KolonBul = c
+            Case "MIKTAR": If InStr(t, "TAHDITSIZ") > 0 And InStr(t, "DEGER") = 0 Then MS_KolonBul = c
+            Case "BIRIM": If t = "TEMELOLCUBIRIMI" Or t = "TOB" Or t = "BIRIM" Or t = "TEMELOLCUBRM" Then MS_KolonBul = c
+            Case "DEGER": If InStr(t, "DEGER") > 0 And InStr(t, "DEGERLEME") = 0 And InStr(t, "TURU") = 0 Then MS_KolonBul = c
+        End Select
+        If MS_KolonBul > 0 Then Exit Function
+    Next c
+End Function
+
+Private Sub MS_BaslikTeshis(ByVal v As Variant, ByVal h As Long, ByVal etiket As String)
+    Dim c As Long, t As String
+    For c = 1 To UBound(v, 2)
+        t = t & " | " & MS_Metin(v(h, c))
+    Next c
+    MS_Teshis etiket & " baþlýklar:" & t
+End Sub
+
+' IQ09: UY, Depo, Malzeme, Metin, Seri, Parti
+Private Function MS_IQ09_Oku(ByVal ses As Object) As Variant
+    Dim alv As Object, v As Variant, h As Long, k(1 To 6) As Long, r As Long, n As Long, c As Long
+    Dim sonuc() As Variant, depo As String, adlar As Variant
+    MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | IQ09 baþlýyor"
+    ses.StartTransaction "IQ09"
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/ctxtDATUV").Text = vbNullString
+    On Error GoTo 0
+    ses.FindById("wnd[0]/usr/ctxtWERK-LOW").Text = "7155"
+    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    Set alv = MS_GridBekle(ses, 900)
+    If alv Is Nothing Then Err.Raise vbObjectError + 1960, , "IQ09 sonuç listesi açýlmadý."
+    MS_Teshis "IQ09 liste: " & CStr(alv.RowCount) & " satýr"
+    MS_DuzenSec ses, alv, Array("/PANEL", "PANEL", "/AKSORA", "AKSORA"), "IQ09"
+    Set alv = MS_GridBekle(ses, 60)
+    MS_Durum "IQ09 listesi Excel'e aktarýlýyor..."
+    v = MS_AlvExcel(ses, alv, "IQ09")
+    If Not IsArray(v) Then Err.Raise vbObjectError + 1961, , "IQ09 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
+    h = MS_BaslikSatiri(v)
+    If h = 0 Then Err.Raise vbObjectError + 1962, , "IQ09 listesinde baþlýk bulunamadý."
+    MS_BaslikTeshis v, h, "IQ09"
+    adlar = Array("UY", "DEPO", "MALZ", "METIN", "SERI", "PARTI")
+    For c = 1 To 6
+        k(c) = MS_KolonBul(v, h, CStr(adlar(c - 1)))
+        If k(c) = 0 And c <> 1 And c <> 4 Then Err.Raise vbObjectError + 1963, , "IQ09 listesinde sütun bulunamadý: " & adlar(c - 1)
+    Next c
+    ReDim sonuc(1 To UBound(v, 1), 1 To 6)
+    For r = h + 1 To UBound(v, 1)
+        depo = UCase$(MS_Metin(v(r, k(2))))
+        If Len(depo) > 0 And Len(MS_Metin(v(r, k(5)))) > 0 And Len(MS_Metin(v(r, k(3)))) > 0 Then
+            n = n + 1
+            For c = 1 To 6
+                If k(c) > 0 Then sonuc(n, c) = MS_Metin(v(r, k(c))) Else sonuc(n, c) = vbNullString
+            Next c
+            sonuc(n, 2) = depo
+        End If
+    Next r
+    MS_Teshis "IQ09 stoktaki seri numarasý: " & CStr(n)
+    If n = 0 Then Err.Raise vbObjectError + 1964, , "IQ09 listesinde depoda seri numarasý bulunamadý."
+    MS_IQ09_Oku = MS_Kirp(sonuc, n, 6)
+End Function
+
+' MB52: UY, Depo, DepoAd, MG, Parti, Malzeme, Metin, Miktar, Birim, Deger
+Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
+    Dim alv As Object, v As Variant, h As Long, k(1 To 10) As Long, r As Long, n As Long, c As Long
+    Dim sonuc() As Variant, adlar As Variant, konum As Variant
+    MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | MB52 baþlýyor"
+    ses.StartTransaction "MB52"
+    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = "7155"
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
+    On Error GoTo 0
+    ses.FindById("wnd[0]").SendVKey 8
+    Set alv = MS_GridBekle(ses, 600)
+    If alv Is Nothing Then Err.Raise vbObjectError + 1970, , "MB52 sonuç listesi açýlmadý."
+    MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL"), "MB52"
+    Set alv = MS_GridBekle(ses, 60)
+    MS_Durum "MB52 listesi Excel'e aktarýlýyor..."
+    v = MS_AlvExcel(ses, alv, "MB52")
+    If Not IsArray(v) Then Err.Raise vbObjectError + 1971, , "MB52 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
+    h = MS_BaslikSatiri(v)
+    If h = 0 Then Err.Raise vbObjectError + 1972, , "MB52 listesinde baþlýk bulunamadý."
+    MS_BaslikTeshis v, h, "MB52"
+    adlar = Array("UY", "DEPO", "DEPOAD", "MG", "PARTI", "MALZ", "METIN", "MIKTAR", "BIRIM", "DEGER")
+    konum = Array(1, 2, 3, 4, 6, 7, 8, 9, 10, 11)
+    For c = 1 To 10
+        k(c) = MS_KolonBul(v, h, CStr(adlar(c - 1)))
+    Next c
+    ' PANEL duzeninin bilinen sirasi yedek olarak kullanilir.
+    If (k(2) = 0 Or k(6) = 0 Or k(8) = 0 Or k(10) = 0) And UBound(v, 2) >= 11 Then
+        For c = 1 To 10: k(c) = konum(c - 1): Next c
+        MS_Teshis "MB52 sütunlarý PANEL sýrasýyla eþlendi"
+    End If
+    For c = 1 To 10
+        If k(c) = 0 And c <> 3 And c <> 7 And c <> 9 Then Err.Raise vbObjectError + 1973, , "MB52 listesinde sütun bulunamadý: " & adlar(c - 1)
+    Next c
+    ReDim sonuc(1 To UBound(v, 1), 1 To 10)
+    For r = h + 1 To UBound(v, 1)
+        If Len(MS_Metin(v(r, k(6)))) > 0 And Len(MS_Metin(v(r, k(2)))) > 0 Then
+            If k(1) = 0 Or MS_Metin(v(r, k(1))) = "7155" Then
+                n = n + 1
+                For c = 1 To 10
+                    If k(c) > 0 Then sonuc(n, c) = MS_Metin(v(r, k(c))) Else sonuc(n, c) = vbNullString
+                Next c
+                sonuc(n, 2) = UCase$(CStr(sonuc(n, 2)))
+                sonuc(n, 8) = MS_SayiSifir(v(r, k(8)))
+                sonuc(n, 10) = MS_SayiSifir(v(r, k(10)))
+            End If
+        End If
+    Next r
+    MS_Teshis "MB52 satýr: " & CStr(n)
+    If n = 0 Then Err.Raise vbObjectError + 1974, , "MB52 listesinde 7155 stok satýrý bulunamadý."
+    MS_MB52_Oku = MS_Kirp(sonuc, n, 10)
+End Function
+
+Private Function MS_SayiSifir(ByVal v As Variant) As Double
+    Dim d As Double
+    If VarType(v) = vbDouble Or VarType(v) = vbCurrency Or VarType(v) = vbLong Or VarType(v) = vbInteger Then
+        MS_SayiSifir = CDbl(v)
+    ElseIf MS_SayiDene(v, d) Then
+        MS_SayiSifir = d
+    End If
+End Function
+
+Private Function MS_Kirp(ByRef a As Variant, ByVal n As Long, ByVal k As Long) As Variant
+    Dim s() As Variant, r As Long, c As Long
+    ReDim s(1 To n, 1 To k)
+    For r = 1 To n
+        For c = 1 To k: s(r, c) = a(r, c): Next c
+    Next r
+    MS_Kirp = s
+End Function
+
+Private Function MS_GrupSeri(ByVal mg As String) As Boolean
+    MS_GrupSeri = (mg = "M03550000" Or mg = "M03250000")
+End Function
+
+' IQ09 + MB52 -> AKSORA satirlari (14 sutun). Seri gruplari MB52'den silinir.
+Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef ozet As String) As Variant
+    Dim d As Object, mgOf As Object, brOf As Object, adOf As Object, sayac As Object
+    Dim r As Long, n As Long, h As Long, k As String, ks As String, t As Variant, mg As String
+    Dim depo As String, malz As String, parti As String, birim As Double, ad As String, fark As Long
+    Dim cikti() As Variant, nIq As Long, nMb As Long, x As Variant
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set mgOf = CreateObject("Scripting.Dictionary"): mgOf.CompareMode = vbTextCompare
+    Set brOf = CreateObject("Scripting.Dictionary"): brOf.CompareMode = vbTextCompare
+    Set adOf = CreateObject("Scripting.Dictionary"): adOf.CompareMode = vbTextCompare
+    Set sayac = CreateObject("Scripting.Dictionary"): sayac.CompareMode = vbTextCompare
+    For r = 1 To UBound(mb, 1)
+        malz = MS_Malzeme(mb(r, 6)): depo = CStr(mb(r, 2)): parti = AKFIX_NORMAL(CStr(mb(r, 5)))
+        For Each x In Array(depo, "*")
+            k = CStr(x) & "|" & malz & "|" & parti
+            If d.Exists(k) Then
+                t = d(k): t(0) = t(0) + CDbl(mb(r, 8)): t(1) = t(1) + CDbl(mb(r, 10)): d(k) = t
+            Else
+                d.Add k, Array(CDbl(mb(r, 8)), CDbl(mb(r, 10)))
+            End If
+        Next x
+        If Len(CStr(mb(r, 4))) > 0 Then mgOf(malz) = CStr(mb(r, 4))
+        If Len(CStr(mb(r, 9))) > 0 Then brOf(malz) = CStr(mb(r, 9))
+        If Len(CStr(mb(r, 3))) > 0 Then adOf(depo) = CStr(mb(r, 3))
+    Next r
+    ReDim cikti(1 To UBound(iq, 1) + UBound(mb, 1), 1 To 14)
+    ' 1) Seri numarali stok (IQ09), her satir 1 adet
+    For r = 1 To UBound(iq, 1)
+        depo = CStr(iq(r, 2)): h = MS_Hedef(depo)
+        If h > 0 And (Len(CStr(iq(r, 1))) = 0 Or CStr(iq(r, 1)) = "7155") Then
+            malz = MS_Malzeme(iq(r, 3)): parti = AKFIX_NORMAL(CStr(iq(r, 6)))
+            mg = vbNullString: If mgOf.Exists(malz) Then mg = mgOf(malz)
+            If h <> 2 Or mg = vbNullString Or mg = "M03550000" Or mg = "M03550100" Or mg = "M03250000" Then
+                n = n + 1: nIq = nIq + 1
+                ad = MS_DepoAdi("7155", depo): If Len(ad) = 0 And adOf.Exists(depo) Then ad = adOf(depo)
+                cikti(n, 1) = "7155": cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
+                cikti(n, 5) = CStr(iq(r, 3)): cikti(n, 6) = CStr(iq(r, 4)): cikti(n, 7) = 1
+                cikti(n, 8) = "ADT": If brOf.Exists(malz) Then cikti(n, 8) = brOf(malz)
+                cikti(n, 9) = CStr(iq(r, 6)): cikti(n, 10) = CStr(iq(r, 5))
+                k = depo & "|" & malz & "|" & parti
+                sayac(k) = sayac(k) + 1
+                If Not d.Exists(k) Then k = "*|" & malz & "|" & parti
+                If d.Exists(k) Then
+                    t = d(k)
+                    If CDbl(t(0)) <> 0 Then cikti(n, 11) = Round(CDbl(t(1)) / CDbl(t(0)), 2): cikti(n, 13) = "SAP"
+                End If
+            End If
+        End If
+    Next r
+    ' 2) Toplu stok (MB52); seri numarali iki grup IQ09'dan geldigi icin atlanir.
+    For r = 1 To UBound(mb, 1)
+        depo = CStr(mb(r, 2)): h = MS_Hedef(depo): mg = CStr(mb(r, 4))
+        malz = MS_Malzeme(mb(r, 6)): parti = AKFIX_NORMAL(CStr(mb(r, 5)))
+        If h > 0 And MS_GrupSeri(mg) Then
+            k = depo & "|" & malz & "|" & parti
+            If CLng(CDbl(mb(r, 8))) <> CLng(sayac(k)) Then fark = fark + 1
+        End If
+        If h > 0 And Not MS_GrupSeri(mg) And (h <> 2 Or mg = "M03550100") And CDbl(mb(r, 8)) <> 0 Then
+            n = n + 1: nMb = nMb + 1
+            ad = MS_DepoAdi("7155", depo): If Len(ad) = 0 Then ad = CStr(mb(r, 3))
+            cikti(n, 1) = "7155": cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
+            cikti(n, 5) = CStr(mb(r, 6)): cikti(n, 6) = CStr(mb(r, 7)): cikti(n, 7) = CDbl(mb(r, 8))
+            cikti(n, 8) = CStr(mb(r, 9)): cikti(n, 9) = CStr(mb(r, 5)): cikti(n, 10) = vbNullString
+            cikti(n, 11) = Round(CDbl(mb(r, 10)), 2): cikti(n, 13) = "SAP"
+        End If
+    Next r
+    ozet = "IQ09 seri numaralý " & AKSORA_SAYI_METNI(nIq, "#,##0") & " satýr  |  MB52 toplu " & _
+        AKSORA_SAYI_METNI(nMb, "#,##0") & " satýr" & IIf(fark > 0, "  |  IQ09/MB52 adet farký: " & fark & " kalem", "")
+    MS_Teshis ozet
+    If n = 0 Then Err.Raise vbObjectError + 1980, , "IQ09 ve MB52'den müþteri depolarýna ait stok bulunamadý."
+    MS_Sirala cikti, n
+    MS_Birlestir = MS_Kirp(cikti, n, 14)
+End Function
+
+' Satirlar sayfa, depo, mal grubu, malzeme ve seri numarasina gore siralanir.
+Private Sub MS_Sirala(ByRef a As Variant, ByVal n As Long)
+    Dim anahtar() As String, idx() As Long, r As Long, c As Long, gecici() As Variant
+    If n < 2 Then Exit Sub
+    ReDim anahtar(1 To n): ReDim idx(1 To n)
+    For r = 1 To n
+        idx(r) = r
+        anahtar(r) = CStr(MS_Hedef(CStr(a(r, 2)))) & "|" & CStr(a(r, 2)) & "|" & CStr(a(r, 4)) & "|" & _
+            Right$(String$(20, "0") & CStr(a(r, 5)), 20) & "|" & CStr(a(r, 9)) & "|" & Right$(String$(30, " ") & CStr(a(r, 10)), 30)
+    Next r
+    MS_HizliSirala anahtar, idx, 1, n
+    ReDim gecici(1 To n, 1 To 14)
+    For r = 1 To n
+        For c = 1 To 14: gecici(r, c) = a(idx(r), c): Next c
+    Next r
+    For r = 1 To n
+        For c = 1 To 14: a(r, c) = gecici(r, c): Next c
+    Next r
+End Sub
+
+Private Sub MS_HizliSirala(ByRef k() As String, ByRef idx() As Long, ByVal ilk As Long, ByVal son As Long)
+    Dim i As Long, j As Long, pivot As String, t As Long
+    i = ilk: j = son
+    pivot = k(idx((ilk + son) \ 2))
+    Do While i <= j
+        Do While StrComp(k(idx(i)), pivot, vbBinaryCompare) < 0: i = i + 1: Loop
+        Do While StrComp(k(idx(j)), pivot, vbBinaryCompare) > 0: j = j - 1: Loop
+        If i <= j Then
+            t = idx(i): idx(i) = idx(j): idx(j) = t
+            i = i + 1: j = j - 1
+        End If
+    Loop
+    If ilk < j Then MS_HizliSirala k, idx, ilk, j
+    If i < son Then MS_HizliSirala k, idx, i, son
+End Sub
+
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
     If IsError(v) Then Exit Function
@@ -797,7 +1233,7 @@ End Sub
 
 Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     Dim ses As Object, hMesaj As String, bir As Variant, iki As Variant, d As Object
-    Dim mb As Object, mbMesaj As String
+    Dim mb As Object, mbMesaj As String, iq As Variant, mbv As Variant
     Dim sayfa(1 To 3) As Worksheet, yeni(1 To 3) As Variant, eski(1 To 3) As Variant
     Dim tarihEski(1 To 3) As Variant, sonEski(1 To 3) As Long
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, yazildi As Boolean
@@ -814,9 +1250,10 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
     ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
     On Error GoTo Hata
-    ' Fiyat listesi SAP'a gitmeden önce doðrulanýr.
+    ' Fiyat listesi yalnizca MB52'de karsiligi olmayan satirlar icin yedektir.
     Set d = MF_FIYAT_SOZLUGU(tarih, hMesaj)
-    If d Is Nothing Then Err.Raise vbObjectError + 1930, , hMesaj
+    If d Is Nothing Then Set d = CreateObject("Scripting.Dictionary")
+    hMesaj = vbNullString
     Set ses = SAP_SESSION_AL("CDP", hMesaj)
     If ses Is Nothing Then Err.Raise vbObjectError + 1918, , hMesaj
     adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
@@ -825,27 +1262,19 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     Next i
     application.EnableEvents = False: application.Calculation = xlCalculationManual
     AKSORA_V11_MESGUL = True
-    MS_Durum "1/2 | CDP + Yüklenici depolarý (E001-E999, D/Z/S/EM, M132)..."
-    bir = MS_Sorgu(ses, False)
-    MS_Durum "2/2 | Ýlçe depolarý K001-K999 ve üç mal grubu..."
-    iki = MS_Sorgu(ses, True)
-    MS_KapsamKontrol bir, 1, 3, False
-    MS_KapsamKontrol iki, 2, 2, True
-    MS_SeriKontrol bir: MS_SeriKontrol iki
-    MS_SeriBirlesimKontrol bir, iki
+    MS_Durum "1/2 | IQ09 seri numaralý stok (7155)..."
+    iq = MS_IQ09_Oku(ses)
+    MS_Durum "2/2 | MB52 toplu stok ve deðerler (7155)..."
+    mbv = MS_MB52_Oku(ses)
+    MS_Durum "Listeler birleþtiriliyor..."
+    bir = MS_Birlestir(iq, mbv, mbMesaj)
+    MS_SeriKontrol bir
     mFiyatTur = True
-    MS_Durum "MB52 deðerleri alýnýyor (7155)..."
-    Set mb = MS_MB52_SOZLUK(mbMesaj)
-    If Not mb Is Nothing Then
-        MS_Mb52Uygula bir, mb
-        MS_Mb52Uygula iki, mb
-    End If
     MS_Durum "Deðerler uygulanýyor..."
     eksik = MS_FiyatUygula(bir, d, Format$(tarih, "dd.mm.yyyy"))
-    eksik = eksik + MS_FiyatUygula(iki, d, Format$(tarih, "dd.mm.yyyy"))
-    yeni(1) = MS_Ayir(bir, 1): yeni(2) = iki: yeni(3) = MS_Ayir(bir, 3)
+    yeni(1) = MS_Ayir(bir, 1): yeni(2) = MS_Ayir(bir, 2): yeni(3) = MS_Ayir(bir, 3)
     For i = 1 To 3
-        sonEski(i) = application.Max(7, sayfa(i).Cells(sayfa(i).Rows.Count, "E").End(xlUp).Row)
+        sonEski(i) = application.Max(7, AKSORA_M_SON(sayfa(i)))
         eski(i) = sayfa(i).Range("A7:N" & sonEski(i)).Value2
         tarihEski(i) = sayfa(i).Range("C2").Value
         If IsEmpty(yeni(i)) Then adet(i) = 0 Else adet(i) = UBound(yeni(i), 1)
@@ -853,6 +1282,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     yazildi = True
     For i = 1 To 3: MS_Yaz sayfa(i), yeni(i): Next i
     yazildi = False
+    MS_Teshis "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & " | " & _
+        AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn"
     MS_Durum "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & _
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
@@ -862,12 +1293,10 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
         "Ýlçe stok satýrý: " & AKSORA_SAYI_METNI(adet(2), "#,##0") & vbCrLf & _
         "Yüklenici stok satýrý: " & AKSORA_SAYI_METNI(adet(3), "#,##0") & vbCrLf & vbCrLf & _
+        mbMesaj & vbCrLf & _
         "Deðer kaynaðý: SAP MB52 " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
             AKSORA_SAYI_METNI(mListeSatir, "#,##0") & " satýr" & vbCrLf & _
-        "Fiyatý bulunamayan/belirsiz satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & vbCrLf & _
-        IIf(Len(mbMesaj) > 0, "MB52: " & Replace(mbMesaj, vbCrLf, " ") & vbCrLf, "") & _
-        "Okuma: " & IIf(mStandartSatir = 0, "Hýzlý (Excel)", IIf(mHizliSatir = 0, "Standart", "Karma")) & _
-            IIf(Len(mHizliSebep) > 0, "  |  Hýzlý okuma kullanýlamadý: " & mHizliSebep, "") & vbCrLf & _
+        "Fiyatý bulunamayan satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri 7155"
 Cikis:
     MS_OleUyariAc
