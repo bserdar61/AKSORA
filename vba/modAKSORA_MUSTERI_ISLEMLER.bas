@@ -1043,23 +1043,23 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_ARAMA_TEMIZLE()
-    Dim ws As Worksheet, eski As Long, ev As Boolean
-    ev = application.EnableEvents
+    Dim ws As Worksheet, eski As Long, ev As Boolean, sc As Boolean
+    ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
-    application.EnableEvents = False
+    application.EnableEvents = False: application.ScreenUpdating = False
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
     eski = application.Max(13, AKSORA_M_SON(ws))
     ws.Range("A13:N" & eski).ClearContents
     ws.Range("B6").MergeArea.ClearContents
     M_TABLO_BICIM ws, 13, 12, 13, "", ""
-    application.EnableEvents = ev
-    AKSORA_MUSTERI_BANT ws
+    ws.Range(ws.Cells(13, 75), ws.Cells(application.Max(13, eski), 75)).ClearContents
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
+    application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:
-    application.EnableEvents = ev
+    application.EnableEvents = ev: application.ScreenUpdating = sc
     AKSORA_HATA_GOSTER "Arama temizleme", Err.Number, Err.Description
 End Sub
 
@@ -1185,3 +1185,29 @@ Private Function M_IMZA(ByVal ws As Worksheet) As String
     On Error GoTo 0
     M_IMZA = t
 End Function
+
+' Stok sayfasindan cikinca filtreler ve depo secimi ilk haline doner.
+Public Sub AKSORA_MUSTERI_FILTRE_SIFIRLA(ByVal haric As String)
+    Dim ad As Variant, sh As Worksheet, s As Shape, korumali As Boolean
+    On Error Resume Next
+    For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+        If CStr(ad) <> haric Then
+            Set sh = Nothing
+            Set sh = ThisWorkbook.Worksheets(CStr(ad))
+            If Not sh Is Nothing Then
+                If sh.FilterMode Then
+                    korumali = sh.ProtectContents
+                    If korumali Then sh.Unprotect ""
+                    sh.ShowAllData
+                    For Each s In sh.Shapes
+                        If InStr(s.Name, "DEPO_KART_LISTE") > 0 Then s.ControlFormat.Value = 1
+                    Next s
+                    If korumali Then sh.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+                        UserInterfaceOnly:=True, AllowFiltering:=True
+                    AKSORA_MUSTERI_BANT sh
+                End If
+            End If
+        End If
+    Next ad
+    On Error GoTo 0
+End Sub

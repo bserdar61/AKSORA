@@ -32,6 +32,8 @@ Private mListeSatir As Long
 Private mStandartOnay As Boolean
 Private mDisaDosyalar As Collection
 Private mBasZamanMetin As String
+Private mFiyatsiz As String
+Private mFiyatsizAdet As Long
 Private mCalisiyor As Boolean
 Private mBas As Double
 Private mDurum As String
@@ -1391,7 +1393,14 @@ Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tar
             a(r, 13) = "Fiyat listede yok"
         End If
       End If
-        If CLng(a(r, 14)) > 0 Then eksik = eksik + 1
+        If CLng(a(r, 14)) > 0 Then
+            eksik = eksik + 1
+            mFiyatsizAdet = mFiyatsizAdet + 1
+            MS_Teshis "Fiyatsýz: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
+                " | parti '" & CStr(a(r, 9)) & "' | seri " & CStr(a(r, 10)) & " | " & CStr(a(r, 13))
+            If mFiyatsizAdet <= 5 Then mFiyatsiz = mFiyatsiz & vbCrLf & "   • " & CStr(a(r, 5)) & " " & _
+                Left$(CStr(a(r, 6)), 28) & "  (" & CStr(a(r, 2)) & ", parti: " & IIf(Len(CStr(a(r, 9))) > 0, CStr(a(r, 9)), "boþ") & ")"
+        End If
     Next r
     MS_FiyatUygula = eksik
 End Function
@@ -1483,6 +1492,7 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     mHizliSebep = vbNullString: mHizliSatir = 0: mStandartSatir = 0: mSapSatir = 0: mListeSatir = 0
     mStandartOnay = False
     Set mDisaDosyalar = Nothing
+    mFiyatsiz = vbNullString: mFiyatsizAdet = 0
     mBasZamanMetin = Format$(Now - TimeSerial(0, 0, 2), "yyyymmddhhnnss")
     MS_OleUyariKapat
     AKSORA_MUSTERI_PANEL_YENILE True
@@ -1537,7 +1547,7 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         mbMesaj & vbCrLf & _
         "Deðer kaynaðý: SAP MB52 " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
             AKSORA_SAYI_METNI(mListeSatir, "#,##0") & " satýr" & vbCrLf & _
-        "Fiyatý bulunamayan satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & vbCrLf & _
+        "Fiyatý bulunamayan satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & mFiyatsiz & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri 7155"
 Cikis:
     MS_OleUyariAc

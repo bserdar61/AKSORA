@@ -770,14 +770,19 @@ Hata:
 End Function
 
 Public Sub AKSORA_MUSTERI_ARAMA_KPI_YENILE()
-    Dim ws As Worksheet
+    Dim ws As Worksheet, ev As Boolean, sc As Boolean
+    ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
     ws.Unprotect ""
-    ' Yeni arama sonuclari daha uzun ise filtre alanini da genislet.
-    If ws.AutoFilterMode Then ws.AutoFilterMode = False
+    ' Filtre yalnizca sonuc alanini kapsamiyorsa yeniden kurulur.
+    If ws.AutoFilterMode Then
+        If ws.AutoFilter.Range.Row <> 12 Or ws.AutoFilter.Range.Rows.Count < AKSORA_M_SON(ws) - 11 Then ws.AutoFilterMode = False
+    End If
     TEMA_ARAMA_KPI_FORMULLER ws
 Cikis:
+    application.EnableEvents = ev: application.ScreenUpdating = sc
     If Not ws Is Nothing Then
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
         ws.EnableSelection = xlNoRestrictions
@@ -789,8 +794,10 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
-    Dim ws As Worksheet, kod As String, isim As String, s As Shape, ad As String
+    Dim ws As Worksheet, kod As String, isim As String, s As Shape, ad As String, ev As Boolean, sc As Boolean
+    ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
     kod = ws.Shapes(CStr(application.Caller)).AlternativeText
     Select Case kod
@@ -824,11 +831,16 @@ Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
     Next s
     ws.Calculate
     AKSORA_MUSTERI_ARAMA_KPI_HESAPLA ws
+    AKSORA_MUSTERI_BANT ws
 Cikis:
+    On Error Resume Next
     If Not ws Is Nothing Then
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
         ws.EnableSelection = xlNoRestrictions
+        If Not (ActiveSheet Is ws) Then ws.Activate
+        ws.Range("B6").Select
     End If
+    application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
@@ -1107,6 +1119,10 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     On Error Resume Next
     application.MoveAfterReturn = (ws.Name <> "M_MALZEME_ARA")
     On Error GoTo Hata
+    AKSORA_MUSTERI_FILTRE_SIFIRLA ws.Name
+    If ws.Name = "M_MALZEME_ARA" Then
+        If AKSORA_M_SON(ws) >= 13 Or Len(Trim$(CStr(ws.Range("B6").Value2))) > 0 Then AKSORA_MUSTERI_ARAMA_TEMIZLE
+    End If
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
     If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then GoTo Cikis
     genislik = ws.Range("A1:L1").Width
