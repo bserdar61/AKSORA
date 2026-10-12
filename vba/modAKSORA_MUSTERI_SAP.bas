@@ -833,12 +833,11 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
                     MS_Teshis etiket & " dosya bulundu: " & dosya & " (" & CStr(boy) & " bayt)"
                     If mDisaDosyalar Is Nothing Then Set mDisaDosyalar = New Collection
                     mDisaDosyalar.Add dosya
-                    ' SAP'nin Excel'i dosyayi kilitli tutabilir; kopyasi okunur.
-                    kopya = Environ$("TEMP") & "\AKSORA_" & etiket & "_" & Format$(Now, "hhnnss") & ".xlsx"
-                    FileCopy dosya, kopya
-                    mDisaDosyalar.Add kopya
+                    ' SAP'nin actigi Excel dosyayi kilitler; once o kapatilir, sonra salt okunur acilir.
+                    MS_ExcelTemizle
+                    MS_Sleep 700
                     application.DisplayAlerts = False
-                    Set wb = Workbooks.Open(Filename:=kopya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+                    Set wb = Workbooks.Open(Filename:=dosya, ReadOnly:=True, UpdateLinks:=0, Notify:=False, AddToMru:=False)
                     application.DisplayAlerts = True
                     kendimiz = True
                     GoTo Bulundu
@@ -935,11 +934,7 @@ Private Function MS_IQ09_Oku(ByVal ses As Object) As Variant
     MS_DuzenSec ses, alv, Array("/PANEL", "PANEL", "/AKSORA", "AKSORA"), "IQ09"
     Set alv = MS_GridBekle(ses, 60)
     MS_Durum "IQ09 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvMetin(ses, alv, "IQ09")
-    If Not IsArray(v) Then
-        Set alv = MS_GridBekle(ses, 30)
-        v = MS_AlvExcel(ses, alv, "IQ09")
-    End If
+    v = MS_AlvExcel(ses, alv, "IQ09")
     If Not IsArray(v) Then Err.Raise vbObjectError + 1961, , "IQ09 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1962, , "IQ09 listesinde baþlýk bulunamadý."
@@ -982,11 +977,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL"), "MB52"
     Set alv = MS_GridBekle(ses, 60)
     MS_Durum "MB52 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvMetin(ses, alv, "MB52")
-    If Not IsArray(v) Then
-        Set alv = MS_GridBekle(ses, 30)
-        v = MS_AlvExcel(ses, alv, "MB52")
-    End If
+    v = MS_AlvExcel(ses, alv, "MB52")
     If Not IsArray(v) Then Err.Raise vbObjectError + 1971, , "MB52 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1972, , "MB52 listesinde baþlýk bulunamadý."
@@ -1084,9 +1075,14 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
                 cikti(n, 5) = CStr(iq(r, 3)): cikti(n, 6) = CStr(iq(r, 4)): cikti(n, 7) = 1
                 cikti(n, 8) = "ADT": If brOf.Exists(malz) Then cikti(n, 8) = brOf(malz)
                 cikti(n, 9) = CStr(iq(r, 6)): cikti(n, 10) = CStr(iq(r, 5))
+                ' Eslesme sirasi: depo+parti, il+parti, depo+bos parti, il+bos parti
+                ' (bos parti = SAP'de degerleme turu ayrimi olmayan malzeme).
                 k = depo & "|" & malz & "|" & parti
+                If Not d.Exists(k) And Not d.Exists("*|" & malz & "|" & parti) Then
+                    If d.Exists(depo & "|" & malz & "|") Or d.Exists("*|" & malz & "|") Then k = depo & "|" & malz & "|"
+                End If
                 sayac(k) = sayac(k) + 1
-                If Not d.Exists(k) Then k = "*|" & malz & "|" & parti
+                If Not d.Exists(k) Then k = "*|" & Mid$(k, Len(depo) + 2)
                 If d.Exists(k) Then
                     t = d(k)
                     If CDbl(t(0)) <> 0 Then cikti(n, 11) = Round(CDbl(t(1)) / CDbl(t(0)), 2): cikti(n, 13) = "SAP"
