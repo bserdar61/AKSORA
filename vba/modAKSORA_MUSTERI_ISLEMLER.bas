@@ -704,7 +704,11 @@ Private Sub M_TABLO_BICIM(ByVal ws As Worksheet, ByVal ilk As Long, ByVal son As
     If eskiSon < ilk + 200 Then eskiSon = ilk + 200
     If eskiSon > son Then
         ws.Range(ws.Cells(application.Max(ilk, son + 1), 1), ws.Cells(eskiSon, sonKol)).ClearFormats
-        ws.Range(ws.Rows(application.Max(ilk, son + 1)), ws.Rows(eskiSon)).RowHeight = ws.StandardHeight
+        If ws.Name = "M_MALZEME_ARA" Then
+            ws.Range(ws.Rows(ilk), ws.Rows(eskiSon)).RowHeight = 22.05
+        Else
+            ws.Range(ws.Rows(application.Max(ilk, son + 1)), ws.Rows(eskiSon)).RowHeight = ws.StandardHeight
+        End If
     End If
     If son < ilk Then Exit Sub
     Set alan = ws.Range(ws.Cells(ilk, 1), ws.Cells(son, sonKol))
@@ -724,7 +728,7 @@ Private Sub M_TABLO_BICIM(ByVal ws As Worksheet, ByVal ilk As Long, ByVal son As
             End With
         End If
     End With
-    ws.Range(ws.Rows(ilk), ws.Rows(son)).RowHeight = 20.25
+    ws.Range(ws.Rows(ilk), ws.Rows(son)).RowHeight = IIf(ws.Name = "M_MALZEME_ARA", 22.05, 20.25)
     M_BANT_KUR ws, alan
     If Len(metinKol) > 0 Then
         For Each c In Split(metinKol, ",")

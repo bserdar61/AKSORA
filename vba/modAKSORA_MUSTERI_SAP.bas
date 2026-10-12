@@ -10,9 +10,23 @@ Option Explicit
 
 #If VBA7 Then
 Private Declare PtrSafe Sub MS_Sleep Lib "kernel32" Alias "Sleep" (ByVal ms As Long)
+Private Declare PtrSafe Function MS_CoRegisterMessageFilter Lib "ole32" Alias "CoRegisterMessageFilter" _
+    (ByVal yeni As LongPtr, ByRef onceki As LongPtr) As Long
+Private mOleFiltre As LongPtr
+Private mOleBos As LongPtr
 #Else
 Private Declare Sub MS_Sleep Lib "kernel32" Alias "Sleep" (ByVal ms As Long)
+Private Declare Function MS_CoRegisterMessageFilter Lib "ole32" Alias "CoRegisterMessageFilter" _
+    (ByVal yeni As Long, ByRef onceki As Long) As Long
+Private mOleFiltre As Long
+Private mOleBos As Long
 #End If
+Private mOleKapali As Boolean
+Private mHizliSebep As String
+Private mHizliSatir As Long
+Private mStandartSatir As Long
+Private mSapSatir As Long
+Private mListeSatir As Long
 Private mCalisiyor As Boolean
 Private mBas As Double
 Private mDurum As String
@@ -53,6 +67,41 @@ End Sub
 
 
 
+Private Sub MS_OleUyariKapat()
+    If mOleKapali Then Exit Sub
+    On Error Resume Next
+    MS_CoRegisterMessageFilter 0, mOleFiltre
+    mOleKapali = (Err.Number = 0)
+    On Error GoTo 0
+End Sub
+
+Private Sub MS_OleUyariAc()
+    If Not mOleKapali Then Exit Sub
+    On Error Resume Next
+    MS_CoRegisterMessageFilter mOleFiltre, mOleBos
+    mOleKapali = False
+    On Error GoTo 0
+End Sub
+
+Private Function MS_SayiDene(ByVal v As Variant, ByRef sonuc As Double) As Boolean
+    On Error GoTo Cikis
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If Len(Trim$(CStr(v))) = 0 Then Exit Function
+    sonuc = MS_Sayi(v)
+    MS_SayiDene = True
+Cikis:
+End Function
+
+' SAP raporundaki deger sutunu satir degeri olarak alinir (Yeni / Cikma / Hurda ayri degerlenir).
+Private Sub MS_SapDeger(ByRef buf As Variant, ByVal r As Long)
+    Dim d As Double
+    If MS_SayiDene(buf(r, 11), d) Then
+        buf(r, 11) = d: buf(r, 13) = "SAP"
+    Else
+        buf(r, 11) = vbNullString
+    End If
+End Sub
+
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
     If IsError(v) Then Exit Function
@@ -74,7 +123,8 @@ Private Function MS_Alan(ByVal baslik As String, ByVal fiyat As Boolean) As Long
         Case "TOB", "TEMELOLCUBIRIMI", "BIRIM", "MEINS": MS_Alan = 8
         Case "DEGERLEMETURU", "DEGERLTURU", "BWTAR": MS_Alan = 9
         Case "SERINUMARASI", "SERINUM", "SERINO", "SERNR": MS_Alan = 10
-        Case "DEGER", "DEGERTL", "STOKDEGERI", "TOPLAMSTOKDEGERI", "SALK3": MS_Alan = 11
+        Case "DEGER", "DEGERTL", "DEGERTRY", "STOKDEGERI", "STOKDEGER", "TOPLAMSTOKDEGERI", "TOPLAMDEGER", _
+             "DEGERI", "TUTAR", "TOPLAMTUTAR", "STOKTUTARI", "KAYITLIDEGER", "SALK3", "WERT", "GSWRT": MS_Alan = 11
     End Select
 End Function
 
@@ -253,6 +303,12 @@ End Sub
 Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tarihMetni As String) As Long
     Dim r As Long, k As String, v As Variant, eksik As Long
     For r = 1 To UBound(a, 1)
+      If (CStr(a(r, 13)) = "SAP" Or CStr(a(r, 13)) = "SAP deðeri") And Not IsEmpty(a(r, 11)) And VarType(a(r, 11)) <> vbString Then
+        a(r, 13) = "SAP deðeri": a(r, 14) = 0
+        If IsNumeric(a(r, 7)) And CDbl(a(r, 7)) <> 0 Then a(r, 12) = CDbl(a(r, 11)) / CDbl(a(r, 7)) Else a(r, 12) = vbNullString
+        mSapSatir = mSapSatir + 1
+      Else
+        mListeSatir = mListeSatir + 1
         k = MF_Anahtar(a(r, 5), a(r, 9))
         a(r, 11) = vbNullString: a(r, 12) = vbNullString: a(r, 14) = 1
         If d.Exists(k) Then
@@ -270,6 +326,7 @@ Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tar
         Else
             a(r, 13) = "Fiyat listede yok"
         End If
+      End If
         If CLng(a(r, 14)) > 0 Then eksik = eksik + 1
     Next r
     MS_FiyatUygula = eksik
@@ -358,6 +415,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         MsgBox "Bu aktarým yalnýzca 7155 / Artvin için hazýrlanmýþtýr.", vbExclamation, "AKSORA": Exit Sub
     End If
     mCalisiyor = True: mBas = Timer: mSeritZaman = 0
+    mHizliSebep = vbNullString: mHizliSatir = 0: mStandartSatir = 0: mSapSatir = 0: mListeSatir = 0
+    MS_OleUyariKapat
     AKSORA_MUSTERI_PANEL_YENILE True
     AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
     ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
@@ -404,10 +463,14 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
         "Ýlçe stok satýrý: " & AKSORA_SAYI_METNI(adet(2), "#,##0") & vbCrLf & _
         "Yüklenici stok satýrý: " & AKSORA_SAYI_METNI(adet(3), "#,##0") & vbCrLf & vbCrLf & _
+        "Deðer kaynaðý: SAP raporu " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
+            AKSORA_SAYI_METNI(mListeSatir, "#,##0") & " satýr" & vbCrLf & _
         "Fiyatý bulunamayan/belirsiz satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & vbCrLf & _
-        "Fiyat listesi tarihi: " & Format$(tarih, "dd.mm.yyyy hh:nn") & vbCrLf & _
+        "Okuma: " & IIf(mStandartSatir = 0, "Hýzlý (dosya)", IIf(mHizliSatir = 0, "Standart", "Karma")) & _
+            IIf(Len(mHizliSebep) > 0, "  |  Hýzlý okuma kullanýlamadý: " & mHizliSebep, "") & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri 7155"
 Cikis:
+    MS_OleUyariAc
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
     application.StatusBar = False: AKSORA_V11_MESGUL = False: mCalisiyor = False
     Exit Sub
@@ -473,11 +536,12 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     MS_Durum asama & " | Liste dosyaya aktarýlýyor..."
     hizli = MS_ALV_Dosya(ses, alv, kolonlar, ids, n, fiyat)
     If IsArray(hizli) Then
+        mHizliSatir = mHizliSatir + UBound(hizli, 1)
         MS_Durum asama & " | " & CStr(UBound(hizli, 1)) & " satýr okundu"
         MS_ALV_Oku = hizli
         Exit Function
     End If
-    MS_Durum asama
+    MS_Durum asama & IIf(Len(mHizliSebep) > 0, " | standart okuma (" & mHizliSebep & ")", "")
     blok = application.Min(30, CLng(alv.VisibleRowCount))
     If blok < 1 Then Err.Raise vbObjectError + 1925, , "ALV görünür satýr sayýsý okunamadý."
     ReDim buf(1 To n, 1 To 14)
@@ -525,6 +589,7 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
                     If Len(Trim$(CStr(buf(adet, 11)))) > 0 Then buf(adet, 11) = MS_Sayi(buf(adet, 11))
                 Else
                     buf(adet, 10) = CStr(satir(10))
+                    MS_SapDeger buf, adet
                 End If
                 For Each x In Array(1, 2, 4, 5, 8, 9)
                     buf(adet, CLng(x)) = Trim$(CStr(buf(adet, CLng(x))))
@@ -534,6 +599,7 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
         MS_Durum asama & " | ALV " & CStr(bitis + 1) & "/" & CStr(n)
     Next bas
     If adet = 0 Then Err.Raise vbObjectError + 1928, , "ALV'de stok kaydý bulunamadý."
+    mStandartSatir = mStandartSatir + adet
     ReDim sonuc(1 To adet, 1 To 14)
     For r = 1 To adet
         For c = 1 To 14: sonuc(r, c) = buf(r, c): Next c
@@ -631,15 +697,16 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     Dim baslik As Long, i As Long, j As Long, c As Long, r As Long, adet As Long, veri As Long
     Dim pos(1 To 11) As Long, sira As Object, buf() As Variant, sonuc() As Variant
     Dim satir(1 To 14) As Variant, ozet As Boolean, x As Variant, k As Long, dogru As Boolean
-    Dim kontrol As Variant, a As String, b As String, y As Variant
+    Dim kontrol As Variant, a As String, b As String, y As Variant, rb As Object, sonVeri As Long
     On Error GoTo Hata
+    mHizliSebep = "kolon eþleþmesi"
     kc = CLng(kolonlar.Count)
     Set sira = CreateObject("Scripting.Dictionary")
     For i = 0 To kc - 1: sira(CStr(kolonlar.Item(i))) = i: Next i
     For c = 1 To 11
         pos(c) = -1
         If Len(ids(c)) > 0 Then
-            If Not sira.Exists(ids(c)) Then Exit Function
+            If Not sira.Exists(ids(c)) Then mHizliSebep = "kolon sýrasý (" & ids(c) & ")": Exit Function
             pos(c) = sira(ids(c))
         End If
     Next c
@@ -649,18 +716,41 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     yol = klasor & dosya
     If Len(Dir$(yol)) > 0 Then Kill yol
     ' Liste > Disa aktar > Yerel dosya > Sekmeli metin
+    mHizliSebep = "dýþa aktar menüsü"
+    On Error Resume Next
     alv.PressToolbarContextButton "&MB_EXPORT"
     alv.SelectContextMenuItem "&PC"
-    Set o = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]", False)
+    If Err.Number <> 0 Then
+        Err.Clear
+        ses.FindById("wnd[0]/tbar[0]/okcd").Text = "%PC"
+        ses.FindById("wnd[0]").SendVKey 0
+    End If
+    Err.Clear
+    On Error GoTo Hata
+    mHizliSebep = "biçim penceresi"
+    Set o = Nothing
+    For i = 0 To 9
+        Set rb = Nothing
+        Set rb = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[" & i & ",0]", False)
+        If rb Is Nothing Then Exit For
+        a = AKFIX_NORMAL(CStr(rb.Text))
+        If InStr(a, "TAB") > 0 Or InStr(a, "SEKME") > 0 Then Set o = rb: Exit For
+    Next i
+    If o Is Nothing Then Set o = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]", False)
     If o Is Nothing Then GoTo Temizle
     o.Select
     ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
-    ses.FindById("wnd[1]/usr/ctxtDY_PATH").Text = klasor
+    mHizliSebep = "dosya penceresi"
+    Set o = Nothing
+    Set o = ses.FindById("wnd[1]/usr/ctxtDY_PATH", False)
+    If o Is Nothing Then GoTo Temizle
+    o.Text = klasor
     ses.FindById("wnd[1]/usr/ctxtDY_FILENAME").Text = dosya
     Set o = Nothing
     Set o = ses.FindById("wnd[1]/usr/ctxtDY_FILE_ENCODING", False)
     If Not o Is Nothing Then o.Text = "4110": utf = True
     ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+    mHizliSebep = "dosya oluþmadý"
     bas = Timer: eskiBoy = -1
     Do
         DoEvents: MS_Sleep 200
@@ -689,6 +779,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
         For i = 0 To UBound(satirlar)
             If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then baslik = i: Exit For
         Next i
+        mHizliSebep = "dosya baþlýðý"
         If baslik < 0 Then GoTo Temizle
         alanlar = Split(satirlar(baslik), vbTab)
         If UBound(alanlar) + 1 = kc Then
@@ -696,16 +787,20 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
         ElseIf UBound(alanlar) + 1 >= kc + 1 And Len(Trim$(alanlar(0))) = 0 Then
             ofs = 1
         Else
+            mHizliSebep = "kolon sayýsý (dosya " & CStr(UBound(alanlar) + 1) & " / SAP " & CStr(kc) & ")"
             GoTo Temizle
         End If
         veri = 0
         For i = baslik + 1 To UBound(satirlar)
             If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then veri = veri + 1
         Next i
-        If veri <> n Then GoTo Temizle
+        If veri > n Or veri < n - 5 Then
+            mHizliSebep = "satýr sayýsý (dosya " & CStr(veri) & " / SAP " & CStr(n) & ")"
+            GoTo Temizle
+        End If
         ' Ornek satirlar SAP ekranindaki degerlerle birebir karsilastirilir.
         dogru = True
-        kontrol = Array(0, n \ 2, n - 1)
+        kontrol = Array(0, veri \ 2, veri - 1)
         r = -1: k = 0
         For i = baslik + 1 To UBound(satirlar)
             If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then
@@ -725,7 +820,10 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
                                 ElseIf (c = 7 Or c = 11) And Len(a) > 0 And Len(b) > 0 Then
                                     a = CStr(MS_Sayi(a)): b = CStr(MS_Sayi(b))
                                 End If
-                                If a <> b Then dogru = False
+                                If a <> b Then
+                                    dogru = False
+                                    mHizliSebep = "örnek kontrol (" & CStr(x) & ", satýr " & CStr(r + 1) & ", alan " & CStr(c) & ": '" & Left$(a, 30) & "' <> '" & Left$(b, 30) & "')"
+                                End If
                             End If
                         Next c
                     End If
@@ -735,6 +833,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
         If dogru Then Exit For
     Next x
     If Not dogru Then GoTo Temizle
+    mHizliSebep = "veri satýrý"
     ReDim buf(1 To n, 1 To 14)
     For i = baslik + 1 To UBound(satirlar)
         If Len(Trim$(Replace(satirlar(i), vbTab, ""))) > 0 Then
@@ -755,6 +854,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
                     If Len(Trim$(CStr(buf(adet, 11)))) > 0 Then buf(adet, 11) = MS_Sayi(buf(adet, 11))
                 Else
                     buf(adet, 10) = Trim$(CStr(satir(10)))
+                    MS_SapDeger buf, adet
                 End If
                 For Each x In Array(1, 2, 3, 4, 5, 6, 8, 9)
                     buf(adet, CLng(x)) = Trim$(CStr(buf(adet, CLng(x))))
@@ -770,9 +870,11 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     On Error Resume Next
     Kill yol
     On Error GoTo 0
+    mHizliSebep = vbNullString
     MS_ALV_Dosya = sonuc
     Exit Function
 Hata:
+    mHizliSebep = mHizliSebep & " / " & Err.Description
     Resume Temizle
 Temizle:
     On Error Resume Next
