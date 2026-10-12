@@ -14,7 +14,9 @@ Private Declare PtrSafe Function MS_CoRegisterMessageFilter Lib "ole32" Alias "C
     (ByVal yeni As LongPtr, ByRef onceki As LongPtr) As Long
 Private mOleFiltre As LongPtr
 Private mOleBos As LongPtr
+Private Declare PtrSafe Function MS_PID Lib "kernel32" Alias "GetCurrentProcessId" () As Long
 #Else
+Private Declare Function MS_PID Lib "kernel32" Alias "GetCurrentProcessId" () As Long
 Private Declare Sub MS_Sleep Lib "kernel32" Alias "Sleep" (ByVal ms As Long)
 Private Declare Function MS_CoRegisterMessageFilter Lib "ole32" Alias "CoRegisterMessageFilter" _
     (ByVal yeni As Long, ByRef onceki As Long) As Long
@@ -28,6 +30,8 @@ Private mStandartSatir As Long
 Private mSapSatir As Long
 Private mListeSatir As Long
 Private mStandartOnay As Boolean
+Private mDisaDosyalar As Collection
+Private mBasZamanMetin As String
 Private mCalisiyor As Boolean
 Private mBas As Double
 Private mDurum As String
@@ -597,6 +601,63 @@ Private Sub MS_DuzenSec(ByVal ses As Object, ByVal alv As Object, ByVal adaylar 
     On Error GoTo 0
 End Sub
 
+' SAP'nin actigi disa aktarim kitaplarini (baska Excel penceresinde olsa da) kapatir, dosyalari siler.
+Private Sub MS_DisaKapat()
+    Dim tur As Long, p As Variant, w As Object, uyg As Object, wb As Workbook, kalan As Long
+    If mDisaDosyalar Is Nothing Then Exit Sub
+    On Error Resume Next
+    For tur = 1 To 8
+        kalan = 0
+        For Each p In mDisaDosyalar
+            Set w = Nothing: Set uyg = Nothing
+            For Each wb In application.Workbooks
+                If StrComp(wb.FullName, CStr(p), vbTextCompare) = 0 Then wb.Close SaveChanges:=False
+            Next wb
+            If Len(Dir$(CStr(p))) > 0 Then
+                Set w = GetObject(CStr(p))
+                If Not w Is Nothing Then
+                    Set uyg = w.Application
+                    w.Close SaveChanges:=False
+                    If Not uyg Is application Then
+                        If uyg.Workbooks.Count = 0 Then uyg.Quit
+                    End If
+                    Set uyg = Nothing: Set w = Nothing
+                End If
+                Err.Clear
+                Kill CStr(p)
+                If Len(Dir$(CStr(p))) > 0 Then kalan = kalan + 1
+            End If
+        Next p
+        If kalan = 0 And tur >= 3 Then Exit For
+        DoEvents: MS_Sleep 700
+    Next tur
+    For Each wb In application.Workbooks
+        If wb.Name Like "EXPORT_*.*" Then wb.Close SaveChanges:=False
+    Next wb
+    ThisWorkbook.Activate
+    Set mDisaDosyalar = Nothing
+    On Error GoTo 0
+End Sub
+
+' Guncelleme sirasinda SAP'nin baslattigi Excel islemleri kapatilir (AKSORA'nin kendi islemi haric).
+Private Sub MS_ExcelTemizle()
+    Dim wmi As Object, p As Object, benim As Long, olusma As String, adet As Long
+    If Len(mBasZamanMetin) = 0 Then Exit Sub
+    On Error Resume Next
+    benim = MS_PID()
+    Set wmi = GetObject("winmgmts:\\.\root\cimv2")
+    If wmi Is Nothing Then Exit Sub
+    For Each p In wmi.ExecQuery("SELECT ProcessId, CreationDate FROM Win32_Process WHERE Name = 'EXCEL.EXE'")
+        olusma = Left$(CStr(p.CreationDate), 14)
+        If CLng(p.ProcessId) <> benim And Len(olusma) = 14 And olusma >= mBasZamanMetin Then
+            p.Terminate
+            adet = adet + 1
+        End If
+    Next p
+    If adet > 0 Then MS_Teshis "Kapatýlan SAP Excel iþlemi: " & CStr(adet)
+    On Error GoTo 0
+End Sub
+
 ' SAP'nin disa aktarirken kaydettigi en yeni Excel dosyasini bulur (baska Excel'de acilmis olsa da).
 Private Function MS_YeniDosyaBul(ByVal bas As Date) As String
     Dim klasorler As Variant, k As Variant, uzantilar As Variant, u As Variant, f As String
@@ -670,6 +731,8 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
                 On Error GoTo Hata
                 If boy > 0 And boy = eskiBoy Then
                     MS_Teshis etiket & " dosya bulundu: " & dosya & " (" & CStr(boy) & " bayt)"
+                    If mDisaDosyalar Is Nothing Then Set mDisaDosyalar = New Collection
+                    mDisaDosyalar.Add dosya
                     application.DisplayAlerts = False
                     Set wb = Workbooks.Open(Filename:=dosya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
                     application.DisplayAlerts = True
@@ -686,6 +749,10 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
         MS_Sleep 400
     Loop
 Bulundu:
+    If Not kendimiz Then
+        If mDisaDosyalar Is Nothing Then Set mDisaDosyalar = New Collection
+        mDisaDosyalar.Add wb.FullName
+    End If
     For Each sh In wb.Worksheets
         If en Is Nothing Then
             Set en = sh
@@ -1300,6 +1367,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     mCalisiyor = True: mBas = Timer: mSeritZaman = 0
     mHizliSebep = vbNullString: mHizliSatir = 0: mStandartSatir = 0: mSapSatir = 0: mListeSatir = 0
     mStandartOnay = False
+    Set mDisaDosyalar = Nothing
+    mBasZamanMetin = Format$(Now - TimeSerial(0, 0, 2), "yyyymmddhhnnss")
     MS_OleUyariKapat
     AKSORA_MUSTERI_PANEL_YENILE True
     AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
@@ -1342,6 +1411,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     MS_Durum "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & _
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
+    MS_DisaKapat
+    MS_ExcelTemizle
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
     MsgBox "Müþteri 7155 güncellendi." & vbCrLf & vbCrLf & _
@@ -1374,6 +1445,8 @@ Hata:
         If Err.Number <> 0 Then hMesaj = hMesaj & vbCrLf & "Eski kayýtlarýn geri yüklenmesi doðrulanamadý: " & Err.Description
         On Error GoTo 0
     End If
+    MS_DisaKapat
+    MS_ExcelTemizle
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
     MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
