@@ -111,9 +111,11 @@ Hata:
 End Sub
 
 Public Sub PANEL_GIT_STOK_KARSILASTIRMA()
-
+    On Error GoTo Hata
     STOK_KARS_PANEL_AC
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Stok karþýlaþtýrma", Err.Number, Err.Description
 End Sub
 
 

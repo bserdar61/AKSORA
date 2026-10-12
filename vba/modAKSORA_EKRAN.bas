@@ -7,6 +7,7 @@ Private mSonHata As String
 
 ' Yalnizca aktif sayfanin zoom'u degisir. Veri ve SAP koduna dokunulmaz.
 Public Function AKSORA_PENCERE_KUCUK(Optional ByVal wn As Window) As Boolean
+    ' Excel veya pencere simge durumundayken pencere ozellikleri ayarlanamaz (hata 1004).
     On Error GoTo Kucuk
     If Not application.Visible Then GoTo Kucuk
     If application.WindowState = xlMinimized Then GoTo Kucuk
@@ -18,6 +19,16 @@ Public Function AKSORA_PENCERE_KUCUK(Optional ByVal wn As Window) As Boolean
 Kucuk:
     AKSORA_PENCERE_KUCUK = True
 End Function
+
+Public Sub AKSORA_HATA_GOSTER(ByVal islem As String, ByVal no As Long, ByVal metin As String)
+    On Error Resume Next
+    application.EnableEvents = True
+    application.ScreenUpdating = True
+    application.Cursor = xlDefault
+    application.StatusBar = False
+    If Len(metin) = 0 Then metin = "Beklenmeyen hata (" & no & ")."
+    MsgBox islem & " tamamlanamadý." & vbCrLf & vbCrLf & metin, vbExclamation, "AKSORA"
+End Sub
 
 Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
     Dim wn As Window, alan As Range, eskiSecim As Range

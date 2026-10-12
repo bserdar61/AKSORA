@@ -37,6 +37,8 @@ End Function
 Public Sub AKFIX_EN_USTE(ByVal ws As Worksheet)
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If Not (ActiveSheet Is ws) Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(ActiveWindow) Then Exit Sub
+    On Error Resume Next
     ActiveWindow.ScrollRow = 1
     ActiveWindow.ScrollColumn = 1
 End Sub

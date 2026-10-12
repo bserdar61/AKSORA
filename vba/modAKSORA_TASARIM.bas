@@ -513,6 +513,10 @@ Private Sub T_RaporLogo(ByVal ws As Worksheet)
     If z Is Nothing Then y = ws.Range("T25").Top Else y = z.Top + z.Height + 6
     x = ws.Range("T1").Left + ws.Range("T1").Width
     With s
+        On Error Resume Next
+        .LockAspectRatio = msoFalse
+        .ScaleHeight 1, msoTrue: .ScaleWidth 1, msoTrue
+        On Error GoTo 0
         .LockAspectRatio = msoTrue: .Width = 58
         If .Height > 58 Then .Height = 58
         .Left = x - .Width - 4: .Top = y

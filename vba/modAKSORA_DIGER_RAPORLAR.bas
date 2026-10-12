@@ -1197,6 +1197,10 @@ Public Sub AKSORA_RAPOR_AMBLEM_HIZALA(ByVal sayfaAdi As String)
     Set alan = ws.Range("R10:T15")
     With logo
         .Rotation = 0
+        On Error Resume Next
+        .LockAspectRatio = msoFalse
+        .ScaleHeight 1, msoTrue: .ScaleWidth 1, msoTrue
+        On Error GoTo Hata
         .LockAspectRatio = msoTrue
         .Width = 80
         If .Height > 80 Then .Height = 80

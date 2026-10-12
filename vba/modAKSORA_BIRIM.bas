@@ -244,10 +244,18 @@ Hata:
 End Sub
 
 Public Sub AKSORA_BIRIM_YATIRIM()
+    On Error GoTo Hata
     YATIRIM_KAPAK_AC
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Yatýrým birimi", Err.Number, Err.Description
 End Sub
 Public Sub AKSORA_BIRIM_MUSTERI()
+    On Error GoTo Hata
     MUSTERI_KAPAK_AC
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Müþteri birimi", Err.Number, Err.Description
 End Sub
 Private Sub MUSTERI_KAPAK_AC()
     Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape

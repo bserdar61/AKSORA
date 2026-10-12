@@ -204,62 +204,96 @@ Cikis:
 End Sub
 
 Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
-
+    On Error GoTo Hata
     ANA_TUM_STOKLARI_GUNCELLE_V2
     PANEL_YENILE
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Tüm stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_CDP_GUNCELLE()
-
+    On Error GoTo Hata
     CDP_STOK_GUNCELLE_V2
     PANEL_YENILE
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "CDP stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_EPP_GUNCELLE()
-
+    On Error GoTo Hata
     EPP_STOK_GUNCELLE_V2
     PANEL_YENILE
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "EPP stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_ILCE_GUNCELLE()
-
+    On Error GoTo Hata
     ILCE_STOK_GUNCELLE_V2
     PANEL_YENILE
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Ýlçe stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_YUKLENICI_GUNCELLE()
-
+    On Error GoTo Hata
     YUKLENICI_STOK_GUNCELLE_V2
     PANEL_YENILE
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Yüklenici stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_STOKLAR()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "STOKLAR"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_RAPORLAR()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "RAPORLAR"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_CDP()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "CDP_STOK"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_EPP()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "EPP_STOK"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_ILCE()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "ÝLÇE_STOK"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_GIT_YUKLENICI()
+    On Error GoTo Hata
     PANEL_SAYFAYA_GIT "YÜKLENÝCÝ_STOK"
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Sayfa geçiþi", Err.Number, Err.Description
 End Sub
 
 Private Sub PANEL_TEMIZLE(ByVal ws As Worksheet)

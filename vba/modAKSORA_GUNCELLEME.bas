@@ -178,9 +178,11 @@ End Function
 
 
 Public Sub TUM_STOK_SISTEMINI_GUNCELLE()
-
+    On Error GoTo Hata
     STOKLAR_RAPORLAR_BIRLESTIR_V2
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Stok sistemi güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub ANA_NORMAL_STOK_GUNCELLE_V2()

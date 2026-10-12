@@ -278,33 +278,43 @@ Public Sub STOK_KARS_TARIHLERI_YUKLE()
 End Sub
 
 Public Sub STOK_KARS_FILTRE_TUMU()
-
+    On Error GoTo Hata
     STOK_KARS_FILTRE vbNullString
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Filtre", Err.Number, Err.Description
 End Sub
 
 Public Sub STOK_KARS_FILTRE_AZALAN()
-
+    On Error GoTo Hata
     STOK_KARS_FILTRE "AZALDI"
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Filtre", Err.Number, Err.Description
 End Sub
 
 Public Sub STOK_KARS_FILTRE_ARTAN()
-
+    On Error GoTo Hata
     STOK_KARS_FILTRE "ARTTI"
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Filtre", Err.Number, Err.Description
 End Sub
 
 Public Sub STOK_KARS_FILTRE_YENI()
-
+    On Error GoTo Hata
     STOK_KARS_FILTRE "YENÝ"
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Filtre", Err.Number, Err.Description
 End Sub
 
 Public Sub STOK_KARS_FILTRE_SIFIR()
-
+    On Error GoTo Hata
     STOK_KARS_FILTRE "SIFIRLANDI"
-
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Filtre", Err.Number, Err.Description
 End Sub
 
 Public Sub STOK_KARS_ANA_PANEL()

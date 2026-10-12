@@ -108,8 +108,6 @@ Public Sub STOK_KARS_FILTRE_TAKIP_BASLAT()
 Hata:
     application.EnableEvents = eskiOlay
     STOK_KARS_FILTRE_TAKIP_DURDUR
-    MsgBox "Karþýlaþtýrma takibi: " & Err.Description, _
-        vbExclamation, "AKSORA"
 
 End Sub
 
