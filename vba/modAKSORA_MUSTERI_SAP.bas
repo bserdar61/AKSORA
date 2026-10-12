@@ -1096,7 +1096,11 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
         malz = MS_Malzeme(mb(r, 6)): parti = AKFIX_NORMAL(CStr(mb(r, 5)))
         If h > 0 And MS_GrupSeri(mg) Then
             k = depo & "|" & malz & "|" & parti
-            If CLng(CDbl(mb(r, 8))) <> CLng(sayac(k)) Then fark = fark + 1
+            If CLng(CDbl(mb(r, 8))) <> CLng(sayac(k)) Then
+                fark = fark + 1
+                MS_Teshis "Adet farký: " & depo & " | " & CStr(mb(r, 6)) & " | " & CStr(mb(r, 7)) & " | parti '" & _
+                    CStr(mb(r, 5)) & "' | MB52 " & CStr(mb(r, 8)) & " / IQ09 " & CStr(CLng(sayac(k)))
+            End If
         End If
         If h > 0 And Not MS_GrupSeri(mg) And (h <> 2 Or mg = "M03550100") And CDbl(mb(r, 8)) <> 0 Then
             n = n + 1: nMb = nMb + 1
@@ -1359,6 +1363,8 @@ Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tar
         mSapSatir = mSapSatir + 1
       Else
         mListeSatir = mListeSatir + 1
+        MS_Teshis "Fiyat listesinden: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
+            " | parti '" & CStr(a(r, 9)) & "' | seri " & CStr(a(r, 10))
         k = MF_Anahtar(a(r, 5), a(r, 9))
         a(r, 11) = vbNullString: a(r, 12) = vbNullString: a(r, 14) = 1
         If d.Exists(k) Then
