@@ -124,6 +124,8 @@ Private Sub Workbook_Activate()
 
     On Error Resume Next
 
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+
 
     UYGULAMA_MODU_AC
     ' AKSORA_BIRIM_HOOK_ACTIVATE
@@ -249,6 +251,8 @@ End Sub
 
 Private Sub Workbook_WindowResize(ByVal wn As Window)
     If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Or AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    On Error Resume Next
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
     ' AKSORA_BIRIM_HOOK_RESIZE
@@ -259,6 +263,8 @@ End Sub
 
 Private Sub Workbook_WindowActivate(ByVal wn As Window)
     If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Or AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    On Error Resume Next
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
     ' AKSORA_BIRIM_HOOK_WINDOW

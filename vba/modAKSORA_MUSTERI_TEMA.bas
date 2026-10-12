@@ -1097,6 +1097,7 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     Dim s As Shape, genislik As Double, z As Double, altSinir As Double
     If Not AKSORA_MUSTERI_TEMA_SAYFA(ws) Then Exit Sub
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
     genislik = ws.Range("A1:L1").Width
     For Each s In ws.Shapes
         If s.Visible = msoTrue Then
@@ -1111,7 +1112,9 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         If ws.Name = "M_ANA PANEL" And altSinir > 0 Then _
             z = application.Min(z, (.UsableHeight - 8) / altSinir * 100)
         .Zoom = application.Max(10, application.Min(IIf(ws.Name = "M_ANA PANEL", 400, 200), Fix(z)))
+        On Error Resume Next
         .FreezePanes = False: .SplitRow = 0: .SplitColumn = 0
+        On Error GoTo 0
         .DisplayGridlines = False: .DisplayHeadings = False
         .DisplayWorkbookTabs = True
         .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = (ws.Name <> "M_ANA PANEL")

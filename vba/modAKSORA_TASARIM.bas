@@ -196,6 +196,8 @@ Public Sub AKSORA_TASARIM_PENCERE(ByVal ws As Worksheet)
     If Not AKSORA_TASARIM_AKTIF() Or Not T_Stok(ws) Then Exit Sub
     If Not (ActiveWorkbook Is ThisWorkbook) Or Not (ActiveSheet Is ws) Then Exit Sub
     Set wn = ActiveWindow
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    On Error Resume Next
     ' SplitRow kullanilir; hucre secimini degistirmez.
     With wn
         If Not .FreezePanes Or .SplitRow <> 6 Or .SplitColumn <> 0 Then

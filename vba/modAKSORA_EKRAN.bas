@@ -6,6 +6,19 @@ Private mOtomatikKapali As Boolean
 Private mSonHata As String
 
 ' Yalnizca aktif sayfanin zoom'u degisir. Veri ve SAP koduna dokunulmaz.
+Public Function AKSORA_PENCERE_KUCUK(Optional ByVal wn As Window) As Boolean
+    On Error GoTo Kucuk
+    If Not application.Visible Then GoTo Kucuk
+    If application.WindowState = xlMinimized Then GoTo Kucuk
+    If Not wn Is Nothing Then
+        If Not wn.Visible Then GoTo Kucuk
+        If wn.WindowState = xlMinimized Then GoTo Kucuk
+    End If
+    Exit Function
+Kucuk:
+    AKSORA_PENCERE_KUCUK = True
+End Function
+
 Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
     Dim wn As Window, alan As Range, eskiSecim As Range
     Dim adres As String, ad As String
@@ -40,7 +53,7 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
     On Error GoTo Hata
     Set wn = ActiveWindow
     If wn Is Nothing Then Exit Sub
-    If wn.WindowState = xlMinimized Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
     olay = application.EnableEvents
     ekran = application.ScreenUpdating
     eskiZoom = wn.Zoom

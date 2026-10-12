@@ -153,6 +153,8 @@ Private Sub AK_RaporKur(ByVal ws As Worksheet)
     ' Butonun makrosu ve filtreleme korunur.
     AK_RaporResimleriniKoru ws
     ws.Activate
+    If AKSORA_PENCERE_KUCUK(ActiveWindow) Then Exit Sub
+    On Error Resume Next
     With ActiveWindow
         .FreezePanes = False
         .SplitRow = 0
