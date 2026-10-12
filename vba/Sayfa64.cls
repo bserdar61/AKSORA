@@ -7,3 +7,20 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+Option Explicit
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim q As String
+    If Intersect(Target, Me.Range("B6:J6")) Is Nothing Then Exit Sub
+    If AKSORA_V11_MESGUL Then Exit Sub
+    On Error Resume Next
+    q = Trim$(CStr(Me.Range("B6").Value2))
+    On Error GoTo 0
+    If Len(q) = 0 Then
+        AKSORA_MUSTERI_ARAMA_TEMIZLE
+    Else
+        AKSORA_MUSTERI_YEREL_ARA
+    End If
+    On Error Resume Next
+    Me.Range("B6").Select
+End Sub

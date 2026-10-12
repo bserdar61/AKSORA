@@ -733,12 +733,11 @@ Private Sub TEMA_ARAMA_KPI_FORMULLER(ByVal ws As Worksheet)
     ws.Range("A10").MergeArea.Cells(1, 1).Formula = "=SUBTOTAL(103," & e & ")"
     ws.Range("C10").MergeArea.Cells(1, 1).Value2 = TEMA_GORUNUR_DEPO_SAYISI(ws, son)
     ws.Range("F10").MergeArea.Cells(1, 1).Formula = "=SUBTOTAL(109," & g & ")"
-    ws.Range("I10").MergeArea.Cells(1, 1).Formula = _
-        "=IF(SUBTOTAL(109,$N$13:$N$" & son & ")>0,""Fiyat eksik (""&SUBTOTAL(109,$N$13:$N$" & son & ")&"")"",SUBTOTAL(109," & k & "))"
+    ws.Range("I10").MergeArea.Cells(1, 1).Formula = "=SUBTOTAL(109," & k & ")"
     ws.Range("A10").MergeArea.NumberFormat = "#,##0"
     ws.Range("C10").MergeArea.NumberFormat = "#,##0"
     ws.Range("F10").MergeArea.NumberFormat = "#,##0.###"
-    ws.Range("I10").MergeArea.NumberFormat = "#,##0.00"
+    ws.Range("I10").MergeArea.NumberFormat = "#,##0.00 ""TL"""
     ws.Calculate
     AKSORA_MUSTERI_ARAMA_KPI_HESAPLA ws
 End Sub

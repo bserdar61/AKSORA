@@ -94,7 +94,7 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
         .Placement = xlFreeFloating
     End With
     Set s = CDP_H3_Yazi(ws, "AKSORA_CDP_H3_BASLIK", _
-            "DEPOLARA GORE STOK DAGILIMI", x + 12, y + 7, _
+            "DEPOLARA GÖRE STOK DAÐILIMI", x + 12, y + 7, _
             alan.Width - 24, 25, 13, RGB(26, 57, 88), True, msoAlignCenter)
 
     ' Legend kapali: halkanin gercek merkezini hesaplamak icin
@@ -137,7 +137,7 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
     ' Merkez etiketi dogrudan gercek grafik merkezine yerlestirilir.
     Set s = CDP_H3_Yazi(ws, "AKSORA_CDP_H3_MERKEZ", _
             AKSORA_SAYI_METNI(genel, "#,##0.00") & " TL" & vbCrLf & _
-            "TOPLAM STOK DEGERI", cx - 122, cy - 30, _
+            "TOPLAM STOK DEÐERÝ", cx - 122, cy - 30, _
             244, 60, 14, RGB(26, 57, 88), True, msoAlignCenter)
     s.TextFrame2.VerticalAnchor = msoAnchorMiddle
     s.ZOrder msoBringToFront
@@ -316,7 +316,7 @@ Public Sub AKSORA_YUKLENICI_HALKA_YAZI_DUZELT()
         .Fill.Visible = msoFalse
         .line.Visible = msoFalse
         .Placement = xlFreeFloating
-        .TextFrame2.TextRange.Text = toplamMetni & vbCrLf & "TOPLAM STOK DEGERI"
+        .TextFrame2.TextRange.Text = toplamMetni & vbCrLf & "TOPLAM STOK DEÐERÝ"
         .TextFrame2.TextRange.Font.Name = "Aptos"
         .TextFrame2.TextRange.Font.Size = 9
         .TextFrame2.TextRange.Font.bold = msoTrue

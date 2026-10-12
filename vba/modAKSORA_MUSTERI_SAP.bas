@@ -17,6 +17,7 @@ Private mCalisiyor As Boolean
 Private mBas As Double
 Private mDurum As String
 Private mFiyatTur As Boolean
+Private mSeritZaman As Double
 
 Private Function MS_Gecen(ByVal bas As Double) As Double
     MS_Gecen = Timer - bas
@@ -26,6 +27,10 @@ End Function
 Private Sub MS_Durum(ByVal metin As String)
     mDurum = metin
     application.StatusBar = "AKSORA | Müþteri | " & metin
+    If Abs(Timer - mSeritZaman) >= 1 Then
+        mSeritZaman = Timer
+        AKSORA_MUSTERI_SERIT "Güncelleniyor  •  " & metin, 1
+    End If
     DoEvents
 End Sub
 
@@ -351,7 +356,9 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     If CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2) <> "ARTVIN" Then
         MsgBox "Bu aktarým yalnýzca 7155 / Artvin için hazýrlanmýþtýr.", vbExclamation, "AKSORA": Exit Sub
     End If
-    mCalisiyor = True: mBas = Timer
+    mCalisiyor = True: mBas = Timer: mSeritZaman = 0
+    AKSORA_MUSTERI_PANEL_YENILE True
+    AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
     ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
     On Error GoTo Hata
     ' Fiyat listesi SAP'a gitmeden önce doðrulanýr.
@@ -390,6 +397,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     MS_Durum "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & _
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
+    AKSORA_MUSTERI_PANEL_YENILE
+    AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
     MsgBox "Müþteri 7155 güncellendi." & vbCrLf & vbCrLf & _
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
         "Ýlçe stok satýrý: " & AKSORA_SAYI_METNI(adet(2), "#,##0") & vbCrLf & _
@@ -417,6 +426,8 @@ Hata:
         If Err.Number <> 0 Then hMesaj = hMesaj & vbCrLf & "Eski kayýtlarýn geri yüklenmesi doðrulanamadý: " & Err.Description
         On Error GoTo 0
     End If
+    AKSORA_MUSTERI_PANEL_YENILE
+    AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
     MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
     Resume Cikis
 End Sub

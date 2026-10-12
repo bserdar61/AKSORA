@@ -181,7 +181,7 @@ Private Sub V11_KART(ByVal ws As Worksheet, ByVal sol As String, _
     a.Fill.ForeColor.RGB = RGB(72, 240, 164)
     a.line.Visible = msoFalse
 
-    labels = Array("DURUM", "SON GUNCELLEME", "STOK SATIRI", "STOK DEGERI", "SAP BAGLANTI")
+    labels = Array("DURUM", "SON GÜNCELLEME", "STOK SATIRI", "STOK DEÐERÝ", "SAP BAÐLANTI")
     rh = (h - 34 - 12) / 5
     For k = 0 To 4
         rowNo = 8 + k

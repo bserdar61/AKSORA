@@ -141,9 +141,9 @@ Private Sub AK_RaporKur(ByVal ws As Worksheet)
     AK_EskiNesneler ws
     AK_Tablo ws, son, toplam, sonKol, adetKol, degerKol
     AK_UstBanner ws
-    AK_Kart ws, "A3:E6", "SON GUNCELLEME", AK_Tarih(ws), "01", RGB(36, 111, 195)
+    AK_Kart ws, "A3:E6", "SON GÜNCELLEME", AK_Tarih(ws), "01", RGB(36, 111, 195)
     AK_Kart ws, "F3:J6", "TOPLAM STOK SATIRI", AK_GercekStokSatiri(ws), "02", RGB(29, 151, 91)
-    AK_Kart ws, "K3:Q6", "TOPLAM STOK DEGERI", AK_Para(ws, toplam, degerKol), "03", RGB(36, 111, 195)
+    AK_Kart ws, "K3:Q6", "TOPLAM STOK DEÐERÝ", AK_Para(ws, toplam, degerKol), "03", RGB(36, 111, 195)
     AK_Grafik ws, son, degerKol, toplam
     AK_Filigran ws, toplam
     AK_AltYazi ws, toplam
@@ -380,7 +380,7 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
     End With
     AK_Kilitle sh
     Set sh = AK_HalkaYazi(ws, AK_ON & "HALKA_BASLIK", _
-       "DEPOLARA GORE STOK DAGILIMI", x + 12, y + 7, _
+       "DEPOLARA GÖRE STOK DAÐILIMI", x + 12, y + 7, _
        alan.Width - 24, 25, 13, RGB(26, 57, 88), True, msoAlignCenter)
 
     Set co = ws.ChartObjects.Add(x + 22, y + 42, _
@@ -516,7 +516,7 @@ Private Sub AK_AltYazi(ByVal ws As Worksheet, ByVal toplam As Long)
     ws.Rows(r).RowHeight = 23
     ws.Range(ws.Cells(r, 1), ws.Cells(r, 5)).Borders.LineStyle = xlNone
     Set sh = AK_Metin(ws, AK_ON & "ALT", _
-        "AKSORA  |  " & AK_Baslik(ws.Name) & "  |  Veriler SAP raporundan alinir.", _
+        "AKSORA  |  " & AK_Baslik(ws.Name) & "  |  Veriler SAP raporundan alýnýr.", _
         ws.Range("A" & r).Left + 3, ws.Range("A" & r).Top + 3, _
         ws.Range("H" & r).Left - ws.Range("A" & r).Left, 18, _
         10, RGB(99, 124, 153), False)
@@ -1126,7 +1126,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
                 .MarginTop = 0
                 .MarginBottom = 0
                 .TextRange.Text = "AKSORA | " & AK_Baslik(ws.Name) & _
-                    " | Veriler SAP raporundan alinir."
+                    " | Veriler SAP raporundan alýnýr."
                 .TextRange.Font.Name = "Aptos"
                 .TextRange.Font.Size = 8
                 .TextRange.Font.Fill.ForeColor.RGB = RGB(99, 124, 153)
