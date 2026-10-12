@@ -1363,7 +1363,7 @@ Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tar
         mSapSatir = mSapSatir + 1
       Else
         mListeSatir = mListeSatir + 1
-        MS_Teshis "Fiyat listesinden: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
+        If mCalisiyor And mListeSatir <= 200 Then MS_Teshis "Fiyat listesinden: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
             " | parti '" & CStr(a(r, 9)) & "' | seri " & CStr(a(r, 10))
         k = MF_Anahtar(a(r, 5), a(r, 9))
         a(r, 11) = vbNullString: a(r, 12) = vbNullString: a(r, 14) = 1
@@ -1386,7 +1386,7 @@ Private Function MS_FiyatUygula(ByRef a As Variant, ByVal d As Object, ByVal tar
         If CLng(a(r, 14)) > 0 Then
             eksik = eksik + 1
             mFiyatsizAdet = mFiyatsizAdet + 1
-            MS_Teshis "Fiyatsýz: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
+            If mCalisiyor And mFiyatsizAdet <= 200 Then MS_Teshis "Fiyatsýz: " & CStr(a(r, 2)) & " | " & CStr(a(r, 5)) & " | " & CStr(a(r, 6)) & _
                 " | parti '" & CStr(a(r, 9)) & "' | seri " & CStr(a(r, 10)) & " | " & CStr(a(r, 13))
             If mFiyatsizAdet <= 5 Then mFiyatsiz = mFiyatsiz & vbCrLf & "   • " & CStr(a(r, 5)) & " " & _
                 Left$(CStr(a(r, 6)), 28) & "  (" & CStr(a(r, 2)) & ", parti: " & IIf(Len(CStr(a(r, 9))) > 0, CStr(a(r, 9)), "boþ") & ")"
