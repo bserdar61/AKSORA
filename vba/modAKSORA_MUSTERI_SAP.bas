@@ -1082,7 +1082,12 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
                     If d.Exists(depo & "|" & malz & "|") Or d.Exists("*|" & malz & "|") Then k = depo & "|" & malz & "|"
                 End If
                 sayac(k) = sayac(k) + 1
-                If Not d.Exists(k) Then k = "*|" & Mid$(k, Len(depo) + 2)
+                ' Depoda serbest miktar yoksa (bloke/kalite/transfer) 7155 genelindeki birim deger kullanilir.
+                If Not d.Exists(k) Then
+                    k = "*|" & Mid$(k, Len(depo) + 2)
+                ElseIf CDbl(d(k)(0)) = 0 Then
+                    k = "*|" & Mid$(k, Len(depo) + 2)
+                End If
                 If d.Exists(k) Then
                     t = d(k)
                     If CDbl(t(0)) <> 0 Then cikti(n, 11) = Round(CDbl(t(1)) / CDbl(t(0)), 2): cikti(n, 13) = "SAP"
