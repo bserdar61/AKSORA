@@ -597,11 +597,39 @@ Private Sub MS_DuzenSec(ByVal ses As Object, ByVal alv As Object, ByVal adaylar 
     On Error GoTo 0
 End Sub
 
+' SAP'nin disa aktarirken kaydettigi en yeni Excel dosyasini bulur (baska Excel'de acilmis olsa da).
+Private Function MS_YeniDosyaBul(ByVal bas As Date) As String
+    Dim klasorler As Variant, k As Variant, uzantilar As Variant, u As Variant, f As String
+    Dim yol As String, enYeni As Date, t As Date
+    klasorler = Array(Environ$("TEMP"), Environ$("TMP"), _
+        Environ$("APPDATA") & "\SAP\SAP GUI\tmp", Environ$("LOCALAPPDATA") & "\SAP\SAP GUI\tmp", _
+        Environ$("USERPROFILE") & "\Documents\SAP\SAP GUI", Environ$("USERPROFILE") & "\Documents", _
+        Environ$("USERPROFILE") & "\OneDrive\Documents\SAP\SAP GUI", Environ$("USERPROFILE") & "\Downloads")
+    uzantilar = Array("*.xlsx", "*.XLSX", "*.xls", "*.MHTML", "*.mhtml", "*.xml")
+    On Error Resume Next
+    For Each k In klasorler
+        If Len(k) > 0 Then
+            For Each u In uzantilar
+                f = Dir$(k & "\" & u)
+                Do While Len(f) > 0
+                    t = 0: t = FileDateTime(k & "\" & f)
+                    If t >= bas And t > enYeni Then enYeni = t: yol = k & "\" & f
+                    f = Dir$()
+                Loop
+            Next u
+        End If
+    Next k
+    On Error GoTo 0
+    MS_YeniDosyaBul = yol
+End Function
+
 ' Listeyi Tablo hesaplama (&XXL) ile Excel'e aktarir; acilan kitabin verisini dondurur.
 Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
     Dim eski As Object, wb As Workbook, sh As Worksheet, en As Worksheet, bas As Double, kol As String
-    Dim w As Object, basildi As Long
+    Dim w As Object, basildi As Long, basZaman As Date, dosya As String, boy As Long, eskiBoy As Long
+    Dim dis As Object, kendimiz As Boolean
     On Error GoTo Hata
+    basZaman = Now - TimeSerial(0, 0, 5)
     Set eski = MS_AcikKitaplar()
     kol = MS_IlkKolon(alv)
     alv.SetCurrentCell -1, kol
@@ -632,11 +660,28 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
             End If
             On Error GoTo Hata
         End If
+        ' Liste baska bir Excel'de acildiysa dosyasi diskte bulunur ve buradan okunur.
+        If basildi > 0 And Not ses.Busy Then
+            dosya = MS_YeniDosyaBul(basZaman)
+            If Len(dosya) > 0 Then
+                boy = 0
+                On Error Resume Next
+                boy = FileLen(dosya)
+                On Error GoTo Hata
+                If boy > 0 And boy = eskiBoy Then
+                    MS_Teshis etiket & " dosya bulundu: " & dosya & " (" & CStr(boy) & " bayt)"
+                    Set wb = Workbooks.Open(Filename:=dosya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+                    kendimiz = True
+                    GoTo Bulundu
+                End If
+                eskiBoy = boy
+            End If
+        End If
         If MS_Gecen(bas) > 180 Then
-            MS_Teshis etiket & ": Excel'e aktarýlan liste 180 sn içinde açýlmadý"
+            MS_Teshis etiket & ": Excel'e aktarýlan liste 180 sn içinde açýlmadý (dosya: " & dosya & ")"
             Exit Function
         End If
-        MS_Sleep 150
+        MS_Sleep 400
     Loop
 Bulundu:
     For Each sh In wb.Worksheets
@@ -650,6 +695,13 @@ Bulundu:
     MS_Teshis etiket & " Excel'e aktarýldý: " & CStr(en.UsedRange.Rows.Count) & " satýr, " & _
         AKSORA_SAYI_METNI(MS_Gecen(bas), "0.0") & " sn"
     wb.Close SaveChanges:=False
+    ' Ayni dosya baska Excel penceresinde de aciksa kapatilir.
+    If kendimiz Then
+        On Error Resume Next
+        Set dis = GetObject(dosya)
+        If Not dis Is Nothing Then dis.Close SaveChanges:=False
+        On Error GoTo 0
+    End If
     ThisWorkbook.Activate
     Exit Function
 Hata:
