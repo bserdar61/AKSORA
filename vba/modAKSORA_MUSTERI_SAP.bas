@@ -736,8 +736,8 @@ Private Function MS_KolonBul(ByVal v As Variant, ByVal h As Long, ByVal tur As S
             Case "MG": If t = "MALGRUBU" Then MS_KolonBul = c
             Case "PARTI": If t = "PARTI" Or t = "DEGERLEMETURU" Or t = "DRLTURU" Or t = "DEGERLTURU" Then MS_KolonBul = c
             Case "MALZ": If t = "MALZEME" Or t = "MALZEMENO" Then MS_KolonBul = c
-            Case "METIN": If t = "MALZEMEKISAMETNI" Or t = "MALZEMETANIMI" Or t = "TANIM" Then MS_KolonBul = c
-            Case "SERI": If t = "SERINUMARASI" Or t = "SERINO" Then MS_KolonBul = c
+            Case "METIN": If Left$(t, 14) = "MALZEMEKISAMET" Or t = "MALZEMETANIMI" Or t = "TANIM" Then MS_KolonBul = c
+            Case "SERI": If Left$(t, 9) = "SERINUMAR" Or t = "SERINO" Or t = "SERNR" Then MS_KolonBul = c
             Case "MIKTAR": If InStr(t, "TAHDITSIZ") > 0 And InStr(t, "DEGER") = 0 Then MS_KolonBul = c
             Case "BIRIM": If t = "TEMELOLCUBIRIMI" Or t = "TOB" Or t = "BIRIM" Or t = "TEMELOLCUBRM" Then MS_KolonBul = c
             Case "DEGER": If InStr(t, "DEGER") > 0 And InStr(t, "DEGERLEME") = 0 And InStr(t, "TURU") = 0 Then MS_KolonBul = c
@@ -986,7 +986,8 @@ End Sub
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
     If IsError(v) Then Exit Function
-    t = AKFIX_NORMAL(Trim$(CStr(v)))
+    t = Replace(Replace(Replace(Trim$(CStr(v)), ChrW(305), "I"), ChrW(160), ""), ChrW(304), "I")
+    t = AKFIX_NORMAL(t)
     t = Replace(t, " ", ""): t = Replace(t, ".", ""): t = Replace(t, "/", "")
     t = Replace(t, "(", ""): t = Replace(t, ")", ""): t = Replace(t, "-", "")
     MS_Norm = t
