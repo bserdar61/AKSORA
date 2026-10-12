@@ -271,6 +271,228 @@ Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boo
     On Error GoTo 0
 End Function
 
+'==========================================================
+' HIZLI OKUMA (Malzeme birimindeki yontem): ALV -> Ctrl+Shift+F7
+' ile Excel'e aktarilir, acilan kitap tek seferde okunur.
+'==========================================================
+Private Function MS_AcikKitaplar() As Object
+    Dim d As Object, wb As Workbook
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each wb In application.Workbooks: d(wb.Name) = True: Next wb
+    Set MS_AcikKitaplar = d
+End Function
+
+Private Function MS_YeniKitapBekle(ByVal eski As Object, ByVal saniye As Double, ByVal ses As Object) As Workbook
+    Dim bas As Double, wb As Workbook, w As Object, onay As Boolean
+    bas = Timer
+    Do
+        DoEvents
+        For Each wb In application.Workbooks
+            If Not wb Is ThisWorkbook Then
+                If Not eski.Exists(wb.Name) Then Set MS_YeniKitapBekle = wb: Exit Function
+            End If
+        Next wb
+        If Not onay Then
+            Set w = Nothing
+            On Error Resume Next
+            Set w = ses.FindById("wnd[1]", False)
+            If Not w Is Nothing Then
+                MS_Teshis "Aktarým penceresi: " & w.Text
+                MS_Agac w, 0
+                ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+                onay = True
+            End If
+            On Error GoTo 0
+        End If
+        If MS_Gecen(bas) > saniye Then Exit Function
+        MS_Sleep 100
+    Loop
+End Function
+
+Private Function MS_Metin(ByVal v As Variant) As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbDouble Or VarType(v) = vbCurrency Or VarType(v) = vbDecimal Then
+        If v = Fix(v) And Abs(v) < 1E+15 Then MS_Metin = Format$(v, "0"): Exit Function
+    End If
+    MS_Metin = Trim$(CStr(v))
+End Function
+
+Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef ids() As String, ByVal n As Long) As Variant
+    Dim eski As Object, wb As Workbook, sh As Worksheet, en As Worksheet, v As Variant
+    Dim h As Long, r As Long, c As Long, k As Long, dolu As Long, no As Long, adet As Long
+    Dim pos(1 To 11) As Long, buf() As Variant, sonuc() As Variant, eksikAlan As String
+    Dim uy As String, mz As String, a As String, b As String, x As Variant, ornek As Variant
+    Dim j As Long, bulundu As Boolean, uygun As Boolean
+    On Error GoTo Hata
+    mHizliSebep = "Excel'e aktarým"
+    Set eski = MS_AcikKitaplar()
+    MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | Excel'e aktarým (Ctrl+Shift+F7) | ALV satýr " & CStr(n)
+    ses.FindById("wnd[0]").SendVKey 43
+    Set wb = MS_YeniKitapBekle(eski, 90, ses)
+    If wb Is Nothing Then mHizliSebep = "Excel'e aktarýlan liste açýlmadý": GoTo Temizle
+    For Each sh In wb.Worksheets
+        If en Is Nothing Then
+            Set en = sh
+        ElseIf sh.UsedRange.Rows.Count > en.UsedRange.Rows.Count Then
+            Set en = sh
+        End If
+    Next sh
+    v = en.UsedRange.Value2
+    If Not IsArray(v) Then mHizliSebep = "aktarýlan liste boþ": GoTo Temizle
+    For r = 1 To application.Min(10, UBound(v, 1))
+        dolu = 0
+        For c = 1 To UBound(v, 2)
+            If Len(MS_Metin(v(r, c))) > 0 Then dolu = dolu + 1
+        Next c
+        If dolu >= 5 Then h = r: Exit For
+    Next r
+    If h = 0 Then mHizliSebep = "aktarýlan listede baþlýk bulunamadý": GoTo Temizle
+    For c = 1 To UBound(v, 2)
+        no = MS_Alan(MS_Norm(MS_Metin(v(h, c))), False)
+        MS_Teshis "Excel kolon " & CStr(c) & ": " & MS_Metin(v(h, c)) & " -> alan " & CStr(no)
+        If no > 0 Then
+            If pos(no) = 0 Then pos(no) = c
+        End If
+    Next c
+    For c = 1 To 10
+        If pos(c) = 0 Then eksikAlan = eksikAlan & " " & CStr(c)
+    Next c
+    If Len(eksikAlan) > 0 Then mHizliSebep = "aktarýlan listede eksik sütun:" & eksikAlan: GoTo Temizle
+    mHizliSebep = "aktarýlan veri"
+    ReDim buf(1 To UBound(v, 1), 1 To 14)
+    For r = h + 1 To UBound(v, 1)
+        uy = MS_Metin(v(r, pos(1))): mz = MS_Metin(v(r, pos(5)))
+        If Len(uy) > 0 Or Len(mz) > 0 Then
+            If uy <> "7155" Or Len(mz) = 0 Then
+                If Len(mz) > 0 Then mHizliSebep = "beklenmeyen satýr (ÜY " & uy & ")": GoTo Temizle
+            Else
+                adet = adet + 1
+                For c = 1 To 10
+                    buf(adet, c) = MS_Metin(v(r, pos(c)))
+                Next c
+                buf(adet, 7) = MS_Sayi(v(r, pos(7)))
+                If pos(11) > 0 Then buf(adet, 11) = v(r, pos(11))
+            End If
+        End If
+    Next r
+    If adet = 0 Or adet > n Or adet < n - 50 Then
+        mHizliSebep = "satýr sayýsý (Excel " & CStr(adet) & " / SAP " & CStr(n) & ")": GoTo Temizle
+    End If
+    ' Ornek satirlar SAP ekranindaki degerlerle karsilastirilir.
+    mHizliSebep = "örnek kontrol"
+    For Each ornek In Array(0, adet \ 2, adet - 1)
+        bulundu = False
+        For j = CLng(ornek) To application.Min(n - 1, CLng(ornek) + 60)
+            If j Mod 20 = CLng(ornek) Mod 20 Then
+                alv.FirstVisibleRow = application.Min(j, application.Max(0, n - CLng(alv.VisibleRowCount)))
+                DoEvents
+            End If
+            uygun = True
+            For Each x In Array(2, 5, 7)
+                a = CStr(buf(CLng(ornek) + 1, CLng(x)))
+                b = vbNullString
+                On Error Resume Next
+                b = Trim$(CStr(alv.GetCellValue(j, ids(CLng(x)))))
+                On Error GoTo Hata
+                If CLng(x) = 5 Then a = MS_Malzeme(a): b = MS_Malzeme(b)
+                If CLng(x) = 7 Then
+                    a = CStr(CDbl(a))
+                    If Len(b) > 0 Then b = CStr(MS_Sayi(b))
+                End If
+                If UCase$(a) <> UCase$(b) Then uygun = False: Exit For
+            Next x
+            If uygun Then bulundu = True: Exit For
+        Next j
+        If Not bulundu Then
+            mHizliSebep = "örnek kontrol (Excel satýr " & CStr(CLng(ornek) + 1) & " SAP ekranýnda bulunamadý)"
+            GoTo Temizle
+        End If
+    Next ornek
+    ReDim sonuc(1 To adet, 1 To 14)
+    For r = 1 To adet
+        For c = 1 To 14: sonuc(r, c) = buf(r, c): Next c
+        MS_SapDeger sonuc, r
+    Next r
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    On Error GoTo 0
+    MS_Teshis "Excel'e aktarým baþarýlý: " & CStr(adet) & " satýr"
+    mHizliSebep = vbNullString
+    MS_ALV_Excel = sonuc
+    Exit Function
+Hata:
+    mHizliSebep = mHizliSebep & " / " & Err.Description
+    Resume Temizle
+Temizle:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    MS_Teshis "Excel'e aktarým kullanýlamadý: " & mHizliSebep
+    MS_ALV_Excel = Empty
+End Function
+
+'==========================================================
+' MB52 DEGERLERI: Depo + Malzeme + Degerleme turu bazinda gercek
+' SAP degeri alinir; seri numarali satirlara birim deger olarak dagitilir.
+'==========================================================
+Private Function MS_Mb52Anahtar(ByVal depo As Variant, ByVal malzeme As Variant, ByVal parti As Variant) As String
+    MS_Mb52Anahtar = UCase$(MS_Metin(depo)) & "|" & MS_Malzeme(MS_Metin(malzeme)) & "|" & AKFIX_NORMAL(MS_Metin(parti))
+End Function
+
+Private Function MS_MB52_SOZLUK(ByRef hMesaj As String) As Object
+    Dim veri As Variant, satir As Long, sutun As Long, sure As Double, d As Object
+    Dim r As Long, k As String, t As Variant, q As Double, deger As Double, i As Long
+    On Error GoTo Hata
+    If Not STOK_EXPORT_AL("CDP", "7155", "*", "*", veri, satir, sutun, sure, hMesaj) Then
+        MS_Teshis "MB52 alýnamadý: " & hMesaj
+        Exit Function
+    End If
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For r = 1 To satir
+        q = 0: deger = 0
+        If IsNumeric(veri(r, 9)) Then q = CDbl(veri(r, 9))
+        If IsNumeric(veri(r, 11)) Then deger = CDbl(veri(r, 11))
+        For i = 0 To 1
+            If i = 0 Then
+                k = MS_Mb52Anahtar(veri(r, 2), veri(r, 7), veri(r, 6))
+            Else
+                k = MS_Mb52Anahtar("*", veri(r, 7), veri(r, 6))
+            End If
+            If d.Exists(k) Then
+                t = d(k): t(0) = t(0) + q: t(1) = t(1) + deger: d(k) = t
+            Else
+                d.Add k, Array(q, deger)
+            End If
+        Next i
+    Next r
+    MS_Teshis "MB52 alýndý: " & CStr(satir) & " satýr, " & AKSORA_SAYI_METNI(sure, "0.0") & " sn"
+    Set MS_MB52_SOZLUK = d
+    Exit Function
+Hata:
+    hMesaj = "MB52 okunamadý: " & Err.Description
+    MS_Teshis hMesaj
+End Function
+
+' Satir degeri = satir miktari x (MB52 deger / MB52 miktar). Bulunamazsa fiyat listesi kullanilir.
+Private Sub MS_Mb52Uygula(ByRef a As Variant, ByVal d As Object)
+    Dim r As Long, k As String, t As Variant, birim As Double, q As Double
+    If d Is Nothing Or IsEmpty(a) Then Exit Sub
+    For r = 1 To UBound(a, 1)
+        k = MS_Mb52Anahtar(a(r, 2), a(r, 5), a(r, 9))
+        If Not d.Exists(k) Then k = MS_Mb52Anahtar("*", a(r, 5), a(r, 9))
+        If d.Exists(k) Then
+            t = d(k)
+            If CDbl(t(0)) <> 0 Then
+                birim = CDbl(t(1)) / CDbl(t(0))
+                q = 0
+                If IsNumeric(a(r, 7)) Then q = CDbl(a(r, 7))
+                a(r, 11) = Round(q * birim, 2): a(r, 13) = "SAP"
+            End If
+        End If
+    Next r
+End Sub
+
 Private Function MS_Norm(ByVal v As Variant) As String
     Dim t As String
     If IsError(v) Then Exit Function
@@ -575,6 +797,7 @@ End Sub
 
 Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     Dim ses As Object, hMesaj As String, bir As Variant, iki As Variant, d As Object
+    Dim mb As Object, mbMesaj As String
     Dim sayfa(1 To 3) As Worksheet, yeni(1 To 3) As Variant, eski(1 To 3) As Variant
     Dim tarihEski(1 To 3) As Variant, sonEski(1 To 3) As Long
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, yazildi As Boolean
@@ -611,7 +834,13 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     MS_SeriKontrol bir: MS_SeriKontrol iki
     MS_SeriBirlesimKontrol bir, iki
     mFiyatTur = True
-    MS_Durum "Fiyat listesi uygulanýyor..."
+    MS_Durum "MB52 deðerleri alýnýyor (7155)..."
+    Set mb = MS_MB52_SOZLUK(mbMesaj)
+    If Not mb Is Nothing Then
+        MS_Mb52Uygula bir, mb
+        MS_Mb52Uygula iki, mb
+    End If
+    MS_Durum "Deðerler uygulanýyor..."
     eksik = MS_FiyatUygula(bir, d, Format$(tarih, "dd.mm.yyyy"))
     eksik = eksik + MS_FiyatUygula(iki, d, Format$(tarih, "dd.mm.yyyy"))
     yeni(1) = MS_Ayir(bir, 1): yeni(2) = iki: yeni(3) = MS_Ayir(bir, 3)
@@ -633,10 +862,11 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
         "Ýlçe stok satýrý: " & AKSORA_SAYI_METNI(adet(2), "#,##0") & vbCrLf & _
         "Yüklenici stok satýrý: " & AKSORA_SAYI_METNI(adet(3), "#,##0") & vbCrLf & vbCrLf & _
-        "Deðer kaynaðý: SAP raporu " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
+        "Deðer kaynaðý: SAP MB52 " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
             AKSORA_SAYI_METNI(mListeSatir, "#,##0") & " satýr" & vbCrLf & _
         "Fiyatý bulunamayan/belirsiz satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & vbCrLf & _
-        "Okuma: " & IIf(mStandartSatir = 0, "Hýzlý (dosya)", IIf(mHizliSatir = 0, "Standart", "Karma")) & _
+        IIf(Len(mbMesaj) > 0, "MB52: " & Replace(mbMesaj, vbCrLf, " ") & vbCrLf, "") & _
+        "Okuma: " & IIf(mStandartSatir = 0, "Hýzlý (Excel)", IIf(mHizliSatir = 0, "Standart", "Karma")) & _
             IIf(Len(mHizliSebep) > 0, "  |  Hýzlý okuma kullanýlamadý: " & mHizliSebep, "") & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri 7155"
 Cikis:
@@ -723,7 +953,8 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     ' Once hizli yol: listeyi dosyaya aktarip tek seferde oku.
     asama = mDurum
     MS_Durum asama & " | Liste dosyaya aktarýlýyor..."
-    hizli = MS_ALV_Dosya(ses, alv, kolonlar, ids, n, fiyat)
+    hizli = Empty
+    If Not fiyat Then hizli = MS_ALV_Excel(ses, alv, ids, n)
     If IsArray(hizli) Then
         mHizliSatir = mHizliSatir + UBound(hizli, 1)
         MS_Durum asama & " | " & CStr(UBound(hizli, 1)) & " satýr okundu"
