@@ -324,7 +324,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
         Next oncelik
         hedef.Range("A13").Resize(n, 11).Value = cikti
         hedef.Range("G13:G" & 12 + n).NumberFormat = "#,##0.##"
-        hedef.Range("I13:I" & 12 + n).NumberFormat = "#,##0.00"
+        hedef.Range("I13:I" & 12 + n).NumberFormat = "#,##0.00 ""TL"""
         hedef.Range("K13:K" & 12 + n).HorizontalAlignment = xlCenter
         ' Sonuç biçimleri doðrudan uygulanýr; pano kullanýlmaz.
     ElseIf mevcutIller.Count = 0 Then

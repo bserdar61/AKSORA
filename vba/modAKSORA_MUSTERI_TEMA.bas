@@ -473,11 +473,16 @@ Public Sub AKSORA_MUSTERI_HIZLI_AC()
     ad = ws.Shapes(CStr(application.Caller)).AlternativeText
     Set hedef = ThisWorkbook.Worksheets(ad)
     If Not AKSORA_MUSTERI_TEMA_SAYFA(hedef) Then Err.Raise vbObjectError + 1730, , "Müþteri sayfasý bulunamadý."
+    application.ScreenUpdating = False
+    application.EnableEvents = False
     hedef.Visible = xlSheetVisible
     hedef.Select Replace:=True
+    application.EnableEvents = True
     AKSORA_MUSTERI_TEMA_GORUNUM hedef
+    application.ScreenUpdating = True
     Exit Sub
 Hata:
+    application.EnableEvents = True: application.ScreenUpdating = True
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
@@ -1094,9 +1099,14 @@ End Function
 
 Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     Dim s As Shape, genislik As Double, z As Double, altSinir As Double
+    Dim sc As Boolean, no As Long, metin As String
     If Not AKSORA_MUSTERI_TEMA_SAYFA(ws) Then Exit Sub
+    ' Gecis sirasinda ekran tek seferde cizilir (titreme olmaz).
+    sc = application.ScreenUpdating
+    application.ScreenUpdating = False
+    On Error GoTo Hata
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
-    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then GoTo Cikis
     genislik = ws.Range("A1:L1").Width
     For Each s In ws.Shapes
         If s.Visible = msoTrue Then
@@ -1106,19 +1116,30 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     Next s
     With ThisWorkbook.Windows(1)
         .DisplayWorkbookTabs = True
-        .View = xlNormalView
+        If .View <> xlNormalView Then .View = xlNormalView
         z = (.UsableWidth - 8) / genislik * 100
         If ws.Name = "M_ANA PANEL" And altSinir > 0 Then _
             z = application.Min(z, (.UsableHeight - 8) / altSinir * 100)
-        .Zoom = application.Max(10, application.Min(IIf(ws.Name = "M_ANA PANEL", 400, 200), Fix(z)))
+        z = application.Max(10, application.Min(IIf(ws.Name = "M_ANA PANEL", 400, 200), Fix(z)))
+        If .Zoom <> z Then .Zoom = z
         On Error Resume Next
-        .FreezePanes = False: .SplitRow = 0: .SplitColumn = 0
-        On Error GoTo 0
-        .DisplayGridlines = False: .DisplayHeadings = False
-        .DisplayWorkbookTabs = True
-        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = (ws.Name <> "M_ANA PANEL")
+        If .FreezePanes Then .FreezePanes = False
+        If .SplitRow <> 0 Then .SplitRow = 0
+        If .SplitColumn <> 0 Then .SplitColumn = 0
+        On Error GoTo Hata
+        If .DisplayGridlines Then .DisplayGridlines = False
+        If .DisplayHeadings Then .DisplayHeadings = False
+        If .DisplayHorizontalScrollBar Then .DisplayHorizontalScrollBar = False
+        If .DisplayVerticalScrollBar <> (ws.Name <> "M_ANA PANEL") Then .DisplayVerticalScrollBar = (ws.Name <> "M_ANA PANEL")
         .ScrollRow = 1: .ScrollColumn = 1
     End With
+Cikis:
+    application.ScreenUpdating = sc
+    If no <> 0 Then Err.Raise no, "AKSORA_MUSTERI_TEMA_GORUNUM", metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
 End Sub
 
 Private Function TEMA_GORUNUR_DEPO_SAYISI(ByVal ws As Worksheet, ByVal son As Long) As Long

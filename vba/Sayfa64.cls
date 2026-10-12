@@ -24,3 +24,9 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     On Error Resume Next
     Me.Range("B6").Select
 End Sub
+
+Private Sub Worksheet_Calculate()
+    If AKSORA_V11_MESGUL Or AKSORA_V13_ACILIS Then Exit Sub
+    On Error Resume Next
+    AKSORA_MUSTERI_BANT Me
+End Sub

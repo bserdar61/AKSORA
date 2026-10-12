@@ -64,6 +64,9 @@ Private Sub Workbook_Open()
 
     AKSORA_V8_KAPAK_GORUNUM
 
+    adim = "Fiyat listesi"
+    AKSORA_MUSTERI_FIYAT_KONTROL
+
     ' AKSORA_BIRIM_HOOK_OPEN
     AKSORA_BIRIM_ACILIS
     SPLASH_DURUM 1, "AKSORA hazýr"

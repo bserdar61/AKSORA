@@ -221,8 +221,10 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
                 If poz > 1 Then nt = "Kuruþ farklarý birleþtirildi: " & liste
                 If sifirVar Then nt = nt & IIf(Len(nt) > 0, " | ", "") & "0 fiyatlý satýrlar yok sayýldý"
             Else
-                durum = "BELIRSIZ": secili = 0
-                nt = "Çeliþkili fiyatlar: " & liste
+                ' Ayni malzeme + parti icin farkli fiyatlar: listede en sik gecen fiyat alinir
+                ' (esitlikte yuksek olan). YENI ve CIKMA/BDSZ partileri ayri tutulur.
+                durum = "TEK"
+                nt = "Farklý fiyatlar (" & liste & "); en sýk geçen fiyat alýndý"
             End If
             If (gecis = 1 And durum <> "TEK") Or (gecis = 2 And durum = "TEK") Then
                 i = i + 1
@@ -255,7 +257,7 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
     wsF.Range("A:B").NumberFormat = "@"
     wsF.Range("A1:G1").Value2 = Array("Malzeme", "Parti", "Birim Fiyat", "Durum", "Malzeme kýsa metni", "Mal grubu", "Not")
     wsF.Range("A2").Resize(d.Count, 7).Value2 = out
-    wsF.Range("C2:C" & d.Count + 1).NumberFormat = "#,##0.00"
+    wsF.Range("C2:C" & d.Count + 1).NumberFormat = "#,##0.00 ""TL"""
     wsF.Range("I1").Value2 = "Liste tarihi": wsF.Range("J1").Value2 = CDbl(tarih)
     wsF.Range("J1").NumberFormat = "dd.mm.yyyy hh:mm:ss"
     wsF.Range("I2").Value2 = "Kaynak dosya": wsF.Range("J2").Value2 = Mid$(CStr(dosya), InStrRev(CStr(dosya), "\") + 1)
@@ -279,6 +281,8 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
             vbCrLf & "Ayrýntý: _FIYAT_LISTESI sayfasý (gizli, sað týk > Göster)."
     End If
     application.EnableEvents = ev: application.ScreenUpdating = sc: application.DisplayAlerts = al
+    AKSORA_MUSTERI_FIYATLARI_UYGULA False
+    AKSORA_MUSTERI_PANEL_YENILE
     MsgBox ozet, vbInformation, "AKSORA | Müþteri fiyat listesi"
     Exit Sub
 

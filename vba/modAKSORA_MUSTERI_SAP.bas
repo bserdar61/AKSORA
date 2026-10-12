@@ -338,6 +338,7 @@ Private Sub MS_Yaz(ByVal ws As Worksheet, ByRef a As Variant)
     End If
     ws.Range("K6:N6").Value = Array("Deðer (TL)", "Birim stok deðeri (TL)", "Fiyat durumu", "Fiyat eksik")
     ws.Columns("K:N").Hidden = True
+    If n > 0 Then ws.Range("K7:L" & n + 6).NumberFormat = "#,##0.00 ""TL"""
     ws.Range("C2").Value = Now: ws.Range("C2").NumberFormat = "dd.mm.yyyy hh:mm:ss"
     For Each s In ws.Shapes
         If InStr(s.Name, "STOK_KPI_ETIKET_2") > 0 Then s.TextFrame2.TextRange.Text = "Toplam Stok Deðeri"
@@ -529,3 +530,59 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
     Next r
     MS_ALV_Oku = sonuc
 End Function
+
+'----------------------------------------------------------
+' Fiyat listesini SAP'a gitmeden mevcut musteri stoklarina uygular.
+'----------------------------------------------------------
+Public Sub AKSORA_MUSTERI_FIYATLARI_UYGULA(Optional ByVal sessiz As Boolean = True)
+    Dim d As Object, tarih As Date, hMesaj As String, adlar As Variant, i As Long, ws As Worksheet
+    Dim son As Long, a As Variant, r As Long, c As Long, cikti() As Variant, korumali As Boolean
+    Dim ev As Boolean, sc As Boolean, wsF As Worksheet
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    Set d = MF_FIYAT_SOZLUGU(tarih, hMesaj)
+    If d Is Nothing Then Err.Raise vbObjectError + 1940, , hMesaj
+    application.EnableEvents = False: application.ScreenUpdating = False
+    adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+    For i = 0 To 2
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        son = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+        If son >= 7 Then
+            a = ws.Range("A7:N" & son).Value2
+            For r = 1 To UBound(a, 1)
+                If IsError(a(r, 7)) Then a(r, 7) = 0
+                If VarType(a(r, 7)) = vbString Or IsEmpty(a(r, 7)) Then a(r, 7) = Val(CStr(a(r, 7)))
+            Next r
+            MS_FiyatUygula a, d, Format$(tarih, "dd.mm.yyyy")
+            ReDim cikti(1 To UBound(a, 1), 1 To 4)
+            For r = 1 To UBound(a, 1)
+                For c = 1 To 4: cikti(r, c) = a(r, 10 + c): Next c
+            Next r
+            korumali = ws.ProtectContents
+            If korumali Then ws.Unprotect ""
+            ws.Range("K7").Resize(UBound(a, 1), 4).Value2 = cikti
+            ws.Range("K7:L" & son).NumberFormat = "#,##0.00 ""TL"""
+            If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+                UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next i
+    Set wsF = ThisWorkbook.Worksheets("_FIYAT_LISTESI")
+    wsF.Range("I4").Value2 = "Stoklara uygulandý"
+    wsF.Range("J4").Value2 = wsF.Range("J3").Value2
+    wsF.Range("J4").NumberFormat = "dd.mm.yyyy hh:mm:ss"
+Cikis:
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    Exit Sub
+Hata:
+    If Not sessiz Then MsgBox "Fiyatlar stoklara uygulanamadý: " & Err.Description, vbExclamation, "AKSORA"
+    Resume Cikis
+End Sub
+
+' Yeni yuklenen fiyat listesi stoklara henuz uygulanmadiysa uygular (acilista).
+Public Sub AKSORA_MUSTERI_FIYAT_KONTROL()
+    Dim wsF As Worksheet
+    On Error Resume Next
+    Set wsF = ThisWorkbook.Worksheets("_FIYAT_LISTESI")
+    If wsF Is Nothing Then Exit Sub
+    If CStr(wsF.Range("J4").Value2) <> CStr(wsF.Range("J3").Value2) Then AKSORA_MUSTERI_FIYATLARI_UYGULA True
+End Sub
