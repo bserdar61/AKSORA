@@ -616,15 +616,6 @@ Private Sub MS_DisaKapat()
                 If StrComp(wb.FullName, CStr(p), vbTextCompare) = 0 Then wb.Close SaveChanges:=False
             Next wb
             If Len(Dir$(CStr(p))) > 0 Then
-                Set w = GetObject(CStr(p))
-                If Not w Is Nothing Then
-                    Set uyg = w.Application
-                    w.Close SaveChanges:=False
-                    If Not uyg Is application Then
-                        If uyg.Workbooks.Count = 0 Then uyg.Quit
-                    End If
-                    Set uyg = Nothing: Set w = Nothing
-                End If
                 Err.Clear
                 Kill CStr(p)
                 If Len(Dir$(CStr(p))) > 0 Then kalan = kalan + 1
@@ -797,7 +788,7 @@ End Function
 Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
     Dim eski As Object, wb As Workbook, sh As Worksheet, en As Worksheet, bas As Double, kol As String
     Dim w As Object, basildi As Long, basZaman As Date, dosya As String, boy As Long, eskiBoy As Long
-    Dim dis As Object, kendimiz As Boolean
+    Dim dis As Object, kendimiz As Boolean, kopya As String
     On Error GoTo Hata
     basZaman = Now - TimeSerial(0, 0, 5)
     Set eski = MS_AcikKitaplar()
@@ -842,8 +833,12 @@ Private Function MS_AlvExcel(ByVal ses As Object, ByVal alv As Object, ByVal eti
                     MS_Teshis etiket & " dosya bulundu: " & dosya & " (" & CStr(boy) & " bayt)"
                     If mDisaDosyalar Is Nothing Then Set mDisaDosyalar = New Collection
                     mDisaDosyalar.Add dosya
+                    ' SAP'nin Excel'i dosyayi kilitli tutabilir; kopyasi okunur.
+                    kopya = Environ$("TEMP") & "\AKSORA_" & etiket & "_" & Format$(Now, "hhnnss") & ".xlsx"
+                    FileCopy dosya, kopya
+                    mDisaDosyalar.Add kopya
                     application.DisplayAlerts = False
-                    Set wb = Workbooks.Open(Filename:=dosya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+                    Set wb = Workbooks.Open(Filename:=kopya, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
                     application.DisplayAlerts = True
                     kendimiz = True
                     GoTo Bulundu
@@ -873,13 +868,6 @@ Bulundu:
     MS_Teshis etiket & " Excel'e aktarýldý: " & CStr(en.UsedRange.Rows.Count) & " satýr, " & _
         AKSORA_SAYI_METNI(MS_Gecen(bas), "0.0") & " sn"
     wb.Close SaveChanges:=False
-    ' Ayni dosya baska Excel penceresinde de aciksa kapatilir.
-    If kendimiz Then
-        On Error Resume Next
-        Set dis = GetObject(dosya)
-        If Not dis Is Nothing Then dis.Close SaveChanges:=False
-        On Error GoTo 0
-    End If
     ThisWorkbook.Activate
     Exit Function
 Hata:
@@ -1536,8 +1524,8 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     MS_Durum "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & _
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
-    MS_DisaKapat
     MS_ExcelTemizle
+    MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
     MsgBox "Müþteri 7155 güncellendi." & vbCrLf & vbCrLf & _
@@ -1570,8 +1558,8 @@ Hata:
         If Err.Number <> 0 Then hMesaj = hMesaj & vbCrLf & "Eski kayýtlarýn geri yüklenmesi doðrulanamadý: " & Err.Description
         On Error GoTo 0
     End If
-    MS_DisaKapat
     MS_ExcelTemizle
+    MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
     MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
