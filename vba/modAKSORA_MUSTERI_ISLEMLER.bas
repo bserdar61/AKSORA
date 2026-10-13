@@ -688,7 +688,7 @@ End Sub
 Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim ws As Worksheet, kaynak As Worksheet, ad As Variant, veri As Variant, buffer() As Variant, sonuc() As Variant
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
-    Dim ev As Boolean, sc As Boolean, hataMetni As String
+    Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
@@ -696,12 +696,26 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     If Len(q) < 2 Then MsgBox "En az iki karakter giriniz.", vbInformation, "AKSORA": Exit Sub
     application.EnableEvents = False: application.ScreenUpdating = False
     ReDim buffer(1 To 14, 1 To 500)
-    kod = CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)
-    For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
-        Set kaynak = ThisWorkbook.Worksheets(CStr(ad))
-        son = AKSORA_M_SON(kaynak)
-        If son >= 7 Then
-            veri = kaynak.Range("A7:N" & son).Value2
+    ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
+    ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+    If Len(ekran) = 0 Then ekran = "ARTVIN"
+    For Each il In AKSORA_MUSTERI_ILLER()
+    kod = CStr(il)
+    For i = 1 To 3
+        ad = Choose(i, "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+        veri = Empty
+        If kod = ekran Then
+            Set kaynak = ThisWorkbook.Worksheets(CStr(ad))
+            son = AKSORA_M_SON(kaynak)
+            If son >= 7 Then veri = kaynak.Range("A7:N" & son).Value2
+        Else
+            Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
+            If Not kaynak Is Nothing Then
+                son = kaynak.Cells(kaynak.Rows.Count, "E").End(xlUp).Row
+                If son >= 2 Then veri = kaynak.Range("A2:N" & son).Value2
+            End If
+        End If
+        If IsArray(veri) Then
             For r = 1 To UBound(veri, 1)
                 If M_ESLESIR(veri(r, 5), q) Or M_ESLESIR(veri(r, 6), q) Or M_ESLESIR(veri(r, 10), q) Then
                     n = n + 1
@@ -723,7 +737,8 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
                 End If
             Next r
         End If
-    Next ad
+    Next i
+    Next il
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
@@ -744,6 +759,8 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ws.Columns("N").Hidden = True
     AKSORA_MUSTERI_BANT ws
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
+    ' Secili il dugmesi korunur: sonuc o ile gore listelenir.
+    AKSORA_MUSTERI_ARAMA_FILTRE CStr(ws.Range("BX21").Value2)
     If n = 0 Then MsgBox "Müþteri stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
 Cikis:
     On Error Resume Next

@@ -57,6 +57,8 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   (`AKSORA_MUSTERI_IL_DEGIS`) ekrandaki il kaydedilir, seçilen il yüklenir; M_ sayfalarında BX20 = il.
 - Müşteri "bütün iller": tanımlı illeri müşteri motoruyla sırayla günceller, sonunda seçili ile döner ve müşteri ANA PANEL'i açar.
 - Stok sayfalarında C2 = C2:E2 birleşik: temizlik daima `C2.MergeArea`. Arşiv kaydet/yükle hataları yutulmaz; yükleme önce 3 kaydı okur sonra 3 sayfayı yazar; il seçimi (AZ1) ancak 3 sayfanın BX20'si doğrulanınca değişir.
+- Müşteri: MB52 seri grubunda IQ09 seri sayısını aşan miktar "seri no boş" satır olarak yazılır (adet+tutar MB52'den) → mutabakat birebir.
+- Müşteri arama: tüm tanımlı iller aranır (ekrandaki il sayfalardan, diğerleri arşivden); il düğmesi BX21'de saklanır, sonuç o ile süzülür; sonuç yalnız başka sayfadan gelince temizlenir.
 - Müşteri arama sayfası: il tarihleri ekrandaki il için sayfalardan, diğer iller için `_MA_<IL>_*` A1'den. Toplu düğme = malzeme arama düğmesinin aynısı.
 - Depo listesi (form açılır liste) tüm satırları açar (tekerlek kaydırmaz); sayfa her açılışta yeniden yerleştirilir.
 
@@ -64,4 +66,3 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
   "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.
   Bir sonraki güncellemede tüm birimlere (Malzeme dahil) birebir aynı görsel ve sistemle eklenecek.
-- Trabzon CDP MB52 farkı (-16.132,49 TL) incelenecek.

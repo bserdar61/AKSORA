@@ -7,6 +7,9 @@ Public AKSORA_MUSTERI_TOPLU_AKTIF As Boolean
 Private mMusteriTopluBas As Double
 Private mMusteriTopluMetin As String
 Private mMusteriTopluSaniye As Long
+Private mSonGorunen As String
+Private mTopluMesaj As String
+Private mTopluIkon As Long
 
 Private Function TEMA_KAYNAKLAR() As Variant
     TEMA_KAYNAKLAR = Array("ANA PANEL", "MALZEME_ARA", "CDP_STOK", "CDP_RAPOR", _
@@ -794,22 +797,48 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
-    Dim ws As Worksheet, kod As String, isim As String, s As Shape, ad As String, ev As Boolean, sc As Boolean
+    Dim ws As Worksheet, kod As String, ev As Boolean, sc As Boolean
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
     kod = ws.Shapes(CStr(application.Caller)).AlternativeText
     Select Case kod
-        Case "TUMU": isim = ""
+        Case "TUMU", "GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN"
+        Case Else: GoTo Cikis
+    End Select
+    AKSORA_MUSTERI_ARAMA_FILTRE kod
+Cikis:
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        If Not (ActiveSheet Is ws) Then ws.Activate
+        ws.Range("B6").Select
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Resume Cikis
+End Sub
+
+' Arama sonucu secilen ile gore suzulur; secim BX21'de saklanir ve dugme rengi guncellenir.
+Public Sub AKSORA_MUSTERI_ARAMA_FILTRE(ByVal kod As String)
+    Dim ws As Worksheet, isim As String, s As Shape, ad As String, ev As Boolean
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False
+    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    kod = UCase$(Trim$(kod))
+    Select Case kod
         Case "GIRESUN": isim = "GÝRESUN"
         Case "TRABZON": isim = "TRABZON"
         Case "RIZE": isim = "RÝZE"
         Case "GUMUSHANE": isim = "GÜMÜÞHANE"
         Case "ARTVIN": isim = "ARTVÝN"
-        Case Else: Exit Sub
+        Case Else: kod = "TUMU": isim = ""
     End Select
     ws.Unprotect ""
+    ws.Range("BX21").Value2 = kod
     If Not ws.AutoFilterMode Then TEMA_ARAMA_KPI_FORMULLER ws
     If Len(isim) = 0 Then
         ws.AutoFilter.Range.AutoFilter Field:=13
@@ -837,10 +866,9 @@ Cikis:
     If Not ws Is Nothing Then
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
         ws.EnableSelection = xlNoRestrictions
-        If Not (ActiveSheet Is ws) Then ws.Activate
-        ws.Range("B6").Select
     End If
-    application.EnableEvents = ev: application.ScreenUpdating = sc
+    application.EnableEvents = ev
+    On Error GoTo 0
     Exit Sub
 Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
@@ -1120,9 +1148,11 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     application.MoveAfterReturn = (ws.Name <> "M_MALZEME_ARA")
     On Error GoTo Hata
     AKSORA_MUSTERI_FILTRE_SIFIRLA ws.Name
-    If ws.Name = "M_MALZEME_ARA" Then
+    ' Arama sonucu yalniz baska sayfadan gelince temizlenir (pencere yenilemesinde korunur).
+    If ws.Name = "M_MALZEME_ARA" And mSonGorunen <> "M_MALZEME_ARA" Then
         If AKSORA_M_SON(ws) >= 13 Or Len(Trim$(CStr(ws.Range("B6").Value2))) > 0 Then AKSORA_MUSTERI_ARAMA_TEMIZLE
     End If
+    mSonGorunen = ws.Name
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
     If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then GoTo Cikis
     With ThisWorkbook.Windows(1)
@@ -1355,6 +1385,12 @@ Public Sub AKSORA_MUSTERI_TOPLU_TIK(Optional ByVal zorla As Boolean = False)
     mMusteriTopluSaniye = saniye
 End Sub
 
+Public Sub AKSORA_MUSTERI_TOPLU_MESAJ()
+    If Len(mTopluMesaj) = 0 Then Exit Sub
+    MsgBox mTopluMesaj, mTopluIkon, "AKSORA | Müþteri Birimi"
+    mTopluMesaj = vbNullString
+End Sub
+
 Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     Dim ws As Worksheet, onceki As Object, il As Variant, secim As Variant
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, sessiz As Boolean, korumali As Boolean
@@ -1412,11 +1448,13 @@ Bitir:
     AKSORA_MUSTERI_ARAMA_TARIH_YENILE
     AKSORA_MUSTERI_PANEL_GOSTER
     On Error GoTo 0
+    ' Ozet, panel ekrana cizildikten sonra gosterilir.
     If Len(hataMetni) > 0 Then
-        MsgBox sonuc & vbCrLf & hataMetni, vbExclamation, "AKSORA | Müþteri Birimi"
+        mTopluMesaj = sonuc & vbCrLf & hataMetni: mTopluIkon = vbExclamation
     Else
-        MsgBox sonuc, vbInformation, "AKSORA | Müþteri Birimi"
+        mTopluMesaj = sonuc: mTopluIkon = vbInformation
     End If
+    application.OnTime Now + TimeSerial(0, 0, 1), "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_TOPLU_MESAJ"
     Exit Sub
 Hata:
     hataMetni = Err.Description

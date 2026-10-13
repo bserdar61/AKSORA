@@ -1159,7 +1159,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     Dim r As Long, n As Long, h As Long, k As String, ks As String, t As Variant, mg As String
     Dim depo As String, malz As String, parti As String, birim As Double, ad As String, fark As Long
     Dim cikti() As Variant, nIq As Long, nMb As Long, x As Variant, mbTop(1 To 3) As Double, akTop(1 To 3) As Double, i As Long
-    Dim mbq As Double, nSifir As Long
+    Dim mbq As Double, nSifir As Long, nSerisiz As Long, iqc As Double
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set mgOf = CreateObject("Scripting.Dictionary"): mgOf.CompareMode = vbTextCompare
     Set brOf = CreateObject("Scripting.Dictionary"): brOf.CompareMode = vbTextCompare
@@ -1229,10 +1229,21 @@ SonrakiSeri:
         If h > 0 And (h <> 2 Or MS_GrupSeri(mg) Or mg = "M03550100") Then mbTop(h) = mbTop(h) + CDbl(mb(r, 10))
         If h > 0 And MS_GrupSeri(mg) Then
             k = depo & "|" & malz & "|" & parti
-            If CLng(CDbl(mb(r, 8))) <> CLng(sayac(k)) Then
+            iqc = 0: If sayac.Exists(k) Then iqc = CDbl(sayac(k))
+            If CLng(CDbl(mb(r, 8))) <> CLng(iqc) Then
                 fark = fark + 1
                 MS_Teshis "Adet farký: " & depo & " | " & CStr(mb(r, 6)) & " | " & CStr(mb(r, 7)) & " | parti '" & _
-                    CStr(mb(r, 5)) & "' | MB52 " & CStr(mb(r, 8)) & " / IQ09 " & CStr(CLng(sayac(k)))
+                    CStr(mb(r, 5)) & "' | MB52 " & CStr(mb(r, 8)) & " / IQ09 " & CStr(CLng(iqc))
+            End If
+            ' MB52 serbest miktari IQ09 seri sayisindan fazlaysa fark seri numarasiz satir olarak yazilir
+            ' (adet ve tutar MB52'den); boylece toplam MB52 ile birebir tutar.
+            If CDbl(mb(r, 8)) > iqc And (h <> 2 Or MS_GrupSeri(mg)) Then
+                n = n + 1: nSerisiz = nSerisiz + 1
+                ad = MS_DepoAdi(MS_Tesis(), depo): If Len(ad) = 0 Then ad = CStr(mb(r, 3))
+                cikti(n, 1) = MS_Tesis(): cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
+                cikti(n, 5) = CStr(mb(r, 6)): cikti(n, 6) = CStr(mb(r, 7)): cikti(n, 7) = CDbl(mb(r, 8)) - iqc
+                cikti(n, 8) = CStr(mb(r, 9)): cikti(n, 9) = CStr(mb(r, 5)): cikti(n, 10) = vbNullString
+                cikti(n, 11) = Round(CDbl(mb(r, 10)) * (CDbl(mb(r, 8)) - iqc) / CDbl(mb(r, 8)), 2): cikti(n, 13) = "SAP"
             End If
         End If
         If h > 0 And Not MS_GrupSeri(mg) And (h <> 2 Or mg = "M03550100") And CDbl(mb(r, 8)) <> 0 Then
@@ -1246,7 +1257,8 @@ SonrakiSeri:
     Next r
     ozet = "IQ09 seri numaralý " & AKSORA_SAYI_METNI(nIq, "#,##0") & " satýr  |  MB52 toplu " & _
         AKSORA_SAYI_METNI(nMb, "#,##0") & " satýr" & IIf(fark > 0, "  |  IQ09/MB52 adet farký: " & fark & " kalem", "") & _
-        IIf(nSifir > 0, vbCrLf & "Serbest stokta olmayan seri (adet 0, tutar 0): " & AKSORA_SAYI_METNI(nSifir, "#,##0") & " satýr", "")
+        IIf(nSifir > 0, vbCrLf & "Serbest stokta olmayan seri (adet 0, tutar 0): " & AKSORA_SAYI_METNI(nSifir, "#,##0") & " satýr", "") & _
+        IIf(nSerisiz > 0, vbCrLf & "IQ09'da seri numarasý olmayan MB52 miktarý (seri no boþ): " & AKSORA_SAYI_METNI(nSerisiz, "#,##0") & " satýr", "")
     For r = 1 To n
         h = MS_Hedef(CStr(cikti(r, 2)))
         If h > 0 And Not IsEmpty(cikti(r, 11)) Then akTop(h) = akTop(h) + CDbl(cikti(r, 11))
@@ -2261,6 +2273,29 @@ Hata:
     Resume Cikis
 End Sub
 
+' Ekrandaki uc sayfa ilin kaydiyla ayni mi (tarih ve satir sayisi)? Ayniysa tekrar yazilmaz.
+Private Function MS_ArsivAyni(ByVal il As String) As Boolean
+    Dim adlar As Variant, i As Long, ar As Worksheet, ws As Worksheet, a As Variant, b As Variant
+    On Error GoTo Yok
+    adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+    For i = 1 To 3
+        Set ar = MS_ArsivSayfa(il, i, False)
+        If ar Is Nothing Then Exit Function
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        a = ar.Range("A1").Value: b = ws.Range("C2").MergeArea.Cells(1, 1).Value
+        If IsError(a) Or IsError(b) Then Exit Function
+        If CStr(a) <> CStr(b) Then Exit Function
+        If ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1 <> application.Max(0, AKSORA_M_SON(ws) - 6) Then Exit Function
+    Next i
+    MS_ArsivAyni = True
+Yok:
+End Function
+
+' Arama icin: ilin arsiv sayfasi (1 CDP, 2 ILCE, 3 YUK); yoksa Nothing.
+Public Function AKSORA_MUSTERI_ARSIV_SAYFA(ByVal il As String, ByVal i As Long) As Worksheet
+    Set AKSORA_MUSTERI_ARSIV_SAYFA = MS_ArsivSayfa(UCase$(Trim$(il)), i, False)
+End Function
+
 ' Arsivdeki en son guncelleme tarihi (kayit yoksa 0).
 Public Function AKSORA_MUSTERI_ARSIV_TARIH(ByVal il As String) As Date
     Dim i As Long, ar As Worksheet, v As Variant
@@ -2336,7 +2371,7 @@ Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
     On Error GoTo 0
     If Len(mevcut) = 0 Then mevcut = "ARTVIN"
     If mevcut <> il Then
-        AKSORA_MUSTERI_ARSIV_KAYDET mevcut
+        If Not MS_ArsivAyni(mevcut) Then AKSORA_MUSTERI_ARSIV_KAYDET mevcut
         ' Kayit dogrulanmadan ekrandaki veri silinmez.
         If MS_ArsivSayfa(mevcut, 1, False) Is Nothing Then
             Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
