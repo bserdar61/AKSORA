@@ -412,6 +412,17 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     application.ScreenUpdating = True
     basladi = True
     sonuc = AKHZ_ON_YUKLE() & vbCrLf
+    If Not AKHZ_TAMAM() Then
+        ' Hizli okuma olmadiysa kullanici uzun sureyi bilerek secer.
+        application.ScreenUpdating = True
+        If MsgBox("Hýzlý okuma yapýlamadý:" & vbCrLf & vbCrLf & sonuc & _
+                  "Eski yöntemle il il okuma yaklaþýk 4-5 dakika sürer." & vbCrLf & _
+                  "Devam edilsin mi?", vbYesNo + vbExclamation, "AKSORA | Bütün Ýller") <> vbYes Then
+            sonuc = "Güncelleme iptal edildi. Stoklar deðiþtirilmedi." & vbCrLf & vbCrLf & _
+                "Teþhis dosyasý: " & ThisWorkbook.Path & "\AKSORA_SAP_TESHIS.txt"
+            GoTo Temizle
+        End If
+    End If
     For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = CStr(il)
         bilgi = ""
@@ -830,6 +841,10 @@ End Function
 ' yuklenici ayrimi bellekte depo koduna gore yapilir. Herhangi bir adim
 ' basarisizsa o sistem icin eski il il okuma yontemi kullanilir.
 '==========================================================
+Public Function AKHZ_TAMAM() As Boolean
+    AKHZ_TAMAM = mHzHazir(1) And mHzHazir(2)
+End Function
+
 Public Sub AKHZ_TEMIZLE()
     mHzVeri(1) = Empty: mHzVeri(2) = Empty
     mHzHazir(1) = False: mHzHazir(2) = False

@@ -704,12 +704,22 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
     If Len(Dir$(klasor, vbDirectory)) = 0 Then klasor = Environ$("TEMP")
     dosya = "AKSORA_" & etiket & "_" & Format$(Now, "yyyymmddhhnnss") & ".txt"
     tam = klasor & "\" & dosya
-    kol = MS_IlkKolon(alv)
-    alv.SetCurrentCell -1, kol
-    alv.SelectColumn kol
-    alv.ContextMenu
-    alv.SelectContextMenuItem "&PC"
-    Set pen = MS_PencereBekle(ses, 10)
+    ' 1. yol: liste arac cubugundaki Disa aktar > Yerel dosya. 2. yol: sutun baglam menusu.
+    On Error Resume Next
+    Err.Clear
+    alv.PressToolbarContextButton "&MB_EXPORT"
+    If Err.Number = 0 Then alv.SelectContextMenuItem "&PC"
+    If Err.Number <> 0 Then MS_Teshis etiket & " araç çubuðu dýþa aktarma: " & Err.Description
+    On Error GoTo Hata
+    Set pen = MS_PencereBekle(ses, 6)
+    If pen Is Nothing Then
+        kol = MS_IlkKolon(alv)
+        alv.SetCurrentCell -1, kol
+        alv.SelectColumn kol
+        alv.ContextMenu
+        alv.SelectContextMenuItem "&PC"
+        Set pen = MS_PencereBekle(ses, 10)
+    End If
     If pen Is Nothing Then MS_Teshis etiket & " yerel dosya penceresi açýlmadý": GoTo Temizle
     MS_Teshis etiket & " yerel dosya penceresi: " & pen.Text
     Set yolAlan = MS_AlanBul(pen, "DY_PATH")

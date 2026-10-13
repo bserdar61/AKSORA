@@ -4,7 +4,6 @@ Option Explicit
 Private mSigdirmaSuruyor As Boolean
 Private mOtomatikKapali As Boolean
 Private mSonHata As String
-Private mZoomHafiza As Object
 
 ' Yalnizca aktif sayfanin zoom'u degisir. Veri ve SAP koduna dokunulmaz.
 Public Function AKSORA_PENCERE_KUCUK(Optional ByVal wn As Window) As Boolean
@@ -37,7 +36,7 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
     Dim olay As Boolean, ekran As Boolean, eskiZoom As Variant
     Dim eskiSecilebilir As XlEnableSelection, satir As Long, sutun As Long
     Dim durumAlindi As Boolean, hataMetni As String
-    Dim kapakKilidi As Boolean, yukseklik As Double, yeniZoom As Long, anahtar As String
+    Dim kapakKilidi As Boolean, yukseklik As Double, yeniZoom As Long
     If mSigdirmaSuruyor Or mOtomatikKapali Then Exit Sub
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If Not (ActiveSheet Is ws) Then Exit Sub
@@ -87,16 +86,6 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
             AKSORA_RAPOR_AMBLEM_HIZALA ws.Name
     End Select
     AKSORA_TASARIM_SAYFA ws
-    ' Ayni pencere boyutunda sayfanin zoom'u bir kez hesaplanir; sonraki gecislerde
-    ' yeniden secim/zoom yapilmaz (gecis aninda ve titremesiz olur).
-    If ad <> "KAPAK" Then
-        anahtar = ws.Name & "|" & Format$(wn.UsableWidth, "0") & "|" & Format$(wn.UsableHeight, "0")
-        If mZoomHafiza Is Nothing Then Set mZoomHafiza = CreateObject("Scripting.Dictionary")
-        If mZoomHafiza.Exists(anahtar) Then
-            If wn.Zoom <> mZoomHafiza(anahtar) Then wn.Zoom = mZoomHafiza(anahtar)
-            GoTo Cikis
-        End If
-    End If
     Set alan = ws.Range(adres)
     alan.Select
     wn.Zoom = True
@@ -112,7 +101,6 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
     End If
     ' Son sutun ve buton kenarlari icin kucuk bir pay.
     If CLng(wn.Zoom) > 12 Then wn.Zoom = CLng(wn.Zoom) - 2
-    If Len(anahtar) > 0 Then mZoomHafiza(anahtar) = CLng(wn.Zoom)
     If ad = "KAPAK" Then AKSORA_KAPAK_GENISLIK_UYUM ws, wn
 Cikis:
     On Error Resume Next
