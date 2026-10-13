@@ -49,7 +49,10 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 | İl | Tesis | CDP depoları | İlçe | Yüklenici |
 |---|---|---|---|---|
 | Artvin | 7155 | E###, D003, D005, S001, Z002, Z003, Z007, EM14 | K### (yalnız M03550000/M03550100/M03250000) | M132 |
-| Trabzon | 7152 | (bekleniyor) | (bekleniyor) | (bekleniyor) |
+| Trabzon | 7152 | E###, D003, D005, D006, D012, P001–P003, S001, Z002, Z003 | K### (aynı 3 mal grubu) | M090, M132, M501–M511 |
 
-Not: Müşteri motorunda tesis "7155" ve depo eşlemesi (MS_Hedef) şu an Artvin'e sabittir;
-yeni il eklenirken tesis ve depo eşlemesi il tablosundan okunacak şekilde genelleştirilir.
+- Motor il bazlıdır: tesis `MS_Tesis()`, depo eşlemesi `MS_Hedef` (il'e göre), desteklenen iller
+  `AKSORA_MUSTERI_IL_DESTEK` / `AKSORA_MUSTERI_ILLER`. Yeni il = bu üç yere ekleme.
+- Her ilin stoğu kendi gizli kaydında: `_MA_<IL>_CDP / _ILCE / _YUK`. İl değişiminde
+  (`AKSORA_MUSTERI_IL_DEGIS`) ekrandaki il kaydedilir, seçilen il yüklenir; M_ sayfalarında BX20 = il.
+- Müşteri "bütün iller": tanımlı illeri müşteri motoruyla sırayla günceller, sonunda seçili ile döner.

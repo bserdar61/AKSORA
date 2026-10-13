@@ -416,6 +416,8 @@ Public Sub AKSORA_MUSTERI_GIRIS()
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
         MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
     Else
+        ' Secilen ilin stoklari ekrana yuklenir (onceki ilin verisi kendi kaydina saklanir).
+        AKSORA_MUSTERI_IL_DEGIS CStr(ws.Range("AZ1").Value2)
         AKSORA_MUSTERI_TEMA_AC
     End If
     Exit Sub

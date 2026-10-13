@@ -172,6 +172,9 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
     For i = ws.Shapes.Count To 1 Step -1
         If LCase$(Left$(ws.Shapes(i).Name, 9)) = "drop down" Then ws.Shapes(i).Delete
     Next i
+    ' Sayfa basligi secili ile gore.
+    Set s = M_SEKIL(ws, "AKT1_STOK_BASLIK")
+    If Not s Is Nothing Then s.TextFrame2.TextRange.Text = Replace(Mid$(ws.Name, 3), "_", " ") & "  |  " & M_IL_ADI() & " Ýl Müdürlüðü"
     If CStr(ws.Range("BX8").Value2) <> "MUSTERI_STOK_V2" Then
         If Len(CStr(ws.Range("BX12").Value2)) > 0 And IsNumeric(ws.Range("BX12").Value2) Then _
             ws.Columns(10).ColumnWidth = CDbl(ws.Range("BX12").Value2)
@@ -879,7 +882,7 @@ End Sub
 Private Function M_SON_SURE() As Double
     Dim t As String
     On Error Resume Next
-    t = ThisWorkbook.names("_AKSORA_MUSTERI_7155_SON_SURE").RefersTo
+    t = ThisWorkbook.names("_AKSORA_MUSTERI_SURE_" & UCase$(CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2))).RefersTo
     On Error GoTo 0
     If Len(t) > 1 Then M_SON_SURE = Val(Mid$(t, 2))
 End Function
@@ -1029,6 +1032,7 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         End With
     End If
     On Error GoTo 0
+    M_YAZ ws, "AKSORA15_KART_BASLIK_B", "CDP / " & AKSORA_MUSTERI_TESIS()
     ' Islem dugmeleri
     makro = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!"
     Set s = M_SEKIL(ws, "btnTumStok")
@@ -1628,3 +1632,13 @@ Public Sub AKSORA_RAPOR_HIZALA(ByVal ws As Worksheet, ByVal w As Double)
     M_DUZEN_RAPOR ws, w
     On Error GoTo 0
 End Sub
+
+Private Function M_IL_ADI() As String
+    Select Case UCase$(Trim$(CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)))
+        Case "GIRESUN": M_IL_ADI = "Giresun"
+        Case "TRABZON": M_IL_ADI = "Trabzon"
+        Case "RIZE": M_IL_ADI = "Rize"
+        Case "GUMUSHANE": M_IL_ADI = "Gümüþhane"
+        Case Else: M_IL_ADI = "Artvin"
+    End Select
+End Function

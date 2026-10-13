@@ -1321,14 +1321,14 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, sessiz As Boolean, korumali As Boolean
     Dim bilgi As String, sonuc As String, hataMetni As String, sure As Double, adet As Long
     If AKSORA_V11_MESGUL Or AKSORA_MUSTERI_TOPLU_AKTIF Then Exit Sub
-    If MsgBox("5 ilin stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
+    If MsgBox("Tanýmlý illerin (Artvin, Trabzon) müþteri stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
         vbYesNo + vbQuestion, "AKSORA | Müþteri Birimi") <> vbYes Then Exit Sub
     ev = application.EnableEvents: sc = application.ScreenUpdating
     hesap = application.Calculation: sessiz = ANA_SESSIZ_MOD
     Set onceki = ActiveSheet
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
-    secim = ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2
+    secim = ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2
     korumali = ws.ProtectContents
     ws.Unprotect ""
     application.EnableEvents = False
@@ -1339,27 +1339,30 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     ws.Visible = xlSheetVisible: ws.Activate
     application.ScreenUpdating = True
     AKSORA_MUSTERI_TOPLU_DURUM "Güncelleme hazýrlanýyor..."
-    For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
-        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = CStr(il)
+    For Each il In AKSORA_MUSTERI_ILLER()
+        ' Her il kendi kaydina yuklenip musteri motoruyla (IQ09 + MB52) guncellenir.
+        AKSORA_MUSTERI_IL_DEGIS CStr(il)
         bilgi = ""
-        If AKSORA_MUSTERI_IL_VERI_GUNCELLE(CStr(il), bilgi) Then adet = adet + 1
+        AKSORA_MUSTERI_TOPLU_DURUM CStr(il) & " güncelleniyor..."
+        If AKSORA_MUSTERI_IL_CALISTIR(bilgi) Then adet = adet + 1
         sonuc = sonuc & bilgi & vbCrLf
         AKSORA_MUSTERI_TOPLU_DURUM bilgi
     Next il
-    mMusteriTopluMetin = "Ýþlem tamamlandý. " & adet & "/5 il güncellendi."
+    mMusteriTopluMetin = "Ýþlem tamamlandý. " & adet & "/" & CStr(UBound(AKSORA_MUSTERI_ILLER()) + 1) & " il güncellendi."
 Bitir:
     On Error Resume Next
     If AKSORA_MUSTERI_TOPLU_AKTIF Then
         sure = Timer - mMusteriTopluBas
         If sure < 0 Then sure = sure + 86400#
         AKSORA_MUSTERI_TOPLU_AKTIF = False
-        If Len(hataMetni) > 0 Then mMusteriTopluMetin = "Ýþlem durduruldu. " & adet & "/5 il güncellendi."
+        If Len(hataMetni) > 0 Then mMusteriTopluMetin = "Ýþlem durduruldu. " & adet & " il güncellendi."
         ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_SON_SURE", _
             RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
         ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_SON_DURUM", _
             RefersTo:="=""" & Replace(mMusteriTopluMetin, """", """""") & """", Visible:=False
         TEMA_MUSTERI_SURE_YAZ mMusteriTopluMetin, sure
-        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
+        ' Baslangictaki il ekrana geri yuklenir.
+        AKSORA_MUSTERI_IL_DEGIS CStr(secim)
     End If
     If Not ws Is Nothing And korumali Then ws.Protect Password:="", DrawingObjects:=True, _
         Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True

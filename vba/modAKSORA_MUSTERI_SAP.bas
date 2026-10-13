@@ -39,6 +39,8 @@ Private mBas As Double
 Private mDurum As String
 Private mFiyatTur As Boolean
 Private mSeritZaman As Double
+Private mIlKod As String
+Private mSessiz As Boolean
 
 Private Function MS_Gecen(ByVal bas As Double) As Double
     MS_Gecen = Timer - bas
@@ -432,7 +434,7 @@ Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef id
     For r = h + 1 To UBound(v, 1)
         uy = MS_Metin(v(r, pos(1))): mz = MS_Metin(v(r, pos(5)))
         If Len(uy) > 0 Or Len(mz) > 0 Then
-            If uy <> "7155" Or Len(mz) = 0 Then
+            If uy <> MS_Tesis() Or Len(mz) = 0 Then
                 If Len(mz) > 0 Then mHizliSebep = "beklenmeyen satýr (ÜY " & uy & ")": GoTo Temizle
             Else
                 adet = adet + 1
@@ -513,7 +515,7 @@ Private Function MS_MB52_SOZLUK(ByRef hMesaj As String) As Object
     Dim veri As Variant, satir As Long, sutun As Long, sure As Double, d As Object
     Dim r As Long, k As String, t As Variant, q As Double, deger As Double, i As Long
     On Error GoTo Hata
-    If Not STOK_EXPORT_AL("CDP", "7155", "*", "*", veri, satir, sutun, sure, hMesaj) Then
+    If Not STOK_EXPORT_AL("CDP", MS_Tesis(), "*", "*", veri, satir, sutun, sure, hMesaj) Then
         MS_Teshis "MB52 alýnamadý: " & hMesaj
         Exit Function
     End If
@@ -1032,7 +1034,7 @@ Private Function MS_IQ09_Oku(ByVal ses As Object) As Variant
     On Error Resume Next
     ses.FindById("wnd[0]/usr/ctxtDATUV").Text = vbNullString
     On Error GoTo 0
-    ses.FindById("wnd[0]/usr/ctxtWERK-LOW").Text = "7155"
+    ses.FindById("wnd[0]/usr/ctxtWERK-LOW").Text = MS_Tesis()
     ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
     Set alv = MS_GridBekle(ses, 900)
     If alv Is Nothing Then Err.Raise vbObjectError + 1960, , "IQ09 sonuç listesi açýlmadý."
@@ -1077,7 +1079,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     Dim sonuc() As Variant, adlar As Variant, konum As Variant
     MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | MB52 baþlýyor"
     ses.StartTransaction "MB52"
-    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = "7155"
+    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = MS_Tesis()
     On Error Resume Next
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
@@ -1113,7 +1115,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     ReDim sonuc(1 To UBound(v, 1), 1 To 10)
     For r = h + 1 To UBound(v, 1)
         If Len(MS_Metin(v(r, k(6)))) > 0 And Len(MS_Metin(v(r, k(2)))) > 0 Then
-            If k(1) = 0 Or MS_Metin(v(r, k(1))) = "7155" Then
+            If k(1) = 0 Or MS_Metin(v(r, k(1))) = MS_Tesis() Then
                 n = n + 1
                 For c = 1 To 10
                     If k(c) > 0 Then sonuc(n, c) = MS_Metin(v(r, k(c))) Else sonuc(n, c) = vbNullString
@@ -1125,7 +1127,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
         End If
     Next r
     MS_Teshis "MB52 satýr: " & CStr(n)
-    If n = 0 Then Err.Raise vbObjectError + 1974, , "MB52 listesinde 7155 stok satýrý bulunamadý."
+    If n = 0 Then Err.Raise vbObjectError + 1974, , "MB52 listesinde " & MS_Tesis() & " stok satýrý bulunamadý."
     MS_MB52_Oku = MS_Kirp(sonuc, n, 10)
 End Function
 
@@ -1181,13 +1183,13 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     ' 1) Seri numarali stok (IQ09), her satir 1 adet
     For r = 1 To UBound(iq, 1)
         depo = CStr(iq(r, 2)): h = MS_Hedef(depo)
-        If h > 0 And (Len(CStr(iq(r, 1))) = 0 Or CStr(iq(r, 1)) = "7155") Then
+        If h > 0 And (Len(CStr(iq(r, 1))) = 0 Or CStr(iq(r, 1)) = MS_Tesis()) Then
             malz = MS_Malzeme(iq(r, 3)): parti = AKFIX_NORMAL(CStr(iq(r, 6)))
             mg = vbNullString: If mgOf.Exists(malz) Then mg = mgOf(malz)
             If h <> 2 Or mg = vbNullString Or mg = "M03550000" Or mg = "M03550100" Or mg = "M03250000" Then
                 n = n + 1: nIq = nIq + 1
-                ad = MS_DepoAdi("7155", depo): If Len(ad) = 0 And adOf.Exists(depo) Then ad = adOf(depo)
-                cikti(n, 1) = "7155": cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
+                ad = MS_DepoAdi(MS_Tesis(), depo): If Len(ad) = 0 And adOf.Exists(depo) Then ad = adOf(depo)
+                cikti(n, 1) = MS_Tesis(): cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
                 cikti(n, 5) = CStr(iq(r, 3)): cikti(n, 6) = CStr(iq(r, 4)): cikti(n, 7) = 1
                 cikti(n, 8) = "ADT": If brOf.Exists(malz) Then cikti(n, 8) = brOf(malz)
                 cikti(n, 9) = CStr(iq(r, 6)): cikti(n, 10) = CStr(iq(r, 5))
@@ -1235,8 +1237,8 @@ SonrakiSeri:
         End If
         If h > 0 And Not MS_GrupSeri(mg) And (h <> 2 Or mg = "M03550100") And CDbl(mb(r, 8)) <> 0 Then
             n = n + 1: nMb = nMb + 1
-            ad = MS_DepoAdi("7155", depo): If Len(ad) = 0 Then ad = CStr(mb(r, 3))
-            cikti(n, 1) = "7155": cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
+            ad = MS_DepoAdi(MS_Tesis(), depo): If Len(ad) = 0 Then ad = CStr(mb(r, 3))
+            cikti(n, 1) = MS_Tesis(): cikti(n, 2) = depo: cikti(n, 3) = ad: cikti(n, 4) = mg
             cikti(n, 5) = CStr(mb(r, 6)): cikti(n, 6) = CStr(mb(r, 7)): cikti(n, 7) = CDbl(mb(r, 8))
             cikti(n, 8) = CStr(mb(r, 9)): cikti(n, 9) = CStr(mb(r, 5)): cikti(n, 10) = vbNullString
             cikti(n, 11) = Round(CDbl(mb(r, 10)), 2): cikti(n, 13) = "SAP"
@@ -1418,7 +1420,7 @@ Private Function MS_Sorgu(ByVal ses As Object, ByVal ikinci As Boolean) As Varia
     For Each kutu In Array("P_FIKTIF", "P_FIKSTT", "P_MUSSIP", "P_MUSSTK", "P_SATFAS")
         ses.FindById("wnd[0]/usr/chk" & CStr(kutu)).Selected = False
     Next kutu
-    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = "7155"
+    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = MS_Tesis()
     If ikinci Then
         ' Ýlçe depolarý: K001-K999 ve üç mal grubu
         MS_Coklu ses, "S_LGORT", bos, "K001", "K999"
@@ -1453,10 +1455,21 @@ End Function
 Private Function MS_Hedef(ByVal depo As String) As Long
     Dim n As Long
     depo = UCase$(Trim$(depo))
-    Select Case depo
-        Case "D003", "D005", "S001", "Z002", "Z003", "Z007", "EM14": MS_Hedef = 1: Exit Function
-        Case "M132": MS_Hedef = 3: Exit Function
-    End Select
+    If MS_IlKod() = "TRABZON" Then
+        ' 7152 Trabzon: CDP D003 D005 D006 D012 P001-P003 S001 Z002 Z003 + E###;
+        ' Ilce K### (3 mal grubu); Yuklenici M090 M132 M501-M511.
+        Select Case depo
+            Case "D003", "D005", "D006", "D012", "P001", "P002", "P003", "S001", "Z002", "Z003": MS_Hedef = 1: Exit Function
+            Case "M090", "M132", "M501", "M502", "M503", "M504", "M505", "M506", "M507", "M508", "M509", "M510", "M511"
+                MS_Hedef = 3: Exit Function
+        End Select
+    Else
+        ' 7155 Artvin
+        Select Case depo
+            Case "D003", "D005", "S001", "Z002", "Z003", "Z007", "EM14": MS_Hedef = 1: Exit Function
+            Case "M132": MS_Hedef = 3: Exit Function
+        End Select
+    End If
     If Len(depo) = 4 Then
         If Mid$(depo, 2) Like "###" Then
             n = CLng(Mid$(depo, 2))
@@ -1601,6 +1614,7 @@ Private Sub MS_Yaz(ByVal ws As Worksheet, ByRef a As Variant)
     ws.Columns("K:N").Hidden = True
     If n > 0 Then ws.Range("K7:L" & n + 6).NumberFormat = "#,##0.00 ""TL"""
     ws.Range("C2").Value = Now: ws.Range("C2").NumberFormat = "dd.mm.yyyy hh:mm:ss"
+    ws.Range("BX20").Value2 = MS_IlKod()
     For Each s In ws.Shapes
         If InStr(s.Name, "STOK_KPI_ETIKET_2") > 0 Then s.TextFrame2.TextRange.Text = "Toplam Stok Deðeri"
     Next s
@@ -1608,17 +1622,34 @@ Private Sub MS_Yaz(ByVal ws As Worksheet, ByRef a As Variant)
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
 End Sub
 
+' Musteri birimi: secili ilin (Artvin 7155, Trabzon 7152) stoklari SAP'den alinir.
 Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
+    Dim bilgi As String
+    If mCalisiyor Or AKSORA_V11_MESGUL Then Exit Sub
+    mIlKod = vbNullString
+    If Not AKSORA_MUSTERI_IL_DESTEK(MS_IlKod()) Then
+        MsgBox "Bu il için müþteri depo tanýmlarý henüz yok: " & MS_IlKod(), vbExclamation, "AKSORA": Exit Sub
+    End If
+    MS_CEKIRDEK False, bilgi
+End Sub
+
+' Toplu guncelleme icin: secili il sessizce guncellenir (pencere acilmaz).
+Public Function AKSORA_MUSTERI_IL_CALISTIR(ByRef bilgi As String) As Boolean
+    mIlKod = vbNullString
+    If Not AKSORA_MUSTERI_IL_DESTEK(MS_IlKod()) Then bilgi = MS_IlKod() & ": depo tanýmý yok": Exit Function
+    AKSORA_MUSTERI_IL_CALISTIR = MS_CEKIRDEK(True, bilgi)
+End Function
+
+Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As Boolean
+    Dim mesgulOnce As Boolean
     Dim ses As Object, hMesaj As String, bir As Variant, iki As Variant, d As Object
     Dim mb As Object, mbMesaj As String, iq As Variant, mbv As Variant
     Dim sayfa(1 To 3) As Worksheet, yeni(1 To 3) As Variant, eski(1 To 3) As Variant
     Dim tarihEski(1 To 3) As Variant, sonEski(1 To 3) As Long
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, yazildi As Boolean
     Dim i As Long, nn As Long, tarih As Date, adlar As Variant, eksik As Long, adet(1 To 3) As Long
-    If mCalisiyor Or AKSORA_V11_MESGUL Then Exit Sub
-    If CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2) <> "ARTVIN" Then
-        MsgBox "Bu aktarým yalnýzca 7155 / Artvin için hazýrlanmýþtýr.", vbExclamation, "AKSORA": Exit Sub
-    End If
+    If mCalisiyor Then Exit Function
+    mesgulOnce = AKSORA_V11_MESGUL: mSessiz = sessiz
     mCalisiyor = True: mBas = Timer: mSeritZaman = 0
     mHizliSebep = vbNullString: mHizliSatir = 0: mStandartSatir = 0: mSapSatir = 0: mListeSatir = 0
     mStandartOnay = False
@@ -1642,9 +1673,9 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     Next i
     application.EnableEvents = False: application.Calculation = xlCalculationManual
     AKSORA_V11_MESGUL = True
-    MS_Durum "1/2 | IQ09 seri numaralý stok (7155)..."
+    MS_Durum "1/2 | IQ09 seri numaralý stok (" & MS_Tesis() & ")..."
     iq = MS_IQ09_Oku(ses)
-    MS_Durum "2/2 | MB52 toplu stok ve deðerler (7155)..."
+    MS_Durum "2/2 | MB52 toplu stok ve deðerler (" & MS_Tesis() & ")..."
     mbv = MS_MB52_Oku(ses)
     MS_Durum "Listeler birleþtiriliyor..."
     bir = MS_Birlestir(iq, mbv, mbMesaj)
@@ -1662,16 +1693,20 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
     yazildi = True
     For i = 1 To 3: MS_Yaz sayfa(i), yeni(i): Next i
     yazildi = False
+    AKSORA_MUSTERI_ARSIV_KAYDET MS_IlKod()
     MS_Teshis "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & " | " & _
         AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn"
     MS_Durum "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & _
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
+    ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_SURE_" & MS_IlKod(), RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
     MS_ExcelTemizle
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
-    MsgBox "Müþteri 7155 güncellendi." & vbCrLf & vbCrLf & _
+    bilgi = MS_IlKod() & ": güncellendi (" & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn)"
+    MS_CEKIRDEK = True
+    If Not sessiz Then MsgBox "Müþteri " & MS_Tesis() & " güncellendi." & vbCrLf & vbCrLf & _
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
         "Ýlçe stok satýrý: " & AKSORA_SAYI_METNI(adet(2), "#,##0") & vbCrLf & _
         "Yüklenici stok satýrý: " & AKSORA_SAYI_METNI(adet(3), "#,##0") & vbCrLf & vbCrLf & _
@@ -1679,12 +1714,12 @@ Public Sub AKSORA_MUSTERI_7155_GUNCELLE()
         "Deðer kaynaðý: SAP MB52 " & AKSORA_SAYI_METNI(mSapSatir, "#,##0") & " satýr  |  Fiyat listesi " & _
             AKSORA_SAYI_METNI(mListeSatir, "#,##0") & " satýr" & vbCrLf & _
         "Fiyatý bulunamayan satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & mFiyatsiz & vbCrLf & _
-        "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri 7155"
+        "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri " & MS_Tesis()
 Cikis:
     MS_OleUyariAc
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
-    application.StatusBar = False: AKSORA_V11_MESGUL = False: mCalisiyor = False
-    Exit Sub
+    application.StatusBar = False: AKSORA_V11_MESGUL = mesgulOnce: mCalisiyor = False: mSessiz = False
+    Exit Function
 Hata:
     hMesaj = mDurum & vbCrLf & "Hata " & CStr(Err.Number) & ": " & Err.Description
     If yazildi Then
@@ -1705,9 +1740,10 @@ Hata:
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
-    MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
+    bilgi = MS_IlKod() & ": güncellenemedi; " & Replace(hMesaj, vbCrLf, " ")
+    If Not sessiz Then MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
     Resume Cikis
-End Sub
+End Function
 
 Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Variant
     Dim alv As Object, kolonlar As Object, basliklar As Object, ids(1 To 11) As String
@@ -1817,7 +1853,7 @@ Private Function MS_ALV_Oku(ByVal ses As Object, ByVal fiyat As Boolean) As Vari
                     If ozet Then
                         tamam = (Len(Trim$(CStr(satir(7)))) > 0 Or Len(Trim$(CStr(satir(11)))) > 0)
                     Else
-                        tamam = (Trim$(CStr(satir(1))) = "7155" And Len(Trim$(CStr(satir(5)))) > 0)
+                        tamam = (Trim$(CStr(satir(1))) = MS_Tesis() And Len(Trim$(CStr(satir(5)))) > 0)
                     End If
                 End If
                 If tamam Then Exit For
@@ -1955,7 +1991,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
     Next c
     klasor = Environ$("TEMP")
     If Right$(klasor, 1) <> "\" Then klasor = klasor & "\"
-    dosya = "AKSORA_7155_" & Format$(Now, "yyyymmddhhnnss") & "_" & CStr(Int(Timer * 100) Mod 100000) & ".txt"
+    dosya = "AKSORA_" & MS_Tesis() & "_" & Format$(Now, "yyyymmddhhnnss") & "_" & CStr(Int(Timer * 100) Mod 100000) & ".txt"
     yol = klasor & dosya
     If Len(Dir$(yol)) > 0 Then Kill yol
     ' Liste > Disa aktar > Yerel dosya > Sekmeli metin (pencereler adla bulunur)
@@ -2092,7 +2128,7 @@ Private Function MS_ALV_Dosya(ByVal ses As Object, ByVal alv As Object, ByVal ko
             Next c
             ozet = (Len(Trim$(CStr(satir(1)))) = 0 And Len(Trim$(CStr(satir(5)))) = 0)
             If Not ozet Then
-                If Trim$(CStr(satir(1))) <> "7155" Or Len(Trim$(CStr(satir(5)))) = 0 Then GoTo Temizle
+                If Trim$(CStr(satir(1))) <> MS_Tesis() Or Len(Trim$(CStr(satir(5)))) = 0 Then GoTo Temizle
                 adet = adet + 1
                 For c = 1 To 11: buf(adet, c) = satir(c): Next c
                 buf(adet, 7) = MS_Sayi(buf(adet, 7))
@@ -2135,3 +2171,139 @@ Temizle:
     End If
     MS_ALV_Dosya = Empty
 End Function
+
+
+'==========================================================
+' MUSTERI IL YAPISI: il kodu, tesis, il bazli stok arsivi
+'==========================================================
+Private Function MS_IlKod() As String
+    If Len(mIlKod) = 0 Then
+        On Error Resume Next
+        mIlKod = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)))
+        On Error GoTo 0
+        If Len(mIlKod) = 0 Then mIlKod = "ARTVIN"
+    End If
+    MS_IlKod = mIlKod
+End Function
+
+Private Function MS_Tesis() As String
+    Select Case MS_IlKod()
+        Case "RIZE": MS_Tesis = "7151"
+        Case "TRABZON": MS_Tesis = "7152"
+        Case "GUMUSHANE": MS_Tesis = "7153"
+        Case "GIRESUN": MS_Tesis = "7154"
+        Case Else: MS_Tesis = "7155"
+    End Select
+End Function
+
+Public Function AKSORA_MUSTERI_TESIS() As String
+    mIlKod = vbNullString
+    AKSORA_MUSTERI_TESIS = MS_Tesis()
+End Function
+
+' Musteri biriminde depo tanimi yapilmis iller.
+Public Function AKSORA_MUSTERI_IL_DESTEK(ByVal il As String) As Boolean
+    Select Case UCase$(Trim$(il))
+        Case "ARTVIN", "TRABZON": AKSORA_MUSTERI_IL_DESTEK = True
+    End Select
+End Function
+
+Public Function AKSORA_MUSTERI_ILLER() As Variant
+    AKSORA_MUSTERI_ILLER = Array("ARTVIN", "TRABZON")
+End Function
+
+Private Function MS_ArsivSayfa(ByVal il As String, ByVal i As Long, ByVal olustur As Boolean) As Worksheet
+    Dim ad As String, ws As Worksheet
+    ad = "_MA_" & il & "_" & Choose(i, "CDP", "ILCE", "YUK")
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If ws Is Nothing And olustur Then
+        Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Visible = xlSheetVeryHidden
+    End If
+    Set MS_ArsivSayfa = ws
+End Function
+
+' Ekrandaki musteri stoklari (M_ sayfalari) ilin arsivine yazilir.
+Public Sub AKSORA_MUSTERI_ARSIV_KAYDET(ByVal il As String)
+    Dim adlar As Variant, i As Long, kaynak As Worksheet, ar As Worksheet, son As Long, ev As Boolean
+    If Len(il) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Cikis
+    application.EnableEvents = False
+    adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+    For i = 1 To 3
+        Set kaynak = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        Set ar = MS_ArsivSayfa(il, i, True)
+        ar.Cells.ClearContents
+        ar.Range("A1").Value = kaynak.Range("C2").Value
+        ar.Range("B1").Value2 = il
+        son = AKSORA_M_SON(kaynak)
+        If son >= 7 Then ar.Range("A2").Resize(son - 6, 14).Value2 = kaynak.Range("A7:N" & son).Value2
+    Next i
+Cikis:
+    application.EnableEvents = ev
+End Sub
+
+' Secilen ilin arsivi ekrandaki musteri stok sayfalarina yuklenir (arsiv yoksa sayfalar bos).
+Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
+    Dim adlar As Variant, i As Long, ws As Worksheet, ar As Worksheet, son As Long, n As Long, ev As Boolean
+    ev = application.EnableEvents
+    On Error GoTo Cikis
+    application.EnableEvents = False
+    adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+    For i = 1 To 3
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        Set ar = MS_ArsivSayfa(il, i, False)
+        ws.Unprotect ""
+        If ws.FilterMode Then ws.ShowAllData
+        ws.AutoFilterMode = False
+        son = application.Max(7, AKSORA_M_SON(ws))
+        ws.Range("A7:N" & son).ClearContents
+        ws.Range("C2").ClearContents
+        If Not ar Is Nothing Then
+            n = ar.Cells(ar.Rows.Count, "E").End(xlUp).Row
+            If n >= 2 Then
+                ws.Range("A7:F" & n + 5).NumberFormat = "@"
+                ws.Range("H7:J" & n + 5).NumberFormat = "@"
+                ws.Range("A7").Resize(n - 1, 14).Value2 = ar.Range("A2").Resize(n - 1, 14).Value2
+            End If
+            ws.Range("C2").Value = ar.Range("A1").Value
+            ws.Range("C2").NumberFormat = "dd.mm.yyyy hh:mm:ss"
+        End If
+        ws.Range("BX20").Value2 = il
+        ws.Range("BX11").ClearContents
+        ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Next i
+Cikis:
+    application.EnableEvents = ev
+End Sub
+
+' Il secim ekranindan giriste: ekrandaki il farkliysa once onun verisi saklanir,
+' sonra secilen ilin verisi yuklenir. Boylece her ilin stogu kendi kaydinda durur.
+Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
+    Dim mevcut As String, korumali As Boolean
+    il = UCase$(Trim$(il))
+    On Error Resume Next
+    mevcut = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+    On Error GoTo 0
+    If Len(mevcut) = 0 Then mevcut = "ARTVIN"
+    With ThisWorkbook.Worksheets("MUSTERI IL SECIM")
+        If UCase$(Trim$(CStr(.Range("AZ1").Value2))) <> il Then
+            korumali = .ProtectContents
+            .Unprotect ""
+            .Range("AZ1").Value2 = il
+            If korumali Then .Protect Password:="", DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+        End If
+    End With
+    mIlKod = vbNullString
+    If mevcut = il Then Exit Sub
+    AKSORA_MUSTERI_ARSIV_KAYDET mevcut
+    ' Kayit dogrulanmadan ekrandaki veri silinmez.
+    If MS_ArsivSayfa(mevcut, 1, False) Is Nothing Then
+        Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
+    End If
+    AKSORA_MUSTERI_ARSIV_YUKLE il
+End Sub
