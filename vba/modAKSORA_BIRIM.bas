@@ -325,6 +325,11 @@ Private Sub MUSTERI_KAPAK_AC()
     ws.Visible = xlSheetVisible: ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE MUK
     ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVeryHidden
+    ' Il secim ekrani tek gorunur sayfa: arkada acik kalan musteri sayfalarina kayma olmaz.
+    Dim k As Worksheet
+    For Each k In ThisWorkbook.Worksheets
+        If k.Name <> MUK And k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden
+    Next k
     MUSTERI_KAPAK_GORUNUM ws
 Cikis:
     mYonlendirme = False
@@ -355,22 +360,32 @@ Private Sub MUSTERI_KAPAK_GORUNUM(ByVal ws As Worksheet)
 End Sub
 
 Public Sub AKSORA_MUSTERI_IL_SEC()
-    Dim ws As Worksheet, ix As Long, keys As Variant
-    On Error GoTo Hata
+    Dim ws As Worksheet, ix As Long, keys As Variant, ev As Boolean, sc As Boolean, metin As String
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If ActiveSheet.Name <> MUK Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(MUK)
     ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
     If ix < 1 Or ix > 5 Then Exit Sub
     keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    ' Secim tek seferde cizilir; hesaplama olaylari baska sayfaya gecis yaptirmaz.
+    application.ScreenUpdating = False: application.EnableEvents = False
     ws.Unprotect PW
     ws.Range("AZ1").Value2 = keys(ix - 1)
     MUSTERI_SECIM_CIZ ws
 Cikis:
-    If Not ws Is Nothing Then ws.Protect Password:=PW, UserInterfaceOnly:=True
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Protect Password:=PW, UserInterfaceOnly:=True
+        If Not (ActiveSheet Is ws) Then ws.Activate
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(metin) > 0 Then MsgBox metin, vbExclamation, "AKSORA"
     Exit Sub
 Hata:
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    metin = Err.Description
     Resume Cikis
 End Sub
 
