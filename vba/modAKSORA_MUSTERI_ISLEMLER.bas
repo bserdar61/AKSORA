@@ -1,6 +1,11 @@
 Attribute VB_Name = "modAKSORA_MUSTERI_ISLEMLER"
 Option Explicit
 Private mHazir As Boolean
+#If VBA7 Then
+Private Declare PtrSafe Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hwnd As LongPtr) As Long
+#Else
+Private Declare Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hwnd As Long) As Long
+#End If
 
 Private Function M_SAYFA(ByVal ad As String) As Boolean
     Select Case ad
@@ -131,7 +136,7 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_SAYFA_AC()
-    Dim ws As Worksheet, hedef As Worksheet, ad As String
+    Dim ws As Worksheet, hedef As Worksheet, ad As String, kilit As Boolean
     On Error GoTo Hata
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     Set ws = ActiveSheet
@@ -139,16 +144,21 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     ad = ws.Shapes(CStr(application.Caller)).AlternativeText
     If Not M_SAYFA(ad) Then Err.Raise vbObjectError + 1800, , "Müþteri sayfa baðlantýsý geçersiz."
     Set hedef = ThisWorkbook.Worksheets(ad)
+    ' Gecis boyunca pencere cizimi kilitlenir; yeni sayfa tek seferde ve hazir halde gorunur.
+    kilit = (M_PencereKilit(application.hwnd) <> 0)
     application.ScreenUpdating = False
     application.EnableEvents = False
     hedef.Visible = xlSheetVisible
     hedef.Select Replace:=True
     application.EnableEvents = True
     AKSORA_MUSTERI_TEMA_GORUNUM hedef
+    AKSORA_MUSTERI_SECIM_BASA hedef
     application.ScreenUpdating = True
+    If kilit Then M_PencereKilit 0
     Exit Sub
 Hata:
     application.EnableEvents = True: application.ScreenUpdating = True
+    If kilit Then M_PencereKilit 0
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
@@ -157,14 +167,16 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
     Dim s As Shape, ad As String, eski As Shape, liste As Shape, x As Double, y As Double, h As Double, bw As Double
     Dim d As Object, k As Variant, r As Long, depo As String, secim As String, p As Long
     Dim imza As String, eksik As Long, veri As Variant, adlar() As String
-    baslik = Array("ÜY", "DpYr", "Depo/Fikti", "Mal grubu", "Malzeme", _
-        "Malzeme kýsa metni", "Miktar", "TÖB", "Deðerleme türü", "Seri numarasý")
+    baslik = Array("Üretim Yeri", "Depo", "Depo Adý", "Mal Grubu", "Malzeme", _
+        "Malzeme Tanýmý", "Miktar", "Birim", "Deðerleme Türü", "Seri Numarasý")
     For i = ws.Shapes.Count To 1 Step -1
         If LCase$(Left$(ws.Shapes(i).Name, 9)) = "drop down" Then ws.Shapes(i).Delete
     Next i
-    If CStr(ws.Range("BX8").Value2) <> "MUSTERI_STOK_V1" Then
+    If CStr(ws.Range("BX8").Value2) <> "MUSTERI_STOK_V2" Then
+        If Len(CStr(ws.Range("BX12").Value2)) > 0 And IsNumeric(ws.Range("BX12").Value2) Then _
+            ws.Columns(10).ColumnWidth = CDbl(ws.Range("BX12").Value2)
         w = ws.Range("A1:L1").Width
-        agirlik = Array(8, 9, 16, 14, 16, 46, 13, 8, 18, 23)
+        agirlik = Array(10, 8, 16, 12, 13, 44, 11, 8, 15, 21)
         For i = 0 To 9: toplam = toplam + CDbl(agirlik(i)): Next i
         ws.Columns("K:L").Hidden = False
         For i = 0 To 9: ws.Columns(i + 1).ColumnWidth = w / 7 * CDbl(agirlik(i)) / toplam: Next i
@@ -172,7 +184,8 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
         For i = 1 To 10: ws.Columns(i).ColumnWidth = ws.Columns(i).ColumnWidth * w / bw: Next i
         ws.Rows("3:5").Hidden = True
         ws.Columns("K:L").Hidden = True
-        ws.Range("BX8").Value2 = "MUSTERI_STOK_V1"
+        ws.Range("BX8").Value2 = "MUSTERI_STOK_V2"
+        ws.Range("BX12:BX13").ClearContents
     End If
     For i = 0 To 9: ws.Cells(6, i + 1).Value2 = baslik(i): Next i
     ws.Range("K6").Value2 = "Deðer (TL)"
@@ -339,7 +352,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
         Case "M_YÜKLENÝCÝ_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
         Case Else: Exit Sub
     End Select
-    If ws.Name = "M_CDP_RAPOR" Then kol = 4 Else kol = 5
+    kol = 5
     ' Depo bazli ozet: ad, satir, deger, fiyatsiz satir, seri numarali satir
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     son = AKSORA_M_SON(kaynak)
@@ -410,11 +423,16 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
         .ClearContents: .ClearFormats
     End With
     ws.Range(ws.Rows(ilk), ws.Rows(eskiSon)).RowHeight = ws.StandardHeight
-    If kol = 4 Then
-        ws.Range("A8:D8").Value2 = Array("Depo yeri", "Depo yeri tanýmý", "Stok Satýrý", "Toplam Stok Deðeri")
-    Else
-        ws.Range("A8:E8").Value2 = Array("Depo yeri", "Depo yeri tanýmý", "Stok Satýrý", "Seri Numaralý", "Toplam Stok Deðeri")
-    End If
+    ' Uc raporda ayni tablo: ayni kolonlar, ayni genislik, ayni baslik bicimi.
+    ws.Columns(1).ColumnWidth = 12.78: ws.Columns(2).ColumnWidth = 28.78
+    ws.Range("C1:E1").EntireColumn.ColumnWidth = 20.78
+    ws.Range("A8:E8").Value2 = Array("Depo", "Depo Adý", "Stok Satýrý", "Seri Numaralý", "Toplam Stok Deðeri")
+    With ws.Range("A8:E8")
+        .Interior.Color = RGB(26, 75, 120): .Font.Color = vbWhite
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .WrapText = False: .Borders.LineStyle = xlNone
+    End With
     ReDim sonuc(1 To n + 1, 1 To kol)
     For i = 1 To n
         v = d(keys(sira(i) - 1))
@@ -493,8 +511,12 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
     If Not s Is Nothing Then
         s.TextFrame2.TextRange.Text = "AKSORA  |  " & baslik & "  |  Veriler SAP'den alýnýr."
-        s.Left = tablo.Left + 2: s.Top = tablo.Top + tablo.Height + 4
-        s.Width = tablo.Width - 4
+        s.Left = tablo.Left: s.Top = tablo.Top + tablo.Height + 4
+        s.Width = tablo.Width
+        On Error Resume Next
+        s.TextFrame2.WordWrap = msoFalse: s.TextFrame2.MarginLeft = 2
+        s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignLeft
+        On Error GoTo 0
     End If
     ' Halka grafik: her durumda cizilir (fiyat eksikse satir sayisina gore)
     If slot = 0 Then slot = 10
@@ -621,7 +643,11 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
                     n = n + 1
                     If n > UBound(buffer, 2) Then ReDim Preserve buffer(1 To 14, 1 To UBound(buffer, 2) + 500)
                     For c = 1 To 11: buffer(c, n) = veri(r, c): Next c
-                    buffer(12, n) = Mid$(CStr(ad), 3)
+                    Select Case CStr(ad)
+                        Case "M_CDP_STOK": buffer(12, n) = "CDP"
+                        Case "M_ÝLÇE_STOK": buffer(12, n) = "ÝLÇE"
+                        Case Else: buffer(12, n) = "YÜKLENÝCÝ"
+                    End Select
                     buffer(14, n) = veri(r, 14)
                     Select Case kod
                         Case "GIRESUN": buffer(13, n) = "GÝRESUN"
@@ -922,19 +948,8 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         M_YAZ ws, "AKSORA15_KART_DEGER_" & k & "1", IIf(tarih > 0, Format$(tarih, "dd.mm.yyyy hh:nn"), "-")
         M_YAZ ws, "AKSORA15_KART_DEGER_" & k & "2", IIf(satir > 0, M_ADET(satir), "-")
         M_YAZ ws, "AKSORA15_KART_DEGER_" & k & "3", IIf(satir > 0, M_TL(deger), "-")
-        If k = "B" Then
-            M_YAZ ws, "AKSORA15_KART_ETIKET_B4", "SAP BAÐLANTISI"
-            If Left$(sap, 6) = "BAGLI|" Then
-                M_YAZ ws, "AKSORA15_KART_DEGER_B4", "Baðlý  •  " & Mid$(sap, 7)
-            ElseIf Left$(sap, 4) = "YOK|" Then
-                M_YAZ ws, "AKSORA15_KART_DEGER_B4", "Baðlý deðil  •  " & Mid$(sap, 5)
-            Else
-                M_YAZ ws, "AKSORA15_KART_DEGER_B4", "Kontrol edilmedi"
-            End If
-        Else
-            M_YAZ ws, "AKSORA15_KART_ETIKET_" & k & "4", "DEPO SAYISI"
-            M_YAZ ws, "AKSORA15_KART_DEGER_" & k & "4", IIf(depo > 0, M_ADET(depo), "-")
-        End If
+        M_YAZ ws, "AKSORA15_KART_ETIKET_" & k & "4", "DEPO SAYISI"
+        M_YAZ ws, "AKSORA15_KART_DEGER_" & k & "4", IIf(depo > 0, M_ADET(depo), "-")
         If calisiyor Then
             M_KART_DURUM ws, k, "Güncelleniyor...", RGB(59, 130, 246)
         ElseIf satir = 0 Or tarih = 0 Then
@@ -1170,7 +1185,7 @@ End Function
 
 Private Function M_IMZA(ByVal ws As Worksheet) As String
     Dim t As String, wsF As Worksheet
-    t = "IMZA_V1|" & ws.Name
+    t = "IMZA_V2|" & ws.Name
     Select Case ws.Name
         Case "M_CDP_STOK", "M_CDP_RAPOR": t = t & M_KAYNAK_IMZA("M_CDP_STOK")
         Case "M_ÝLÇE_STOK", "M_ÝLÇE_RAPOR": t = t & M_KAYNAK_IMZA("M_ÝLÇE_STOK")
@@ -1209,5 +1224,290 @@ Public Sub AKSORA_MUSTERI_FILTRE_SIFIRLA(ByVal haric As String)
             End If
         End If
     Next ad
+    On Error GoTo 0
+End Sub
+
+'----------------------------------------------------------
+' EKRAN DUZENI: icerik pencere genisligine tam oturur; serit, kart,
+' tablo ve grafikler ayni sol/sag cizgide biter. Pencere boyutu veya
+' veri degismedikce tekrar calismaz (sayfa gecisi aninda olur).
+'----------------------------------------------------------
+Private Function M_SON_KOLON(ByVal ad As String) As Long
+    Select Case ad
+        Case "M_ANA PANEL": M_SON_KOLON = 28
+        Case "M_MALZEME_ARA": M_SON_KOLON = 16
+        Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": M_SON_KOLON = 10
+        Case "M_CDP_RAPOR", "M_ÝLÇE_RAPOR", "M_YÜKLENÝCÝ_RAPOR": M_SON_KOLON = 21
+    End Select
+End Function
+
+Private Function M_DUZEN_IMZA(ByVal ws As Worksheet, ByVal pn As Window) As String
+    M_DUZEN_IMZA = "DUZEN_V1|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
+        CStr(pn.Zoom) & "|" & CStr(ws.Range("BX11").Value2)
+    If ws.Name = "M_ANA PANEL" Then M_DUZEN_IMZA = M_DUZEN_IMZA & "|" & CStr(ws.Rows(1).Hidden) & CStr(ws.Rows(30).Hidden)
+End Function
+
+Public Sub AKSORA_MUSTERI_DUZEN(ByVal ws As Worksheet)
+    Dim pn As Window, sonKol As Long, kol As Range, w As Double, z As Double, ek As Double
+    Dim alt As Double, s As Shape, korumali As Boolean, ev As Boolean
+    sonKol = M_SON_KOLON(ws.Name)
+    If sonKol = 0 Then Exit Sub
+    Set pn = ThisWorkbook.Windows(1)
+    If Not (pn.ActiveSheet Is ws) Then Exit Sub
+    If CStr(ws.Range("BX13").Value2) = M_DUZEN_IMZA(ws, pn) Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    Set kol = ws.Columns(sonKol)
+    ' Son kolonun asil genisligi saklanir; pencere farki her seferinde bu tabandan hesaplanir.
+    If Len(CStr(ws.Range("BX12").Value2)) = 0 Or Not IsNumeric(ws.Range("BX12").Value2) Then _
+        ws.Range("BX12").Value2 = kol.ColumnWidth
+    If kol.ColumnWidth <> CDbl(ws.Range("BX12").Value2) Then kol.ColumnWidth = CDbl(ws.Range("BX12").Value2)
+    If ws.Name = "M_ANA PANEL" Then
+        If Not ws.Rows(1).Hidden Then ws.Rows(1).Hidden = True
+    End If
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    If w <= 0 Then GoTo Cikis
+    z = (pn.UsableWidth - 1) / w * 100
+    If ws.Name = "M_ANA PANEL" Then
+        Set s = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
+        If Not s Is Nothing Then alt = s.Top + s.Height
+        If alt > 0 Then z = application.Min(z, (pn.UsableHeight - 1) / alt * 100)
+    End If
+    z = application.Max(10, application.Min(400, Fix(z)))
+    If pn.Zoom <> z Then pn.Zoom = z
+    ' Tam sayi yakinlastirmadan kalan bosluk son kolona eklenir: sag kenar pencereyle biter.
+    ek = pn.UsableWidth * 100 / z - w - 1
+    If ek > 0.5 And kol.Width > 0 Then _
+        kol.ColumnWidth = application.Min(255, kol.ColumnWidth * (kol.Width + ek) / kol.Width)
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    Select Case ws.Name
+        Case "M_ANA PANEL": M_DUZEN_PANEL ws, w
+        Case "M_MALZEME_ARA": M_DUZEN_ARAMA ws, w
+        Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": M_DUZEN_STOK ws, w
+        Case Else: M_DUZEN_RAPOR ws, w
+    End Select
+    ws.Range("BX13").Value2 = M_DUZEN_IMZA(ws, pn)
+Cikis:
+    On Error Resume Next
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+        UserInterfaceOnly:=True, AllowFiltering:=True
+    If ws.Name = "M_MALZEME_ARA" Or M_STOK(ws.Name) Then ws.EnableSelection = xlNoRestrictions
+    application.EnableEvents = ev
+    On Error GoTo 0
+    Exit Sub
+Hata:
+    Resume Cikis
+End Sub
+
+' Sekli yatayda verilen konum ve genislige oturtur (resimlerde oran kilidi acilir).
+Private Sub M_YATAY(ByVal ws As Worksheet, ByVal ad As String, ByVal x As Double, ByVal gen As Double)
+    Dim s As Shape
+    Set s = M_SEKIL(ws, ad)
+    If s Is Nothing Then Exit Sub
+    On Error Resume Next
+    s.LockAspectRatio = msoFalse
+    On Error GoTo 0
+    s.Left = x: s.Width = gen
+End Sub
+
+' Kartlari ic sekilleriyle (ikon, etiket, deger, liste) birlikte yeni yerlerine tasir.
+Private Sub M_KART_TASI(ByVal ws As Worksheet, ByVal kartlar As Variant, ByVal sol As Variant, ByVal gen As Variant)
+    Dim i As Long, j As Long, s As Shape, k As Shape, cx As Double, cy As Double, ust As Long, ad As String
+    Dim uye() As Long, dx() As Double, dw() As Double
+    ust = UBound(kartlar)
+    ReDim dx(0 To ust): ReDim dw(0 To ust)
+    For i = 0 To ust
+        Set k = kartlar(i)
+        dx(i) = CDbl(sol(i)) - k.Left: dw(i) = CDbl(gen(i)) - k.Width
+    Next i
+    ReDim uye(1 To ws.Shapes.Count)
+    For Each s In ws.Shapes
+        j = j + 1: uye(j) = -1
+        cx = s.Left + s.Width / 2: cy = s.Top + s.Height / 2
+        For i = 0 To ust
+            Set k = kartlar(i)
+            If s.Name <> k.Name And s.Width < k.Width And s.Height <= k.Height Then
+                If cx >= k.Left And cx <= k.Left + k.Width And cy >= k.Top And cy <= k.Top + k.Height Then
+                    uye(j) = i: Exit For
+                End If
+            End If
+        Next i
+    Next s
+    j = 0
+    For Each s In ws.Shapes
+        j = j + 1
+        If uye(j) >= 0 Then
+            i = uye(j): ad = UCase$(s.Name)
+            If InStr(ad, "ETIKET") > 0 Or InStr(ad, "DEGER") > 0 Or InStr(ad, "BASLIK") > 0 Or InStr(ad, "LISTE") > 0 Then
+                s.Left = s.Left + dx(i): s.Width = application.Max(10, s.Width + dw(i))
+            Else
+                s.Left = s.Left + dx(i)
+            End If
+        End If
+    Next s
+    For i = 0 To ust
+        Set k = kartlar(i)
+        k.Left = CDbl(sol(i)): k.Width = CDbl(gen(i))
+    Next i
+End Sub
+
+Private Sub M_DUZEN_STOK(ByVal ws As Worksheet, ByVal w As Double)
+    Dim a As Shape, b As Shape, ad As Variant, kartlar As Variant, i As Long, cw As Double
+    Dim sol(0 To 3) As Double, gen(0 To 3) As Double
+    M_YATAY ws, "AKT1_STOK_BASLIK_ZEMIN", 0, w
+    M_YATAY ws, "AKT1_STOK_KPI_ALT_ZEMIN", 0, w
+    Set a = M_SEKIL(ws, "btnAnaPanelDon")
+    If Not a Is Nothing Then
+        a.Left = w - 10 - a.Width
+        For Each ad In Array("SAP_STOK_GUNCELLE_BTN", "CDP_ILCE_STOK_BTN", "YUK_EDAS_GUNCELLE_BTN")
+            Set b = M_SEKIL(ws, CStr(ad))
+            If Not b Is Nothing Then b.Left = a.Left - 8 - b.Width
+        Next ad
+    End If
+    kartlar = Array(M_SEKIL(ws, "AKT1_STOK_KPI_ZEMIN_0"), M_SEKIL(ws, "AKT1_STOK_KPI_ZEMIN_1"), _
+        M_SEKIL(ws, "AKT1_STOK_KPI_ZEMIN_2"), M_SEKIL(ws, "AKT1_DEPO_KART_ZEMIN"))
+    For i = 0 To 3
+        If kartlar(i) Is Nothing Then Exit Sub
+    Next i
+    cw = (w - 16 - 3 * 10) / 4
+    For i = 0 To 3
+        sol(i) = 8 + i * (cw + 10): gen(i) = cw
+    Next i
+    M_KART_TASI ws, kartlar, sol, gen
+End Sub
+
+Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
+    Dim s As Shape, z As Shape, a As Shape, kartlar(0 To 2) As Object, i As Long
+    Dim tw As Double, x2 As Double, sag As Double, g As Double, cw As Double, k As Double
+    Dim oL As Double, nL As Double, nW As Double, cx As Double
+    Dim sol(0 To 2) As Double, gen(0 To 2) As Double
+    tw = ws.Range("A1:E1").Width
+    g = 12: sag = w - 2: x2 = tw + g
+    M_YATAY ws, "AKT1_RAPOR_UST_ZEMIN", 0, w
+    Set a = M_SEKIL(ws, "btnAnaPanelDon")
+    If Not a Is Nothing Then a.Left = w - 12 - a.Width
+    For Each s In ws.Shapes
+        If InStr(s.Name, "_KART_A3_E6") > 0 Then Set kartlar(0) = s
+        If InStr(s.Name, "_KART_F3_J6") > 0 Then Set kartlar(1) = s
+        If InStr(s.Name, "_KART_K3_Q6") > 0 Then Set kartlar(2) = s
+    Next s
+    If Not (kartlar(0) Is Nothing Or kartlar(1) Is Nothing Or kartlar(2) Is Nothing) And sag - x2 > 120 Then
+        cw = (sag - x2 - g) / 2
+        sol(0) = 0.5: gen(0) = tw - 0.5
+        sol(1) = x2: gen(1) = cw
+        sol(2) = x2 + cw + g: gen(2) = cw
+        M_KART_TASI ws, Array(kartlar(0), kartlar(1), kartlar(2)), sol, gen
+    End If
+    ' Grafik alani tablonun sagindan sayfa kenarina kadar; ic sekiller orantili yerlesir.
+    Set z = M_SEKIL(ws, "AKSORA_RP_HALKA_ZEMIN")
+    If Not z Is Nothing And sag - x2 > 120 Then
+        oL = z.Left: nL = x2: nW = sag - x2
+        If z.Width > 0 Then
+            k = nW / z.Width
+            For Each s In ws.Shapes
+                If s.Name <> z.Name And (Left$(s.Name, 16) = "AKSORA_RP_HALKA_" Or s.HasChart = msoTrue) Then
+                    If s.HasChart = msoTrue Or InStr(s.Name, "_RENK_") > 0 Or InStr(s.Name, "_MERKEZ") > 0 Or _
+                       InStr(s.Name, "_GRAFIK") > 0 Then
+                        cx = nL + (s.Left + s.Width / 2 - oL) * k
+                        s.Left = cx - s.Width / 2
+                    Else
+                        s.Left = nL + (s.Left - oL) * k: s.Width = s.Width * k
+                    End If
+                End If
+            Next s
+            z.Left = nL: z.Width = nW
+        End If
+    End If
+    For Each s In ws.Shapes
+        If InStr(s.Name, "FILIGRAN") > 0 Then
+            s.Left = sag - s.Width
+            If Not z Is Nothing Then s.Top = z.Top + z.Height + 8
+        End If
+    Next s
+    Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
+    If Not s Is Nothing Then s.Left = 0: s.Width = tw
+End Sub
+
+Private Sub M_DUZEN_PANEL(ByVal ws As Worksheet, ByVal w As Double)
+    Dim ad As Variant, s As Shape, sr As Shape
+    For Each ad In Array("MUSTERI_ANA_BANNER", "AKSORA15_UST_ZEMIN", "MUSTERI_ANA_SECIM_SERIDI", _
+        "AKSORA15_TEK_ARKA_PLAN", "AKSORA15_ALT_ZEMIN", "AKSORA15_ALT_KURUM")
+        M_YATAY ws, CStr(ad), 0, w
+    Next ad
+    Set s = M_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    Set sr = M_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
+    If Not s Is Nothing And Not sr Is Nothing Then s.Left = sr.Left + sr.Width - s.Width - 10
+    ' Sekillerin ortmedigi hucre kenarlari zeminle ayni renge boyanir (gri serit kalmaz).
+    Set s = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
+    If Not s Is Nothing Then
+        ws.Range("A2:AB" & CStr(s.TopLeftCell.Row)).Interior.Color = RGB(236, 244, 251)
+        ws.Range("A" & CStr(s.TopLeftCell.Row + 1) & ":AB60").Interior.Color = s.Fill.ForeColor.RGB
+        ' Pencere paneldan uzunsa alt bant rengi sayfa sonuna kadar surer.
+        ws.Rows("30:60").Hidden = False
+    End If
+End Sub
+
+Private Sub M_DUZEN_ARAMA(ByVal ws As Worksheet, ByVal w As Double)
+    Dim s As Shape, ref As Shape, oL As Double, nL As Double, nW As Double, k As Double
+    Dim baslik As Variant, i As Long, ad As String, da As Boolean
+    ' Ust baslik tum sayfa boyunca (sag il paneli dahil) uzanir.
+    If ws.Range("A1").MergeArea.Columns.Count <> 16 Then
+        da = application.DisplayAlerts: application.DisplayAlerts = False
+        ws.Range("A1:P3").UnMerge
+        ws.Range("N1:P2").Interior.Color = ws.Range("A1").Interior.Color
+        ws.Range("N3:P3").Interior.Color = ws.Range("A3").Interior.Color
+        ws.Range("A1:P2").Merge: ws.Range("A3:P3").Merge
+        application.DisplayAlerts = da
+    End If
+    ws.Range("A3").Value2 = "CDP + Ýlçe + Yüklenici Stoklarý"
+    baslik = Array("Üretim Yeri", "Depo", "Depo Adý", "Mal Grubu", "Malzeme", "Malzeme Tanýmý", "Miktar", _
+        "Birim", "Deðerleme Türü", "Seri Numarasý", "Deðer", "Kaynak", "Ýl")
+    For i = 0 To 12
+        If CStr(ws.Cells(12, i + 1).Value2) <> CStr(baslik(i)) Then ws.Cells(12, i + 1).Value2 = baslik(i)
+    Next i
+    ws.Range("A12:M12").Interior.Color = RGB(26, 75, 120)
+    Set s = M_SEKIL(ws, "btnMalzemeAnaPanel")
+    If Not s Is Nothing Then
+        s.Left = w - 12 - s.Width
+        s.Top = ws.Rows(1).Top + (ws.Rows(3).Top - ws.Rows(1).Top - s.Height) / 2
+        s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(255, 255, 255): s.line.Weight = 0.75
+    End If
+    ' Il paneli O:P alanina tam oturur.
+    Set ref = M_SEKIL(ws, "AKSORA_V4_TUMU")
+    If Not ref Is Nothing Then
+        oL = ref.Left
+        nL = ws.Columns(15).Left + 10: nW = w - 10 - nL
+        If ref.Width > 0 And nW > 40 Then
+            k = nW / ref.Width
+            For Each s In ws.Shapes
+                ad = s.Name
+                If Left$(ad, 10) = "AKSORA_V4_" Or ad = "MUSTERI_ARAMA_IL_BASLIK" Or ad = "AKSORA_TOPLU_GUNCELLE" Or _
+                   ad = "AKSORA_TOPLU_DURUM" Or ad = "AKSORA_ARAMA_SABIT_ACIKLAMA" Then
+                    s.Left = nL + (s.Left - oL) * k: s.Width = s.Width * k
+                ElseIf ad = "AKSORA_TOPLU_VURGU" Then
+                    s.Left = nL + (s.Left - oL) * k
+                End If
+            Next s
+        End If
+    End If
+    ws.ScrollArea = "A1:P60000"
+End Sub
+
+' Sayfaya girildiginde secim gorunmeyen bir hucreye (veya arama kutusuna) alinir.
+Public Sub AKSORA_MUSTERI_SECIM_BASA(ByVal ws As Worksheet)
+    Dim ev As Boolean
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    ev = application.EnableEvents
+    On Error Resume Next
+    application.EnableEvents = False
+    Select Case ws.Name
+        Case "M_MALZEME_ARA": ws.Range("B6").Select
+        Case "M_ANA PANEL": ws.Range("B3").Select
+        Case Else: ws.Range("A1").Select
+    End Select
+    application.EnableEvents = ev
     On Error GoTo 0
 End Sub

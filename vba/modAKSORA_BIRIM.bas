@@ -196,6 +196,7 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
     On Error GoTo 0
     If AKSORA_MUSTERI_TEMA_SAYFA(sh) Then
         AKSORA_MUSTERI_TEMA_GORUNUM sh
+        AKSORA_MUSTERI_SECIM_BASA sh
         AKSORA_BIRIM_OLAY = True
         Exit Function
     End If

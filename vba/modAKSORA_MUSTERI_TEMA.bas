@@ -724,7 +724,7 @@ Private Sub TEMA_MUSTERI_ARAMA_V15(ByVal ws As Worksheet)
         End If
     Next i
     TEMA_ARAMA_KPI_FORMULLER ws
-    ws.ScrollArea = "A1:P2000"
+    ws.ScrollArea = "A1:P60000"
     TEMA_MUSTERI_TOPLU_BUTON ws
 End Sub
 
@@ -1125,21 +1125,9 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     End If
     AKSORA_MUSTERI_SAYFA_HAZIRLA ws
     If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then GoTo Cikis
-    genislik = ws.Range("A1:L1").Width
-    For Each s In ws.Shapes
-        If s.Visible = msoTrue Then
-            genislik = application.Max(genislik, s.Left + s.Width)
-            altSinir = application.Max(altSinir, s.Top + s.Height)
-        End If
-    Next s
     With ThisWorkbook.Windows(1)
-        .DisplayWorkbookTabs = True
+        If Not .DisplayWorkbookTabs Then .DisplayWorkbookTabs = True
         If .View <> xlNormalView Then .View = xlNormalView
-        z = (.UsableWidth - 8) / genislik * 100
-        If ws.Name = "M_ANA PANEL" And altSinir > 0 Then _
-            z = application.Min(z, (.UsableHeight - 8) / altSinir * 100)
-        z = application.Max(10, application.Min(IIf(ws.Name = "M_ANA PANEL", 400, 200), Fix(z)))
-        If .Zoom <> z Then .Zoom = z
         On Error Resume Next
         If .FreezePanes Then .FreezePanes = False
         If .SplitRow <> 0 Then .SplitRow = 0
@@ -1148,8 +1136,14 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         If .DisplayGridlines Then .DisplayGridlines = False
         If .DisplayHeadings Then .DisplayHeadings = False
         If .DisplayHorizontalScrollBar Then .DisplayHorizontalScrollBar = False
-        If .DisplayVerticalScrollBar <> (ws.Name <> "M_ANA PANEL") Then .DisplayVerticalScrollBar = (ws.Name <> "M_ANA PANEL")
-        .ScrollRow = 1: .ScrollColumn = 1
+        ' Kaydirma cubugu tum sayfalarda ayni: gecislerde pencere yeniden yerlesmez.
+        If Not .DisplayVerticalScrollBar Then .DisplayVerticalScrollBar = True
+    End With
+    ' Yakinlastirma, kenar hizalama ve kart yerlesimi (pencere/veri degismedikce atlanir).
+    AKSORA_MUSTERI_DUZEN ws
+    With ThisWorkbook.Windows(1)
+        If .ScrollRow <> 1 Then .ScrollRow = 1
+        If .ScrollColumn <> 1 Then .ScrollColumn = 1
     End With
 Cikis:
     application.ScreenUpdating = sc
