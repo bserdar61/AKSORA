@@ -351,14 +351,26 @@ Private Sub V6_RECT(ByVal ws As Worksheet, ByVal ad As String, _
 End Sub
 
 Public Sub AKSORA_ANA_PANEL_IL_DEGISTIR()
+    Dim k As Worksheet, ev As Boolean
+    ev = application.EnableEvents
     On Error GoTo Hata
-    With ThisWorkbook.Worksheets("KAPAK")
-        .Visible = xlSheetVisible
-        .Activate
-    End With
+    Set k = ThisWorkbook.Worksheets("KAPAK")
+    ' Gecis olaylari kapali: baska bir sayfaya (rapor vb.) yonlenmeden dogrudan kapaga gidilir.
+    application.EnableEvents = False
+    k.Visible = xlSheetVisible
+    k.Activate
+    If Not (ActiveSheet Is k) Then k.Activate
+    application.EnableEvents = ev
     AKSORA_V8_KAPAK_GORUNUM
+    If Not (ActiveSheet Is k) Then
+        application.EnableEvents = False
+        k.Activate
+        application.EnableEvents = ev
+        AKSORA_V8_KAPAK_GORUNUM
+    End If
     Exit Sub
 Hata:
+    application.EnableEvents = ev
     MsgBox "Il secimi: " & Err.Description, vbExclamation, "AKSORA"
 End Sub
 
@@ -420,20 +432,25 @@ Public Sub AKSORA_ANA_PANEL_DURUM_RENK_YENILE()
         On Error GoTo Cikis
     Next i
     If enKotu = 0 Then
-        durumRengi = RGB(213, 244, 233)
-        yaziRengi = RGB(8, 86, 71)
+        durumRengi = RGB(224, 242, 254)
+        yaziRengi = RGB(12, 45, 79)
     ElseIf enKotu = 1 Then
-        durumRengi = RGB(255, 235, 210)
-        yaziRengi = RGB(170, 90, 20)
+        durumRengi = RGB(255, 246, 219)
+        yaziRengi = RGB(146, 64, 14)
     Else
-        durumRengi = RGB(255, 218, 218)
-        yaziRengi = RGB(165, 35, 35)
+        durumRengi = RGB(254, 226, 226)
+        yaziRengi = RGB(153, 27, 27)
     End If
-    With ws.Range("B6:AB6")
-        .Interior.Color = durumRengi
-        .Font.Color = yaziRengi
-        .Font.bold = True
-    End With
+    If Not AKSORA_PANEL_CANLI Then
+        With ws.Range("B6:AB6")
+            .Interior.Color = durumRengi
+            .Font.Color = yaziRengi
+            .Font.bold = True
+            .Font.Size = 10
+        End With
+        ws.Range("B6").HorizontalAlignment = xlLeft
+        ws.Range("B6").IndentLevel = 1
+    End If
     Set buton = Nothing
     On Error Resume Next
     Set buton = ws.Shapes(p & "IL_DEGISTIR")
@@ -511,8 +528,21 @@ Private Sub V22_KART_SON_SATIR(ByVal ws As Worksheet)
                 .Font.Fill.ForeColor.RGB = e3.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
             End With
             If d4 Is Nothing Then
-                Set d4 = d3.Duplicate
+                Set d4 = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, d3.Left, e4.Top, d3.Width, e4.Height)
                 d4.Name = p & "KART_DEGER_" & k & "4"
+                d4.Fill.Visible = msoFalse: d4.line.Visible = msoFalse
+                d4.Placement = xlFreeFloating
+                With d4.TextFrame2
+                    .MarginLeft = d3.TextFrame2.MarginLeft: .MarginRight = d3.TextFrame2.MarginRight
+                    .MarginTop = 0: .MarginBottom = 0
+                    .VerticalAnchor = msoAnchorMiddle
+                    .TextRange.Text = "-"
+                    .TextRange.ParagraphFormat.Alignment = msoAlignRight
+                    .TextRange.Font.Name = "Aptos"
+                    .TextRange.Font.Size = d3.TextFrame2.TextRange.Font.Size
+                    .TextRange.Font.bold = msoTrue
+                    .TextRange.Font.Fill.ForeColor.RGB = d3.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
+                End With
             End If
             d4.DrawingObject.Formula = ""
             d4.Left = d3.Left: d4.Width = d3.Width
@@ -585,9 +615,12 @@ Public Sub AKSORA_PANEL_SERIT(ByVal metin As String, Optional ByVal calisiyor As
     Set ws = ThisWorkbook.Worksheets("ANA PANEL")
     If ws Is Nothing Then Exit Sub
     ws.Range("B6").Value = metin
-    If calisiyor Then
-        ws.Range("B6:AB6").Interior.Color = RGB(219, 234, 254)
-        ws.Range("B6:AB6").Font.Color = RGB(29, 78, 216)
+    If calisiyor Or AKSORA_PANEL_CANLI Then
+        ws.Range("B6:AB6").Interior.Color = RGB(255, 246, 219)
+        ws.Range("B6:AB6").Font.Color = RGB(146, 64, 14)
+        ws.Range("B6:AB6").Font.bold = True
+        ws.Range("B6").HorizontalAlignment = xlLeft
+        ws.Range("B6").IndentLevel = 1
     End If
     If ActiveSheet Is ws Then
         sc = application.ScreenUpdating

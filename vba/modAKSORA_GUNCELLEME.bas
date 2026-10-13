@@ -18,8 +18,7 @@ baslangic = Timer
 ANA_SESSIZ_MOD = True
 
 ThisWorkbook.Worksheets("ANA PANEL").Activate
-PANEL_CANLI_DURUM "GÜNCELLEME BAÞLATILIYOR..."
-MsgBox "Tüm stok güncellemesi baþlatýldý.", vbInformation, "AKSORA"
+PANEL_CANLI_DURUM "SAP baðlantýsý hazýrlanýyor..."
 
 ANA_TUM_SAYFA_KONTROL "CDP_STOK"
 ANA_TUM_SAYFA_KONTROL "CDP_RAPOR"
@@ -33,7 +32,7 @@ ANA_TUM_SAYFA_KONTROL "YÜKLENÝCÝ_STOK"
 ANA_TUM_SAYFA_KONTROL "YÜKLENÝCÝ_RAPOR"
 
 CORE_DURUM "[1/3] Normal stok sistemi güncelleniyor..."
-PANEL_CANLI_DURUM "NORMAL STOKLAR GÜNCELLENÝYOR..."
+PANEL_CANLI_DURUM "1/3 | CDP ve EPP normal stoklarý SAP'den alýnýyor..."
 ANA_NORMAL_STOK_GUNCELLE_V2
 
 NormalSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("STOKLAR").Range("C3"))
@@ -41,7 +40,7 @@ NormalDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("STOKLAR").Range("C4"))
 If NormalSatir <= 0 Then Err.Raise vbObjectError + 6002, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Normal stok güncellemesi sonrasýnda veri bulunamadý."
 
 CORE_DURUM "[2/3] Ýlçe stok sistemi güncelleniyor..."
-PANEL_CANLI_DURUM "ÝLÇE STOKLARI GÜNCELLENÝYOR..."
+PANEL_CANLI_DURUM "2/3 | Ýlçe stoklarý SAP'den alýnýyor..."
 ILCE_STOK_GUNCELLE_V2
 
 IlceSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("ÝLÇE_STOK").Range("C3"))
@@ -50,7 +49,7 @@ If IlceSatir <= 0 Then Err.Raise vbObjectError + 6011, "ANA_TUM_STOKLARI_GUNCELL
 ANA_TUM_ILCE_RAPOR_DOGRULA IlceDeger
 
 CORE_DURUM "[3/3] Yüklenici stok sistemi güncelleniyor..."
-PANEL_CANLI_DURUM "YÜKLENÝCÝ STOKLARI GÜNCELLENÝYOR..."
+PANEL_CANLI_DURUM "3/3 | Yüklenici stoklarý SAP'den alýnýyor..."
 YUKLENICI_STOK_GUNCELLE_V2
 
 YukSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK").Range("C3"))
@@ -63,7 +62,7 @@ DoEvents
 
 
 CORE_DURUM "Stok karþýlaþtýrma tarihleri güncelleniyor..."
-PANEL_CANLI_DURUM "STOK KARÞILAÞTIRMA GÜNCELLENÝYOR..."
+PANEL_CANLI_DURUM "Stok karþýlaþtýrma tarihleri güncelleniyor..."
 STOK_KARS_TARIHLERI_YUKLE
 
 

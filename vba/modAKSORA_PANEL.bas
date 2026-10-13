@@ -152,15 +152,22 @@ Public Sub PANEL_CANLI_DURUM(ByVal mesaj As String)
 
     Set ws = ThisWorkbook.Worksheets(PANEL_SAYFA)
 
+    ' Musteri panelindeki gibi: acik sari serit, solda "Guncelleniyor  •  ..." mesaji.
     With ws.Range("B6:AB6")
-        .Interior.Color = RGB(226, 239, 218)
-        .Font.Color = RGB(40, 110, 65)
+        .Interior.Color = RGB(255, 246, 219)
+        .Font.Color = RGB(146, 64, 14)
         .Font.bold = True
-        .HorizontalAlignment = xlCenter
+        .Font.Size = 10
         .VerticalAlignment = xlCenter
     End With
+    ws.Range("B6").HorizontalAlignment = xlLeft
+    ws.Range("B6").IndentLevel = 1
 
-    ws.Range("B6").Value = mesaj
+    If InStr(1, mesaj, "TAMAMLANAMADI", vbTextCompare) > 0 Then
+        ws.Range("B6").Value = mesaj
+    Else
+        ws.Range("B6").Value = "Güncelleniyor  •  " & mesaj
+    End If
 
     ThisWorkbook.Activate
     ws.Activate
@@ -1063,7 +1070,8 @@ ByVal ws As Worksheet)
             .Font.Color = RGB(170, 90, 20)
         End If
         .Font.bold = True
-        .HorizontalAlignment = xlCenter
+        .HorizontalAlignment = xlLeft
+        .IndentLevel = 1
         .VerticalAlignment = xlCenter
     End With
 

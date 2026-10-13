@@ -995,18 +995,38 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_KART_BASLIK_" & k)
         If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 11: s.TextFrame2.TextRange.Font.bold = msoTrue
     Next i
-    ' Alt bant: kurum adi + panel kontrol zamani.
+    ' Alt bant tek satir kurum adi; altinda Malzeme panelindeki gibi acik "Panel kontrolu" seridi.
     Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_ALT_KURUM")
     If Not s Is Nothing Then
         sap = Split(Replace(s.TextFrame2.TextRange.Text, vbCr, vbLf), vbLf)(0)
-        s.TextFrame2.TextRange.Text = sap & vbLf & "Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn:ss")
-        With s.TextFrame2.TextRange.Paragraphs(1).Font
-            .Size = 10: .bold = msoTrue: .Fill.ForeColor.RGB = RGB(255, 255, 255)
-        End With
-        With s.TextFrame2.TextRange.Paragraphs(2).Font
-            .Size = 8: .bold = msoFalse: .Fill.ForeColor.RGB = RGB(190, 214, 232)
-        End With
+        s.TextFrame2.TextRange.Text = sap
+        s.TextFrame2.TextRange.Font.Size = 10: s.TextFrame2.TextRange.Font.bold = msoTrue
+        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
         s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    End If
+    Set e3 = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
+    If Not e3 Is Nothing Then
+        If ws.Rows(30).Hidden Then ws.Rows(30).Hidden = False
+        ws.Rows(30).RowHeight = 16
+        ws.Range("A30:AB30").Interior.Color = RGB(217, 240, 245)
+        ws.ScrollArea = "A1:AB30"
+        Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_PANEL_TARIHI")
+        If s Is Nothing Then
+            Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, e3.Left, e3.Top + e3.Height, e3.Width, 16)
+            s.Name = "AKSORA15_PANEL_TARIHI"
+        End If
+        s.Left = e3.Left: s.Top = e3.Top + e3.Height: s.Width = e3.Width: s.Height = 16
+        s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = RGB(217, 240, 245)
+        s.line.Visible = msoFalse: s.Placement = xlFreeFloating
+        With s.TextFrame2
+            .MarginLeft = 2: .MarginRight = 2: .MarginTop = 0: .MarginBottom = 0
+            .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
+            .TextRange.Text = "Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn:ss")
+            .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 9
+            .TextRange.Font.bold = msoFalse
+            .TextRange.Font.Fill.ForeColor.RGB = RGB(43, 88, 115)
+            .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        End With
     End If
     On Error GoTo 0
     ' Islem dugmeleri
