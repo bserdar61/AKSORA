@@ -1475,6 +1475,13 @@ Private Function MS_Hedef(ByVal depo As String) As Long
             Case "M090", "M132", "M501", "M502", "M503", "M504", "M505", "M506", "M507", "M508", "M509", "M510", "M511"
                 MS_Hedef = 3: Exit Function
         End Select
+    ElseIf MS_IlKod() = "GUMUSHANE" Then
+        ' 7153 Gumushane: CDP D003 D005 D008 D015 Z003 + E###;
+        ' Ilce K### (3 mal grubu); Yuklenici M132 M501 M502.
+        Select Case depo
+            Case "D003", "D005", "D008", "D015", "Z003": MS_Hedef = 1: Exit Function
+            Case "M132", "M501", "M502": MS_Hedef = 3: Exit Function
+        End Select
     Else
         ' 7155 Artvin
         Select Case depo
@@ -2219,12 +2226,12 @@ End Function
 ' Musteri biriminde depo tanimi yapilmis iller.
 Public Function AKSORA_MUSTERI_IL_DESTEK(ByVal il As String) As Boolean
     Select Case UCase$(Trim$(il))
-        Case "ARTVIN", "TRABZON": AKSORA_MUSTERI_IL_DESTEK = True
+        Case "ARTVIN", "TRABZON", "GUMUSHANE": AKSORA_MUSTERI_IL_DESTEK = True
     End Select
 End Function
 
 Public Function AKSORA_MUSTERI_ILLER() As Variant
-    AKSORA_MUSTERI_ILLER = Array("ARTVIN", "TRABZON")
+    AKSORA_MUSTERI_ILLER = Array("ARTVIN", "TRABZON", "GUMUSHANE")
 End Function
 
 Private Function MS_ArsivSayfa(ByVal il As String, ByVal i As Long, ByVal olustur As Boolean) As Worksheet

@@ -422,7 +422,7 @@ Public Sub AKSORA_MUSTERI_GIRIS()
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
         MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
     ElseIf Not AKSORA_MUSTERI_IL_DESTEK(CStr(ws.Range("AZ1").Value2)) Then
-        MsgBox "Seçilen ilin müþteri birimi þu an aktif deðil. Aktif iller: Artvin, Trabzon.", vbInformation, "AKSORA"
+        MsgBox "Seçilen ilin müþteri birimi þu an aktif deðil. Aktif iller: Artvin, Trabzon, Gümüþhane.", vbInformation, "AKSORA"
     Else
         ' Secilen ilin stoklari ekrana yuklenir (onceki ilin verisi kendi kaydina saklanir).
         AKSORA_MUSTERI_IL_DEGIS CStr(ws.Range("AZ1").Value2)
