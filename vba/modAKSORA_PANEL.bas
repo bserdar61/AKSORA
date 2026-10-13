@@ -211,13 +211,10 @@ Cikis:
 End Sub
 
 Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
-    Dim bas As Double
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
-    bas = Timer
     ANA_TUM_STOKLARI_GUNCELLE_V2
-    AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
     Exit Sub
@@ -230,79 +227,111 @@ Hata:
 End Sub
 
 Public Sub PANEL_CDP_GUNCELLE()
-    Dim bas As Double
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP"
     bas = Timer
+    ' Ara sonuc penceresi acilmaz; is bitince ana panel ve tek ozet gosterilir.
+    ANA_SESSIZ_MOD = True
     CDP_STOK_GUNCELLE_V2
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    MsgBox "CDP stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
 Hata:
+    no = Err.Number: metin = Err.Description
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    AKSORA_HATA_GOSTER "CDP stok güncelleme", Err.Number, Err.Description
+    AKSORA_HATA_GOSTER "CDP stok güncelleme", no, metin
 End Sub
 
 Public Sub PANEL_EPP_GUNCELLE()
-    Dim bas As Double
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "EPP"
     bas = Timer
+    ' Ara sonuc penceresi acilmaz; is bitince ana panel ve tek ozet gosterilir.
+    ANA_SESSIZ_MOD = True
     EPP_STOK_GUNCELLE_V2
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    MsgBox "EPP stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
 Hata:
+    no = Err.Number: metin = Err.Description
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    AKSORA_HATA_GOSTER "EPP stok güncelleme", Err.Number, Err.Description
+    AKSORA_HATA_GOSTER "EPP stok güncelleme", no, metin
 End Sub
 
 Public Sub PANEL_ILCE_GUNCELLE()
-    Dim bas As Double
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "ILCE"
     bas = Timer
+    ' Ara sonuc penceresi acilmaz; is bitince ana panel ve tek ozet gosterilir.
+    ANA_SESSIZ_MOD = True
     ILCE_STOK_GUNCELLE_V2
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    MsgBox "Ýlçe stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
 Hata:
+    no = Err.Number: metin = Err.Description
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    AKSORA_HATA_GOSTER "Ýlçe stok güncelleme", Err.Number, Err.Description
+    AKSORA_HATA_GOSTER "Ýlçe stok güncelleme", no, metin
 End Sub
 
 Public Sub PANEL_YUKLENICI_GUNCELLE()
-    Dim bas As Double
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "YUK"
     bas = Timer
+    ' Ara sonuc penceresi acilmaz; is bitince ana panel ve tek ozet gosterilir.
+    ANA_SESSIZ_MOD = True
     YUKLENICI_STOK_GUNCELLE_V2
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    MsgBox "Yüklenici stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
 Hata:
+    no = Err.Number: metin = Err.Description
+    ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    AKSORA_HATA_GOSTER "Yüklenici stok güncelleme", Err.Number, Err.Description
+    AKSORA_HATA_GOSTER "Yüklenici stok güncelleme", no, metin
 End Sub
 
 Public Sub PANEL_GIT_STOKLAR()
