@@ -278,11 +278,61 @@ Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boo
         MS_Teshis "Menü denemesi sonuçsuz: " & Err.Description
         Err.Clear
     End If
-    ' 3) %PC komutu
-    ses.FindById("wnd[0]/tbar[0]/okcd").Text = "%PC"
-    ses.FindById("wnd[0]").SendVKey 0
-    If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
-    MS_Teshis "%PC sonuçsuz " & Err.Description
+    ' 3) Uygulama arac cubugu (tam ekran liste): ipucu "Yerel dosya" olan dugme.
+    Dim b As Object, j As Long, k As Long, yol As String
+    For i = 0 To 80
+        Set b = Nothing
+        Set b = ses.FindById("wnd[0]/tbar[1]/btn[" & CStr(i) & "]", False)
+        If Not b Is Nothing Then
+            t = vbNullString: ipucu = vbNullString
+            t = b.Text: ipucu = b.Tooltip
+            MS_Teshis "Uygulama düðmesi: btn[" & i & "] | " & t & " | " & ipucu
+            t = AKFIX_NORMAL(t & " " & ipucu)
+            If InStr(t, "YEREL DOSYA") > 0 Or InStr(t, "LOCAL FILE") > 0 Then
+                Err.Clear
+                b.Press
+                If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+                MS_Teshis "Uygulama düðmesi sonuçsuz: btn[" & i & "] " & Err.Description
+                Err.Clear
+            End If
+        End If
+    Next i
+    ' 4) Menu cubugu, uc seviye adres ile taranir.
+    For i = 0 To 9
+        Set b = Nothing: Set b = ses.FindById("wnd[0]/mbar/menu[" & i & "]", False)
+        If Not b Is Nothing Then
+            For j = 0 To 20
+                Set b = Nothing: Set b = ses.FindById("wnd[0]/mbar/menu[" & i & "]/menu[" & j & "]", False)
+                If Not b Is Nothing Then
+                    For k = -1 To 15
+                        If k >= 0 Then
+                            Set b = Nothing: Set b = ses.FindById("wnd[0]/mbar/menu[" & i & "]/menu[" & j & "]/menu[" & k & "]", False)
+                        End If
+                        If Not b Is Nothing Then
+                            yol = b.Id: t = vbNullString: t = b.Text
+                            MS_Teshis "Menü: " & Mid$(yol, InStr(yol, "wnd[")) & " | " & t
+                            t = AKFIX_NORMAL(t)
+                            If InStr(t, "YEREL DOSYA") > 0 Or InStr(t, "LOCAL FILE") > 0 Then
+                                Err.Clear
+                                b.Select
+                                If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+                                MS_Teshis "Menü sonuçsuz: " & Err.Description
+                                Err.Clear
+                            End If
+                        End If
+                    Next k
+                End If
+            Next j
+        End If
+    Next i
+    ' 5) Komut alanina islem kodu
+    For Each m In Array("%PC", "&PC")
+        Err.Clear
+        ses.FindById("wnd[0]/tbar[0]/okcd").Text = CStr(m)
+        ses.FindById("wnd[0]").SendVKey 0
+        If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+        MS_Teshis CStr(m) & " sonuçsuz " & Err.Description
+    Next m
     On Error GoTo 0
 End Function
 
