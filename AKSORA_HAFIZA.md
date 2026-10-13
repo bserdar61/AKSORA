@@ -46,6 +46,12 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - İl seçimi: seçim ekranı tek görünür sayfa; il tıklaması ekran/olay kapalı tek seferde.
 - SAP güvenlik penceresi otomatik tıklanmaz (kural: kullanıcı SAP GUI kuralı ekler: C:/TEMP/* oku-yaz izin).
 
+## MÜŞTERİ BİRİMİ — KİLİT (13.10.2026, kullanıcı onaylı)
+- 5 il (Artvin 7155, Trabzon 7152, Gümüşhane 7153, Giresun 7154, Rize 7151) aktif ve MB52 ile mutabık.
+- Ana panel, stok sayfaları, raporlar (alt bölüm: depo bazında malzeme dağılımı), arama, il seçimi,
+  bütün iller güncellemesi bu haliyle kilitli. Kullanıcı istemedikçe müşteri birimine dokunulmaz.
+- Kilit sürümü: commit dc1d8e4 (final/AKSORA.xlsm). Yeni işler bu dosyanın / kullanıcının son yüklediği dosyanın üzerine kurulur.
+
 ## Müşteri birimi il bilgileri
 | İl | Tesis | CDP depoları | İlçe | Yüklenici |
 |---|---|---|---|---|
