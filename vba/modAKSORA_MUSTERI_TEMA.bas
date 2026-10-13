@@ -1244,17 +1244,55 @@ Hata:
 End Sub
 
 Private Sub TEMA_MUSTERI_TOPLU_BUTON(ByVal ws As Worksheet)
-    Dim s As Shape, vurgu As Shape, sure As Double, metin As String
+    Dim s As Shape, vurgu As Shape, durum As Shape, sure As Double, metin As String
+    ' Malzeme birimi arama sayfasindaki dugmenin birebir aynisi (renk, cizgi, golge, vurgu, durum yazisi).
     Set s = ws.Shapes("AKSORA_TOPLU_GUNCELLE")
-    With s.TextFrame2.TextRange
-        .Text = "BÜTÜN ÝLLERÝ GÜNCELLE" & vbLf & "5 ÝL"
-        .Font.Name = "Aptos": .Font.Size = 10: .Font.bold = msoTrue
+    With s
+        .Adjustments.Item(1) = 0.12
+        .TextFrame2.TextRange.Text = "BÜTÜN ÝLLERÝ GÜNCELLE" & vbLf & "IQ09 + MB52  |  " & _
+            CStr(UBound(AKSORA_MUSTERI_ILLER()) + 1) & " ÝL"
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 10
+        .TextFrame2.TextRange.Font.bold = msoTrue
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(225, 255, 246)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle
+        .TextFrame2.MarginLeft = 14: .TextFrame2.MarginRight = 10
+        .TextFrame2.MarginTop = 0: .TextFrame2.MarginBottom = 0
+        .Fill.ForeColor.RGB = RGB(9, 45, 62)
+        .Fill.BackColor.RGB = RGB(0, 112, 84)
+        .Fill.TwoColorGradient msoGradientHorizontal, 1
+        .line.Visible = msoTrue
+        .line.ForeColor.RGB = RGB(28, 211, 163): .line.Weight = 1.25
+        .Shadow.Visible = msoTrue
+        .Shadow.ForeColor.RGB = RGB(10, 39, 50)
+        .Shadow.Transparency = 0.8
+        .Shadow.OffsetX = 1: .Shadow.OffsetY = 2
+        .Placement = xlFreeFloating
+        .OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
     End With
-    s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
     On Error Resume Next
     Set vurgu = ws.Shapes("AKSORA_TOPLU_VURGU")
-    If Not vurgu Is Nothing Then vurgu.OnAction = s.OnAction
+    Set durum = ws.Shapes("AKSORA_TOPLU_DURUM")
     On Error GoTo 0
+    If vurgu Is Nothing Then Set vurgu = ws.Shapes.AddShape(msoShapeRectangle, 0, 0, 3, 10): vurgu.Name = "AKSORA_TOPLU_VURGU"
+    With vurgu
+        .Left = s.Left + 6: .Top = s.Top + 10
+        .Width = 3: .Height = application.Max(6, s.Height - 20)
+        .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
+        .Shadow.Visible = msoFalse
+        .Placement = xlFreeFloating
+        .OnAction = s.OnAction
+        .ZOrder msoBringToFront
+    End With
+    If Not durum Is Nothing Then
+        With durum
+            .Left = s.Left - 2: .Width = s.Width + 4
+            .Top = s.Top + s.Height + 2
+            .Fill.Visible = msoFalse: .line.Visible = msoFalse
+            .Placement = xlFreeFloating
+        End With
+    End If
     If AKSORA_MUSTERI_TOPLU_AKTIF Then
         AKSORA_MUSTERI_TOPLU_TIK True
     Else
@@ -1263,7 +1301,7 @@ Private Sub TEMA_MUSTERI_TOPLU_BUTON(ByVal ws As Worksheet)
         sure = CDbl(application.Evaluate(ThisWorkbook.names("_AKSORA_MUSTERI_SON_SURE").RefersTo))
         metin = CStr(application.Evaluate(ThisWorkbook.names("_AKSORA_MUSTERI_SON_DURUM").RefersTo))
         On Error GoTo 0
-        If Len(metin) = 0 Then metin = "Güncellemeye hazýr."
+        If Len(metin) = 0 Then metin = "Arama, her ilin yukarýdaki tarihli stoklarýný kullanýr."
         TEMA_MUSTERI_SURE_YAZ metin, sure
     End If
 End Sub
@@ -1288,10 +1326,11 @@ End Sub
 Private Sub TEMA_MUSTERI_SURE_YAZ(ByVal metin As String, ByVal sure As Double)
     Dim s As Shape
     Set s = ThisWorkbook.Worksheets("M_MALZEME_ARA").Shapes("AKSORA_TOPLU_DURUM")
-    If sure >= 0 Then metin = metin & vbLf & "GEÇEN SÜRE: " & AKSORA_SAYI_METNI(sure, "#,##0.00") & " saniye"
+    If sure >= 0 Then metin = metin & vbLf & "Geçen süre: " & Format$(CLng(Fix(sure)) \ 60, "00") & ":" & Format$(CLng(Fix(sure)) Mod 60, "00")
     With s.TextFrame2
         .TextRange.Text = metin
-        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 9: .TextRange.Font.bold = msoFalse
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(85, 103, 123)
         .TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
         .WordWrap = msoTrue
@@ -1370,6 +1409,8 @@ Bitir:
     application.EnableEvents = ev: application.ScreenUpdating = sc
     ANA_SESSIZ_MOD = sessiz: AKSORA_V11_MESGUL = False
     application.StatusBar = False
+    AKSORA_MUSTERI_ARAMA_TARIH_YENILE
+    AKSORA_MUSTERI_PANEL_GOSTER
     On Error GoTo 0
     If Len(hataMetni) > 0 Then
         MsgBox sonuc & vbCrLf & hataMetni, vbExclamation, "AKSORA | Müþteri Birimi"

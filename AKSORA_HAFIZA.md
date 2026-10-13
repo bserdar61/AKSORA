@@ -55,4 +55,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   `AKSORA_MUSTERI_IL_DESTEK` / `AKSORA_MUSTERI_ILLER`. Yeni il = bu üç yere ekleme.
 - Her ilin stoğu kendi gizli kaydında: `_MA_<IL>_CDP / _ILCE / _YUK`. İl değişiminde
   (`AKSORA_MUSTERI_IL_DEGIS`) ekrandaki il kaydedilir, seçilen il yüklenir; M_ sayfalarında BX20 = il.
-- Müşteri "bütün iller": tanımlı illeri müşteri motoruyla sırayla günceller, sonunda seçili ile döner.
+- Müşteri "bütün iller": tanımlı illeri müşteri motoruyla sırayla günceller, sonunda seçili ile döner ve müşteri ANA PANEL'i açar.
+- Stok sayfalarında C2 = C2:E2 birleşik: temizlik daima `C2.MergeArea`. Arşiv kaydet/yükle hataları yutulmaz; yükleme önce 3 kaydı okur sonra 3 sayfayı yazar; il seçimi (AZ1) ancak 3 sayfanın BX20'si doğrulanınca değişir.
+- Müşteri arama sayfası: il tarihleri ekrandaki il için sayfalardan, diğer iller için `_MA_<IL>_*` A1'den. Toplu düğme = malzeme arama düğmesinin aynısı.
+- Depo listesi (form açılır liste) tüm satırları açar (tekerlek kaydırmaz); sayfa her açılışta yeniden yerleştirilir.

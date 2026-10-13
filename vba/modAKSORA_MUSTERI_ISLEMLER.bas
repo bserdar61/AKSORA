@@ -96,8 +96,11 @@ End Sub
 
 Private Sub M_ARAMA_TARIHLERI(ByVal ws As Worksheet)
     Dim s As Shape, stok As Worksheet, ad As Variant, secili As String, kod As String, isim As String
-    Dim tarih As Date, v As Variant, yazi As String
+    Dim tarih As Date, v As Variant, yazi As String, ekran As String, t2 As Date
     secili = CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)
+    ' Ekrandaki stoklarin ili (BX20); diger illerin tarihi kendi kaydindan okunur.
+    ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+    If Len(ekran) = 0 Then ekran = "ARTVIN"
     For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
         Set stok = ThisWorkbook.Worksheets(CStr(ad))
         v = stok.Range("C2").Value
@@ -117,11 +120,48 @@ Private Sub M_ARAMA_TARIHLERI(ByVal ws As Worksheet)
             Case "ARTVIN": isim = "ARTVÝN"
         End Select
         If Len(isim) > 0 Then
-            yazi = "-"
-            If kod = secili And tarih > 0 Then yazi = Format$(tarih, "dd.mm.yyyy hh:nn")
+            If kod = ekran Then t2 = tarih Else t2 = AKSORA_MUSTERI_ARSIV_TARIH(kod)
+            If t2 > 0 Then yazi = Format$(t2, "dd.mm.yyyy hh:nn") Else yazi = "Henüz güncellenmedi"
             s.TextFrame2.TextRange.Text = isim & vbLf & yazi
         End If
     Next s
+End Sub
+
+Public Sub AKSORA_MUSTERI_ARAMA_TARIH_YENILE()
+    Dim ws As Worksheet, korumali As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    If ws Is Nothing Then Exit Sub
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    M_ARAMA_TARIHLERI ws
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+        UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
+End Sub
+
+' Musteri ana paneli hazir halde, tek seferde ekrana getirilir (toplu guncelleme sonu).
+Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
+    Dim hedef As Worksheet, ev As Boolean, kilit As Boolean
+    On Error Resume Next
+    Set hedef = ThisWorkbook.Worksheets("M_ANA PANEL")
+    If hedef Is Nothing Then Exit Sub
+    ev = application.EnableEvents
+    kilit = (M_PencereKilit(application.hwnd) <> 0)
+    application.ScreenUpdating = False
+    application.EnableEvents = False
+    ThisWorkbook.Activate
+    hedef.Visible = xlSheetVisible
+    hedef.Select Replace:=True
+    application.EnableEvents = True
+    AKSORA_MUSTERI_TEMA_GORUNUM hedef
+    AKSORA_MUSTERI_SECIM_BASA hedef
+    AKSORA_MUSTERI_PANEL_YENILE
+    application.EnableEvents = ev
+    application.ScreenUpdating = True
+    If kilit Then M_PencereKilit 0
+    DoEvents
+    On Error GoTo 0
 End Sub
 
 Public Sub AKSORA_MUSTERI_BUTONLARI_AKTIF_ET()
@@ -153,6 +193,7 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     application.EnableEvents = True
     AKSORA_MUSTERI_TEMA_GORUNUM hedef
     AKSORA_MUSTERI_SECIM_BASA hedef
+    If M_STOK(hedef.Name) Then M_DEPO_YENIDEN hedef
     application.ScreenUpdating = True
     If kilit Then M_PencereKilit 0
     Exit Sub
@@ -286,8 +327,13 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
         For i = 1 To .ListCount
             If StrComp(CStr(.List(i)), secim, vbTextCompare) = 0 Then p = i
         Next i
-        .Value = p: .DropDownLines = application.Min(15, .ListCount)
+        .Value = p
     End With
+    ' Liste kaydirmadan tamami acilir (form listesi fare tekerlegiyle kaymaz).
+    On Error Resume Next
+    liste.ControlFormat.DropDownLines = liste.ControlFormat.ListCount
+    If Err.Number <> 0 Then Err.Clear: liste.ControlFormat.DropDownLines = application.Min(60, liste.ControlFormat.ListCount)
+    On Error GoTo 0
     liste.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_DEPO_SEC"
     M_DEPO_KONUM ws, liste
     ws.Calculate
@@ -326,6 +372,20 @@ Private Sub M_FILTRE_ALANI(ByVal ws As Worksheet, ByVal son As Long)
     Next i
 End Sub
 
+Private Sub M_DEPO_YENIDEN(ByVal ws As Worksheet)
+    Dim liste As Shape, korumali As Boolean, w As Double
+    On Error Resume Next
+    Set liste = ws.Shapes("AKT1_DEPO_KART_LISTE")
+    If liste Is Nothing Then Exit Sub
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    M_DEPO_KONUM ws, liste
+    w = liste.Width: liste.Width = w + 1: liste.Width = w
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+        UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
+End Sub
+
 Private Sub M_DEPO_KONUM(ByVal ws As Worksheet, ByVal liste As Shape)
     Dim kart As Shape, baslik As Shape
     Set kart = ws.Shapes("AKT1_DEPO_KART_ZEMIN")
@@ -335,6 +395,7 @@ Private Sub M_DEPO_KONUM(ByVal ws As Worksheet, ByVal liste As Shape)
         .Top = kart.Top + kart.Height * 0.52
         .Width = kart.Left + kart.Width - .Left - 8
         .Height = application.Min(17, kart.Height * 0.34)
+        .Top = application.Min(kart.Top + kart.Height * 0.52, kart.Top + kart.Height - .Height - 6)
         .Placement = xlFreeFloating
         .ZOrder msoBringToFront
     End With
@@ -1464,6 +1525,8 @@ Private Sub M_DUZEN_STOK(ByVal ws As Worksheet, ByVal w As Double)
         sol(i) = 8 + i * (cw + 10): gen(i) = cw
     Next i
     M_KART_TASI ws, kartlar, sol, gen
+    Set a = M_SEKIL(ws, "AKT1_DEPO_KART_LISTE")
+    If Not a Is Nothing Then M_DEPO_KONUM ws, a
     M_EV_SIMGE ws
 End Sub
 

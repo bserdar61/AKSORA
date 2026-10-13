@@ -1690,6 +1690,7 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
         tarihEski(i) = sayfa(i).Range("C2").Value
         If IsEmpty(yeni(i)) Then adet(i) = 0 Else adet(i) = UBound(yeni(i), 1)
     Next i
+    application.ScreenUpdating = False
     yazildi = True
     For i = 1 To 3: MS_Yaz sayfa(i), yeni(i): Next i
     yazildi = False
@@ -1703,6 +1704,8 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
     MS_ExcelTemizle
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
+    AKSORA_MUSTERI_ARAMA_TARIH_YENILE
+    application.ScreenUpdating = sc
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
     bilgi = MS_IlKod() & ": güncellendi (" & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn)"
     MS_CEKIRDEK = True
@@ -2213,64 +2216,101 @@ Public Function AKSORA_MUSTERI_ILLER() As Variant
 End Function
 
 Private Function MS_ArsivSayfa(ByVal il As String, ByVal i As Long, ByVal olustur As Boolean) As Worksheet
-    Dim ad As String, ws As Worksheet
+    Dim ad As String, ws As Worksheet, onceki As Object, sc As Boolean
     ad = "_MA_" & il & "_" & Choose(i, "CDP", "ILCE", "YUK")
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(ad)
     On Error GoTo 0
     If ws Is Nothing And olustur Then
+        ' Yeni kayit sayfasi ekranda gorunmeden eklenir; etkin sayfa geri secilir.
+        sc = application.ScreenUpdating: application.ScreenUpdating = False
+        Set onceki = ActiveSheet
         Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = ad
         ws.Visible = xlSheetVeryHidden
+        If Not onceki Is Nothing Then onceki.Activate
+        application.ScreenUpdating = sc
     End If
     Set MS_ArsivSayfa = ws
 End Function
 
-' Ekrandaki musteri stoklari (M_ sayfalari) ilin arsivine yazilir.
+' Ekrandaki musteri stoklari (M_ sayfalari) ilin arsivine yazilir. Hata gizlenmez.
 Public Sub AKSORA_MUSTERI_ARSIV_KAYDET(ByVal il As String)
     Dim adlar As Variant, i As Long, kaynak As Worksheet, ar As Worksheet, son As Long, ev As Boolean
+    Dim hataNo As Long, hataMetni As String
     If Len(il) = 0 Then Exit Sub
     ev = application.EnableEvents
-    On Error GoTo Cikis
+    On Error GoTo Hata
     application.EnableEvents = False
     adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
     For i = 1 To 3
         Set kaynak = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
         Set ar = MS_ArsivSayfa(il, i, True)
         ar.Cells.ClearContents
-        ar.Range("A1").Value = kaynak.Range("C2").Value
+        ar.Range("A1").Value = kaynak.Range("C2").MergeArea.Cells(1, 1).Value
         ar.Range("B1").Value2 = il
         son = AKSORA_M_SON(kaynak)
         If son >= 7 Then ar.Range("A2").Resize(son - 6, 14).Value2 = kaynak.Range("A7:N" & son).Value2
     Next i
 Cikis:
     application.EnableEvents = ev
+    If hataNo <> 0 Then Err.Raise hataNo, "AKSORA_MUSTERI_ARSIV_KAYDET", il & " kaydý yazýlamadý: " & hataMetni
+    Exit Sub
+Hata:
+    hataNo = Err.Number: hataMetni = Err.Description
+    Resume Cikis
 End Sub
 
+' Arsivdeki en son guncelleme tarihi (kayit yoksa 0).
+Public Function AKSORA_MUSTERI_ARSIV_TARIH(ByVal il As String) As Date
+    Dim i As Long, ar As Worksheet, v As Variant
+    il = UCase$(Trim$(il))
+    For i = 1 To 3
+        Set ar = MS_ArsivSayfa(il, i, False)
+        If Not ar Is Nothing Then
+            v = ar.Range("A1").Value
+            If Not IsError(v) Then
+                If IsDate(v) Then
+                    If CDate(v) > AKSORA_MUSTERI_ARSIV_TARIH Then AKSORA_MUSTERI_ARSIV_TARIH = CDate(v)
+                End If
+            End If
+        End If
+    Next i
+End Function
+
 ' Secilen ilin arsivi ekrandaki musteri stok sayfalarina yuklenir (arsiv yoksa sayfalar bos).
+' Once uc kayit da okunur; sonra uc sayfa birlikte yazilir. Hata gizlenmez.
 Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
-    Dim adlar As Variant, i As Long, ws As Worksheet, ar As Worksheet, son As Long, n As Long, ev As Boolean
+    Dim adlar As Variant, i As Long, ws As Worksheet, ar As Worksheet, son As Long, n(1 To 3) As Long, ev As Boolean
+    Dim veri(1 To 3) As Variant, tarih(1 To 3) As Variant, hataNo As Long, hataMetni As String
     ev = application.EnableEvents
-    On Error GoTo Cikis
+    On Error GoTo Hata
     application.EnableEvents = False
     adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
     For i = 1 To 3
-        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
         Set ar = MS_ArsivSayfa(il, i, False)
+        tarih(i) = Empty: veri(i) = Empty: n(i) = 0
+        If Not ar Is Nothing Then
+            n(i) = ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1
+            If n(i) >= 1 Then veri(i) = ar.Range("A2").Resize(n(i), 14).Value2 Else n(i) = 0
+            tarih(i) = ar.Range("A1").Value
+        End If
+    Next i
+    For i = 1 To 3
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
         ws.Unprotect ""
         If ws.FilterMode Then ws.ShowAllData
         ws.AutoFilterMode = False
         son = application.Max(7, AKSORA_M_SON(ws))
         ws.Range("A7:N" & son).ClearContents
-        ws.Range("C2").ClearContents
-        If Not ar Is Nothing Then
-            n = ar.Cells(ar.Rows.Count, "E").End(xlUp).Row
-            If n >= 2 Then
-                ws.Range("A7:F" & n + 5).NumberFormat = "@"
-                ws.Range("H7:J" & n + 5).NumberFormat = "@"
-                ws.Range("A7").Resize(n - 1, 14).Value2 = ar.Range("A2").Resize(n - 1, 14).Value2
-            End If
-            ws.Range("C2").Value = ar.Range("A1").Value
+        ws.Range("C2").MergeArea.ClearContents
+        If n(i) > 0 Then
+            ws.Range("A7:F" & n(i) + 6).NumberFormat = "@"
+            ws.Range("H7:J" & n(i) + 6).NumberFormat = "@"
+            ws.Range("A7").Resize(n(i), 14).Value2 = veri(i)
+        End If
+        If Not IsEmpty(tarih(i)) Then
+            ws.Range("C2").Value = tarih(i)
             ws.Range("C2").NumberFormat = "dd.mm.yyyy hh:mm:ss"
         End If
         ws.Range("BX20").Value2 = il
@@ -2279,17 +2319,37 @@ Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
     Next i
 Cikis:
     application.EnableEvents = ev
+    If hataNo <> 0 Then Err.Raise hataNo, "AKSORA_MUSTERI_ARSIV_YUKLE", il & " stoklarý yüklenemedi: " & hataMetni
+    Exit Sub
+Hata:
+    hataNo = Err.Number: hataMetni = Err.Description
+    Resume Cikis
 End Sub
 
 ' Il secim ekranindan giriste: ekrandaki il farkliysa once onun verisi saklanir,
 ' sonra secilen ilin verisi yuklenir. Boylece her ilin stogu kendi kaydinda durur.
 Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
-    Dim mevcut As String, korumali As Boolean
+    Dim mevcut As String, korumali As Boolean, ad As Variant, v As Variant
     il = UCase$(Trim$(il))
     On Error Resume Next
     mevcut = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
     On Error GoTo 0
     If Len(mevcut) = 0 Then mevcut = "ARTVIN"
+    If mevcut <> il Then
+        AKSORA_MUSTERI_ARSIV_KAYDET mevcut
+        ' Kayit dogrulanmadan ekrandaki veri silinmez.
+        If MS_ArsivSayfa(mevcut, 1, False) Is Nothing Then
+            Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
+        End If
+        AKSORA_MUSTERI_ARSIV_YUKLE il
+    End If
+    ' Uc sayfa da ayni ile ait olmali; degilse il secimi degistirilmez.
+    For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+        v = ThisWorkbook.Worksheets(CStr(ad)).Range("BX20").Value2
+        If Len(CStr(v)) > 0 And UCase$(Trim$(CStr(v))) <> il Then
+            Err.Raise vbObjectError + 1996, , "Müþteri sayfalarý farklý illere ait (" & CStr(ad) & ": " & CStr(v) & "). Ýl deðiþimi yapýlmadý."
+        End If
+    Next ad
     With ThisWorkbook.Worksheets("MUSTERI IL SECIM")
         If UCase$(Trim$(CStr(.Range("AZ1").Value2))) <> il Then
             korumali = .ProtectContents
@@ -2299,11 +2359,4 @@ Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
         End If
     End With
     mIlKod = vbNullString
-    If mevcut = il Then Exit Sub
-    AKSORA_MUSTERI_ARSIV_KAYDET mevcut
-    ' Kayit dogrulanmadan ekrandaki veri silinmez.
-    If MS_ArsivSayfa(mevcut, 1, False) Is Nothing Then
-        Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
-    End If
-    AKSORA_MUSTERI_ARSIV_YUKLE il
 End Sub
