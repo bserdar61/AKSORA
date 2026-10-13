@@ -1042,6 +1042,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
     Dim r As Long, n As Long, h As Long, k As String, ks As String, t As Variant, mg As String
     Dim depo As String, malz As String, parti As String, birim As Double, ad As String, fark As Long
     Dim cikti() As Variant, nIq As Long, nMb As Long, x As Variant, mbTop(1 To 3) As Double, akTop(1 To 3) As Double, i As Long
+    Dim mbq As Double, nSifir As Long
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set mgOf = CreateObject("Scripting.Dictionary"): mgOf.CompareMode = vbTextCompare
     Set brOf = CreateObject("Scripting.Dictionary"): brOf.CompareMode = vbTextCompare
@@ -1082,6 +1083,14 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
                     If d.Exists(depo & "|" & malz & "|") Or d.Exists("*|" & malz & "|") Then k = depo & "|" & malz & "|"
                 End If
                 sayac(k) = sayac(k) + 1
+                mbq = 0: If d.Exists(k) Then mbq = CDbl(d(k)(0))
+                If CDbl(sayac(k)) > mbq Then
+                    ' MB52'de serbest stokta olmayan seri (bloke/kalite/transfer): satir gorunur, adet ve tutar 0.
+                    cikti(n, 7) = 0: cikti(n, 11) = 0: cikti(n, 13) = "SAP": nSifir = nSifir + 1
+                    If mCalisiyor And nSifir <= 200 Then MS_Teshis "Serbest stokta yok (adet 0): " & depo & " | " & CStr(iq(r, 3)) & _
+                        " | " & CStr(iq(r, 4)) & " | seri " & CStr(iq(r, 5))
+                    GoTo SonrakiSeri
+                End If
                 ' Depoda serbest miktar yoksa (bloke/kalite/transfer) 7155 genelindeki birim deger kullanilir.
                 If Not d.Exists(k) Then
                     k = "*|" & Mid$(k, Len(depo) + 2)
@@ -1094,6 +1103,7 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
                 End If
             End If
         End If
+SonrakiSeri:
     Next r
     ' 2) Toplu stok (MB52); seri numarali iki grup IQ09'dan geldigi icin atlanir.
     For r = 1 To UBound(mb, 1)
@@ -1118,7 +1128,8 @@ Private Function MS_Birlestir(ByVal iq As Variant, ByVal mb As Variant, ByRef oz
         End If
     Next r
     ozet = "IQ09 seri numaralý " & AKSORA_SAYI_METNI(nIq, "#,##0") & " satýr  |  MB52 toplu " & _
-        AKSORA_SAYI_METNI(nMb, "#,##0") & " satýr" & IIf(fark > 0, "  |  IQ09/MB52 adet farký: " & fark & " kalem", "")
+        AKSORA_SAYI_METNI(nMb, "#,##0") & " satýr" & IIf(fark > 0, "  |  IQ09/MB52 adet farký: " & fark & " kalem", "") & _
+        IIf(nSifir > 0, vbCrLf & "Serbest stokta olmayan seri (adet 0, tutar 0): " & AKSORA_SAYI_METNI(nSifir, "#,##0") & " satýr", "")
     For r = 1 To n
         h = MS_Hedef(CStr(cikti(r, 2)))
         If h > 0 And Not IsEmpty(cikti(r, 11)) Then akTop(h) = akTop(h) + CDbl(cikti(r, 11))
