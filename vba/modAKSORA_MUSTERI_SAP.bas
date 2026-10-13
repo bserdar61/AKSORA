@@ -933,8 +933,13 @@ Private Function MS_IQ09_Oku(ByVal ses As Object) As Variant
     MS_Teshis "IQ09 liste: " & CStr(alv.RowCount) & " satýr"
     MS_DuzenSec ses, alv, Array("/PANEL", "PANEL", "/AKSORA", "AKSORA"), "IQ09"
     Set alv = MS_GridBekle(ses, 60)
-    MS_Durum "IQ09 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvExcel(ses, alv, "IQ09")
+    MS_Durum "IQ09 listesi alýnýyor..."
+    ' Once arka planda metin dosyasi (Excel acilmaz); olmazsa Excel aktarimi.
+    v = MS_AlvMetin(ses, alv, "IQ09")
+    If Not IsArray(v) Then
+        Set alv = MS_GridBekle(ses, 60)
+        v = MS_AlvExcel(ses, alv, "IQ09")
+    End If
     If Not IsArray(v) Then Err.Raise vbObjectError + 1961, , "IQ09 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1962, , "IQ09 listesinde baþlýk bulunamadý."
@@ -976,8 +981,12 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     If alv Is Nothing Then Err.Raise vbObjectError + 1970, , "MB52 sonuç listesi açýlmadý."
     MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL"), "MB52"
     Set alv = MS_GridBekle(ses, 60)
-    MS_Durum "MB52 listesi Excel'e aktarýlýyor..."
-    v = MS_AlvExcel(ses, alv, "MB52")
+    MS_Durum "MB52 listesi alýnýyor..."
+    v = MS_AlvMetin(ses, alv, "MB52")
+    If Not IsArray(v) Then
+        Set alv = MS_GridBekle(ses, 60)
+        v = MS_AlvExcel(ses, alv, "MB52")
+    End If
     If Not IsArray(v) Then Err.Raise vbObjectError + 1971, , "MB52 listesi Excel'e aktarýlamadý. Teþhis: " & MS_TeshisYolu()
     h = MS_BaslikSatiri(v)
     If h = 0 Then Err.Raise vbObjectError + 1972, , "MB52 listesinde baþlýk bulunamadý."
