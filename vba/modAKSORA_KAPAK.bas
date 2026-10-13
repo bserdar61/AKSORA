@@ -429,54 +429,33 @@ End Sub
 ' IL SEC
 '==========================================================
 Public Sub AKSORA_V8_IL_SEC()
-
-    Dim ws As Worksheet
-
-    Dim ix As Long
-
-    Dim keys(1 To 5) As String
-
-
-    On Error GoTo Hata
-
-
+    Dim ws As Worksheet, ix As Long, keys(1 To 5) As String
+    Dim ev As Boolean, sc As Boolean, hataMetni As String
     If AKSORA_V11_MESGUL Then Exit Sub
-
-
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(KAPAK_SAYFA)
-
-
-    ix = CLng( _
-        ws.Shapes(CStr(application.Caller)).AlternativeText _
-    )
-
-
-    keys(1) = "GIRESUN"
-    keys(2) = "TRABZON"
-    keys(3) = "RIZE"
-    keys(4) = "GUMUSHANE"
-    keys(5) = "ARTVIN"
-
-
+    ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
+    keys(1) = "GIRESUN": keys(2) = "TRABZON": keys(3) = "RIZE"
+    keys(4) = "GUMUSHANE": keys(5) = "ARTVIN"
     If ix < 1 Or ix > 5 Then Exit Sub
-
-
+    ' Secim tek seferde cizilir; hesaplama olaylari baska sayfaya gecis yaptirmaz.
+    application.ScreenUpdating = False
+    application.EnableEvents = False
     ws.Range("AZ1").Value = keys(ix)
-
-
     AKSORA_V8_SECIM_GORUNUM ws
-
     AKSORA_V10_TARIH_GOSTER
-
-
+Cikis:
+    On Error Resume Next
+    If Not (ActiveSheet Is ws) And Not ws Is Nothing Then ws.Activate
+    application.EnableEvents = ev
+    application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(hataMetni) > 0 Then MsgBox "Il secimi: " & hataMetni, vbExclamation, "AKSORA"
     Exit Sub
-
-
 Hata:
-
-    MsgBox "Il secimi: " & Err.Description, _
-           vbExclamation, "AKSORA"
-
+    hataMetni = Err.Description
+    Resume Cikis
 End Sub
 
 

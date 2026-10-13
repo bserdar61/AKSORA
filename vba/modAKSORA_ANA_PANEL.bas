@@ -351,16 +351,12 @@ Private Sub V6_RECT(ByVal ws As Worksheet, ByVal ad As String, _
 End Sub
 
 Public Sub AKSORA_ANA_PANEL_IL_DEGISTIR()
-    Dim k As Worksheet, deneme As Long
+    ' Kapak kilitlenir: giris kapanir, kapak tek gorunur sayfa olur (baska sayfaya kayma olmaz).
     On Error GoTo Hata
-    Set k = ThisWorkbook.Worksheets("KAPAK")
-    ' Ilk geciste kapak yerine baska bir sayfa acik kalirsa ayni gecis bir kez daha yapilir.
-    For deneme = 1 To 2
-        k.Visible = xlSheetVisible
-        k.Activate
-        AKSORA_V8_KAPAK_GORUNUM
-        If ActiveSheet Is k Then Exit For
-    Next deneme
+    If AKSORA_V11_MESGUL Then Exit Sub
+    AKSORA_KAPAK_KILITLE
+    If ActiveSheet.Name <> "KAPAK" Then ThisWorkbook.Worksheets("KAPAK").Activate
+    AKSORA_V8_KAPAK_GORUNUM
     Exit Sub
 Hata:
     MsgBox "Il secimi: " & Err.Description, vbExclamation, "AKSORA"
