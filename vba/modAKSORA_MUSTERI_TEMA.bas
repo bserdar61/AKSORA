@@ -1140,7 +1140,24 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         If Not .DisplayVerticalScrollBar Then .DisplayVerticalScrollBar = True
     End With
     ' Yakinlastirma, kenar hizalama ve kart yerlesimi (pencere/veri degismedikce atlanir).
-    AKSORA_MUSTERI_DUZEN ws
+    If ws.Name = "M_ANA PANEL" Then
+        ' Ana panel ozgun yerlesimiyle pencereye sigdirilir (sekiller tasinmaz).
+        genislik = ws.Range("A1:L1").Width
+        For Each s In ws.Shapes
+            If s.Visible = msoTrue Then
+                genislik = application.Max(genislik, s.Left + s.Width)
+                altSinir = application.Max(altSinir, s.Top + s.Height)
+            End If
+        Next s
+        With ThisWorkbook.Windows(1)
+            z = (.UsableWidth - 8) / genislik * 100
+            If altSinir > 0 Then z = application.Min(z, (.UsableHeight - 8) / altSinir * 100)
+            z = application.Max(10, application.Min(400, Fix(z)))
+            If .Zoom <> z Then .Zoom = z
+        End With
+    Else
+        AKSORA_MUSTERI_DUZEN ws
+    End If
     With ThisWorkbook.Windows(1)
         If .ScrollRow <> 1 Then .ScrollRow = 1
         If .ScrollColumn <> 1 Then .ScrollColumn = 1

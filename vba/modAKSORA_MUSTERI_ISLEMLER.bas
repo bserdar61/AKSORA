@@ -1234,7 +1234,6 @@ End Sub
 '----------------------------------------------------------
 Private Function M_SON_KOLON(ByVal ad As String) As Long
     Select Case ad
-        Case "M_ANA PANEL": M_SON_KOLON = 28
         Case "M_MALZEME_ARA": M_SON_KOLON = 16
         Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": M_SON_KOLON = 10
         Case "M_CDP_RAPOR", "M_ÝLÇE_RAPOR", "M_YÜKLENÝCÝ_RAPOR": M_SON_KOLON = 21
@@ -1244,7 +1243,6 @@ End Function
 Private Function M_DUZEN_IMZA(ByVal ws As Worksheet, ByVal pn As Window) As String
     M_DUZEN_IMZA = "DUZEN_V1|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
         CStr(pn.Zoom) & "|" & CStr(ws.Range("BX11").Value2)
-    If ws.Name = "M_ANA PANEL" Then M_DUZEN_IMZA = M_DUZEN_IMZA & "|" & CStr(ws.Rows(1).Hidden) & CStr(ws.Rows(30).Hidden)
 End Function
 
 Public Sub AKSORA_MUSTERI_DUZEN(ByVal ws As Worksheet)
@@ -1265,17 +1263,9 @@ Public Sub AKSORA_MUSTERI_DUZEN(ByVal ws As Worksheet)
     If Len(CStr(ws.Range("BX12").Value2)) = 0 Or Not IsNumeric(ws.Range("BX12").Value2) Then _
         ws.Range("BX12").Value2 = kol.ColumnWidth
     If kol.ColumnWidth <> CDbl(ws.Range("BX12").Value2) Then kol.ColumnWidth = CDbl(ws.Range("BX12").Value2)
-    If ws.Name = "M_ANA PANEL" Then
-        If Not ws.Rows(1).Hidden Then ws.Rows(1).Hidden = True
-    End If
     w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
     If w <= 0 Then GoTo Cikis
     z = (pn.UsableWidth - 1) / w * 100
-    If ws.Name = "M_ANA PANEL" Then
-        Set s = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
-        If Not s Is Nothing Then alt = s.Top + s.Height
-        If alt > 0 Then z = application.Min(z, (pn.UsableHeight - 1) / alt * 100)
-    End If
     z = application.Max(10, application.Min(400, Fix(z)))
     If pn.Zoom <> z Then pn.Zoom = z
     ' Tam sayi yakinlastirmadan kalan bosluk son kolona eklenir: sag kenar pencereyle biter.
@@ -1284,7 +1274,6 @@ Public Sub AKSORA_MUSTERI_DUZEN(ByVal ws As Worksheet)
         kol.ColumnWidth = application.Min(255, kol.ColumnWidth * (kol.Width + ek) / kol.Width)
     w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
     Select Case ws.Name
-        Case "M_ANA PANEL": M_DUZEN_PANEL ws, w
         Case "M_MALZEME_ARA": M_DUZEN_ARAMA ws, w
         Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": M_DUZEN_STOK ws, w
         Case Else: M_DUZEN_RAPOR ws, w
@@ -1316,7 +1305,7 @@ End Sub
 ' Kartlari ic sekilleriyle (ikon, etiket, deger, liste) birlikte yeni yerlerine tasir.
 Private Sub M_KART_TASI(ByVal ws As Worksheet, ByVal kartlar As Variant, ByVal sol As Variant, ByVal gen As Variant)
     Dim i As Long, j As Long, s As Shape, k As Shape, cx As Double, cy As Double, ust As Long, ad As String
-    Dim uye() As Long, dx() As Double, dw() As Double
+    Dim uye() As Long, dx() As Double, dw() As Double, adlar() As String
     ust = UBound(kartlar)
     ReDim dx(0 To ust): ReDim dw(0 To ust)
     For i = 0 To ust
@@ -1336,6 +1325,9 @@ Private Sub M_KART_TASI(ByVal ws As Worksheet, ByVal kartlar As Variant, ByVal s
             End If
         Next i
     Next s
+    ' Esnek ogeler (etiket/deger/liste) genisler; ikon parcalari tek grup halinde kayar
+    ' (tek tek kaydirilinca piksel yuvarlamasi simgeyi bozar).
+    ReDim adlar(0 To ust)
     j = 0
     For Each s In ws.Shapes
         j = j + 1
@@ -1343,15 +1335,39 @@ Private Sub M_KART_TASI(ByVal ws As Worksheet, ByVal kartlar As Variant, ByVal s
             i = uye(j): ad = UCase$(s.Name)
             If InStr(ad, "ETIKET") > 0 Or InStr(ad, "DEGER") > 0 Or InStr(ad, "BASLIK") > 0 Or InStr(ad, "LISTE") > 0 Then
                 s.Left = s.Left + dx(i): s.Width = application.Max(10, s.Width + dw(i))
-            Else
+            ElseIf s.Type = msoFormControl Then
                 s.Left = s.Left + dx(i)
+            Else
+                adlar(i) = adlar(i) & vbTab & s.Name
             End If
         End If
     Next s
     For i = 0 To ust
+        If Len(adlar(i)) > 0 And dx(i) <> 0 Then M_GRUP_KAYDIR ws, Split(Mid$(adlar(i), 2), vbTab), dx(i)
+    Next i
+    For i = 0 To ust
         Set k = kartlar(i)
         k.Left = CDbl(sol(i)): k.Width = CDbl(gen(i))
     Next i
+End Sub
+
+Private Sub M_GRUP_KAYDIR(ByVal ws As Worksheet, ByVal adlar As Variant, ByVal dx As Double)
+    Dim g As Shape, i As Long
+    If UBound(adlar) = 0 Then
+        ws.Shapes(CStr(adlar(0))).Left = ws.Shapes(CStr(adlar(0))).Left + dx
+        Exit Sub
+    End If
+    On Error Resume Next
+    Set g = ws.Shapes.Range(adlar).Group
+    On Error GoTo 0
+    If g Is Nothing Then
+        For i = 0 To UBound(adlar)
+            ws.Shapes(CStr(adlar(i))).Left = ws.Shapes(CStr(adlar(i))).Left + dx
+        Next i
+    Else
+        g.Left = g.Left + dx
+        g.Ungroup
+    End If
 End Sub
 
 Private Sub M_DUZEN_STOK(ByVal ws As Worksheet, ByVal w As Double)
@@ -1429,25 +1445,6 @@ Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     Next s
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
     If Not s Is Nothing Then s.Left = 0: s.Width = tw
-End Sub
-
-Private Sub M_DUZEN_PANEL(ByVal ws As Worksheet, ByVal w As Double)
-    Dim ad As Variant, s As Shape, sr As Shape
-    For Each ad In Array("MUSTERI_ANA_BANNER", "AKSORA15_UST_ZEMIN", "MUSTERI_ANA_SECIM_SERIDI", _
-        "AKSORA15_TEK_ARKA_PLAN", "AKSORA15_ALT_ZEMIN", "AKSORA15_ALT_KURUM")
-        M_YATAY ws, CStr(ad), 0, w
-    Next ad
-    Set s = M_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
-    Set sr = M_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
-    If Not s Is Nothing And Not sr Is Nothing Then s.Left = sr.Left + sr.Width - s.Width - 10
-    ' Sekillerin ortmedigi hucre kenarlari zeminle ayni renge boyanir (gri serit kalmaz).
-    Set s = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
-    If Not s Is Nothing Then
-        ws.Range("A2:AB" & CStr(s.TopLeftCell.Row)).Interior.Color = RGB(236, 244, 251)
-        ws.Range("A" & CStr(s.TopLeftCell.Row + 1) & ":AB60").Interior.Color = s.Fill.ForeColor.RGB
-        ' Pencere paneldan uzunsa alt bant rengi sayfa sonuna kadar surer.
-        ws.Rows("30:60").Hidden = False
-    End If
 End Sub
 
 Private Sub M_DUZEN_ARAMA(ByVal ws As Worksheet, ByVal w As Double)
