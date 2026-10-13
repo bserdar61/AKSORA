@@ -2364,27 +2364,35 @@ End Sub
 ' Il secim ekranindan giriste: ekrandaki il farkliysa once onun verisi saklanir,
 ' sonra secilen ilin verisi yuklenir. Boylece her ilin stogu kendi kaydinda durur.
 Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
-    Dim mevcut As String, korumali As Boolean, ad As Variant, v As Variant
+    Dim mevcut As String, korumali As Boolean, ad As Variant, v As Variant, adim As String
+    Dim hataNo As Long, hataMetni As String
     il = UCase$(Trim$(il))
     On Error Resume Next
     mevcut = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
-    On Error GoTo 0
+    On Error GoTo Hata
     If Len(mevcut) = 0 Then mevcut = "ARTVIN"
     If mevcut <> il Then
-        If Not MS_ArsivAyni(mevcut) Then AKSORA_MUSTERI_ARSIV_KAYDET mevcut
+        adim = mevcut & " kaydý kontrol"
+        If Not MS_ArsivAyni(mevcut) Then
+            adim = mevcut & " kaydý yazma"
+            AKSORA_MUSTERI_ARSIV_KAYDET mevcut
+        End If
         ' Kayit dogrulanmadan ekrandaki veri silinmez.
         If MS_ArsivSayfa(mevcut, 1, False) Is Nothing Then
             Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
         End If
+        adim = il & " kaydý yükleme"
         AKSORA_MUSTERI_ARSIV_YUKLE il
     End If
     ' Uc sayfa da ayni ile ait olmali; degilse il secimi degistirilmez.
+    adim = "il doðrulama"
     For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
         v = ThisWorkbook.Worksheets(CStr(ad)).Range("BX20").Value2
         If Len(CStr(v)) > 0 And UCase$(Trim$(CStr(v))) <> il Then
             Err.Raise vbObjectError + 1996, , "Müþteri sayfalarý farklý illere ait (" & CStr(ad) & ": " & CStr(v) & "). Ýl deðiþimi yapýlmadý."
         End If
     Next ad
+    adim = "il seçimi yazma"
     With ThisWorkbook.Worksheets("MUSTERI IL SECIM")
         If UCase$(Trim$(CStr(.Range("AZ1").Value2))) <> il Then
             korumali = .ProtectContents
@@ -2394,4 +2402,11 @@ Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
         End If
     End With
     mIlKod = vbNullString
+    Exit Sub
+Hata:
+    hataNo = Err.Number: hataMetni = Err.Description
+    mIlKod = vbNullString
+    On Error GoTo 0
+    Err.Raise vbObjectError + 1997, "AKSORA_MUSTERI_IL_DEGIS", "Ýl geçiþi " & mevcut & " > " & il & " | adým: " & adim & _
+        vbCrLf & "Hata " & CStr(hataNo) & ": " & hataMetni
 End Sub

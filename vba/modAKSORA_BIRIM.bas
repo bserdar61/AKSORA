@@ -369,6 +369,12 @@ Public Sub AKSORA_MUSTERI_IL_SEC()
     ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
     If ix < 1 Or ix > 5 Then Exit Sub
     keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    ' Musteri depo tanimi olmayan il secilemez (aktif degil).
+    If Not AKSORA_MUSTERI_IL_DESTEK(CStr(keys(ix - 1))) Then
+        MsgBox Choose(ix, "GÝRESUN", "TRABZON", "RÝZE", "GÜMÜÞHANE", "ARTVÝN") & _
+            " müþteri birimi þu an aktif deðil.", vbInformation, "AKSORA"
+        Exit Sub
+    End If
     ' Secim tek seferde cizilir; hesaplama olaylari baska sayfaya gecis yaptirmaz.
     application.ScreenUpdating = False: application.EnableEvents = False
     ws.Unprotect PW
@@ -415,6 +421,8 @@ Public Sub AKSORA_MUSTERI_GIRIS()
     Set ws = ThisWorkbook.Worksheets(MUK)
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
         MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
+    ElseIf Not AKSORA_MUSTERI_IL_DESTEK(CStr(ws.Range("AZ1").Value2)) Then
+        MsgBox "Seçilen ilin müþteri birimi þu an aktif deðil. Aktif iller: Artvin, Trabzon.", vbInformation, "AKSORA"
     Else
         ' Secilen ilin stoklari ekrana yuklenir (onceki ilin verisi kendi kaydina saklanir).
         AKSORA_MUSTERI_IL_DEGIS CStr(ws.Range("AZ1").Value2)
