@@ -875,9 +875,19 @@ Private Sub M_KAYNAK_OZET(ByVal ad As String, ByRef satir As Long, ByRef deger A
     depo = d.Count
 End Sub
 
+' Son tam guncellemenin suresi (saniye); kayit yoksa 0.
+Private Function M_SON_SURE() As Double
+    Dim t As String
+    On Error Resume Next
+    t = ThisWorkbook.names("_AKSORA_MUSTERI_7155_SON_SURE").RefersTo
+    On Error GoTo 0
+    If Len(t) > 1 Then M_SON_SURE = Val(Mid$(t, 2))
+End Function
+
 Public Function AKSORA_MUSTERI_OZET() As String
     Dim adlar As Variant, kisa As Variant, i As Long, satir As Long, deger As Double, eksik As Long
     Dim depo As Long, tarih As Date, enSon As Date, toplam As Double, topEksik As Long, metin As String
+    Dim sure As Double
     adlar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
     kisa = Array("CDP", "Ýlçe", "Yüklenici")
     For i = 0 To 2
@@ -887,6 +897,8 @@ Public Function AKSORA_MUSTERI_OZET() As String
         metin = metin & "   |   " & kisa(i) & " " & M_ADET(satir) & " satýr"
     Next i
     If enSon > 0 Then
+        sure = M_SON_SURE()
+        If sure > 0 Then metin = "   |   Güncelleme süresi " & AKSORA_SAYI_METNI(sure, "0.00") & " sn" & metin
         metin = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") & metin
     Else
         metin = "Henüz SAP güncellemesi yapýlmadý" & metin
@@ -1241,7 +1253,7 @@ Private Function M_SON_KOLON(ByVal ad As String) As Long
 End Function
 
 Private Function M_DUZEN_IMZA(ByVal ws As Worksheet, ByVal pn As Window) As String
-    M_DUZEN_IMZA = "DUZEN_V1|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
+    M_DUZEN_IMZA = "DUZEN_V2|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
         CStr(pn.Zoom) & "|" & CStr(ws.Range("BX11").Value2)
 End Function
 
@@ -1393,6 +1405,47 @@ Private Sub M_DUZEN_STOK(ByVal ws As Worksheet, ByVal w As Double)
         sol(i) = 8 + i * (cw + 10): gen(i) = cw
     Next i
     M_KART_TASI ws, kartlar, sol, gen
+    M_EV_SIMGE ws
+End Sub
+
+' Depo kartindaki ev simgesi zemin karesine gore simetrik cizilir (cati govdeye ortali).
+Private Sub M_EV_SIMGE(ByVal ws As Worksheet)
+    Dim z As Shape, cati As Shape, govde As Shape, r0 As Shape, r1 As Shape, r2 As Shape
+    Dim cx As Double, w As Double, h As Double, t As Double, gw As Double, cw As Double, pw As Double
+    Set z = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_Z")
+    Set cati = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_CATI")
+    Set govde = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_GOVDE")
+    If z Is Nothing Or cati Is Nothing Or govde Is Nothing Then Exit Sub
+    Set r0 = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_RAF_0")
+    Set r1 = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_RAF_1")
+    Set r2 = M_SEKIL(ws, "AKT1_DEPO_KART_SIMGE_RAF_2")
+    On Error Resume Next
+    cati.LockAspectRatio = msoFalse: govde.LockAspectRatio = msoFalse
+    cati.Rotation = 0: govde.Rotation = 0
+    w = z.Width: h = z.Height: t = z.Top
+    cx = Round(z.Left + w / 2, 1)
+    cw = Round(w * 0.78 / 1.5, 0) * 1.5: gw = Round(w * 0.48 / 1.5, 0) * 1.5
+    cati.Width = cw: cati.Height = Round(h * 0.3, 1)
+    cati.Left = cx - cw / 2: cati.Top = t + Round(h * 0.18, 1)
+    govde.Width = gw: govde.Height = Round(h * 0.42, 1)
+    govde.Left = cx - gw / 2: govde.Top = cati.Top + cati.Height - 1
+    pw = Round(w * 0.1 / 0.75, 0) * 0.75
+    If Not r0 Is Nothing Then
+        r0.Width = pw: r0.Height = Round(h * 0.2, 1)
+        r0.Left = cx - pw - Round(w * 0.05, 1): r0.Top = govde.Top + (govde.Height - r0.Height) / 2
+        r0.Visible = msoTrue
+    End If
+    If Not r1 Is Nothing Then
+        r1.Width = pw: r1.Height = Round(h * 0.2, 1)
+        r1.Left = cx + Round(w * 0.05, 1): r1.Top = govde.Top + (govde.Height - r1.Height) / 2
+        r1.Visible = msoTrue
+    End If
+    If Not r2 Is Nothing Then r2.Visible = msoFalse
+    govde.ZOrder msoBringToFront
+    cati.ZOrder msoBringToFront
+    If Not r0 Is Nothing Then r0.ZOrder msoBringToFront
+    If Not r1 Is Nothing Then r1.ZOrder msoBringToFront
+    On Error GoTo 0
 End Sub
 
 Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
