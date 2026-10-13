@@ -352,7 +352,7 @@ End If
     Private Function YUK_V2_SAP_EXPORT_AL( _
     ByVal UretimYeri As String, _
     ByRef SonucVeri As Variant, _
-    ByRef SatirSayisi As Long, _
+    ByRef satirSayisi As Long, _
     ByRef SutunSayisi As Long, _
     ByRef hataMesaji As String) As Boolean
 
@@ -378,7 +378,7 @@ End If
     On Error GoTo Hata
 
     YUK_V2_SAP_EXPORT_AL = False
-    SatirSayisi = 0
+    satirSayisi = 0
     SutunSayisi = 0
     hataMesaji = vbNullString
 
@@ -539,12 +539,12 @@ End If
         wsKaynak.Cells(2, 1), _
         wsKaynak.Cells(sonSatir, sonSutun)).Value2
 
-    SatirSayisi = UBound(HamVeri, 1)
+    satirSayisi = UBound(HamVeri, 1)
     SutunSayisi = UBound(HamVeri, 2)
 
-    ReDim TemizVeri(1 To SatirSayisi, 1 To SutunSayisi)
+    ReDim TemizVeri(1 To satirSayisi, 1 To SutunSayisi)
 
-    For i = 1 To SatirSayisi
+    For i = 1 To satirSayisi
         For j = 1 To SutunSayisi
             TemizVeri(i, j) = HamVeri(i, j)
         Next j
@@ -689,7 +689,7 @@ End Sub
     '==========================================================
     Private Sub YUK_V2_VERI_DOGRULA( _
     ByRef veri As Variant, _
-    ByVal SatirSayisi As Long, _
+    ByVal satirSayisi As Long, _
     ByVal SutunSayisi As Long, _
     ByVal BeklenenUY As String)
 
@@ -708,7 +708,7 @@ End Sub
 
     End If
 
-    For i = 1 To SatirSayisi
+    For i = 1 To satirSayisi
 
     uy = Trim$(CStr(veri(i, 1)))
     depo = UCase$(Trim$(CStr(veri(i, 2))))
@@ -837,17 +837,17 @@ End Function
     '==========================================================
     Private Sub YUK_V2_STOK_OZET( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim toplamDeger As Double
 
     sonSatir = _
-    6 + VeriSatiri
+    6 + veriSatiri
 
     toplamDeger = 0
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     On Error Resume Next
 
@@ -913,7 +913,7 @@ End Function
     Public Sub YUK_V2_RAPOR_OLUSTUR( _
     ByVal wsStok As Worksheet, _
     ByVal wsRapor As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim dict As Object
 
@@ -937,11 +937,11 @@ End Function
     Set dict = CreateObject("Scripting.Dictionary")
     dict.CompareMode = vbTextCompare
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     veri = _
         wsStok.Range( _
-            "A7:K" & 6 + VeriSatiri).Value2
+            "A7:K" & 6 + veriSatiri).Value2
 
     For i = 1 To UBound(veri, 1)
 
@@ -1160,14 +1160,14 @@ End Sub
     '==========================================================
     Private Sub YUK_V2_STOK_GORSEL( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim TasarimSatir As Long
 
-    If VeriSatiri <= 0 Then Exit Sub
+    If veriSatiri <= 0 Then Exit Sub
 
-    sonSatir = 6 + VeriSatiri
+    sonSatir = 6 + veriSatiri
 
     ws.Range( _
     "I7:I" & sonSatir).NumberFormat = _
@@ -1320,7 +1320,7 @@ End Sub
 
 Private Function YUK_V2_EPP_ALV_AL( _
 ByRef SonucVeri As Variant, _
-ByRef SatirSayisi As Long, _
+ByRef satirSayisi As Long, _
 ByRef SutunSayisi As Long, _
 ByRef hataMesaji As String) As Boolean
 
@@ -1334,7 +1334,7 @@ Dim baslangic As Double, gecen As Double
 
 On Error GoTo Hata
 YUK_V2_EPP_ALV_AL = False
-SatirSayisi = 0
+satirSayisi = 0
 SutunSayisi = 0
 hataMesaji = vbNullString
 
@@ -1446,7 +1446,7 @@ For r = 1 To n
 Next r
 
 SonucVeri = cikti
-SatirSayisi = n
+satirSayisi = n
 SutunSayisi = 12
 YUK_V2_EPP_ALV_AL = True
 Exit Function

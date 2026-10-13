@@ -11,7 +11,7 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
     Dim alan As Range, r As Long, son As Long, toplamSatiri As Long
     Dim i As Long, n As Long, genel As Double, deger As Double
     Dim adlar() As String, tutarlar() As Double, renkler As Variant
-    Dim cx As Double, cy As Double, PW As Double, ph As Double
+    Dim cx As Double, cy As Double, pw As Double, ph As Double
     Dim s As Shape, x As Double, y As Double, satirY As Double
     Dim sc As Boolean, ev As Boolean, Hata As String
     Dim panelLeft As Double, panelWidth As Double
@@ -129,9 +129,9 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
     ' Excel yerlesimi hesaplasin; merkez sabit yuzdeyle tahmin edilmez.
     CH.Refresh
     DoEvents
-    PW = CH.PlotArea.InsideWidth
+    pw = CH.PlotArea.InsideWidth
     ph = CH.PlotArea.InsideHeight
-    cx = co.Left + CH.PlotArea.InsideLeft + PW / 2
+    cx = co.Left + CH.PlotArea.InsideLeft + pw / 2
     cy = co.Top + CH.PlotArea.InsideTop + ph / 2
 
     ' Merkez etiketi dogrudan gercek grafik merkezine yerlestirilir.

@@ -327,7 +327,7 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
     Dim adlar() As String, tutarlar() As Double, renkler As Variant
     Dim r As Long, n As Long, i As Long, deger As Double, genel As Double
     Dim x As Double, y As Double, panelLeft As Double, panelWidth As Double
-    Dim satirY As Double, satirAdimi As Double, PW As Double, ph As Double
+    Dim satirY As Double, satirAdimi As Double, pw As Double, ph As Double
     Dim cx As Double, cy As Double, sh As Shape
 
     ReDim adlar(1 To son - 8)
@@ -412,14 +412,14 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
     Next i
     CH.Refresh
     DoEvents
-    PW = CH.PlotArea.InsideWidth: ph = CH.PlotArea.InsideHeight
-    cx = co.Left + CH.PlotArea.InsideLeft + PW / 2
+    pw = CH.PlotArea.InsideWidth: ph = CH.PlotArea.InsideHeight
+    cx = co.Left + CH.PlotArea.InsideLeft + pw / 2
     cy = co.Top + CH.PlotArea.InsideTop + ph / 2
-        PW = application.Min(PW, ph) * 0.72 * 0.9
+        pw = application.Min(pw, ph) * 0.72 * 0.9
 
     Set sh = AK_HalkaYazi(ws, AK_ON & "HALKA_MERKEZ", _
        "TOPLAM STOK" & vbCrLf & AKSORA_SAYI_METNI(genel, "#,##0.00") & " TL", _
-       cx - PW / 2, cy - 20, PW, 40, _
+       cx - pw / 2, cy - 20, pw, 40, _
               11, RGB(26, 57, 88), True, msoAlignCenter)
 
     With sh.TextFrame2
@@ -523,7 +523,7 @@ Private Sub AK_AltYazi(ByVal ws As Worksheet, ByVal toplam As Long)
 End Sub
 
 Private Sub AK_AnaButonu(ByVal ws As Worksheet)
-    Dim sh As Shape, yazi As String, hedef As Range, bulundu As Boolean
+    Dim sh As Shape, yazi As String, hedef As Range, Bulundu As Boolean
     Set hedef = ws.Range("S2")
     For Each sh In ws.Shapes
         If Left$(sh.Name, Len(AK_ON)) <> AK_ON Then
@@ -539,7 +539,7 @@ Private Sub AK_AnaButonu(ByVal ws As Worksheet)
                 sh.Placement = xlFreeFloating
                 sh.ZOrder msoBringToFront
                 ' Var olan OnAction aynen korunur.
-                bulundu = True
+                Bulundu = True
                 Exit For
             End If
         End If
@@ -1047,7 +1047,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
     Dim ws As Worksheet, sh As Shape
     Dim r As Long, toplamSatiri As Long
     Dim metin As String
-    Dim bulundu As Boolean
+    Dim Bulundu As Boolean
     Dim koruma As Boolean
     Dim hataNo As Long, hataMetni As String
 
@@ -1077,7 +1077,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
                 metin = sh.TextFrame2.TextRange.Text
 
                 If InStr(1, metin, "Veriler SAP", vbTextCompare) > 0 Then
-                    bulundu = True
+                    Bulundu = True
 
                     With sh
                         .Placement = xlFreeFloating
@@ -1105,7 +1105,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
         End If
     Next sh
 
-    If Not bulundu Then
+    If Not Bulundu Then
         Set sh = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, _
             ws.Cells(r, "A").Left + 3, _
             ws.Cells(r, "A").Top + 2, _

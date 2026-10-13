@@ -13,7 +13,7 @@ Public Function STOK_EXPORT_AL( _
     ByVal DepoBaslangic As String, _
     ByVal DepoBitis As String, _
     ByRef VeriDizisi As Variant, _
-    ByRef VeriSatiri As Long, _
+    ByRef veriSatiri As Long, _
     ByRef SutunSayisi As Long, _
     ByRef ExportSuresi As Double, _
     ByRef hataMesaji As String) As Boolean
@@ -27,7 +27,7 @@ Public Function STOK_EXPORT_AL( _
     On Error GoTo Hata
 
     STOK_EXPORT_AL = False
-    VeriSatiri = 0
+    veriSatiri = 0
     SutunSayisi = 0
     ExportSuresi = 0
     hataMesaji = vbNullString
@@ -123,7 +123,7 @@ Public Function STOK_EXPORT_AL( _
 
     If Not STOK_EXPORT_VERI_AL( _
         wsKaynak, UretimYeri, DepoBaslangic, DepoBitis, _
-        VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then
+        VeriDizisi, veriSatiri, SutunSayisi, hataMesaji) Then
         GoTo TEMIZ_HATA
     End If
 
@@ -165,7 +165,7 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
     ByVal UretimYeri As String, _
     ByVal depolar As Variant, _
     ByRef VeriDizisi As Variant, _
-    ByRef VeriSatiri As Long, _
+    ByRef veriSatiri As Long, _
     ByRef SutunSayisi As Long, _
     ByRef ExportSuresi As Double, _
     ByRef hataMesaji As String) As Boolean
@@ -179,7 +179,7 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
     On Error GoTo Hata
 
     STOK_EXPORT_AL_COKLU_DEPO = False
-    VeriSatiri = 0
+    veriSatiri = 0
     SutunSayisi = 0
     ExportSuresi = 0
     hataMesaji = vbNullString
@@ -260,7 +260,7 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
 
     If Not STOK_EXPORT_VERI_AL_COKLU( _
         wsKaynak, UretimYeri, depolar, _
-        VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then
+        VeriDizisi, veriSatiri, SutunSayisi, hataMesaji) Then
         GoTo TEMIZ_HATA
     End If
 
@@ -303,7 +303,7 @@ Private Function STOK_EXPORT_VERI_AL( _
     ByVal DepoBaslangic As String, _
     ByVal DepoBitis As String, _
     ByRef sonuc As Variant, _
-    ByRef SatirSayisi As Long, _
+    ByRef satirSayisi As Long, _
     ByRef SutunSayisi As Long, _
     ByRef hataMesaji As String) As Boolean
 
@@ -317,7 +317,7 @@ Private Function STOK_EXPORT_VERI_AL( _
     On Error GoTo Hata
 
     STOK_EXPORT_VERI_AL = False
-    SatirSayisi = 0
+    satirSayisi = 0
     SutunSayisi = 0
 
     sonSatir = STOK_SON_SATIR(ws)
@@ -369,7 +369,7 @@ Private Function STOK_EXPORT_VERI_AL( _
     End If
 
     sonuc = STOK_DIZI_KIRP(temiz, n, 12)
-    SatirSayisi = n
+    satirSayisi = n
     SutunSayisi = 12
     STOK_EXPORT_VERI_AL = True
     Exit Function
@@ -384,7 +384,7 @@ Private Function STOK_EXPORT_VERI_AL_COKLU( _
     ByVal BeklenenUY As String, _
     ByVal depolar As Variant, _
     ByRef sonuc As Variant, _
-    ByRef SatirSayisi As Long, _
+    ByRef satirSayisi As Long, _
     ByRef SutunSayisi As Long, _
     ByRef hataMesaji As String) As Boolean
 
@@ -398,7 +398,7 @@ Private Function STOK_EXPORT_VERI_AL_COKLU( _
     On Error GoTo Hata
 
     STOK_EXPORT_VERI_AL_COKLU = False
-    SatirSayisi = 0
+    satirSayisi = 0
     SutunSayisi = 0
 
     sonSatir = STOK_SON_SATIR(ws)
@@ -449,7 +449,7 @@ Private Function STOK_EXPORT_VERI_AL_COKLU( _
     End If
 
     sonuc = STOK_DIZI_KIRP(temiz, n, 12)
-    SatirSayisi = n
+    satirSayisi = n
     SutunSayisi = 12
     STOK_EXPORT_VERI_AL_COKLU = True
     Exit Function
@@ -572,7 +572,7 @@ Private Function STOK_PANEL_DUZEN_SEC( _
 
     Dim LayoutGrid As Object
     Dim satir As Long
-    Dim SatirSayisi As Long
+    Dim satirSayisi As Long
     Dim DuzenAdi As String
     Dim DuzenTanimi As String
     Dim BulunanSatir As Long
@@ -592,9 +592,9 @@ Private Function STOK_PANEL_DUZEN_SEC( _
     Set LayoutGrid = SAPSession.FindById( _
         "wnd[1]/usr/subSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell")
 
-    SatirSayisi = LayoutGrid.RowCount
+    satirSayisi = LayoutGrid.RowCount
 
-    For satir = 0 To SatirSayisi - 1
+    For satir = 0 To satirSayisi - 1
 
         DuzenAdi = vbNullString
         DuzenTanimi = vbNullString
@@ -949,7 +949,7 @@ Private Sub STOK_MOTOR_TEST( _
     ByVal DepoBitis As String)
 
     Dim veri As Variant
-    Dim SatirSayisi As Long
+    Dim satirSayisi As Long
     Dim SutunSayisi As Long
     Dim ExportSuresi As Double
     Dim ToplamSure As Double
@@ -962,7 +962,7 @@ Private Sub STOK_MOTOR_TEST( _
 
     basarili = STOK_EXPORT_AL( _
         SistemAdi, UretimYeri, DepoBaslangic, DepoBitis, _
-        veri, SatirSayisi, SutunSayisi, ExportSuresi, hataMesaji)
+        veri, satirSayisi, SutunSayisi, ExportSuresi, hataMesaji)
 
     ToplamSure = CORE_ISLEM_BITIR()
 
@@ -975,7 +975,7 @@ Private Sub STOK_MOTOR_TEST( _
     MsgBox SistemAdi & " ortak stok motoru baþarýyla çalýþtý." & vbCrLf & vbCrLf & _
            "Üretim Yeri : " & UretimYeri & vbCrLf & _
            "Depo Aralýðý: " & DepoBaslangic & " - " & DepoBitis & vbCrLf & _
-           "Veri Satýrý : " & AKSORA_SAYI_METNI(SatirSayisi, "#,##0") & vbCrLf & _
+           "Veri Satýrý : " & AKSORA_SAYI_METNI(satirSayisi, "#,##0") & vbCrLf & _
            "Sütun       : " & AKSORA_SAYI_METNI(SutunSayisi, "#,##0") & vbCrLf & _
            "Export Süre : " & AKSORA_SAYI_METNI(ExportSuresi, "0.00") & " sn" & vbCrLf & _
            "Toplam Süre : " & AKSORA_SAYI_METNI(ToplamSure, "0.00") & " sn", _

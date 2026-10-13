@@ -290,10 +290,10 @@ End If
     Dim satir As Long
     Dim sutun As Long
 
-    Dim SatirSayisi As Long
+    Dim satirSayisi As Long
     Dim KaynakSutunSayisi As Long
 
-    SatirSayisi = _
+    satirSayisi = _
     UBound(kaynak, 1)
 
     KaynakSutunSayisi = _
@@ -309,10 +309,10 @@ End If
     End If
 
     ReDim sonuc( _
-    1 To SatirSayisi, _
+    1 To satirSayisi, _
     1 To 12)
 
-    For satir = 1 To SatirSayisi
+    For satir = 1 To satirSayisi
 
     For sutun = 1 To 12
 
@@ -348,17 +348,17 @@ End If
 
     Private Sub CDP_V2_STOK_OZET_GUNCELLE( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim toplamDeger As Double
 
     sonSatir = _
-    6 + VeriSatiri
+    6 + veriSatiri
 
     toplamDeger = 0
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     On Error Resume Next
 
@@ -415,7 +415,7 @@ End If
     Public Sub CDP_V2_RAPOR_OLUSTUR( _
     ByVal wsStok As Worksheet, _
     ByVal wsRapor As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim dict As Object
 
@@ -442,9 +442,9 @@ End If
     dict.CompareMode = vbTextCompare
 
     SonStokSatir = _
-    6 + VeriSatiri
+    6 + veriSatiri
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     veri = _
         wsStok.Range( _
@@ -804,16 +804,16 @@ HedefSatir = HedefSatir + 1
 
     Private Sub CDP_V2_GORSEL_DUZEN( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim TasarimSatir As Long
     Dim KullanilanSonSatir As Long
 
     sonSatir = _
-    6 + VeriSatiri
+    6 + veriSatiri
 
-    If VeriSatiri <= 0 Then Exit Sub
+    If veriSatiri <= 0 Then Exit Sub
 
     KullanilanSonSatir = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
 
@@ -877,7 +877,7 @@ HedefSatir = HedefSatir + 1
 ' CDP 30 SATIRLIK BLOK OKUMA - TEST EDILEN YONTEM
 '==========================================================
     Public Function CDP_V2_30_BLOK_AL(ByRef VeriDizisi As Variant, _
-    ByRef VeriSatiri As Long, ByRef SutunSayisi As Long, _
+    ByRef veriSatiri As Long, ByRef SutunSayisi As Long, _
     ByRef ExportSuresi As Double, ByRef hataMesaji As String) As Boolean
     Dim uy As String
     Dim blok As Long
@@ -897,7 +897,7 @@ HedefSatir = HedefSatir + 1
     mevcut = application.WorksheetFunction.Sum(ws.Range("K7:K" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row))
     t = Timer
     ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
-    If AKHZ_TEK_AL(1, VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then CDP_V2_30_BLOK_AL = True: Exit Function
+    If AKHZ_TEK_AL(1, VeriDizisi, veriSatiri, SutunSayisi, hataMesaji) Then CDP_V2_30_BLOK_AL = True: Exit Function
 
     Set ses = SAP_SESSION_AL("CDP", hataMetni)
     If ses Is Nothing Then Err.Raise vbObjectError + 801, , "CDP SAP oturumu bulunamadi: " & hataMetni
@@ -1059,7 +1059,7 @@ SONRAKI_SATIR:
     Next rr
     If k <> sayi Then Err.Raise vbObjectError + 811, , "Okunan satir sayisi tutarsiz."
     VeriDizisi = sonuc
-    VeriSatiri = sayi
+    veriSatiri = sayi
     SutunSayisi = 12
     ExportSuresi = Timer - t
     If ExportSuresi < 0 Then ExportSuresi = ExportSuresi + 86400

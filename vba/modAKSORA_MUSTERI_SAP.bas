@@ -151,7 +151,7 @@ Private Sub MS_Agac(ByVal kok As Object, ByVal derinlik As Long)
         If c Is Nothing Then Set c = kok.Children.ElementAt(i)
         If Not c Is Nothing Then
             t = vbNullString: t = c.Text
-            MS_Teshis String$(derinlik * 2, " ") & c.Type & " | " & c.Id & " | " & c.Name & " | " & Left$(t, 60)
+            MS_Teshis String$(derinlik * 2, " ") & c.Type & " | " & c.id & " | " & c.Name & " | " & Left$(t, 60)
             If c.ContainerType Then MS_Agac c, derinlik + 1
         End If
     Next i
@@ -228,7 +228,7 @@ Private Sub MS_MenuTopla(ByVal kok As Object, ByVal yol As String, ByVal liste A
             If alt > 0 Then
                 MS_MenuTopla c, yol & " > " & t, liste, derinlik + 1
             Else
-                liste.Add Array(c.Id, yol & " > " & t)
+                liste.Add Array(c.id, yol & " > " & t)
             End If
         End If
     Next i
@@ -315,7 +315,7 @@ Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boo
                             Set b = Nothing: Set b = ses.FindById("wnd[0]/mbar/menu[" & i & "]/menu[" & j & "]/menu[" & k & "]", False)
                         End If
                         If Not b Is Nothing Then
-                            yol = b.Id: t = vbNullString: t = b.Text
+                            yol = b.id: t = vbNullString: t = b.Text
                             MS_Teshis "Menü: " & Mid$(yol, InStr(yol, "wnd[")) & " | " & t
                             t = AKFIX_NORMAL(t)
                             If InStr(t, "YEREL DOSYA") > 0 Or InStr(t, "LOCAL FILE") > 0 Then
@@ -393,7 +393,7 @@ Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef id
     Dim h As Long, r As Long, c As Long, k As Long, dolu As Long, no As Long, adet As Long
     Dim pos(1 To 11) As Long, buf() As Variant, sonuc() As Variant, eksikAlan As String
     Dim uy As String, mz As String, a As String, b As String, x As Variant, ornek As Variant
-    Dim j As Long, bulundu As Boolean, uygun As Boolean
+    Dim j As Long, Bulundu As Boolean, uygun As Boolean
     On Error GoTo Hata
     mHizliSebep = "Excel'e aktarým"
     Set eski = MS_AcikKitaplar()
@@ -452,7 +452,7 @@ Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef id
     ' Ornek satirlar SAP ekranindaki degerlerle karsilastirilir.
     mHizliSebep = "örnek kontrol"
     For Each ornek In Array(0, adet \ 2, adet - 1)
-        bulundu = False
+        Bulundu = False
         For j = CLng(ornek) To application.Min(n - 1, CLng(ornek) + 60)
             If j Mod 20 = CLng(ornek) Mod 20 Then
                 alv.FirstVisibleRow = application.Min(j, application.Max(0, n - CLng(alv.VisibleRowCount)))
@@ -472,9 +472,9 @@ Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef id
                 End If
                 If UCase$(a) <> UCase$(b) Then uygun = False: Exit For
             Next x
-            If uygun Then bulundu = True: Exit For
+            If uygun Then Bulundu = True: Exit For
         Next j
-        If Not bulundu Then
+        If Not Bulundu Then
             mHizliSebep = "örnek kontrol (Excel satýr " & CStr(CLng(ornek) + 1) & " SAP ekranýnda bulunamadý)"
             GoTo Temizle
         End If

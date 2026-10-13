@@ -6,7 +6,8 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 ## Kullanıcı ve çalışma şekli
 - Burhan Serdar, Çoruh EDAŞ malzeme stok uzmanı. Türkçe, kısa, açıklamasız; "ne yapacağım" net söylenir.
 - VBA proje şifresi: kullanıcıda (yalnız VBE kilidi için).
-- Temel dosya: GitHub `main` dalındaki kullanıcının son yüklediği `AKSORA.xlsm`.
+- Temel dosya: kullanıcının 13.10.2026'da yüklediği güncel `AKSORA.xlsm` (Artvin + Trabzon müşteri kayıtları içinde;
+  diğer iller tekrar güncellenmez). Repo `final/AKSORA.xlsm` = bu dosya; yeni sürümler bunun üzerine kurulur.
   Yeni dosya her zaman bu dosyanın üzerine kurulur (veriler korunur). Kod değişiklikleri
   `claude/aksora-vba-error-fix-a7b5so` dalında `vba/*.bas` olarak tutulur.
 

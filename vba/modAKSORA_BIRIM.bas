@@ -7,8 +7,8 @@ Private Const MUS As String = "MUSTERI PANEL"
 Private Const MUK As String = "MUSTERI IL SECIM"
 Private Const YAK As String = "YATIRIM IL SECIM"
 Private Const tag As String = "AKSORA_BIRIM_V1"
-Private Const PW As String = ""
-Private Const CW As Double = 1080
+Private Const pw As String = ""
+Private Const cw As Double = 1080
 Private Const CH As Double = 660
 Private mYonlendirme As Boolean
 Private mGorunum As Boolean
@@ -285,7 +285,7 @@ Private Sub MUSTERI_KAPAK_AC()
         Set ws = ActiveSheet
         ws.Name = MUK
         kaynak.Visible = kaynakGorunum
-        ws.Unprotect PW
+        ws.Unprotect pw
         ws.Range("BX1").Value2 = tag
         ws.Range("AZ1").ClearContents
         ' Kopyadaki eski stok yonlendirmeleri kesinlikle kullanilmaz.
@@ -302,7 +302,7 @@ Private Sub MUSTERI_KAPAK_AC()
         AKSORA_BIRIM_KAPAK_GERI MUK
         ws.Range("BX2").Value2 = 0
     End If
-    ws.Unprotect PW
+    ws.Unprotect pw
     If Val(CStr(ws.Range("BX2").Value2)) < 7 Then
         On Error Resume Next
         ws.Shapes("BIRIM_MUSTERI_BANT").Delete
@@ -320,7 +320,7 @@ Private Sub MUSTERI_KAPAK_AC()
         ws.Range("BX2").Value2 = 7
     End If
     MUSTERI_SECIM_CIZ ws
-    ws.Protect Password:=PW, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
     ws.EnableSelection = xlNoSelection
     ws.Visible = xlSheetVisible: ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE MUK
@@ -339,7 +339,7 @@ Cikis:
 Hata:
     no = Err.Number: metin = Err.Description
     On Error Resume Next
-    If Not ws Is Nothing Then ws.Protect Password:=PW, UserInterfaceOnly:=True
+    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
     If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
     On Error GoTo 0
     Resume Cikis
@@ -377,13 +377,13 @@ Public Sub AKSORA_MUSTERI_IL_SEC()
     End If
     ' Secim tek seferde cizilir; hesaplama olaylari baska sayfaya gecis yaptirmaz.
     application.ScreenUpdating = False: application.EnableEvents = False
-    ws.Unprotect PW
+    ws.Unprotect pw
     ws.Range("AZ1").Value2 = keys(ix - 1)
     MUSTERI_SECIM_CIZ ws
 Cikis:
     On Error Resume Next
     If Not ws Is Nothing Then
-        ws.Protect Password:=PW, UserInterfaceOnly:=True
+        ws.Protect Password:=pw, UserInterfaceOnly:=True
         If Not (ActiveSheet Is ws) Then ws.Activate
     End If
     application.EnableEvents = ev: application.ScreenUpdating = True
@@ -457,7 +457,7 @@ Private Sub YATIRIM_KAPAK_AC()
         Set ws = ActiveSheet
         ws.Name = YAK
         kaynak.Visible = kaynakGorunum
-        ws.Unprotect PW
+        ws.Unprotect pw
         ws.Range("BX1").Value2 = tag
         ws.Range("AZ1").ClearContents
         ' Kopyadaki eski stok yonlendirmeleri kesinlikle kullanilmaz.
@@ -474,7 +474,7 @@ Private Sub YATIRIM_KAPAK_AC()
         AKSORA_BIRIM_KAPAK_GERI YAK
         ws.Range("BX2").Value2 = 0
     End If
-    ws.Unprotect PW
+    ws.Unprotect pw
     If Val(CStr(ws.Range("BX2").Value2)) < 7 Then
         On Error Resume Next
         ws.Shapes("BIRIM_YATIRIM_BANT").Delete
@@ -492,7 +492,7 @@ Private Sub YATIRIM_KAPAK_AC()
         ws.Range("BX2").Value2 = 7
     End If
     YATIRIM_SECIM_CIZ ws
-    ws.Protect Password:=PW, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
     ws.EnableSelection = xlNoSelection
     ws.Visible = xlSheetVisible: ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE YAK
@@ -506,7 +506,7 @@ Cikis:
 Hata:
     no = Err.Number: metin = Err.Description
     On Error Resume Next
-    If Not ws Is Nothing Then ws.Protect Password:=PW, UserInterfaceOnly:=True
+    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
     If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
     On Error GoTo 0
     Resume Cikis
@@ -535,11 +535,11 @@ Public Sub AKSORA_YATIRIM_IL_SEC()
     ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
     If ix < 1 Or ix > 5 Then Exit Sub
     keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
-    ws.Unprotect PW
+    ws.Unprotect pw
     ws.Range("AZ1").Value2 = keys(ix - 1)
     YATIRIM_SECIM_CIZ ws
 Cikis:
-    If Not ws Is Nothing Then ws.Protect Password:=PW, UserInterfaceOnly:=True
+    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
     Exit Sub
 Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
@@ -691,8 +691,8 @@ Private Sub BIRIM_GORUNUM(ByVal ws As Worksheet)
         .Zoom = application.Max(10, application.Min(200, Fix(z)))
         genislik = (.UsableWidth - 4) * 100 / CDbl(.Zoom)
     End With
-    oran = genislik / CW
-    ws.Unprotect Password:=PW
+    oran = genislik / cw
+    ws.Unprotect Password:=pw
     For Each s In ws.Shapes
         If Left$(s.AlternativeText, 17) = "AKSORA_LAYOUT_V2|" Then
             parca = Split(s.AlternativeText, "|")
@@ -709,7 +709,7 @@ Private Sub BIRIM_GORUNUM(ByVal ws As Worksheet)
     Next s
 Cikis:
     On Error Resume Next
-    ws.Protect Password:=PW, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
     ws.EnableSelection = xlNoSelection
     mGorunum = False
     On Error GoTo 0
@@ -725,14 +725,14 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_BIRIM_BANNER_03.png"
     If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
         "AKSORA_BIRIM_BANNER_03.png Excel dosyasinin yaninda bulunmalidir."
-    ws.Unprotect PW
+    ws.Unprotect pw
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 6) = "BIRIM_" Then ws.Shapes(i).Delete
     Next i
     ws.Range("A1:BH44").Interior.Color = RGB(236, 248, 254)
     ws.Range("A1:BH44").ClearContents
     ws.Columns("A:BH").ColumnWidth = 2.5
-    Do While ws.Range("A1:BH1").Width < CW
+    Do While ws.Range("A1:BH1").Width < cw
         ws.Columns("A:BH").ColumnWidth = ws.Columns("A").ColumnWidth + 0.25
     Loop
     ws.Rows("1:44").RowHeight = 15
@@ -741,13 +741,13 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
-    BIRIM_RECT ws, "ZEMIN", 0, 0, CW, CH, RGB(236, 248, 254), -1, 1
+    BIRIM_RECT ws, "ZEMIN", 0, 0, cw, CH, RGB(236, 248, 254), -1, 1
     yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_TEK_PARCA_V7.png"
     If Len(Dir$(yol)) > 0 Then
-        Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 126, CW, 483)
+        Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 126, cw, 483)
         s.Name = "BIRIM_FOTOGRAF": s.Placement = xlFreeFloating: s.Locked = True
     End If
-    Set s = BIRIM_RECT(ws, "FOTO_SIS", 0, 126, CW, 483, RGB(235, 248, 255), -1, 1)
+    Set s = BIRIM_RECT(ws, "FOTO_SIS", 0, 126, cw, 483, RGB(235, 248, 255), -1, 1)
     s.Fill.Transparency = 0.45
     yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_BIRIM_BANNER_03.png"
     If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
@@ -761,11 +761,11 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     End With
     With s
         .LockAspectRatio = msoFalse
-        .Left = 0: .Top = 0: .Width = CW: .Height = 126
+        .Left = 0: .Top = 0: .Width = cw: .Height = 126
         .Placement = xlFreeFloating: .Locked = True
     End With
-    BIRIM_RECT ws, "UST_CIZGI", 0, 124, CW, 3, RGB(34, 185, 191), -1, 1
-    BIRIM_RECT ws, "ALT", 0, 609, CW, 51, RGB(12, 45, 79), -1, 1
+    BIRIM_RECT ws, "UST_CIZGI", 0, 124, cw, 3, RGB(34, 185, 191), -1, 1
+    BIRIM_RECT ws, "ALT", 0, 609, cw, 51, RGB(12, 45, 79), -1, 1
     BIRIM_TEXT ws, "ALT_SOL", "AKSORA  /  Birlikte daha güçlü.", 34, 622, 550, 24, 10, RGB(224, 241, 250), False
     BIRIM_TEXT ws, "ALT_SAG", "BÝRÝM ODAKLI  ·  TEK MERKEZ", 797, 622, 253, 24, 9, RGB(137, 210, 229), True
     If Len(panel) = 0 Then
@@ -799,7 +799,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
                 Trim$(Str$(s.Top)) & "|" & Trim$(Str$(s.Width)) & "|" & Trim$(Str$(s.Height))
         End If
     Next s
-    ws.Protect Password:=PW, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
     ws.EnableSelection = xlNoSelection
 End Sub
 

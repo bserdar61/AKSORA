@@ -278,7 +278,7 @@ End If
 
                 Public Function EPP_V2_EXPORT_AL_OZEL( _
                 ByRef VeriDizisi As Variant, _
-                ByRef VeriSatiri As Long, _
+                ByRef veriSatiri As Long, _
                 ByRef SutunSayisi As Long, _
                 ByRef ExportSuresi As Double, _
                 ByRef hataMesaji As String) As Boolean
@@ -291,7 +291,7 @@ End If
                 Dim sonuc() As Variant
 
                 Dim baslangic As Double
-                Dim SatirSayisi As Long
+                Dim satirSayisi As Long
                 Dim r As Long
                 Dim c As Long
                 Dim n As Long
@@ -307,13 +307,13 @@ End If
                 On Error GoTo Hata
 
                 EPP_V2_EXPORT_AL_OZEL = False
-                VeriSatiri = 0
+                veriSatiri = 0
                 SutunSayisi = 0
                 ExportSuresi = 0
                 hataMesaji = vbNullString
                 baslangic = Timer
                 ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
-                If AKHZ_TEK_AL(2, VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then EPP_V2_EXPORT_AL_OZEL = True: Exit Function
+                If AKHZ_TEK_AL(2, VeriDizisi, veriSatiri, SutunSayisi, hataMesaji) Then EPP_V2_EXPORT_AL_OZEL = True: Exit Function
 
                 Set SAPSession = SAP_SESSION_AL(EPP_SISTEM)
 
@@ -364,14 +364,14 @@ End If
                     KolonID(c) = CStr(KolonSirasi.Item(c - 1))
                 Next c
 
-                SatirSayisi = CLng(alv.RowCount)
+                satirSayisi = CLng(alv.RowCount)
 
-                If SatirSayisi <= 0 Then
+                If satirSayisi <= 0 Then
                     hataMesaji = "EPP MB52 sonuç tablosunda stok satýrý bulunamadý."
                     Exit Function
                 End If
 
-                ReDim ham(1 To SatirSayisi, 1 To 12)
+                ReDim ham(1 To satirSayisi, 1 To 12)
 
                 ' SAP ALV ekran disindaki satirlari bos dondurebilir.
                 ' Otuzar satirlik bloklarda kaydir; hatali blokta tek satirlik
@@ -383,9 +383,9 @@ End If
                 Dim tekrar As Long
 
                 BlokBoyu = AKSORA_SAP_BLOK_BOYU(alv)
-                For BlokBas = 0 To SatirSayisi - 1 Step BlokBoyu
+                For BlokBas = 0 To satirSayisi - 1 Step BlokBoyu
                     BlokSon = BlokBas + BlokBoyu - 1
-                    If BlokSon >= SatirSayisi Then BlokSon = SatirSayisi - 1
+                    If BlokSon >= satirSayisi Then BlokSon = satirSayisi - 1
 
                     On Error Resume Next
                     Err.Clear
@@ -448,10 +448,10 @@ End If
                     Next r
                 Next BlokBas
 
-                ReDim sonuc(1 To SatirSayisi, 1 To 12)
+                ReDim sonuc(1 To satirSayisi, 1 To 12)
                 n = 0
 
-                For r = 1 To SatirSayisi
+                For r = 1 To satirSayisi
 
                     uy = Trim$(CStr(ham(r, 1)))
                     depo = UCase$(Trim$(CStr(ham(r, 2))))
@@ -483,9 +483,9 @@ End If
                     Exit Function
                 End If
 
-                ReDim Preserve sonuc(1 To SatirSayisi, 1 To 12)
+                ReDim Preserve sonuc(1 To satirSayisi, 1 To 12)
 
-                If n < SatirSayisi Then
+                If n < satirSayisi Then
                     Dim temiz() As Variant
                     ReDim temiz(1 To n, 1 To 12)
                     For r = 1 To n
@@ -498,7 +498,7 @@ End If
                     VeriDizisi = sonuc
                 End If
 
-                VeriSatiri = n
+                veriSatiri = n
                 SutunSayisi = 12
                 ExportSuresi = EPP_V2_GECEN_SURE(baslangic)
 
@@ -524,7 +524,7 @@ Hata:
 
                 Dim LayoutGrid As Object
                 Dim satir As Long
-                Dim SatirSayisi As Long
+                Dim satirSayisi As Long
                 Dim BulunanSatir As Long
                 Dim DuzenAdi As String
                 Dim DuzenTanimi As String
@@ -544,9 +544,9 @@ Hata:
                 Set LayoutGrid = SAPSession.FindById( _
                     "wnd[1]/usr/subSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell")
 
-                SatirSayisi = LayoutGrid.RowCount
+                satirSayisi = LayoutGrid.RowCount
 
-                For satir = 0 To SatirSayisi - 1
+                For satir = 0 To satirSayisi - 1
 
                     DuzenAdi = vbNullString
                     DuzenTanimi = vbNullString
@@ -748,10 +748,10 @@ Private Function EPP_V2_ILK_12_SUTUN( _
                 Dim sonuc() As Variant
                 Dim satir As Long
                 Dim sutun As Long
-                Dim SatirSayisi As Long
+                Dim satirSayisi As Long
                 Dim KaynakSutunSayisi As Long
 
-                SatirSayisi = _
+                satirSayisi = _
                 UBound(kaynak, 1)
 
                 KaynakSutunSayisi = _
@@ -767,10 +767,10 @@ Private Function EPP_V2_ILK_12_SUTUN( _
                 End If
 
                 ReDim sonuc( _
-                1 To SatirSayisi, _
+                1 To satirSayisi, _
                 1 To 12)
 
-                For satir = 1 To SatirSayisi
+                For satir = 1 To satirSayisi
 
                 For sutun = 1 To 12
 
@@ -806,17 +806,17 @@ Private Function EPP_V2_ILK_12_SUTUN( _
 
                 Private Sub EPP_V2_STOK_OZET_GUNCELLE( _
                 ByVal ws As Worksheet, _
-                ByVal VeriSatiri As Long)
+                ByVal veriSatiri As Long)
 
                 Dim sonSatir As Long
                 Dim toplamDeger As Double
 
                 sonSatir = _
-                6 + VeriSatiri
+                6 + veriSatiri
 
                 toplamDeger = 0
 
-                If VeriSatiri > 0 Then
+                If veriSatiri > 0 Then
 
                 On Error Resume Next
 
@@ -852,7 +852,7 @@ Private Function EPP_V2_ILK_12_SUTUN( _
 
                 ws.Range("C2").Value = Now
 
-                If VeriSatiri > 0 Then
+                If veriSatiri > 0 Then
                     ws.Range("C3").Formula = _
                         "=SUBTOTAL(103,A7:A" & sonSatir & ")"
                     ws.Range("C4").Formula = _
@@ -901,7 +901,7 @@ End Sub
                 Public Sub EPP_V2_RAPOR_OLUSTUR( _
                 ByVal wsStok As Worksheet, _
                 ByVal wsRapor As Worksheet, _
-                ByVal VeriSatiri As Long)
+                ByVal veriSatiri As Long)
 
                 Dim dict As Object
                 Dim veri As Variant
@@ -927,9 +927,9 @@ End Sub
                 dict.CompareMode = vbTextCompare
 
                 SonStokSatir = _
-                6 + VeriSatiri
+                6 + veriSatiri
 
-                If VeriSatiri > 0 Then
+                If veriSatiri > 0 Then
 
                 veri = _
                     wsStok.Range( _
@@ -1270,15 +1270,15 @@ End Sub
 
                 Private Sub EPP_V2_GORSEL_DUZEN( _
                 ByVal ws As Worksheet, _
-                ByVal VeriSatiri As Long)
+                ByVal veriSatiri As Long)
 
                 Dim sonSatir As Long
                 Dim TasarimSatir As Long
 
                 sonSatir = _
-                6 + VeriSatiri
+                6 + veriSatiri
 
-                If VeriSatiri <= 0 Then Exit Sub
+                If veriSatiri <= 0 Then Exit Sub
 
                 ws.Range( _
                 "I7:I" & sonSatir).NumberFormat = _

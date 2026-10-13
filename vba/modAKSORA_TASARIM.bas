@@ -970,7 +970,7 @@ End Function
 Private Sub T_RaporGrafikSinirla(ByVal ws As Worksheet)
     Dim z As Shape, s As Shape, merkez As Shape, co As ChartObject
     Dim eskiX As Double, eskiW As Double, yeniX As Double, yeniW As Double, oran As Double
-    Dim cx As Double, cy As Double, PW As Double, ph As Double, ad As String
+    Dim cx As Double, cy As Double, pw As Double, ph As Double, ad As String
     ad = AKFIX_NORMAL(ws.Name)
     If ad <> "ILCE_RAPORLAR" And ad <> "YUKLENICI_RAPOR" Then Exit Sub
     Set z = T_Sekil(ws, "AKSORA_RP_HALKA_ZEMIN")
@@ -997,11 +997,11 @@ Private Sub T_RaporGrafikSinirla(ByVal ws As Worksheet)
         For Each co In ws.ChartObjects
             If co.Name = "AKSORA_RP_HALKA_GRAFIK" Then
                 co.Chart.Refresh
-                PW = co.Chart.PlotArea.InsideWidth: ph = co.Chart.PlotArea.InsideHeight
-                cx = co.Left + co.Chart.PlotArea.InsideLeft + PW / 2
+                pw = co.Chart.PlotArea.InsideWidth: ph = co.Chart.PlotArea.InsideHeight
+                cx = co.Left + co.Chart.PlotArea.InsideLeft + pw / 2
                 cy = co.Top + co.Chart.PlotArea.InsideTop + ph / 2
-                PW = application.Min(PW, ph) * 0.72 * 0.9
-                If PW > 0 Then T_Yerlestir merkez, cx - PW / 2, cy - 20, PW, 40
+                pw = application.Min(pw, ph) * 0.72 * 0.9
+                If pw > 0 Then T_Yerlestir merkez, cx - pw / 2, cy - 20, pw, 40
                 merkez.ZOrder msoBringToFront
                 Exit For
             End If

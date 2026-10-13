@@ -206,7 +206,7 @@ Public Sub STOK_HAFIZA_TEMIZ_BASLAT()
     Dim SnapshotID As String
     Dim SnapshotZamani As Date
     Dim IndexSatir As Long
-    Dim SatirSayisi As Long
+    Dim satirSayisi As Long
 
     On Error GoTo Hata
 
@@ -236,9 +236,9 @@ Public Sub STOK_HAFIZA_TEMIZ_BASLAT()
     SnapshotZamani = Now
     SnapshotID = "STK-" & Format(SnapshotZamani, "yyyymmdd-hhnnss")
 
-    SatirSayisi = sonSatir - 6
+    satirSayisi = sonSatir - 6
 
-    wsCurrent.Range("A2").Resize(SatirSayisi, 12).Value = _
+    wsCurrent.Range("A2").Resize(satirSayisi, 12).Value = _
         wsKaynak.Range("A7:L" & sonSatir).Value2
 
     wsCurrent.Range("N2").Value = SnapshotID
@@ -526,7 +526,7 @@ ByVal sonSatir As Long, _
 ByVal SnapshotID As String, _
 ByVal SnapshotZamani As Date)
 
-    Dim SatirSayisi As Long
+    Dim satirSayisi As Long
     Dim sonHucre As Range
 
     ' Clear all previous content in A:L, including stray cells and formulas.
@@ -541,10 +541,10 @@ ByVal SnapshotZamani As Date)
         End If
     End If
 
-    SatirSayisi = sonSatir - 6
+    satirSayisi = sonSatir - 6
 
-    If SatirSayisi > 0 Then
-        wsCurrent.Range("A2").Resize(SatirSayisi, 12).Value = _
+    If satirSayisi > 0 Then
+        wsCurrent.Range("A2").Resize(satirSayisi, 12).Value = _
             wsKaynak.Range("A7:L" & sonSatir).Value2
     End If
 

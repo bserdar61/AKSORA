@@ -670,13 +670,13 @@ Private Function AK12_ESKI_SEKIL(ByVal s As Shape) As Boolean
 End Function
 
 Private Sub AK12_KONTROL_SIL(ByVal ws As Worksheet)
-    Dim i As Long, bulundu As Boolean, acildi As Boolean
+    Dim i As Long, Bulundu As Boolean, acildi As Boolean
     Dim cizim As Boolean, icerik As Boolean, senaryo As Boolean, secim As Long
     Dim izin(1 To 11) As Boolean, no As Long, metin As String
     For i = 1 To ws.Shapes.Count
-        If AK12_ESKI_SEKIL(ws.Shapes(i)) Then bulundu = True: Exit For
+        If AK12_ESKI_SEKIL(ws.Shapes(i)) Then Bulundu = True: Exit For
     Next i
-    If Not bulundu Then Exit Sub
+    If Not Bulundu Then Exit Sub
     On Error GoTo Hata
     cizim = ws.ProtectDrawingObjects: icerik = ws.ProtectContents
     senaryo = ws.ProtectScenarios: secim = ws.EnableSelection

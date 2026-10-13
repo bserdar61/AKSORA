@@ -983,13 +983,13 @@ ByVal sistem As String) As Boolean
     Dim SysName As String
     Dim Kullanici As String
 
-    On Error GoTo YOK
+    On Error GoTo Yok
 
     Set SapGuiAuto = GetObject("SAPGUI")
-    If SapGuiAuto Is Nothing Then GoTo YOK
+    If SapGuiAuto Is Nothing Then GoTo Yok
 
     Set app = SapGuiAuto.GetScriptingEngine
-    If app Is Nothing Then GoTo YOK
+    If app Is Nothing Then GoTo Yok
 
     For i = 0 To app.Children.Count - 1
 
@@ -997,7 +997,7 @@ ByVal sistem As String) As Boolean
 
         On Error Resume Next
         Set con = app.Children(CLng(i))
-        On Error GoTo YOK
+        On Error GoTo Yok
 
         If Not con Is Nothing Then
 
@@ -1016,7 +1016,7 @@ ByVal sistem As String) As Boolean
                     Kullanici = Trim$(CStr(ses.Info.User))
                     Set wnd = ses.FindById("wnd[0]", False)
                 End If
-                On Error GoTo YOK
+                On Error GoTo Yok
 
                 If Not ses Is Nothing Then
                     If Not wnd Is Nothing Then
@@ -1035,7 +1035,7 @@ ByVal sistem As String) As Boolean
 
     Next i
 
-YOK:
+Yok:
 
 End Function
 
@@ -1236,7 +1236,7 @@ Private Function PANEL_SAYI_TR( _
     ByVal ondalik As Long) As String
 
     Dim Yuvarlanmis As Double
-    Dim Tam As Double
+    Dim tam As Double
     Dim kesir As Long
     Dim Carpan As Long
     Dim Rakamlar As String
@@ -1246,16 +1246,16 @@ Private Function PANEL_SAYI_TR( _
     ' Excel'in bölgesel ayarlarýna baðlý olmadan nokta/virgül üret.
     Carpan = CLng(10 ^ ondalik)
     Yuvarlanmis = application.WorksheetFunction.Round(Abs(sayi), ondalik)
-    Tam = Fix(Yuvarlanmis)
+    tam = Fix(Yuvarlanmis)
     kesir = CLng(application.WorksheetFunction.Round( _
-        (Yuvarlanmis - Tam) * Carpan, 0))
+        (Yuvarlanmis - tam) * Carpan, 0))
 
     If kesir >= Carpan Then
-        Tam = Tam + 1
+        tam = tam + 1
         kesir = 0
     End If
 
-    Rakamlar = Format$(Tam, "0")
+    Rakamlar = Format$(tam, "0")
 
     For i = 1 To Len(Rakamlar)
         If i > 1 And (Len(Rakamlar) - i + 1) Mod 3 = 0 Then

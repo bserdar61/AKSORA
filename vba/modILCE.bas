@@ -425,21 +425,21 @@ End If
     '==========================================================
     Private Sub ILCE_V2_UY_DOGRULA( _
     ByRef veri As Variant, _
-    ByVal SatirSayisi As Long, _
+    ByVal satirSayisi As Long, _
     ByVal BeklenenUY As String, _
     ByVal kaynakAdi As String)
 
     Dim i As Long, c As Variant, depo As String, neden As String
     On Error GoTo Hata
     If Not IsArray(veri) Then neden = "Veri dizisi yok.": GoTo gecersiz
-    If SatirSayisi <= 0 Or SatirSayisi > 250000 Then
+    If satirSayisi <= 0 Or satirSayisi > 250000 Then
         neden = "Satir sayisi gecersiz.": GoTo gecersiz
     End If
-    If LBound(veri, 1) <> 1 Or UBound(veri, 1) <> SatirSayisi Or _
+    If LBound(veri, 1) <> 1 Or UBound(veri, 1) <> satirSayisi Or _
        LBound(veri, 2) <> 1 Or UBound(veri, 2) < 12 Then
         neden = "Veri dizisinin boyutlari gecersiz.": GoTo gecersiz
     End If
-    For i = 1 To SatirSayisi
+    For i = 1 To satirSayisi
         For Each c In Array(1, 2, 7, 9, 10, 11)
             If IsError(veri(i, c)) Or IsNull(veri(i, c)) Then
                 neden = "Hatali hucre; sutun " & c: GoTo gecersiz
@@ -545,17 +545,17 @@ Hata:
     '==========================================================
     Private Sub ILCE_V2_STOK_OZET_GUNCELLE( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim toplamDeger As Double
 
     sonSatir = _
-    6 + VeriSatiri
+    6 + veriSatiri
 
     toplamDeger = 0
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     On Error Resume Next
 
@@ -621,7 +621,7 @@ Hata:
     Public Sub ILCE_V2_RAPOR_OLUSTUR( _
     ByVal wsStok As Worksheet, _
     ByVal wsRapor As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim dict As Object
 
@@ -649,9 +649,9 @@ Hata:
 
     dict.CompareMode = vbTextCompare
 
-    SonStokSatir = 6 + VeriSatiri
+    SonStokSatir = 6 + veriSatiri
 
-    If VeriSatiri > 0 Then
+    If veriSatiri > 0 Then
 
     veri = _
         wsStok.Range( _
@@ -935,14 +935,14 @@ End Sub
     '==========================================================
     Private Sub ILCE_V2_STOK_GORSEL_DUZEN( _
     ByVal ws As Worksheet, _
-    ByVal VeriSatiri As Long)
+    ByVal veriSatiri As Long)
 
     Dim sonSatir As Long
     Dim TasarimSatir As Long
 
-    sonSatir = 6 + VeriSatiri
+    sonSatir = 6 + veriSatiri
 
-    If VeriSatiri <= 0 Then Exit Sub
+    If veriSatiri <= 0 Then Exit Sub
 
     ws.Range( _
     "I7:I" & sonSatir).NumberFormat = _
@@ -1033,7 +1033,7 @@ End Sub
 
 Private Function ILCE_V2_EPP_ALV_AL( _
 ByRef VeriDizisi As Variant, _
-ByRef VeriSatiri As Long, _
+ByRef veriSatiri As Long, _
 ByRef SutunSayisi As Long, _
 ByRef ExportSuresi As Double, _
 ByRef hataMesaji As String) As Boolean
@@ -1047,14 +1047,14 @@ Dim sonuc() As Variant
 Dim temiz() As Variant
 
 Dim baslangic As Double
-Dim SatirSayisi As Long
+Dim satirSayisi As Long
 Dim r As Long, c As Long, n As Long
 Dim uy As String, depo As String, malzeme As String
 
 On Error GoTo Hata
 
 ILCE_V2_EPP_ALV_AL = False
-VeriSatiri = 0
+veriSatiri = 0
 SutunSayisi = 0
 ExportSuresi = 0
 hataMesaji = vbNullString
@@ -1100,15 +1100,15 @@ For c = 1 To 12
     KolonID(c) = CStr(KolonSirasi.Item(c - 1))
 Next c
 
-SatirSayisi = CLng(alv.RowCount)
-If SatirSayisi <= 0 Then
+satirSayisi = CLng(alv.RowCount)
+If satirSayisi <= 0 Then
     hataMesaji = "EPP K001-K999 stok satýrý bulunamadý."
     Exit Function
 End If
 
-ReDim ham(1 To SatirSayisi, 1 To 12)
+ReDim ham(1 To satirSayisi, 1 To 12)
 
-For r = 0 To SatirSayisi - 1
+For r = 0 To satirSayisi - 1
     On Error Resume Next
     alv.FirstVisibleRow = r
     alv.SetCurrentCell r, KolonID(7)
@@ -1121,9 +1121,9 @@ For r = 0 To SatirSayisi - 1
     Next c
 Next r
 
-ReDim sonuc(1 To SatirSayisi, 1 To 12)
+ReDim sonuc(1 To satirSayisi, 1 To 12)
 
-For r = 1 To SatirSayisi
+For r = 1 To satirSayisi
     uy = Trim$(CStr(ham(r, 1)))
     depo = UCase$(Trim$(CStr(ham(r, 2))))
     malzeme = Trim$(CStr(ham(r, 7)))
@@ -1157,7 +1157,7 @@ For r = 1 To n
 Next r
 
 VeriDizisi = temiz
-VeriSatiri = n
+veriSatiri = n
 SutunSayisi = 12
 ExportSuresi = ILCE_V2_EPP_GECEN(baslangic)
 ILCE_V2_EPP_ALV_AL = True
