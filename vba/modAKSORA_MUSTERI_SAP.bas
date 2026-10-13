@@ -704,21 +704,21 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
     If Len(Dir$(klasor, vbDirectory)) = 0 Then klasor = Environ$("TEMP")
     dosya = "AKSORA_" & etiket & "_" & Format$(Now, "yyyymmddhhnnss") & ".txt"
     tam = klasor & "\" & dosya
-    ' 1. yol: liste arac cubugundaki Disa aktar > Yerel dosya. 2. yol: sutun baglam menusu.
-    On Error Resume Next
-    Err.Clear
-    alv.PressToolbarContextButton "&MB_EXPORT"
-    If Err.Number = 0 Then alv.SelectContextMenuItem "&PC"
-    If Err.Number <> 0 Then MS_Teshis etiket & " araç çubuðu dýþa aktarma: " & Err.Description
-    On Error GoTo Hata
-    Set pen = MS_PencereBekle(ses, 6)
+    ' Yerel dosya penceresi: arac cubugu, menu cubugu ve %PC komutu sirayla denenir;
+    ' olmazsa sutun baglam menusunden metinle secilir.
+    If MS_DisaAktarAc(ses, alv) Then Set pen = MS_PencereBekle(ses, 6)
     If pen Is Nothing Then
+        On Error Resume Next
         kol = MS_IlkKolon(alv)
         alv.SetCurrentCell -1, kol
         alv.SelectColumn kol
         alv.ContextMenu
-        alv.SelectContextMenuItem "&PC"
-        Set pen = MS_PencereBekle(ses, 10)
+        Err.Clear
+        alv.SelectContextMenuItemByText "Yerel dosya..."
+        If Err.Number <> 0 Then Err.Clear: alv.SelectContextMenuItemByText "Local File..."
+        If Err.Number <> 0 Then MS_Teshis etiket & " baðlam menüsü yerel dosya: " & Err.Description
+        On Error GoTo Hata
+        Set pen = MS_PencereBekle(ses, 6)
     End If
     If pen Is Nothing Then MS_Teshis etiket & " yerel dosya penceresi açýlmadý": GoTo Temizle
     MS_Teshis etiket & " yerel dosya penceresi: " & pen.Text
