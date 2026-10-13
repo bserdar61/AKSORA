@@ -686,6 +686,12 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
     Dim v() As Variant, a As String, ofs As Long
     On Error GoTo Hata
     klasor = "C:\TEMP"
+    ' Klasor yoksa olusturulur (her bilgisayarda ayni yol); olusturulamazsa kullanicinin TEMP klasoru.
+    If Len(Dir$(klasor, vbDirectory)) = 0 Then
+        On Error Resume Next
+        MkDir klasor
+        On Error GoTo Hata
+    End If
     If Len(Dir$(klasor, vbDirectory)) = 0 Then klasor = Environ$("TEMP")
     dosya = "AKSORA_" & etiket & "_" & Format$(Now, "yyyymmddhhnnss") & ".txt"
     tam = klasor & "\" & dosya
