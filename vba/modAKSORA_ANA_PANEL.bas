@@ -619,6 +619,26 @@ Public Sub AKSORA_PANEL_SERIT(ByVal metin As String, Optional ByVal calisiyor As
     On Error GoTo 0
 End Sub
 
+' Ana panel (malzeme ve musteri): orta siradaki uc buyuk dugme guncelleme dugmelerinin
+' (dolayisiyla kartlarin) ayni sol/sag cizgisine oturur. Dort sutunda TUM STOK iki sutun kaplar.
+Public Sub AKSORA_PANEL_ORTA_HIZALA(ByVal ws As Worksheet)
+    Dim sap As Shape, tum As Shape, ara As Shape, c1 As Shape, c2 As Shape, c3 As Shape, c4 As Shape
+    On Error Resume Next
+    Set sap = ws.Shapes("btnBaglantiKontrol"): Set tum = ws.Shapes("btnTumStok")
+    Set ara = ws.Shapes("btnMalzemeAraPanel")
+    Set c1 = ws.Shapes("btnCDP"): Set c2 = ws.Shapes("btnEPP")
+    Set c3 = ws.Shapes("btnIlce"): Set c4 = ws.Shapes("btnYuk")
+    If sap Is Nothing Or tum Is Nothing Or ara Is Nothing Or c1 Is Nothing Or c3 Is Nothing Or c4 Is Nothing Then Exit Sub
+    sap.Left = c1.Left: sap.Width = c1.Width
+    ara.Left = c4.Left: ara.Width = c4.Width
+    If c2 Is Nothing Then
+        tum.Left = c3.Left: tum.Width = c3.Width
+    Else
+        tum.Left = c2.Left: tum.Width = c3.Left + c3.Width - c2.Left
+    End If
+    On Error GoTo 0
+End Sub
+
 Public Sub AKSORA_PANEL_SURE_KAYDET(ByVal bas As Double)
     Dim sn As Double
     sn = Timer - bas

@@ -2327,6 +2327,29 @@ Public Function AKSORA_MUSTERI_ARSIV_SAYFA(ByVal il As String, ByVal i As Long) 
     Set AKSORA_MUSTERI_ARSIV_SAYFA = MS_ArsivSayfa(UCase$(Trim$(il)), i, False)
 End Function
 
+' Musteri il secim ekrani icin: ilin son guncelleme tarihi (ekrandaki il sayfalardan, digeri kaydindan).
+Public Function AKSORA_MUSTERI_IL_SON_TARIH(ByVal il As String) As Date
+    Dim ekran As String, ad As Variant, v As Variant
+    il = UCase$(Trim$(il))
+    On Error Resume Next
+    ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+    If Len(ekran) = 0 Then ekran = "ARTVIN"
+    If il = ekran Then
+        For Each ad In Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+            v = Empty
+            v = ThisWorkbook.Worksheets(CStr(ad)).Range("C2").MergeArea.Cells(1, 1).Value
+            If Not IsError(v) Then
+                If IsDate(v) Then
+                    If CDate(v) > AKSORA_MUSTERI_IL_SON_TARIH Then AKSORA_MUSTERI_IL_SON_TARIH = CDate(v)
+                End If
+            End If
+        Next ad
+    Else
+        AKSORA_MUSTERI_IL_SON_TARIH = AKSORA_MUSTERI_ARSIV_TARIH(il)
+    End If
+    On Error GoTo 0
+End Function
+
 ' Arsivdeki en son guncelleme tarihi (kayit yoksa 0).
 Public Function AKSORA_MUSTERI_ARSIV_TARIH(ByVal il As String) As Date
     Dim i As Long, ar As Worksheet, v As Variant

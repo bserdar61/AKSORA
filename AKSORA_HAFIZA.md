@@ -6,7 +6,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 ## Kullanıcı ve çalışma şekli
 - Burhan Serdar, Çoruh EDAŞ malzeme stok uzmanı. Türkçe, kısa, açıklamasız; "ne yapacağım" net söylenir.
 - VBA proje şifresi: kullanıcıda (yalnız VBE kilidi için).
-- Temel dosya: kullanıcının en son yüklediği `AKSORA.xlsm` (Artvin + Trabzon + Gümüşhane + Giresun müşteri kayıtları içinde;
+- Temel dosya: kullanıcının en son yüklediği `AKSORA.xlsm` (5 ilin müşteri kayıtları içinde;
   diğer iller tekrar güncellenmez). Repo `final/AKSORA.xlsm` = bu dosya; yeni sürümler bunun üzerine kurulur.
   Yeni dosya her zaman bu dosyanın üzerine kurulur (veriler korunur). Kod değişiklikleri
   `claude/aksora-vba-error-fix-a7b5so` dalında `vba/*.bas` olarak tutulur.
@@ -53,7 +53,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 | Trabzon (onaylı) | 7152 | E###, D003, D005, D006, D012, P001–P003, S001, Z002, Z003 | K### (aynı 3 mal grubu) | M090, M132, M501–M511 |
 | Gümüşhane (onaylı) | 7153 | E###, D003, D005, D008, D015, Z003 | K### (aynı 3 mal grubu) | M132, M501, M502 |
 | Giresun (onaylı) | 7154 | E###, D003, D005, D008, D012, P001, Z003, Z007 | K### (aynı 3 mal grubu) | M031, M132, M501–M505 |
-| Rize | 7151 | E###, D003, D005, D012, D015, Z002, Z003 | K### (aynı 3 mal grubu) | M010, M036, M038, M040, M132, M501–M504 |
+| Rize (onaylı) | 7151 | E###, D003, D005, D012, D015, Z002, Z003 | K### (aynı 3 mal grubu) | M010, M036, M038, M040, M132, M501–M504 |
 
 - Motor il bazlıdır: tesis `MS_Tesis()`, depo eşlemesi `MS_Hedef` (il'e göre), desteklenen iller
   `AKSORA_MUSTERI_IL_DESTEK` / `AKSORA_MUSTERI_ILLER`. Yeni il = bu üç yere ekleme.
@@ -65,6 +65,12 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Müşteri arama: tüm tanımlı iller aranır (ekrandaki il sayfalardan, diğerleri arşivden); il düğmesi BX21'de saklanır, sonuç o ile süzülür; sonuç yalnız başka sayfadan gelince temizlenir.
 - Müşteri arama sayfası: il tarihleri ekrandaki il için sayfalardan, diğer iller için `_MA_<IL>_*` A1'den. Toplu düğme = malzeme arama düğmesinin aynısı.
 - Depo listesi (form açılır liste) tüm satırları açar (tekerlek kaydırmaz); sayfa her açılışta yeniden yerleştirilir.
+
+## Ek kurallar (13.10.2026)
+- Ana panel orta sıra: SAP KONTROL = 1. kart, TÜM STOK = 2.(–3.) kart, MALZEME ARAMA = son kart hizasında (AKSORA_PANEL_ORTA_HIZALA).
+- Rapor lejant kareleri 10x10, ad satırına ortalı (M_LEJANT_KARE).
+- İl seçim ekranı tarihi: malzeme AKSORA_IL_SON_TARIH (en son güncellenen grup), müşteri AKSORA_MUSTERI_IL_SON_TARIH.
+- Müşteri stok filtresi sonrası 2 sn içinde kendiliğinden arama sayfasına geçiş engellenir (AKSORA_MUSTERI_GECIS_KORU).
 
 ## Sıradaki işler
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı

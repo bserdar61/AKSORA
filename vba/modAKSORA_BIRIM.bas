@@ -191,6 +191,7 @@ End Sub
 Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
     If mYonlendirme Then AKSORA_BIRIM_OLAY = True: Exit Function
     If Not TypeOf sh Is Worksheet Then Exit Function
+    If AKSORA_MUSTERI_GECIS_KORU(sh) Then AKSORA_BIRIM_OLAY = True: Exit Function
     On Error Resume Next
     application.MoveAfterReturn = (sh.Name <> "M_MALZEME_ARA")
     On Error GoTo 0
@@ -397,10 +398,25 @@ End Sub
 
 Private Sub MUSTERI_SECIM_CIZ(ByVal ws As Worksheet)
     Dim keys As Variant, names As Variant, i As Long, key As String
+    Dim t As Date, yazi As String
     keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
     names = Array("GÝRESUN", "TRABZON", "RÝZE", "GÜMÜÞHANE", "ARTVÝN")
     key = CStr(ws.Range("AZ1").Value2)
     ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇÝLÝ ÝL: -"
+    ' Secili ilin musteri stoklarinin son guncelleme tarihi.
+    On Error Resume Next
+    If ws.Name = MUK Then
+        If Len(key) = 0 Then
+            yazi = "Son stok güncellemesi: -"
+        ElseIf Not AKSORA_MUSTERI_IL_DESTEK(key) Then
+            yazi = "Bu il için müþteri birimi þu an aktif deðil"
+        Else
+            t = AKSORA_MUSTERI_IL_SON_TARIH(key)
+            If t > 0 Then yazi = "Son stok güncellemesi: " & Format$(t, "dd.mm.yyyy hh:nn") Else yazi = "Son stok güncellemesi: Henüz güncellenmedi"
+        End If
+        ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = yazi
+    End If
+    On Error GoTo 0
     For i = 1 To 5
         With ws.Shapes("AKSORA_V4_IL_" & i)
             If keys(i - 1) = key Then

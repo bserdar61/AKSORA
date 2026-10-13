@@ -987,10 +987,7 @@ Public Sub AKSORA_V10_TARIH_GOSTER()
 
     Set ws = ThisWorkbook.Worksheets("KAPAK")
 
-    tarih = _
-        AKSORA_V11_IL_TARIH( _
-            CStr(ws.Range("AZ1").Value2) _
-        )
+    tarih = AKSORA_IL_SON_TARIH(CStr(ws.Range("AZ1").Value2))
 
     If tarih > 0 Then
 

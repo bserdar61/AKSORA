@@ -1,6 +1,8 @@
 Attribute VB_Name = "modAKSORA_MUSTERI_ISLEMLER"
 Option Explicit
 Private mHazir As Boolean
+Public AKSORA_MUSTERI_STOK_HESAP_SAYFA As String
+Public AKSORA_MUSTERI_STOK_HESAP_ZAMAN As Double
 #If VBA7 Then
 Private Declare PtrSafe Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hwnd As LongPtr) As Long
 #Else
@@ -164,6 +166,29 @@ Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
     On Error GoTo 0
 End Sub
 
+' Stok sayfasinda filtre uygulandiktan hemen sonra (2 sn) kendiliginden arama sayfasina
+' gecilirse kullanici stok sayfasinda tutulur. Dugme ile yapilan gecisler etkilenmez.
+Public Function AKSORA_MUSTERI_GECIS_KORU(ByVal sh As Object) As Boolean
+    Dim ad As String, gecen As Double, hedef As Worksheet, ev As Boolean
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If sh.Name <> "M_MALZEME_ARA" Then Exit Function
+    ad = AKSORA_MUSTERI_STOK_HESAP_SAYFA
+    If Len(ad) = 0 Then Exit Function
+    gecen = Timer - AKSORA_MUSTERI_STOK_HESAP_ZAMAN
+    If gecen < 0 Then gecen = gecen + 86400#
+    AKSORA_MUSTERI_STOK_HESAP_SAYFA = vbNullString
+    If gecen > 2 Then Exit Function
+    On Error Resume Next
+    Set hedef = ThisWorkbook.Worksheets(ad)
+    If hedef Is Nothing Then Exit Function
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    hedef.Select Replace:=True
+    application.EnableEvents = ev
+    AKSORA_MUSTERI_GECIS_KORU = True
+    On Error GoTo 0
+End Function
+
 Public Sub AKSORA_MUSTERI_BUTONLARI_AKTIF_ET()
     Dim ws As Worksheet
     On Error GoTo Hata
@@ -184,6 +209,7 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     ad = ws.Shapes(CStr(application.Caller)).AlternativeText
     If Not M_SAYFA(ad) Then Err.Raise vbObjectError + 1800, , "Müþteri sayfa baðlantýsý geçersiz."
     Set hedef = ThisWorkbook.Worksheets(ad)
+    AKSORA_MUSTERI_STOK_HESAP_SAYFA = vbNullString
     ' Gecis boyunca pencere cizimi kilitlenir; yeni sayfa tek seferde ve hazir halde gorunur.
     kilit = (M_PencereKilit(application.hwnd) <> 0)
     application.ScreenUpdating = False
@@ -649,13 +675,36 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
             End If
             Set s = Nothing
             Set s = ws.Shapes("AKSORA_RP_HALKA_RENK_" & j)
-            If Not s Is Nothing Then
-                s.Visible = msoTrue
-                If Not a Is Nothing Then s.Top = a.Top + (a.Height - s.Height) / 2
-            End If
+            If Not s Is Nothing Then s.Visible = msoTrue
         Next j
         On Error GoTo 0
     End If
+    M_LEJANT_KARE ws
+End Sub
+
+' Halka grafik listesindeki renk kareleri: hepsi ayni boyutta kare, ayni sol cizgide,
+' ad satirinin ortasinda (satir yuksekligi degisse de bozulmaz).
+Private Sub M_LEJANT_KARE(ByVal ws As Worksheet)
+    Dim s As Shape, a As Shape, ad As String, sol As Double, kenar As Double
+    kenar = 10: sol = -1
+    On Error Resume Next
+    For Each s In ws.Shapes
+        ad = s.Name
+        If InStr(ad, "HALKA_RENK_") > 0 Or InStr(ad, "_H3_RENK_") > 0 Then
+            Set a = Nothing
+            Set a = ws.Shapes(Replace(ad, "_RENK_", "_AD_"))
+            s.Placement = xlFreeFloating
+            s.LockAspectRatio = msoFalse
+            s.Rotation = 0
+            s.Width = kenar: s.Height = kenar
+            If s.AutoShapeType = msoShapeRoundedRectangle Then s.Adjustments.Item(1) = 0.2
+            If Not a Is Nothing Then
+                s.Left = a.Left - kenar - 6
+                s.Top = a.Top + (a.Height - kenar) / 2
+            End If
+        End If
+    Next s
+    On Error GoTo 0
 End Sub
 
 Public Sub AKSORA_MUSTERI_DEPO_SEC()
@@ -1149,6 +1198,7 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         dg.ZOrder msoBringToFront
         On Error GoTo 0
     End If
+    AKSORA_PANEL_ORTA_HIZALA ws
 End Sub
 
 Public Sub AKSORA_MUSTERI_PANEL_YENILE(Optional ByVal calisiyor As Boolean = False)
@@ -1642,6 +1692,7 @@ Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     Next s
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
     If Not s Is Nothing Then s.Left = 0: s.Width = tw
+    M_LEJANT_KARE ws
 End Sub
 
 Private Sub M_DUZEN_ARAMA(ByVal ws As Worksheet, ByVal w As Double)

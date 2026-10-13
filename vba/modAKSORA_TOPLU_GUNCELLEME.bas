@@ -144,6 +144,32 @@ Public Function AKSORA_V11_IL_TARIH(ByVal il As String, Optional ByVal dogrulanm
     AKSORA_V11_IL_TARIH = t
 End Function
 
+' Il secim ekrani icin: ilin en son guncellenen stok grubunun tarihi (hic yoksa 0).
+Public Function AKSORA_IL_SON_TARIH(ByVal il As String) As Date
+    Dim tip As Variant, kaynak As Variant, i As Long, tarih As Date
+    Dim ar As Worksheet, canli As String
+    il = AKFIX_NORMAL(il)
+    canli = AKSORA_CANLI_STOK_IL()
+    tip = Array("CDP", "EPP", "TUM", "ILC", "YUK")
+    kaynak = Array("CDP_STOK", "EPP_STOK", "STOKLAR", "ÝLÇE_STOK", "YÜKLENÝCÝ_STOK")
+    For i = 0 To 4
+        tarih = 0
+        If il = canli Then tarih = AK12_TARIH(ThisWorkbook.Worksheets(CStr(kaynak(i))).Range("C2").Value2)
+        If tarih = 0 Then
+            Set ar = Nothing
+            On Error Resume Next
+            Set ar = ThisWorkbook.Worksheets("_AKLIVE_" & il & "_" & tip(i))
+            On Error GoTo 0
+            If Not ar Is Nothing Then
+                If CStr(ar.Range("A1").Value2) = "AKSORA_CANLI_ARSIV_V1" And CStr(ar.Range("B1").Value2) = il Then
+                    tarih = AK12_TARIH(ar.Range("A3").Value2)
+                End If
+            End If
+        End If
+        If tarih > AKSORA_IL_SON_TARIH Then AKSORA_IL_SON_TARIH = tarih
+    Next i
+End Function
+
 Private Function AK12_TARIH(ByVal v As Variant) As Date
     Dim n As Double
     If IsError(v) Or IsEmpty(v) Then Exit Function

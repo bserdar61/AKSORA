@@ -798,7 +798,7 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
     Dim s As Shape, r As Range, ad As Variant, i As Long, x As Double, bw As Double
     Dim buton As Variant, alan As Variant
     buton = Array("btnBaglantiKontrol", "btnTumStok", "btnMalzemeAraPanel", "btnCDP", "btnEPP", "btnIlce", "btnYuk", "AKSORA15_IL_DEGISTIR")
-    alan = Array("B15:E18", "G15:N18", "Q15:T18", "B20:E21", "G20:J21", "L20:O21", "Q20:T21", "W6:AB6")
+    alan = Array("B15:E18", "G15:O18", "Q15:T18", "B20:E21", "G20:J21", "L20:O21", "Q20:T21", "W6:AB6")
     For i = 0 To UBound(buton)
         Set s = T_Sekil(ws, CStr(buton(i)))
         If Not s Is Nothing Then
