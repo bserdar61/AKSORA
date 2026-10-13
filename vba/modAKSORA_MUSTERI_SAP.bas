@@ -146,6 +146,7 @@ Private Sub MS_Agac(ByVal kok As Object, ByVal derinlik As Long)
     For i = 0 To adet - 1
         Set c = Nothing
         Set c = kok.Children(i)
+        If c Is Nothing Then Set c = kok.Children.ElementAt(i)
         If Not c Is Nothing Then
             t = vbNullString: t = c.Text
             MS_Teshis String$(derinlik * 2, " ") & c.Type & " | " & c.Id & " | " & c.Name & " | " & Left$(t, 60)
@@ -162,6 +163,7 @@ Private Function MS_AlanBul(ByVal kok As Object, ByVal ad As String) As Object
     For i = 0 To adet - 1
         Set c = Nothing
         Set c = kok.Children(i)
+        If c Is Nothing Then Set c = kok.Children.ElementAt(i)
         If Not c Is Nothing Then
             If UCase$(c.Name) = ad Then Set MS_AlanBul = c: Exit Function
             If c.ContainerType Then
@@ -181,6 +183,7 @@ Private Sub MS_Topla(ByVal kok As Object, ByVal tip As String, ByVal liste As Co
     For i = 0 To adet - 1
         Set c = Nothing
         Set c = kok.Children(i)
+        If c Is Nothing Then Set c = kok.Children.ElementAt(i)
         If Not c Is Nothing Then
             If c.Type = tip Then liste.Add c
             If c.ContainerType Then MS_Topla c, tip, liste
@@ -216,6 +219,7 @@ Private Sub MS_MenuTopla(ByVal kok As Object, ByVal yol As String, ByVal liste A
     For i = 0 To adet - 1
         Set c = Nothing
         Set c = kok.Children(i)
+        If c Is Nothing Then Set c = kok.Children.ElementAt(i)
         If Not c Is Nothing Then
             t = vbNullString: t = c.Text
             alt = -1: alt = c.Children.Count
@@ -772,7 +776,31 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
     End If
     If pen Is Nothing Then MS_Teshis etiket & " yerel dosya penceresi açýlmadý": GoTo Temizle
     MS_Teshis etiket & " yerel dosya penceresi: " & pen.Text
-    Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    Set yolAlan = ses.FindById("wnd[1]/usr/ctxtDY_PATH", False)
+    If yolAlan Is Nothing Then Set yolAlan = MS_AlanBul(pen, "DY_PATH")
+    If yolAlan Is Nothing Then
+        ' "Listeyi dosyada sakla": Tablo hesaplama (sekmeli metin) bicimi secilir.
+        Set o = Nothing
+        For r = 0 To 5
+            Set rb = Nothing
+            Set rb = ses.FindById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[" & CStr(r) & ",0]", False)
+            If Not rb Is Nothing Then
+                a = AKFIX_NORMAL(CStr(rb.Text))
+                MS_Teshis etiket & " biçim seçeneði " & r & ": " & rb.Text
+                If InStr(a, "TABLO") > 0 Or InStr(a, "SPREADSHEET") > 0 Or InStr(a, "SEKME") > 0 Or InStr(a, "TAB") > 0 Then
+                    If o Is Nothing Then Set o = rb
+                End If
+            End If
+        Next r
+        If Not o Is Nothing Then
+            MS_Teshis etiket & " biçim: " & o.Text
+            o.Select
+            ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
+            Set pen = MS_PencereBekle(ses, 10)
+            If pen Is Nothing Then MS_Teshis etiket & " dosya adý penceresi açýlmadý": GoTo Temizle
+            Set yolAlan = ses.FindById("wnd[1]/usr/ctxtDY_PATH", False)
+        End If
+    End If
     If yolAlan Is Nothing Then
         Set radyolar = New Collection
         MS_Topla pen, "GuiRadioButton", radyolar
@@ -790,13 +818,16 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
         If pen Is Nothing Then MS_Teshis etiket & " dosya adý penceresi açýlmadý": GoTo Temizle
         Set yolAlan = MS_AlanBul(pen, "DY_PATH")
     End If
-    If yolAlan Is Nothing Then MS_Agac pen, 0: GoTo Temizle
+    If yolAlan Is Nothing Then MS_Teshis etiket & " dosya yolu alaný bulunamadý": MS_Agac pen, 0: GoTo Temizle
     yolAlan.Text = klasor & "\"
-    Set o = MS_AlanBul(pen, "DY_FILENAME")
-    If o Is Nothing Then GoTo Temizle
+    Set o = ses.FindById("wnd[1]/usr/ctxtDY_FILENAME", False)
+    If o Is Nothing Then Set o = MS_AlanBul(pen, "DY_FILENAME")
+    If o Is Nothing Then MS_Teshis etiket & " dosya adý alaný bulunamadý": GoTo Temizle
     o.Text = dosya
-    Set o = MS_AlanBul(pen, "DY_FILE_ENCODING")
+    Set o = ses.FindById("wnd[1]/usr/ctxtDY_FILE_ENCODING", False)
+    If o Is Nothing Then Set o = MS_AlanBul(pen, "DY_FILE_ENCODING")
     If Not o Is Nothing Then o.Text = "4110"
+    MS_Teshis etiket & " dosya yazýlýyor: " & tam
     ses.FindById("wnd[1]/tbar[0]/btn[0]").Press
     bas = Timer: eskiBoy = -1
     Do
