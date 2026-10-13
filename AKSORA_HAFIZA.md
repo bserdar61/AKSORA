@@ -6,7 +6,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 ## Kullanıcı ve çalışma şekli
 - Burhan Serdar, Çoruh EDAŞ malzeme stok uzmanı. Türkçe, kısa, açıklamasız; "ne yapacağım" net söylenir.
 - VBA proje şifresi: kullanıcıda (yalnız VBE kilidi için).
-- Temel dosya: kullanıcının en son yüklediği `AKSORA.xlsm` (Artvin + Trabzon + Gümüşhane müşteri kayıtları içinde;
+- Temel dosya: kullanıcının en son yüklediği `AKSORA.xlsm` (Artvin + Trabzon + Gümüşhane + Giresun müşteri kayıtları içinde;
   diğer iller tekrar güncellenmez). Repo `final/AKSORA.xlsm` = bu dosya; yeni sürümler bunun üzerine kurulur.
   Yeni dosya her zaman bu dosyanın üzerine kurulur (veriler korunur). Kod değişiklikleri
   `claude/aksora-vba-error-fix-a7b5so` dalında `vba/*.bas` olarak tutulur.
@@ -53,6 +53,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 | Trabzon (onaylı) | 7152 | E###, D003, D005, D006, D012, P001–P003, S001, Z002, Z003 | K### (aynı 3 mal grubu) | M090, M132, M501–M511 |
 | Gümüşhane (onaylı) | 7153 | E###, D003, D005, D008, D015, Z003 | K### (aynı 3 mal grubu) | M132, M501, M502 |
 | Giresun (onaylı) | 7154 | E###, D003, D005, D008, D012, P001, Z003, Z007 | K### (aynı 3 mal grubu) | M031, M132, M501–M505 |
+| Rize | 7151 | E###, D003, D005, D012, D015, Z002, Z003 | K### (aynı 3 mal grubu) | M010, M036, M038, M040, M132, M501–M504 |
 
 - Motor il bazlıdır: tesis `MS_Tesis()`, depo eşlemesi `MS_Hedef` (il'e göre), desteklenen iller
   `AKSORA_MUSTERI_IL_DESTEK` / `AKSORA_MUSTERI_ILLER`. Yeni il = bu üç yere ekleme.
