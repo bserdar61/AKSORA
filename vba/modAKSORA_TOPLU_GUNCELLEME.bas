@@ -924,7 +924,7 @@ End Function
 
 Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String) As Variant
     Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long
-    Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long
+    Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long, kayma As Long, adet As Long, t As String
     On Error GoTo Hata
     Set ses = SAP_SESSION_AL(sistem, h)
     If ses Is Nothing Then mesaj = "SAP oturumu bulunamadý " & h: Exit Function
@@ -962,13 +962,41 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String) 
         If dolu >= 4 Then baslik = r: Exit For
     Next r
     If baslik = 0 Then mesaj = "Metin dosyasýnda baþlýk bulunamadý": Exit Function
+    ' Uretim yeri sutunu bulunur; basta fazladan sutun varsa tum satir kaydirilir.
+    kayma = -1
+    For c = 1 To application.Min(6, UBound(v, 2))
+        adet = 0
+        For r = baslik + 1 To application.Min(UBound(v, 1), baslik + 300)
+            If AKHZ_TESIS_MI(AKHZ_TEMIZ(v(r, c)), sistem) Then adet = adet + 1
+        Next r
+        If adet > 0 Then kayma = c - 1: Exit For
+    Next c
+    t = vbNullString
+    For c = 1 To application.Min(14, UBound(v, 2)): t = t & " | " & AKHZ_TEMIZ(v(baslik, c)): Next c
+    AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " baþlýk:" & t
+    t = vbNullString
+    If UBound(v, 1) > baslik Then
+        For c = 1 To application.Min(14, UBound(v, 2)): t = t & " | " & AKHZ_TEMIZ(v(baslik + 1, c)): Next c
+    End If
+    AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " ilk satýr:" & t & " | kayma " & kayma
+    If kayma < 0 Then mesaj = "Üretim yeri sütunu bulunamadý": Exit Function
+    If UBound(v, 2) - kayma < 12 Then mesaj = "Metin dosyasýnda 12 sütun yok": Exit Function
     veriSatiri = UBound(v, 1) - baslik
     ' Eksik satir kabul edilmez: dosya ALV ile birebir ayni olmali.
     If veriSatiri <> satirSayisi Then
         mesaj = "Satýr sayýsý tutmadý (SAP " & satirSayisi & " / dosya " & veriSatiri & ")"
         Exit Function
     End If
-    AKHZ_SISTEM_OKU = AKHZ_KIRP(v, baslik + 1)
+    v = AKHZ_KIRP(v, baslik + 1, kayma)
+    ' Dogrulama: uretim yeri + D depo + malzeme dolu en az bir stok satiri olmali.
+    adet = 0
+    For r = 1 To UBound(v, 1)
+        If AKHZ_TESIS_MI(CStr(v(r, 1)), sistem) And Len(CStr(v(r, 7))) > 0 Then
+            If AKSORA_IL_DEPO_GECERLI(UCase$(CStr(v(r, 2))), "NORMAL", "ARTVIN") Then adet = adet + 1
+        End If
+    Next r
+    If adet = 0 Then mesaj = "Depo / malzeme sütunlarý doðrulanamadý": Exit Function
+    AKHZ_SISTEM_OKU = v
     Exit Function
 Hata:
     mesaj = "Hata " & Err.Number & ": " & Err.Description
@@ -978,13 +1006,29 @@ Hata:
     End If
 End Function
 
-Private Function AKHZ_KIRP(ByRef v As Variant, ByVal ilk As Long) As Variant
+Private Function AKHZ_KIRP(ByRef v As Variant, ByVal ilk As Long, ByVal kayma As Long) As Variant
     Dim s() As Variant, r As Long, c As Long
     ReDim s(1 To UBound(v, 1) - ilk + 1, 1 To 12)
     For r = ilk To UBound(v, 1)
-        For c = 1 To 12: s(r - ilk + 1, c) = v(r, c): Next c
+        For c = 1 To 12: s(r - ilk + 1, c) = AKHZ_TEMIZ(v(r, c + kayma)): Next c
     Next r
     AKHZ_KIRP = s
+End Function
+
+Private Function AKHZ_TEMIZ(ByVal v As Variant) As String
+    Dim t As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    t = Replace(CStr(v), ChrW(160), " ")
+    t = Trim$(t)
+    If Len(t) >= 2 And Left$(t, 1) = Chr$(34) And Right$(t, 1) = Chr$(34) Then t = Trim$(Mid$(t, 2, Len(t) - 2))
+    AKHZ_TEMIZ = t
+End Function
+
+Private Function AKHZ_TESIS_MI(ByVal t As String, ByVal sistem As String) As Boolean
+    Dim il As Variant
+    For Each il In Array("RIZE", "TRABZON", "GUMUSHANE", "GIRESUN", "ARTVIN")
+        If t = AKSORA_IL_TESIS(CStr(il), sistem) Then AKHZ_TESIS_MI = True: Exit Function
+    Next il
 End Function
 
 Private Function AKHZ_SAYI(ByVal v As Variant) As Double
@@ -1036,8 +1080,9 @@ Public Function AKHZ_VERI(ByVal adim As Long, ByVal il As String, ByRef veri As 
         End If
     Next r
     If n = 0 Then
-        hataMetni = sistem & " " & tur & " için geçerli stok satýrý yok."
-        AKHZ_VERI = 2: Exit Function
+        ' Bellekte satir yoksa bu adim eski yontemle SAP'den ayrica sorgulanir.
+        AKSORA_SAP_TESHIS_YAZ "Toplu hýzlý veri " & il & " " & sistem & " " & tur & ": bellekte satýr yok, il il sorgulanýyor"
+        Exit Function
     End If
     ReDim sonuc(1 To n, 1 To 12)
     For r = 1 To n
