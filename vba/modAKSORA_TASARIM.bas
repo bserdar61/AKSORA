@@ -426,6 +426,8 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
         If s Is Nothing Then Err.Raise vbObjectError + 9313, , "Güncelleme butonu eksik: " & ad
         T_Yerlestir s, sag - bw, ws.Rows(1).Top + 5, bw, 22
         T_Buton s, RGB(26, 83, 134), vbWhite, 8
+        ' Tum stok sayfasi dugmeleri ayni yoldan: hizli okuma, ayni sayfaya donus, tek ozet.
+        s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_STOK_SAYFA_GUNCELLE"
         sag = sag - bw - 5
     Next k
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")

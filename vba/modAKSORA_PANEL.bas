@@ -1846,4 +1846,50 @@ Cikis:
 
 End Sub
 
-
+' Stok sayfasindaki SAP guncelleme dugmeleri: o sayfanin stogu hizli yolla guncellenir,
+' is bitince ayni stok sayfasina donulur ve tek ozet gosterilir.
+Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
+    Dim ws As Worksheet, ad As String, bas As Double, sessiz As Boolean, no As Long, metin As String
+    Dim ev As Boolean, baslik As String
+    If AKSORA_V11_MESGUL Then Exit Sub
+    Set ws = ActiveSheet
+    ad = AKFIX_NORMAL(ws.Name)
+    sessiz = ANA_SESSIZ_MOD
+    On Error GoTo Hata
+    AKHZ_TEMIZLE
+    bas = Timer
+    ANA_SESSIZ_MOD = True
+    Select Case ad
+        Case "CDP_STOK": baslik = "CDP stok": CDP_STOK_GUNCELLE_V2
+        Case "EPP_STOK": baslik = "EPP stok": EPP_STOK_GUNCELLE_V2
+        Case "STOKLAR": baslik = "Normal stok (CDP + EPP)": ANA_NORMAL_STOK_GUNCELLE_V2
+        Case "ILCE_STOK": baslik = "Ýlçe stok": ILCE_STOK_GUNCELLE_V2
+        Case "YUKLENICI_STOK": baslik = "Yüklenici stok": YUKLENICI_STOK_GUNCELLE_V2
+        Case Else: ANA_SESSIZ_MOD = sessiz: Exit Sub
+    End Select
+    ANA_SESSIZ_MOD = sessiz
+    AKSORA_PANEL_SURE_KAYDET bas
+    On Error Resume Next
+    PANEL_YENILE
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    application.EnableEvents = ev
+    AKSORA_V13_GORUNUM ws
+    application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox baslik & " güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    ANA_SESSIZ_MOD = sessiz
+    On Error Resume Next
+    application.EnableEvents = True
+    ws.Select Replace:=True
+    AKSORA_V13_GORUNUM ws
+    application.ScreenUpdating = True
+    On Error GoTo 0
+    AKSORA_HATA_GOSTER "Stok güncelleme", no, metin
+End Sub

@@ -470,12 +470,11 @@ Temizle:
     application.StatusBar = False: application.DisplayStatusBar = True
     ANA_SESSIZ_MOD = sessiz: AKSORA_V11_MESGUL = False
     If basladi Then mAK14Toplam = AK14_GECEN_SURE(toplamBas)
-    If basladi And Len(Hata) = 0 Then
-        AKSORA_PANEL_SURE_KAYDET toplamBas
-        PANEL_YENILE
-    End If
+    If basladi And Len(Hata) = 0 Then AKSORA_PANEL_SURE_KAYDET toplamBas
     If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
     mTopluSaatAktif = False
+    ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
+    If basladi Then AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
