@@ -72,6 +72,10 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - İl seçim ekranı tarihi: malzeme AKSORA_IL_SON_TARIH (en son güncellenen grup), müşteri AKSORA_MUSTERI_IL_SON_TARIH.
 - Müşteri stok filtresi sonrası 2 sn içinde kendiliğinden arama sayfasına geçiş engellenir (AKSORA_MUSTERI_GECIS_KORU).
 
+- Müşteri raporları alt bölüm: DEPO BAZINDA MALZEME DAĞILIMI (M_DEPO_DAGILIM). Depo listesi (AKSORA_RP_DM_LISTE) →
+  malzeme pivot tablosu (Malzeme, Tanım, Miktar, Pay, Toplam Değer + TOPLAM) + sağda halka grafik (ilk 9 + Diğer) ve lejant.
+  Seçim BX30, bölüm satırları BX31:BX32. Şekiller AKSORA_RP_DM_*; üst halka döngüsü bunlara dokunmaz.
+
 ## Sıradaki işler
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
   "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.

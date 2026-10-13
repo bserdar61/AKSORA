@@ -627,6 +627,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     renkler = Array(RGB(30, 99, 168), RGB(0, 150, 136), RGB(245, 158, 11), RGB(124, 58, 237), RGB(239, 68, 68), _
         RGB(14, 165, 233), RGB(34, 197, 94), RGB(236, 72, 153), RGB(100, 116, 139), RGB(202, 138, 4))
     For i = 1 To ws.ChartObjects.Count
+        If Left$(ws.ChartObjects(i).Name, 12) = "AKSORA_RP_DM" Then GoTo SonrakiGrafik
         With ws.ChartObjects(i).Chart
             Do While .SeriesCollection.Count > 0
                 .SeriesCollection(1).Delete
@@ -652,6 +653,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
                 On Error GoTo 0
             End If
         End With
+SonrakiGrafik:
     Next i
     If m > 0 And toplamPay > 0 Then
         On Error Resume Next
@@ -680,6 +682,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
         On Error GoTo 0
     End If
     M_LEJANT_KARE ws
+    M_DEPO_DAGILIM ws
 End Sub
 
 ' Halka grafik listesindeki renk kareleri: hepsi ayni boyutta kare, ayni sol cizgide,
@@ -1692,6 +1695,7 @@ Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     Next s
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
     If Not s Is Nothing Then s.Left = 0: s.Width = tw
+    M_DEPO_DAGILIM ws
     M_LEJANT_KARE ws
 End Sub
 
@@ -1773,3 +1777,335 @@ Private Function M_IL_ADI() As String
         Case Else: M_IL_ADI = "Artvin"
     End Select
 End Function
+
+'----------------------------------------------------------
+' RAPOR ALT BOLUMU: DEPO BAZINDA MALZEME DAGILIMI
+' Secilen deponun malzeme kodlarina gore miktar dagilimi (pivot tablo)
+' ve yaninda ayni tasarimda halka grafik. Liste ile depo degistirilir.
+'----------------------------------------------------------
+Private Function M_DM_YAZI(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, ByVal punto As Single, _
+    ByVal renk As Long, ByVal kalin As Boolean, ByVal hiz As MsoParagraphAlignment) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    s.Name = ad
+    s.Fill.Visible = msoFalse: s.line.Visible = msoFalse
+    s.Placement = xlFreeFloating
+    With s.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = punto
+        .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        .TextRange.Font.Fill.ForeColor.RGB = renk
+        .TextRange.ParagraphFormat.Alignment = hiz
+    End With
+    Set M_DM_YAZI = s
+End Function
+
+Private Function M_DM_KOD(ByVal v As Variant) As String
+    Dim t As String
+    If IsError(v) Then Exit Function
+    t = Trim$(CStr(v))
+    If Len(t) > 0 And t Like String$(Len(t), "#") Then
+        Do While Len(t) > 1 And Left$(t, 1) = "0": t = Mid$(t, 2): Loop
+    End If
+    M_DM_KOD = t
+End Function
+
+Private Sub M_DEPO_DAGILIM(ByVal ws As Worksheet)
+    Dim kaynak As Worksheet, son As Long, veri As Variant, r As Long, i As Long, j As Long, t As Long
+    Dim dep As Object, mal As Object, k As Variant, v As Variant, dp As String, mk As String
+    Dim secim As String, enCok As Double, miktar As Double, deger As Double
+    Dim s As Shape, z As Shape, liste As Shape, tum As Range, hdr As Range
+    Dim tw As Double, x2 As Double, sag As Double, ust As Double, kolSay As Long
+    Dim bas As Long, eskiBas As Long, eskiBit As Long, ilkVeri As Long, nM As Long, nD As Long
+    Dim anahtar() As String, sira() As Long, adet() As Double, toplamMk As Double, toplamTl As Double
+    Dim sonuc() As Variant, tablo As Range, zh As Double, zw As Double, gs As Double
+    Dim co As ChartObject, seri As Series, m As Long, adlar() As String, oranlar() As Double
+    Dim renkler As Variant, satirY As Double, adim As Double, lx As Double, lw As Double
+    Dim depAdlar() As String, depAdet() As Double, dsira() As Long, p As Long, yazi As String
+    Select Case ws.Name
+        Case "M_CDP_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_CDP_STOK")
+        Case "M_ÝLÇE_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
+        Case "M_YÜKLENÝCÝ_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
+        Case Else: Exit Sub
+    End Select
+    ' Eski bolum temizlenir (yalniz bu bolumun sekilleri ve satirlari).
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 12) = "AKSORA_RP_DM" Then ws.Shapes(i).Delete
+    Next i
+    eskiBas = Val(CStr(ws.Range("BX31").Value2)): eskiBit = Val(CStr(ws.Range("BX32").Value2))
+    If eskiBas > 9 And eskiBit >= eskiBas Then
+        With ws.Range(ws.Cells(eskiBas, 1), ws.Cells(eskiBit, 5))
+            .ClearContents: .ClearFormats
+        End With
+        ws.Range(ws.Rows(eskiBas), ws.Rows(eskiBit)).RowHeight = ws.StandardHeight
+    End If
+    ws.Range("BX31:BX32").ClearContents
+    ' Kaynak: depo -> (ad, toplam miktar); secili depo -> malzeme bazinda toplam
+    Set dep = CreateObject("Scripting.Dictionary"): dep.CompareMode = vbTextCompare
+    son = AKSORA_M_SON(kaynak)
+    If son < 7 Then Exit Sub
+    veri = kaynak.Range("A7:N" & son).Value2
+    For r = 1 To UBound(veri, 1)
+        If Not IsError(veri(r, 2)) And Not IsError(veri(r, 5)) Then
+            dp = Trim$(CStr(veri(r, 2)))
+            If Len(dp) > 0 And Len(Trim$(CStr(veri(r, 5)))) > 0 Then
+                miktar = 0
+                If Not IsError(veri(r, 7)) Then If IsNumeric(veri(r, 7)) And Len(CStr(veri(r, 7))) > 0 Then miktar = CDbl(veri(r, 7))
+                If Not dep.Exists(dp) Then
+                    If IsError(veri(r, 3)) Then dep(dp) = Array(vbNullString, 0#) Else dep(dp) = Array(Trim$(CStr(veri(r, 3))), 0#)
+                End If
+                v = dep(dp): v(1) = v(1) + miktar: dep(dp) = v
+            End If
+        End If
+    Next r
+    nD = dep.Count
+    If nD = 0 Then Exit Sub
+    ' Depolar miktara gore buyukten kucuge (liste sirasi)
+    ReDim depAdlar(1 To nD): ReDim depAdet(1 To nD): ReDim dsira(1 To nD)
+    i = 0
+    For Each k In dep.keys
+        i = i + 1: depAdlar(i) = CStr(k): depAdet(i) = CDbl(dep(k)(1)): dsira(i) = i
+    Next k
+    For i = 2 To nD
+        t = dsira(i): j = i - 1
+        Do While j >= 1
+            If depAdet(dsira(j)) >= depAdet(t) Then Exit Do
+            dsira(j + 1) = dsira(j): j = j - 1
+        Loop
+        dsira(j + 1) = t
+    Next i
+    secim = Trim$(CStr(ws.Range("BX30").Value2))
+    If Not dep.Exists(secim) Then secim = depAdlar(dsira(1))
+    ws.Range("BX30").Value2 = secim
+    Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
+    For r = 1 To UBound(veri, 1)
+        If Not IsError(veri(r, 2)) And Not IsError(veri(r, 5)) Then
+            If StrComp(Trim$(CStr(veri(r, 2))), secim, vbTextCompare) = 0 Then
+                mk = M_DM_KOD(veri(r, 5))
+                If Len(mk) > 0 Then
+                    miktar = 0: deger = 0
+                    If Not IsError(veri(r, 7)) Then If IsNumeric(veri(r, 7)) And Len(CStr(veri(r, 7))) > 0 Then miktar = CDbl(veri(r, 7))
+                    If Not IsError(veri(r, 11)) Then If VarType(veri(r, 11)) <> vbString And IsNumeric(veri(r, 11)) Then deger = CDbl(veri(r, 11))
+                    If Not mal.Exists(mk) Then
+                        If IsError(veri(r, 6)) Then mal(mk) = Array(vbNullString, 0#, 0#) Else mal(mk) = Array(Trim$(CStr(veri(r, 6))), 0#, 0#)
+                    End If
+                    v = mal(mk): v(1) = v(1) + miktar: v(2) = v(2) + deger: mal(mk) = v
+                    toplamMk = toplamMk + miktar: toplamTl = toplamTl + deger
+                End If
+            End If
+        End If
+    Next r
+    nM = mal.Count
+    If nM = 0 Then Exit Sub
+    ReDim anahtar(1 To nM): ReDim adet(1 To nM): ReDim sira(1 To nM)
+    i = 0
+    For Each k In mal.keys
+        i = i + 1: anahtar(i) = CStr(k): adet(i) = CDbl(mal(k)(1)): sira(i) = i
+    Next k
+    For i = 2 To nM
+        t = sira(i): j = i - 1
+        Do While j >= 1
+            If adet(sira(j)) >= adet(t) Then Exit Do
+            sira(j + 1) = sira(j): j = j - 1
+        Loop
+        sira(j + 1) = t
+    Next i
+    ' Yerlesim: ust tablo ve grafik alaninin altindan baslar.
+    For i = 1 To 5
+        If Len(Trim$(CStr(ws.Cells(8, i).Value2))) > 0 Then kolSay = i
+    Next i
+    If kolSay < 4 Then kolSay = 5
+    tw = ws.Range(ws.Cells(1, 1), ws.Cells(1, kolSay)).Width
+    Set z = M_SEKIL(ws, "AKSORA_RP_HALKA_ZEMIN")
+    If z Is Nothing Then
+        x2 = tw + 12: sag = x2 + tw: ust = ws.Rows(9).Top
+    Else
+        x2 = z.Left: sag = z.Left + z.Width: ust = z.Top + z.Height
+    End If
+    Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
+    If Not s Is Nothing Then ust = application.Max(ust, s.Top + s.Height)
+    r = 9
+    Do While ws.Cells(r, 1).Value2 <> "TOPLAM" And r < 2000
+        r = r + 1
+    Loop
+    If r < 2000 Then ust = application.Max(ust, ws.Rows(r).Top + ws.Rows(r).Height)
+    bas = 9
+    Do While ws.Rows(bas).Top < ust + 22
+        bas = bas + 1
+    Loop
+    ' Baslik satiri, tablo basligi, veri, TOPLAM
+    ws.Rows(bas).RowHeight = 30
+    ws.Rows(bas + 1).RowHeight = 24
+    ilkVeri = bas + 2
+    ws.Range(ws.Rows(ilkVeri), ws.Rows(ilkVeri + nM)).RowHeight = 20.25
+    ws.Range(ws.Rows(bas), ws.Rows(ilkVeri + nM)).Hidden = False
+    Set hdr = ws.Range(ws.Cells(bas + 1, 1), ws.Cells(bas + 1, 5))
+    hdr.Value2 = Array("Malzeme", "Malzeme Tanýmý", "Miktar", "Pay", "Toplam Deðer")
+    With hdr
+        .Interior.Color = RGB(26, 75, 120): .Font.Color = vbWhite
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .WrapText = False: .Borders.LineStyle = xlNone
+    End With
+    ReDim sonuc(1 To nM + 1, 1 To 5)
+    For i = 1 To nM
+        v = mal(anahtar(sira(i)))
+        sonuc(i, 1) = anahtar(sira(i)): sonuc(i, 2) = v(0): sonuc(i, 3) = v(1)
+        If toplamMk <> 0 Then sonuc(i, 4) = v(1) / toplamMk Else sonuc(i, 4) = 0
+        sonuc(i, 5) = v(2)
+    Next i
+    sonuc(nM + 1, 1) = "TOPLAM": sonuc(nM + 1, 3) = toplamMk
+    sonuc(nM + 1, 4) = IIf(toplamMk <> 0, 1, 0): sonuc(nM + 1, 5) = toplamTl
+    Set tablo = ws.Range(ws.Cells(ilkVeri, 1), ws.Cells(ilkVeri + nM, 5))
+    tablo.Columns(1).NumberFormat = "@": tablo.Columns(2).NumberFormat = "@"
+    tablo.Value2 = sonuc
+    With tablo
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.Color = RGB(30, 41, 59)
+        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlCenter
+        With .Borders(xlInsideHorizontal)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+    End With
+    For i = 1 To nM
+        If i Mod 2 = 0 Then tablo.Rows(i).Interior.Color = RGB(244, 248, 252)
+    Next i
+    tablo.Columns(2).HorizontalAlignment = xlLeft: tablo.Columns(2).IndentLevel = 1
+    For j = 3 To 5
+        tablo.Columns(j).HorizontalAlignment = xlRight: tablo.Columns(j).IndentLevel = 1
+    Next j
+    AKSORA_V13_MIKTAR_BICIMI tablo.Columns(3)
+    tablo.Columns(4).NumberFormat = "0.0%"
+    tablo.Columns(5).NumberFormat = "#,##0.00 ""TL"""
+    With tablo.Rows(nM + 1)
+        .Font.bold = True: .Interior.Color = RGB(226, 236, 247)
+        With .Borders(xlEdgeTop)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+    End With
+    ws.Range("BX31").Value2 = bas: ws.Range("BX32").Value2 = ilkVeri + nM
+    ' Bolum basligi ve depo secimi (tablo genisliginde)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_BASLIK", "DEPO BAZINDA MALZEME DAÐILIMI", 2, ws.Rows(bas).Top, tw * 0.5, 30, 12, RGB(12, 45, 79), True, msoAlignLeft)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_SECIM_ETIKET", "DEPO:", tw * 0.5, ws.Rows(bas).Top, 40, 30, 9, RGB(39, 76, 106), True, msoAlignRight)
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, tw * 0.5 + 46, ws.Rows(bas).Top + 6, tw * 0.5 - 46, 18)
+    liste.Name = "AKSORA_RP_DM_LISTE": liste.Placement = xlFreeFloating
+    With liste.ControlFormat
+        .RemoveAllItems
+        p = 1
+        For i = 1 To nD
+            yazi = depAdlar(dsira(i))
+            If Len(CStr(dep(yazi)(0))) > 0 Then yazi = yazi & "  -  " & CStr(dep(yazi)(0))
+            .AddItem yazi
+            If StrComp(depAdlar(dsira(i)), secim, vbTextCompare) = 0 Then p = i
+        Next i
+        .Value = p
+    End With
+    On Error Resume Next
+    liste.ControlFormat.DropDownLines = application.Min(40, nD)
+    On Error GoTo 0
+    liste.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_DAGILIM_SEC"
+    ' Sag: grafik alani (ust grafik alaniyla ayni sol/sag cizgi)
+    zw = sag - x2
+    zh = application.Max(340, tablo.Top + tablo.Height - ws.Rows(bas).Top)
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x2, ws.Rows(bas).Top, zw, zh)
+    s.Name = "AKSORA_RP_DM_ZEMIN": s.Placement = xlFreeFloating
+    s.Adjustments.Item(1) = 0.02
+    If Not z Is Nothing Then
+        s.Fill.ForeColor.RGB = z.Fill.ForeColor.RGB
+        s.line.Visible = z.line.Visible
+        If z.line.Visible Then s.line.ForeColor.RGB = z.line.ForeColor.RGB: s.line.Weight = z.line.Weight
+    Else
+        s.Fill.ForeColor.RGB = RGB(244, 248, 252): s.line.Visible = msoFalse
+    End If
+    s.Shadow.Visible = msoFalse
+    yazi = secim: If Len(CStr(dep(secim)(0))) > 0 Then yazi = secim & "  |  " & CStr(dep(secim)(0))
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_GRAFIK_BASLIK", yazi & "  —  MALZEME DAÐILIMI", x2 + 12, ws.Rows(bas).Top + 10, zw - 24, 24, 12, RGB(12, 45, 79), True, msoAlignCenter)
+    ' Ilk 9 malzeme + Diger
+    m = nM: If m > 10 Then m = 10
+    ReDim adlar(1 To m): ReDim oranlar(1 To m)
+    For i = 1 To m
+        adlar(i) = anahtar(sira(i)): oranlar(i) = adet(sira(i))
+    Next i
+    If nM > m Then
+        adlar(m) = "Diðer": oranlar(m) = 0
+        For i = m To nM: oranlar(m) = oranlar(m) + adet(sira(i)): Next i
+    End If
+    renkler = Array(RGB(30, 99, 168), RGB(0, 150, 136), RGB(245, 158, 11), RGB(124, 58, 237), RGB(239, 68, 68), _
+        RGB(14, 165, 233), RGB(34, 197, 94), RGB(236, 72, 153), RGB(100, 116, 139), RGB(202, 138, 4))
+    gs = application.Min(zh - 70, zw * 0.42)
+    If gs < 120 Then gs = 120
+    Set co = ws.ChartObjects.Add(x2 + zw * 0.04, ws.Rows(bas).Top + 50, gs, gs)
+    co.Name = "AKSORA_RP_DM_GRAFIK": co.Placement = xlFreeFloating
+    With co.Chart
+        Do While .SeriesCollection.Count > 0: .SeriesCollection(1).Delete: Loop
+        .ChartType = xlDoughnut
+        Set seri = .SeriesCollection.NewSeries
+        seri.XValues = adlar: seri.Values = oranlar
+        .HasLegend = False: .HasTitle = False
+        .ChartArea.Format.Fill.Visible = msoFalse: .ChartArea.Format.line.Visible = msoFalse
+        .PlotArea.Format.Fill.Visible = msoFalse
+        On Error Resume Next
+        .ChartGroups(1).DoughnutHoleSize = 62
+        seri.Format.line.Visible = msoTrue: seri.Format.line.ForeColor.RGB = RGB(255, 255, 255)
+        For i = 1 To m
+            seri.Points(i).Format.Fill.ForeColor.RGB = renkler((i - 1) Mod 10)
+        Next i
+        On Error GoTo 0
+    End With
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_MERKEZ", "TOPLAM" & vbLf & AKSORA_SAYI_METNI(toplamMk, "#,##0") & vbLf & M_ADET(nM) & " çeþit malzeme", _
+        co.Left + gs * 0.2, co.Top + gs * 0.36, gs * 0.6, gs * 0.28, 10, RGB(12, 45, 79), True, msoAlignCenter)
+    s.TextFrame2.WordWrap = msoTrue
+    ' Lejant: renk, malzeme kodu + kisa tanim, pay
+    lx = co.Left + gs + zw * 0.05: lw = x2 + zw - 14 - lx
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_LISTE_BASLIK", "MALZEME", lx + 16, co.Top - 4, lw - 80, 20, 9, RGB(26, 57, 88), True, msoAlignLeft)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_PAY_BASLIK", "PAY", lx + lw - 60, co.Top - 4, 60, 20, 9, RGB(26, 57, 88), True, msoAlignRight)
+    adim = application.Min(24, (gs - 20) / m)
+    For i = 1 To m
+        satirY = co.Top + 20 + (i - 1) * adim
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, lx, satirY + 4, 10, 10)
+        s.Name = "AKSORA_RP_DM_HALKA_RENK_" & i
+        s.Fill.ForeColor.RGB = renkler((i - 1) Mod 10): s.line.Visible = msoFalse: s.Shadow.Visible = msoFalse
+        s.Placement = xlFreeFloating
+        yazi = adlar(i)
+        If yazi <> "Diðer" Then
+            If Len(CStr(mal(yazi)(0))) > 0 Then yazi = yazi & "  " & Left$(CStr(mal(yazi)(0)), 34)
+        End If
+        Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_HALKA_AD_" & i, yazi, lx + 16, satirY, lw - 80, 18, 9, RGB(35, 56, 78), False, msoAlignLeft)
+        Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_HALKA_PAY_" & i, AKSORA_SAYI_METNI(IIf(toplamMk <> 0, oranlar(i) / toplamMk, 0), "0.0%"), _
+            lx + lw - 60, satirY, 60, 18, 9, RGB(26, 57, 88), True, msoAlignRight)
+    Next i
+    ' Logo bolumun altina
+    For Each s In ws.Shapes
+        If InStr(s.Name, "FILIGRAN") > 0 Then s.Left = sag - s.Width: s.Top = ws.Rows(bas).Top + zh + 8
+    Next s
+End Sub
+
+' Rapor alt bolumundeki depo listesi: secilen deponun malzeme dagilimi gosterilir.
+Public Sub AKSORA_MUSTERI_DAGILIM_SEC()
+    Dim ws As Worksheet, s As Shape, t As String, korumali As Boolean, ev As Boolean, sc As Boolean
+    On Error GoTo Hata
+    Set ws = ActiveSheet
+    Set s = ws.Shapes(CStr(application.Caller))
+    t = CStr(s.ControlFormat.List(s.ControlFormat.Value))
+    If InStr(t, "  -  ") > 0 Then t = Left$(t, InStr(t, "  -  ") - 1)
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False: application.ScreenUpdating = False
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    ws.Range("BX30").Value2 = Trim$(t)
+    M_DEPO_DAGILIM ws
+    M_LEJANT_KARE ws
+Cikis:
+    On Error Resume Next
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Resume Cikis
+End Sub
