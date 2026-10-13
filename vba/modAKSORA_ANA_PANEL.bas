@@ -351,26 +351,18 @@ Private Sub V6_RECT(ByVal ws As Worksheet, ByVal ad As String, _
 End Sub
 
 Public Sub AKSORA_ANA_PANEL_IL_DEGISTIR()
-    Dim k As Worksheet, ev As Boolean
-    ev = application.EnableEvents
+    Dim k As Worksheet, deneme As Long
     On Error GoTo Hata
     Set k = ThisWorkbook.Worksheets("KAPAK")
-    ' Gecis olaylari kapali: baska bir sayfaya (rapor vb.) yonlenmeden dogrudan kapaga gidilir.
-    application.EnableEvents = False
-    k.Visible = xlSheetVisible
-    k.Activate
-    If Not (ActiveSheet Is k) Then k.Activate
-    application.EnableEvents = ev
-    AKSORA_V8_KAPAK_GORUNUM
-    If Not (ActiveSheet Is k) Then
-        application.EnableEvents = False
+    ' Ilk geciste kapak yerine baska bir sayfa acik kalirsa ayni gecis bir kez daha yapilir.
+    For deneme = 1 To 2
+        k.Visible = xlSheetVisible
         k.Activate
-        application.EnableEvents = ev
         AKSORA_V8_KAPAK_GORUNUM
-    End If
+        If ActiveSheet Is k Then Exit For
+    Next deneme
     Exit Sub
 Hata:
-    application.EnableEvents = ev
     MsgBox "Il secimi: " & Err.Description, vbExclamation, "AKSORA"
 End Sub
 
