@@ -4,6 +4,7 @@ Option Explicit
 ' AKSORA - ANA PANEL gorunumu ve kart tasarimi.
 ' SAP, stok, rapor ve mevcut buton OnAction baglantilarina dokunmaz.
 Private Const p As String = "AKSORA15_"
+Public AKSORA_PANEL_CANLI As Boolean
 
 Public Sub AKSORA_ANA_PANEL_UYGULA()
     Dim ws As Worksheet, s As Shape, r As Range
@@ -436,19 +437,12 @@ Public Sub AKSORA_ANA_PANEL_DURUM_RENK_YENILE()
     Set buton = Nothing
     On Error Resume Next
     Set buton = ws.Shapes(p & "IL_DEGISTIR")
-       If Not buton Is Nothing Then
-        With buton
-            .AutoShapeType = msoShapeRectangle
-            .Fill.Solid
-            .Fill.ForeColor.RGB = RGB(0, 110, 70)
-            .Fill.Transparency = 0
-            .line.Visible = msoTrue
-            .line.ForeColor.RGB = RGB(40, 240, 140)
-            .line.Weight = 1.5
-            .Shadow.Visible = msoFalse
-            .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbWhite
+    If Not buton Is Nothing Then
+        With ws.Range("B6:AB6")
+            AKSORA_IL_DEGISTIR_STIL buton, .Left, .Top, .Width, .Height
         End With
     End If
+    V22_KART_SON_SATIR ws
 
     ws.Rows("31:" & ws.Rows.Count).Hidden = True
     ws.Columns("AC:XFD").Hidden = True
@@ -457,3 +451,166 @@ Public Sub AKSORA_ANA_PANEL_DURUM_RENK_YENILE()
 Cikis:
 End Sub
 
+'==========================================================
+' ORTAK PANEL OGELERI (Malzeme + Musteri ayni gorunum)
+'==========================================================
+' Il degistir: seridin sagina oturan, yuvarlak, gradyanli hap dugme.
+Public Sub AKSORA_IL_DEGISTIR_STIL(ByVal dg As Shape, ByVal sol As Double, ByVal ust As Double, _
+    ByVal genislik As Double, ByVal yukseklik As Double)
+    Dim h As Double
+    On Error Resume Next
+    dg.AutoShapeType = msoShapeRoundedRectangle
+    dg.Adjustments.Item(1) = 0.5
+    h = yukseklik - 8
+    If h < 16 Then h = yukseklik
+    dg.Height = h: dg.Width = 196
+    dg.Top = ust + (yukseklik - h) / 2
+    dg.Left = sol + genislik - dg.Width - 10
+    dg.Fill.Visible = msoTrue
+    dg.Fill.TwoColorGradient msoGradientVertical, 1
+    dg.Fill.ForeColor.RGB = RGB(12, 45, 79)
+    dg.Fill.BackColor.RGB = RGB(0, 150, 136)
+    dg.line.Visible = msoTrue: dg.line.ForeColor.RGB = RGB(94, 234, 212): dg.line.Weight = 1
+    dg.Glow.Color.RGB = RGB(45, 212, 191): dg.Glow.Radius = 5: dg.Glow.Transparency = 0.55
+    dg.Shadow.Visible = msoFalse
+    With dg.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
+        .TextRange.Text = ChrW(8644) & "   ÝL DEÐÝÞTÝR"
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10
+        .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .TextRange.Font.Spacing = 0.8
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+    End With
+    dg.ZOrder msoBringToFront
+End Sub
+
+' Kartlarin son satiri: DEPO SAYISI (stok sayfasindaki farkli depo adedi).
+Private Sub V22_KART_SON_SATIR(ByVal ws As Worksheet)
+    Dim kartlar As Variant, stoklar As Variant, i As Long, k As String, adet As Long
+    Dim e3 As Shape, e4 As Shape, d3 As Shape, d4 As Shape, b As Shape
+    kartlar = Array("B", "G", "L", "Q")
+    stoklar = Array("CDP_STOK", "EPP_STOK", "ÝLÇE_STOK", "YÜKLENÝCÝ_STOK")
+    On Error Resume Next
+    For i = 0 To 3
+        k = CStr(kartlar(i))
+        Set e3 = Nothing: Set e4 = Nothing: Set d3 = Nothing: Set d4 = Nothing
+        Set e3 = ws.Shapes(p & "KART_ETIKET_" & k & "3")
+        Set e4 = ws.Shapes(p & "KART_ETIKET_" & k & "4")
+        Set d3 = ws.Shapes(p & "KART_DEGER_" & k & "3")
+        Set d4 = ws.Shapes(p & "KART_DEGER_" & k & "4")
+        If Not e3 Is Nothing And Not e4 Is Nothing And Not d3 Is Nothing Then
+            e3.TextFrame2.TextRange.Text = "STOK DEÐERÝ"
+            e4.Left = e3.Left: e4.Width = e3.Width
+            With e4.TextFrame2.TextRange
+                .Text = "DEPO SAYISI"
+                .ParagraphFormat.Alignment = e3.TextFrame2.TextRange.ParagraphFormat.Alignment
+                .Font.Size = e3.TextFrame2.TextRange.Font.Size
+                .Font.bold = e3.TextFrame2.TextRange.Font.bold
+                .Font.Fill.ForeColor.RGB = e3.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
+            End With
+            If d4 Is Nothing Then
+                Set d4 = d3.Duplicate
+                d4.Name = p & "KART_DEGER_" & k & "4"
+            End If
+            d4.DrawingObject.Formula = ""
+            d4.Left = d3.Left: d4.Width = d3.Width
+            d4.Top = e4.Top: d4.Height = e4.Height
+            adet = V22_DEPO_ADET(CStr(stoklar(i)))
+            d4.TextFrame2.TextRange.Text = IIf(adet > 0, AKSORA_SAYI_METNI(adet, "#,##0"), "-")
+            d4.Visible = msoTrue
+            d4.ZOrder msoBringToFront
+        End If
+    Next i
+    Set b = Nothing: Set b = ws.Shapes(p & "KART_BASLIK_L")
+    If Not b Is Nothing Then b.TextFrame2.TextRange.Text = "ÝLÇELER"
+    Set b = Nothing: Set b = ws.Shapes(p & "KART_BASLIK_Q")
+    If Not b Is Nothing Then b.TextFrame2.TextRange.Text = "YÜKLENÝCÝ"
+    On Error GoTo 0
+End Sub
+
+Private Function V22_DEPO_ADET(ByVal ad As String) As Long
+    Dim sh As Worksheet, son As Long, v As Variant, r As Long, d As Object, t As String
+    On Error GoTo Cikis
+    Set sh = ThisWorkbook.Worksheets(ad)
+    son = sh.Cells(sh.Rows.Count, "G").End(xlUp).Row
+    If son < 7 Then Exit Function
+    v = sh.Range("B7:B" & son).Value2
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    If IsArray(v) Then
+        For r = 1 To UBound(v, 1)
+            If Not IsError(v(r, 1)) Then
+                t = Trim$(CStr(v(r, 1)))
+                If Len(t) > 0 Then d(t) = True
+            End If
+        Next r
+    Else
+        If Len(Trim$(CStr(v))) > 0 Then d(Trim$(CStr(v))) = True
+    End If
+    V22_DEPO_ADET = d.Count
+Cikis:
+End Function
+
+' Guncelleme basladiginda: secilen kartlarin isigi mavi, durum "Guncelleniyor".
+Public Sub AKSORA_PANEL_GUNCELLENIYOR(ByVal gruplar As String)
+    Dim ws As Worksheet, g As Variant, k As String, s As Shape, sc As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ANA PANEL")
+    If ws Is Nothing Then Exit Sub
+    For Each g In Split(gruplar, ",")
+        Select Case CStr(g)
+            Case "CDP": k = "B"
+            Case "EPP": k = "G"
+            Case "ILCE": k = "L"
+            Case Else: k = "Q"
+        End Select
+        ws.Range(CStr(g) & "_DURUM").Cells(1, 1).Value = "GÜNCELLENÝYOR"
+        Set s = Nothing: Set s = ws.Shapes(p & "KART_LED_" & k)
+        If Not s Is Nothing Then
+            s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = RGB(59, 130, 246)
+        End If
+        Set s = Nothing: Set s = ws.Shapes(p & "KART_DEGER_" & k & "0")
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(29, 78, 216)
+    Next g
+    AKSORA_PANEL_CANLI = True
+    AKSORA_PANEL_SERIT "Güncelleniyor  •  SAP baðlantýsý hazýrlanýyor...", True
+    On Error GoTo 0
+End Sub
+
+' Durum seridine anlik mesaj yazar (panel aciksa ekranda hemen gorunur).
+Public Sub AKSORA_PANEL_SERIT(ByVal metin As String, Optional ByVal calisiyor As Boolean = False)
+    Dim ws As Worksheet, sc As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ANA PANEL")
+    If ws Is Nothing Then Exit Sub
+    ws.Range("B6").Value = metin
+    If calisiyor Then
+        ws.Range("B6:AB6").Interior.Color = RGB(219, 234, 254)
+        ws.Range("B6:AB6").Font.Color = RGB(29, 78, 216)
+    End If
+    If ActiveSheet Is ws Then
+        sc = application.ScreenUpdating
+        application.ScreenUpdating = True
+        DoEvents
+        application.ScreenUpdating = sc
+    End If
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_PANEL_SURE_KAYDET(ByVal bas As Double)
+    Dim sn As Double
+    sn = Timer - bas
+    If sn < 0 Then sn = sn + 86400#
+    On Error Resume Next
+    ThisWorkbook.names.Add Name:="_AKSORA_MALZEME_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(sn, 2))), Visible:=False
+    On Error GoTo 0
+End Sub
+
+Public Function AKSORA_PANEL_SON_SURE() As Double
+    Dim t As String
+    On Error Resume Next
+    t = ThisWorkbook.names("_AKSORA_MALZEME_SON_SURE").RefersTo
+    On Error GoTo 0
+    If Len(t) > 1 Then AKSORA_PANEL_SON_SURE = Val(Mid$(t, 2))
+End Function

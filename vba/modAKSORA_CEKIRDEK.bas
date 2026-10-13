@@ -183,9 +183,16 @@ End Function
 ' DURUM ÇUBUÐUNDA MESAJ GÖSTER
 '==========================================================
 Public Sub CORE_DURUM(ByVal mesaj As String)
-
+Static sonYazim As Double
 On Error Resume Next
 application.StatusBar = mesaj
+' Panelden baslatilan guncellemede anlik durum seritte de gorunur.
+If AKSORA_PANEL_CANLI Then
+    If Abs(Timer - sonYazim) >= 0.5 Then
+        sonYazim = Timer
+        AKSORA_PANEL_SERIT "Güncelleniyor  •  " & mesaj
+    End If
+End If
 On Error GoTo 0
 
 End Sub

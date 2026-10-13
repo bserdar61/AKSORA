@@ -974,6 +974,41 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
             M_KART_DURUM ws, k, CStr(Date - Int(tarih)) & " gündür güncellenmedi", RGB(239, 68, 68)
         End If
     Next i
+    ' Kart yazilari Malzeme paneliyle ayni: etiket 8 punto, deger 9 punto kalin.
+    On Error Resume Next
+    For i = 0 To 2
+        k = CStr(kartlar(i))
+        For satir = 0 To 4
+            Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_KART_ETIKET_" & k & CStr(satir))
+            If Not s Is Nothing Then
+                s.TextFrame2.TextRange.Font.Name = "Aptos": s.TextFrame2.TextRange.Font.Size = 8
+                s.TextFrame2.TextRange.Font.bold = msoFalse
+                s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(65, 106, 135)
+            End If
+            Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & CStr(satir))
+            If Not s Is Nothing Then
+                s.TextFrame2.TextRange.Font.Name = "Aptos": s.TextFrame2.TextRange.Font.Size = 9
+                s.TextFrame2.TextRange.Font.bold = msoTrue
+                If satir > 0 Then s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(16, 55, 86)
+            End If
+        Next satir
+        Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_KART_BASLIK_" & k)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 11: s.TextFrame2.TextRange.Font.bold = msoTrue
+    Next i
+    ' Alt bant: kurum adi + panel kontrol zamani.
+    Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_ALT_KURUM")
+    If Not s Is Nothing Then
+        sap = Split(Replace(s.TextFrame2.TextRange.Text, vbCr, vbLf), vbLf)(0)
+        s.TextFrame2.TextRange.Text = sap & vbLf & "Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn:ss")
+        With s.TextFrame2.TextRange.Paragraphs(1).Font
+            .Size = 10: .bold = msoTrue: .Fill.ForeColor.RGB = RGB(255, 255, 255)
+        End With
+        With s.TextFrame2.TextRange.Paragraphs(2).Font
+            .Size = 8: .bold = msoFalse: .Fill.ForeColor.RGB = RGB(190, 214, 232)
+        End With
+        s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    End If
+    On Error GoTo 0
     ' Islem dugmeleri
     makro = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!"
     Set s = M_SEKIL(ws, "btnTumStok")

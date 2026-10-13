@@ -204,47 +204,92 @@ Cikis:
 End Sub
 
 Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
+    Dim bas As Double
     On Error GoTo Hata
+    AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
+    bas = Timer
     ANA_TUM_STOKLARI_GUNCELLE_V2
+    AKSORA_PANEL_SURE_KAYDET bas
+    AKSORA_PANEL_CANLI = False
     PANEL_YENILE
     Exit Sub
 Hata:
+    AKSORA_PANEL_CANLI = False
+    On Error Resume Next
+    PANEL_YENILE
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "Tüm stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_CDP_GUNCELLE()
+    Dim bas As Double
     On Error GoTo Hata
+    AKSORA_PANEL_GUNCELLENIYOR "CDP"
+    bas = Timer
     CDP_STOK_GUNCELLE_V2
+    AKSORA_PANEL_SURE_KAYDET bas
+    AKSORA_PANEL_CANLI = False
     PANEL_YENILE
     Exit Sub
 Hata:
+    AKSORA_PANEL_CANLI = False
+    On Error Resume Next
+    PANEL_YENILE
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "CDP stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_EPP_GUNCELLE()
+    Dim bas As Double
     On Error GoTo Hata
+    AKSORA_PANEL_GUNCELLENIYOR "EPP"
+    bas = Timer
     EPP_STOK_GUNCELLE_V2
+    AKSORA_PANEL_SURE_KAYDET bas
+    AKSORA_PANEL_CANLI = False
     PANEL_YENILE
     Exit Sub
 Hata:
+    AKSORA_PANEL_CANLI = False
+    On Error Resume Next
+    PANEL_YENILE
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "EPP stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_ILCE_GUNCELLE()
+    Dim bas As Double
     On Error GoTo Hata
+    AKSORA_PANEL_GUNCELLENIYOR "ILCE"
+    bas = Timer
     ILCE_STOK_GUNCELLE_V2
+    AKSORA_PANEL_SURE_KAYDET bas
+    AKSORA_PANEL_CANLI = False
     PANEL_YENILE
     Exit Sub
 Hata:
+    AKSORA_PANEL_CANLI = False
+    On Error Resume Next
+    PANEL_YENILE
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "Ýlçe stok güncelleme", Err.Number, Err.Description
 End Sub
 
 Public Sub PANEL_YUKLENICI_GUNCELLE()
+    Dim bas As Double
     On Error GoTo Hata
+    AKSORA_PANEL_GUNCELLENIYOR "YUK"
+    bas = Timer
     YUKLENICI_STOK_GUNCELLE_V2
+    AKSORA_PANEL_SURE_KAYDET bas
+    AKSORA_PANEL_CANLI = False
     PANEL_YENILE
     Exit Sub
 Hata:
+    AKSORA_PANEL_CANLI = False
+    On Error Resume Next
+    PANEL_YENILE
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "Yüklenici stok güncelleme", Err.Number, Err.Description
 End Sub
 
@@ -988,19 +1033,32 @@ ByVal ws As Worksheet)
         (StrComp(IlceDurum, "GÜNCEL", vbTextCompare) = 0) And _
         (StrComp(YukDurum, "GÜNCEL", vbTextCompare) = 0)
 
+    ' Musteri panelindeki gibi: tarih, sure, grup satirlari ve toplam deger.
+    Dim enSon As Date, tv As Variant, sayfa As Variant, sure As Double, ozet As String
+    For Each sayfa In Array("CDP_STOK", "EPP_STOK", "ÝLÇE_STOK", "YÜKLENÝCÝ_STOK")
+        tv = Empty
+        On Error Resume Next
+        tv = ThisWorkbook.Worksheets(CStr(sayfa)).Range("C2").Value
+        On Error GoTo Hata
+        If IsDate(tv) Then
+            If CDate(tv) > enSon Then enSon = CDate(tv)
+        End If
+    Next sayfa
+    If enSon > 0 Then ozet = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") Else ozet = "Henüz SAP güncellemesi yapýlmadý"
+    sure = AKSORA_PANEL_SON_SURE()
+    If sure > 0 Then ozet = ozet & "   |   Güncelleme süresi " & AKSORA_SAYI_METNI(sure, "0.00") & " sn"
+    ozet = ozet & "   |   CDP " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("CDP_STOK", "C3"), 0) & " satýr" & _
+        "   |   EPP " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("EPP_STOK", "C3"), 0) & " satýr" & _
+        "   |   Ýlçe " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("ÝLÇE_STOK", "C3"), 0) & " satýr" & _
+        "   |   Yüklenici " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("YÜKLENÝCÝ_STOK", "C3"), 0) & " satýr" & _
+        "   |   Toplam stok deðeri " & PANEL_SAYI_TR(toplamDeger, 2) & " TL"
     With ws.Range("B6")
         If TumGuncel Then
-            .Value = _
-                "TÜM STOK GRUPLARI GÜNCEL   |   " & _
-                PANEL_SAYI_TR(ToplamSatir, 0) & " SATIR   |   " & _
-                PANEL_SAYI_TR(toplamDeger, 2) & " TL"
+            .Value = ozet
             .Interior.Color = RGB(226, 239, 218)
             .Font.Color = RGB(40, 110, 65)
         Else
-            .Value = _
-                "KONTROL GEREKÝYOR   |   " & _
-                PANEL_SAYI_TR(ToplamSatir, 0) & " SATIR   |   " & _
-                PANEL_SAYI_TR(toplamDeger, 2) & " TL"
+            .Value = "Kontrol gerekiyor  •  " & ozet
             .Interior.Color = RGB(255, 235, 210)
             .Font.Color = RGB(170, 90, 20)
         End If

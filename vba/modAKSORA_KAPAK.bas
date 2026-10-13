@@ -556,6 +556,19 @@ Public Sub AKSORA_V8_GIRIS()
 
 Cikis:
 
+    ' Il secimi sonrasi her zaman ana panelde (veya basarisizsa kapakta) kalinir;
+    ' gecis sirasinda acilan rapor/stok sayfasinda kalinmaz.
+    On Error Resume Next
+    If ActiveSheet.Name <> "ANA PANEL" Then
+        If AKSORA_GIRIS_ACIK And AKSORA_CANLI_STOK_IL() = AKSORA_AKTIF_IL() Then
+            ThisWorkbook.Worksheets("ANA PANEL").Select Replace:=True
+            AKSORA_V13_GORUNUM ThisWorkbook.Worksheets("ANA PANEL")
+        Else
+            ThisWorkbook.Worksheets("KAPAK").Activate
+        End If
+    End If
+    On Error GoTo 0
+
     AKSORA_V13_GECIS = False
 
 

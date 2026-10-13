@@ -466,6 +466,7 @@ Temizle:
     application.StatusBar = False: application.DisplayStatusBar = True
     ANA_SESSIZ_MOD = sessiz: AKSORA_V11_MESGUL = False
     If basladi Then mAK14Toplam = AK14_GECEN_SURE(toplamBas)
+    If basladi And Len(Hata) = 0 Then AKSORA_PANEL_SURE_KAYDET toplamBas
     If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
     mTopluSaatAktif = False
     On Error GoTo 0

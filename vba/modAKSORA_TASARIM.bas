@@ -773,7 +773,10 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         End If
     Next ad
     Set s = T_Sekil(ws, "AKSORA15_IL_DEGISTIR")
-    If Not s Is Nothing Then T_Buton s, RGB(0, 110, 74), vbWhite, 10
+    If Not s Is Nothing Then
+        Set r = ws.Range("B6:AB6")
+        AKSORA_IL_DEGISTIR_STIL s, r.Left, r.Top, r.Width, r.Height
+    End If
 End Sub
 
 Public Sub AKSORA_KAPAK_GENISLIK_UYUM(ByVal ws As Worksheet, ByVal wn As Window)
