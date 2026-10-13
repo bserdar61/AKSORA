@@ -682,7 +682,38 @@ SonrakiGrafik:
         On Error GoTo 0
     End If
     M_LEJANT_KARE ws
+    M_ROZET ws
     M_DEPO_DAGILIM ws
+End Sub
+
+' Rapor kartlarindaki 01/02/03 rozetleri: ayni genislik, tek satir, ortali (rakam kesilmez).
+Private Sub M_ROZET(ByVal ws As Worksheet)
+    Dim s As Shape, t As String, w As Double, cx As Double
+    On Error Resume Next
+    For Each s In ws.Shapes
+        If InStr(s.Name, "_NO_") > 0 Or InStr(s.Name, "_IKON_") > 0 Then
+            t = M_METIN(s)
+            If t = "01" Or t = "02" Or t = "03" Then w = application.Max(w, s.Width)
+        End If
+    Next s
+    If w <= 0 Then Exit Sub
+    w = application.Max(w, 40)
+    For Each s In ws.Shapes
+        If InStr(s.Name, "_NO_") > 0 Or InStr(s.Name, "_IKON_") > 0 Then
+            t = M_METIN(s)
+            If t = "01" Or t = "02" Or t = "03" Then
+                cx = s.Left + s.Width / 2
+                s.Width = w: s.Left = cx - w / 2
+                With s.TextFrame2
+                    .WordWrap = msoFalse
+                    .MarginLeft = 0: .MarginRight = 0
+                    .VerticalAnchor = msoAnchorMiddle
+                    .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+                End With
+            End If
+        End If
+    Next s
+    On Error GoTo 0
 End Sub
 
 ' Halka grafik listesindeki renk kareleri: hepsi ayni boyutta kare, ayni sol cizgide,
@@ -1387,7 +1418,7 @@ End Function
 
 Private Function M_IMZA(ByVal ws As Worksheet) As String
     Dim t As String, wsF As Worksheet
-    t = "IMZA_V2|" & ws.Name
+    t = "IMZA_V3|" & ws.Name
     Select Case ws.Name
         Case "M_CDP_STOK", "M_CDP_RAPOR": t = t & M_KAYNAK_IMZA("M_CDP_STOK")
         Case "M_ÝLÇE_STOK", "M_ÝLÇE_RAPOR": t = t & M_KAYNAK_IMZA("M_ÝLÇE_STOK")
@@ -1443,7 +1474,7 @@ Private Function M_SON_KOLON(ByVal ad As String) As Long
 End Function
 
 Private Function M_DUZEN_IMZA(ByVal ws As Worksheet, ByVal pn As Window) As String
-    M_DUZEN_IMZA = "DUZEN_V2|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
+    M_DUZEN_IMZA = "DUZEN_V3|" & Format$(pn.UsableWidth, "0.0") & "|" & Format$(pn.UsableHeight, "0.0") & "|" & _
         CStr(pn.Zoom) & "|" & CStr(ws.Range("BX11").Value2)
 End Function
 
@@ -1697,6 +1728,7 @@ Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     If Not s Is Nothing Then s.Left = 0: s.Width = tw
     M_DEPO_DAGILIM ws
     M_LEJANT_KARE ws
+    M_ROZET ws
 End Sub
 
 Private Sub M_DUZEN_ARAMA(ByVal ws As Worksheet, ByVal w As Double)
@@ -1813,7 +1845,25 @@ Private Function M_DM_KOD(ByVal v As Variant) As String
     M_DM_KOD = t
 End Function
 
+' Bolum kurulamazsa rapor bozulmaz; hata metni bolum yerinde gorunur.
 Private Sub M_DEPO_DAGILIM(ByVal ws As Worksheet)
+    Dim no As Long, metin As String, y As Double, s As Shape
+    On Error Resume Next
+    Err.Clear
+    M_DEPO_DAGILIM_KUR ws
+    no = Err.Number: metin = Err.Description
+    On Error GoTo 0
+    If no = 0 Then Exit Sub
+    On Error Resume Next
+    ws.Shapes("AKSORA_RP_DM_HATA").Delete
+    Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
+    If Not s Is Nothing Then y = s.Top + s.Height + 20 Else y = 500
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_HATA", "Depo bazýnda malzeme daðýlýmý kurulamadý: Hata " & no & " - " & metin, _
+        2, y, 700, 20, 9, RGB(153, 27, 27), True, msoAlignLeft)
+    On Error GoTo 0
+End Sub
+
+Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     Dim kaynak As Worksheet, son As Long, veri As Variant, r As Long, i As Long, j As Long, t As Long
     Dim dep As Object, mal As Object, k As Variant, v As Variant, dp As String, mk As String
     Dim secim As String, enCok As Double, miktar As Double, deger As Double
