@@ -213,6 +213,7 @@ End Sub
 Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
     Dim bas As Double
     On Error GoTo Hata
+    AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
     bas = Timer
     ANA_TUM_STOKLARI_GUNCELLE_V2
@@ -231,6 +232,7 @@ End Sub
 Public Sub PANEL_CDP_GUNCELLE()
     Dim bas As Double
     On Error GoTo Hata
+    AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP"
     bas = Timer
     CDP_STOK_GUNCELLE_V2
@@ -249,6 +251,7 @@ End Sub
 Public Sub PANEL_EPP_GUNCELLE()
     Dim bas As Double
     On Error GoTo Hata
+    AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "EPP"
     bas = Timer
     EPP_STOK_GUNCELLE_V2
@@ -267,6 +270,7 @@ End Sub
 Public Sub PANEL_ILCE_GUNCELLE()
     Dim bas As Double
     On Error GoTo Hata
+    AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "ILCE"
     bas = Timer
     ILCE_STOK_GUNCELLE_V2
@@ -285,6 +289,7 @@ End Sub
 Public Sub PANEL_YUKLENICI_GUNCELLE()
     Dim bas As Double
     On Error GoTo Hata
+    AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "YUK"
     bas = Timer
     YUKLENICI_STOK_GUNCELLE_V2

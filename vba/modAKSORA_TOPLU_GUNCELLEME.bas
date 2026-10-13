@@ -13,6 +13,8 @@ Private Const PARA As String = "#,##0.00 ""TL"""
 Private Const miktar As String = "#,##0"
 Private mHzVeri(1 To 2) As Variant
 Private mHzHazir(1 To 2) As Boolean
+Private mHzIl(1 To 2) As String
+Private mHzZaman(1 To 2) As Double
 
 Public Sub AKSORA_V11_ESKI_KONTROL_SIL()
     Dim ws As Worksheet
@@ -457,9 +459,11 @@ Temizle:
     If basladi Then
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
         AKSORA_V12_BUTON_RENK
-        sayfa.Activate
+        ' Islem bitince dugmeye basilan ilin ana paneli acilir.
+        Set sayfa = ThisWorkbook.Worksheets("ANA PANEL")
+        sayfa.Visible = xlSheetVisible
+        sayfa.Select Replace:=True
         AKSORA_V13_GORUNUM sayfa
-        ActiveWindow.ScrollRow = satir: ActiveWindow.ScrollColumn = sutun
     End If
     application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = sc
@@ -852,7 +856,45 @@ End Function
 Public Sub AKHZ_TEMIZLE()
     mHzVeri(1) = Empty: mHzVeri(2) = Empty
     mHzHazir(1) = False: mHzHazir(2) = False
+    mHzIl(1) = vbNullString: mHzIl(2) = vbNullString
 End Sub
+
+' Tek il guncellemesi (panel ve stok sayfasi dugmeleri): sistem basina ilin MB52 listesi
+' bir kez metin olarak alinir, CDP/EPP normal-ilce-yuklenici adimlari bellekten dilimlenir.
+' False donerse cagiran fonksiyon eski yontemle devam eder.
+Public Function AKHZ_TEK_AL(ByVal adim As Long, ByRef veri As Variant, ByRef satir As Long, _
+    ByRef sutun As Long, ByRef hataMetni As String) As Boolean
+    Dim il As String, i As Long, sistem As String, v As Variant, mesaj As String, gecen As Double
+    On Error GoTo Hata
+    il = AKSORA_AKTIF_IL()
+    i = IIf(adim Mod 2 = 1, 1, 2)
+    sistem = IIf(i = 1, "CDP", "EPP")
+    If mHzHazir(i) And mHzIl(i) = "*" Then
+        AKHZ_TEK_AL = (AKHZ_VERI(adim, il, veri, satir, sutun, hataMetni) = 1)
+        Exit Function
+    End If
+    gecen = Timer - mHzZaman(i)
+    If gecen < 0 Then gecen = gecen + 86400#
+    ' Ayni il icin az once basarisiz olduysa tekrar denenmez (eski yontem).
+    If mHzIl(i) = "X:" & il And gecen < 180 Then Exit Function
+    If Not (mHzHazir(i) And mHzIl(i) = il And gecen < 180) Then
+        mHzHazir(i) = False
+        CORE_DURUM sistem & " | " & il & " stoklarý SAP'den tek sorguda alýnýyor..."
+        v = AKHZ_SISTEM_OKU(sistem, mesaj, AKSORA_IL_TESIS(il, sistem))
+        mHzZaman(i) = Timer
+        If Not IsArray(v) Then
+            mHzIl(i) = "X:" & il
+            AKSORA_SAP_TESHIS_YAZ "Tek il hýzlý okuma | " & il & " " & sistem & " | olmadý: " & mesaj
+            Exit Function
+        End If
+        mHzVeri(i) = v: mHzHazir(i) = True: mHzIl(i) = il
+        AKSORA_SAP_TESHIS_YAZ "Tek il hýzlý okuma | " & il & " " & sistem & " | tamam (" & UBound(v, 1) & " satýr)"
+    End If
+    AKHZ_TEK_AL = (AKHZ_VERI(adim, il, veri, satir, sutun, hataMetni) = 1)
+    Exit Function
+Hata:
+    AKHZ_TEK_AL = False
+End Function
 
 Public Function AKHZ_ON_YUKLE() As String
     Dim i As Long, sistem As String, v As Variant, mesaj As String, sonuc As String, bas As Double
@@ -863,7 +905,7 @@ Public Function AKHZ_ON_YUKLE() As String
         AK11_DURUM sistem & " | Beþ ilin stoklarý tek seferde alýnýyor..."
         v = AKHZ_SISTEM_OKU(sistem, mesaj)
         If IsArray(v) Then
-            mHzVeri(i) = v: mHzHazir(i) = True
+            mHzVeri(i) = v: mHzHazir(i) = True: mHzIl(i) = "*"
             sonuc = sonuc & sistem & ": 5 il tek sorguda alýndý (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(bas), "0.0") & " sn)" & vbCrLf
         Else
             sonuc = sonuc & sistem & ": hýzlý okuma yapýlamadý, il il okundu (" & mesaj & ")" & vbCrLf
@@ -926,7 +968,8 @@ Hata:
     If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
 End Function
 
-Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String) As Variant
+Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, _
+    Optional ByVal tekTesis As String = "") As Variant
     Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long
     Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long, kayma As Long, adet As Long, t As String
     On Error GoTo Hata
@@ -934,8 +977,13 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String) 
     If ses Is Nothing Then mesaj = "SAP oturumu bulunamadý " & h: Exit Function
     ses.StartTransaction "MB52"
     AKHZ_BEKLE 0.3
-    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = AKSORA_IL_TESIS("RIZE", sistem)
-    ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = AKSORA_IL_TESIS("ARTVIN", sistem)
+    If Len(tekTesis) > 0 Then
+        ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = tekTesis
+        ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = vbNullString
+    Else
+        ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = AKSORA_IL_TESIS("RIZE", sistem)
+        ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = AKSORA_IL_TESIS("ARTVIN", sistem)
+    End If
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
     ses.FindById("wnd[0]").SendVKey 0

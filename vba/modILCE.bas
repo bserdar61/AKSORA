@@ -1274,6 +1274,8 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
     satir = 0: sutun = 0: sure = 0: Hata = vbNullString
         uy = ILCE_CDP_UY()
     t = Timer
+    ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
+    If AKHZ_TEK_AL(3, veri, satir, sutun, Hata) Then ILCE_CDP_BLOK_AL = True: Exit Function
     Set ses = SAP_SESSION_AL("CDP", Hata)
     If ses Is Nothing Then Err.Raise vbObjectError + 870, , "SAP oturumu bulunamadi: " & Hata
     ses.StartTransaction "MB52"
@@ -1484,6 +1486,8 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
     satir = 0: sutun = 0: sure = 0: Hata = vbNullString
         uy = ILCE_EPP_UY()
     t = Timer
+    ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
+    If AKHZ_TEK_AL(4, veri, satir, sutun, Hata) Then ILCE_EPP_BLOK_AL = True: Exit Function
     Set ses = SAP_SESSION_AL("EPP", Hata)
     If ses Is Nothing Then Err.Raise vbObjectError + 870, , "SAP oturumu bulunamadi: " & Hata
     ses.StartTransaction "MB52"

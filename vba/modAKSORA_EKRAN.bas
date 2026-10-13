@@ -86,6 +86,14 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
             AKSORA_RAPOR_AMBLEM_HIZALA ws.Name
     End Select
     AKSORA_TASARIM_SAYFA ws
+    ' Tasarimli stok/rapor sayfalarinda zoom ve tam genislik tasarim adiminda ayarlandi.
+    If AKSORA_TASARIM_AKTIF() Then
+        Select Case ad
+            Case "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK", _
+                 "CDP_RAPOR", "EPP_RAPOR", "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR"
+                GoTo Cikis
+        End Select
+    End If
     Set alan = ws.Range(adres)
     alan.Select
     wn.Zoom = True

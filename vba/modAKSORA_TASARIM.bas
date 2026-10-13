@@ -290,6 +290,8 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     Dim sag As Double, bw As Double, adet As Long, ad As String
     Dim depoListe As String, depoKontrol As Object, di As Long
     ' Veri baslangici 7. satirda kalir. Gizlenen 3-5 satirlardaki kaynaklar korunur.
+    ' Tablo pencereye tam oturur (son sutun pencere kenarina kadar uzar).
+    T_TamGenislik ws, 12
     ws.Rows(1).RowHeight = 32: ws.Rows(2).RowHeight = 46
     ws.Rows("3:5").Hidden = True: ws.Rows(6).RowHeight = 25
     ws.Range("A1:L2").Interior.Color = RGB(237, 248, 255)
@@ -309,6 +311,12 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
         .WrapText = False: .ShrinkToFit = True
     End With
+    ' Musteri stok sayfasindaki gibi acik basliklar.
+    basliklar = Array("Üretim Yeri", "Depo", "Depo Adý", "Mal Grubu", "Mal Grubu Tanýmý", "Deðerleme Türü", _
+        "Malzeme", "Malzeme Tanýmý", "Miktar", "Birim", "Deðer (TL)", "Birim Fiyat (TL)")
+    For k = 0 To 11
+        If CStr(ws.Cells(6, k + 1).Value2) <> CStr(basliklar(k)) Then ws.Cells(6, k + 1).Value2 = basliklar(k)
+    Next k
     w = ws.Range("A1:L1").Width: y = ws.Rows(1).Top
     Set s = T_Dik(ws, AKT_PREFIX & "STOK_BASLIK_ZEMIN", 0, y, w, 32, RGB(12, 45, 79))
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_MARKA", "AKSORA", 12, y + 3, 102, 26, 20, vbWhite, True, msoAlignLeft)
@@ -320,13 +328,13 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     h = ws.Rows(2).Height: y = ws.Rows(2).Top
     ' Kaynak hucreler ve formule bagli canli degerler korunur.
     ' Kesintisiz zemin, kart aralarinda C2 tarihinin sizmasini engeller.
-    Set s = T_Dik(ws, AKT_PREFIX & "STOK_KPI_ALT_ZEMIN", ws.Range("A2:F2").Left, y, _
-        ws.Range("A2:F2").Width, h, RGB(230, 240, 247))
+    Set s = T_Dik(ws, AKT_PREFIX & "STOK_KPI_ALT_ZEMIN", 0, y, w, h, RGB(230, 240, 247))
     ' Numara bloklari bu tasarimda kullanilmaz.
     For k = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(k).Name, Len(AKT_PREFIX & "STOK_KPI_NO")) = AKT_PREFIX & "STOK_KPI_NO" Then ws.Shapes(k).Delete
     Next k
-    bw = ws.Range("A2:F2").Width / 3
+    ' Kartlar tablo genisligine esit yayilir (Stoklar: 3 kart, digerleri: 3 kart + depo karti).
+    bw = w / IIf(AKFIX_NORMAL(ws.Name) = "STOKLAR", 3, 4)
     For k = 0 To 2
         x = k * bw
         Set s = T_Dik(ws, AKT_PREFIX & "STOK_KPI_ZEMIN_" & k, x + 2, y + 3, bw - 5, h - 6, RGB(232, 243, 252))
@@ -355,7 +363,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
         ws.Range("H2").Validation.InCellDropdown = False
         ws.Range("H2").NumberFormat = ";;;"
         ws.Range("G2").Font.Color = RGB(235, 243, 249)
-        x = ws.Range("G2").Left: bw = ws.Range("A2:F2").Width / 3
+        bw = w / 4: x = 3 * bw
         For k = ws.Shapes.Count To 1 Step -1
             If Left$(ws.Shapes(k).Name, Len(AKT_PREFIX & "DEPO_KART_")) = AKT_PREFIX & "DEPO_KART_" Then ws.Shapes(k).Delete
         Next k
@@ -430,6 +438,7 @@ Private Sub T_RaporYap(ByVal ws As Worksheet)
     Dim i As Long, x As Double, y As Double, w As Double, h As Double
     Dim kod As String, son As Long, c As Long
     If AKFIX_NORMAL(ws.Name) = "CDP_RAPOR" Then p = "AKSORA_CDP_V1_" Else p = "AKSORA_RP_"
+    T_TamGenislik ws, 20
     ws.Rows("1:2").RowHeight = 19: ws.Rows("3:6").RowHeight = 17
     ws.Rows(7).RowHeight = 8: ws.Rows(8).RowHeight = 30
     Set r = ws.Range("A1:T2")
@@ -483,6 +492,48 @@ Private Sub T_RaporYap(ByVal ws As Worksheet)
     End If
     T_RaporGrafikSinirla ws
     T_RaporLogo ws
+    ' Musteri rapor duzeni: tablo basliklari, kartlar tablo ve grafik hizasinda, sag kenara kadar.
+    For i = 1 To 5
+        Select Case Trim$(CStr(ws.Cells(8, i).Value2))
+            Case "Depo yeri": ws.Cells(8, i).Value2 = "Depo"
+            Case "Depo yeri tanýmý": ws.Cells(8, i).Value2 = "Depo Adý"
+        End Select
+    Next i
+    AKSORA_RAPOR_HIZALA ws, ws.Range("A1:T1").Width
+End Sub
+
+' Son sutun, pencere genisligi tam dolacak kadar genisletilir; zoom tam sayiya ayarlanir.
+Private Sub T_TamGenislik(ByVal ws As Worksheet, ByVal sonKol As Long)
+    Dim wn As Window, kol As Range, ad As String, taban As Double, w As Double, z As Double, ek As Double, t As String
+    On Error GoTo Cikis
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    Set wn = ActiveWindow
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    Set kol = ws.Columns(sonKol)
+    ad = "_AKS_TABAN_" & ws.CodeName
+    On Error Resume Next
+    t = ThisWorkbook.names(ad).RefersTo
+    On Error GoTo Cikis
+    If Len(t) > 1 Then
+        taban = Val(Mid$(t, 2))
+    Else
+        taban = kol.ColumnWidth
+        ThisWorkbook.names.Add Name:=ad, RefersTo:="=" & Trim$(Str$(taban)), Visible:=False
+    End If
+    If taban <= 0 Then Exit Sub
+    If kol.ColumnWidth <> taban Then kol.ColumnWidth = taban
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    If w <= 0 Then Exit Sub
+    z = Fix((wn.UsableWidth - 1) / w * 100)
+    If z < 10 Then z = 10
+    If z > 400 Then z = 400
+    If wn.Zoom <> z Then wn.Zoom = z
+    ek = wn.UsableWidth * 100 / z - w - 1
+    If ek > 0.5 And kol.Width > 0 Then
+        If kol.ColumnWidth * (kol.Width + ek) / kol.Width < 255 Then kol.ColumnWidth = kol.ColumnWidth * (kol.Width + ek) / kol.Width
+    End If
+Cikis:
 End Sub
 
 Public Sub AKSORA_TASARIM_RAPOR_LOGO(ByVal ws As Worksheet)

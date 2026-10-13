@@ -1506,9 +1506,14 @@ End Sub
 Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     Dim s As Shape, z As Shape, a As Shape, kartlar(0 To 2) As Object, i As Long
     Dim tw As Double, x2 As Double, sag As Double, g As Double, cw As Double, k As Double
-    Dim oL As Double, nL As Double, nW As Double, cx As Double
+    Dim oL As Double, nL As Double, nW As Double, cx As Double, kolSay As Long
     Dim sol(0 To 2) As Double, gen(0 To 2) As Double
-    tw = ws.Range("A1:E1").Width
+    ' Tablo genisligi 8. satirdaki baslik sayisindan bulunur (4 veya 5 sutun).
+    For i = 1 To 5
+        If Len(Trim$(CStr(ws.Cells(8, i).Value2))) > 0 Then kolSay = i
+    Next i
+    If kolSay < 4 Then kolSay = 5
+    tw = ws.Range(ws.Cells(1, 1), ws.Cells(1, kolSay)).Width
     g = 12: sag = w - 2: x2 = tw + g
     M_YATAY ws, "AKT1_RAPOR_UST_ZEMIN", 0, w
     Set a = M_SEKIL(ws, "btnAnaPanelDon")
@@ -1614,5 +1619,12 @@ Public Sub AKSORA_MUSTERI_SECIM_BASA(ByVal ws As Worksheet)
         Case Else: ws.Range("A1").Select
     End Select
     application.EnableEvents = ev
+    On Error GoTo 0
+End Sub
+
+' Malzeme birimi raporlari da Musteri rapor duzenini kullanir.
+Public Sub AKSORA_RAPOR_HIZALA(ByVal ws As Worksheet, ByVal w As Double)
+    On Error Resume Next
+    M_DUZEN_RAPOR ws, w
     On Error GoTo 0
 End Sub

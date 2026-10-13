@@ -312,6 +312,8 @@ End If
                 ExportSuresi = 0
                 hataMesaji = vbNullString
                 baslangic = Timer
+                ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
+                If AKHZ_TEK_AL(2, VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then EPP_V2_EXPORT_AL_OZEL = True: Exit Function
 
                 Set SAPSession = SAP_SESSION_AL(EPP_SISTEM)
 

@@ -896,6 +896,8 @@ HedefSatir = HedefSatir + 1
     mevcutSayi = application.WorksheetFunction.CountA(ws.Range("A7:A" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row))
     mevcut = application.WorksheetFunction.Sum(ws.Range("K7:K" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row))
     t = Timer
+    ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
+    If AKHZ_TEK_AL(1, VeriDizisi, VeriSatiri, SutunSayisi, hataMesaji) Then CDP_V2_30_BLOK_AL = True: Exit Function
 
     Set ses = SAP_SESSION_AL("CDP", hataMetni)
     If ses Is Nothing Then Err.Raise vbObjectError + 801, , "CDP SAP oturumu bulunamadi: " & hataMetni
