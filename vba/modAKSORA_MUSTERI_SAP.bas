@@ -1475,6 +1475,13 @@ Private Function MS_Hedef(ByVal depo As String) As Long
             Case "M090", "M132", "M501", "M502", "M503", "M504", "M505", "M506", "M507", "M508", "M509", "M510", "M511"
                 MS_Hedef = 3: Exit Function
         End Select
+    ElseIf MS_IlKod() = "GIRESUN" Then
+        ' 7154 Giresun: CDP D003 D005 D008 D012 P001 Z003 Z007 + E###;
+        ' Ilce K### (3 mal grubu); Yuklenici M031 M132 M501-M505.
+        Select Case depo
+            Case "D003", "D005", "D008", "D012", "P001", "Z003", "Z007": MS_Hedef = 1: Exit Function
+            Case "M031", "M132", "M501", "M502", "M503", "M504", "M505": MS_Hedef = 3: Exit Function
+        End Select
     ElseIf MS_IlKod() = "GUMUSHANE" Then
         ' 7153 Gumushane: CDP D003 D005 D008 D015 Z003 + E###;
         ' Ilce K### (3 mal grubu); Yuklenici M132 M501 M502.
@@ -1726,7 +1733,7 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
     AKSORA_MUSTERI_ARAMA_TARIH_YENILE
     application.ScreenUpdating = sc
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlandý  •  " & AKSORA_MUSTERI_OZET(), 2
-    bilgi = MS_IlKod() & ": güncellendi (" & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn)"
+    bilgi = MS_IlAdi() & ": güncellendi (" & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn)"
     MS_CEKIRDEK = True
     If Not sessiz Then MsgBox "Müþteri " & MS_Tesis() & " güncellendi." & vbCrLf & vbCrLf & _
         "CDP stok satýrý: " & AKSORA_SAYI_METNI(adet(1), "#,##0") & vbCrLf & _
@@ -1762,7 +1769,7 @@ Hata:
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
-    bilgi = MS_IlKod() & ": güncellenemedi; " & Replace(hMesaj, vbCrLf, " ")
+    bilgi = MS_IlAdi() & ": güncellenemedi; " & Replace(hMesaj, vbCrLf, " ")
     If Not sessiz Then MsgBox "Aktarým tamamlanamadý: " & hMesaj, vbExclamation, "AKSORA"
     Resume Cikis
 End Function
@@ -2208,6 +2215,16 @@ Private Function MS_IlKod() As String
     MS_IlKod = mIlKod
 End Function
 
+Private Function MS_IlAdi() As String
+    Select Case MS_IlKod()
+        Case "RIZE": MS_IlAdi = "RÝZE"
+        Case "TRABZON": MS_IlAdi = "TRABZON"
+        Case "GUMUSHANE": MS_IlAdi = "GÜMÜÞHANE"
+        Case "GIRESUN": MS_IlAdi = "GÝRESUN"
+        Case Else: MS_IlAdi = "ARTVÝN"
+    End Select
+End Function
+
 Private Function MS_Tesis() As String
     Select Case MS_IlKod()
         Case "RIZE": MS_Tesis = "7151"
@@ -2226,12 +2243,12 @@ End Function
 ' Musteri biriminde depo tanimi yapilmis iller.
 Public Function AKSORA_MUSTERI_IL_DESTEK(ByVal il As String) As Boolean
     Select Case UCase$(Trim$(il))
-        Case "ARTVIN", "TRABZON", "GUMUSHANE": AKSORA_MUSTERI_IL_DESTEK = True
+        Case "ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN": AKSORA_MUSTERI_IL_DESTEK = True
     End Select
 End Function
 
 Public Function AKSORA_MUSTERI_ILLER() As Variant
-    AKSORA_MUSTERI_ILLER = Array("ARTVIN", "TRABZON", "GUMUSHANE")
+    AKSORA_MUSTERI_ILLER = Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN")
 End Function
 
 Private Function MS_ArsivSayfa(ByVal il As String, ByVal i As Long, ByVal olustur As Boolean) As Worksheet

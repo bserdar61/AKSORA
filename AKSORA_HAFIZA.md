@@ -52,6 +52,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 | Artvin | 7155 | E###, D003, D005, S001, Z002, Z003, Z007, EM14 | K### (yalnız M03550000/M03550100/M03250000) | M132 |
 | Trabzon (onaylı) | 7152 | E###, D003, D005, D006, D012, P001–P003, S001, Z002, Z003 | K### (aynı 3 mal grubu) | M090, M132, M501–M511 |
 | Gümüşhane (onaylı) | 7153 | E###, D003, D005, D008, D015, Z003 | K### (aynı 3 mal grubu) | M132, M501, M502 |
+| Giresun | 7154 | E###, D003, D005, D008, D012, P001, Z003, Z007 | K### (aynı 3 mal grubu) | M031, M132, M501–M505 |
 
 - Motor il bazlıdır: tesis `MS_Tesis()`, depo eşlemesi `MS_Hedef` (il'e göre), desteklenen iller
   `AKSORA_MUSTERI_IL_DESTEK` / `AKSORA_MUSTERI_ILLER`. Yeni il = bu üç yere ekleme.
@@ -65,7 +66,6 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Depo listesi (form açılır liste) tüm satırları açar (tekerlek kaydırmaz); sayfa her açılışta yeniden yerleştirilir.
 
 ## Sıradaki işler
-- Toplu özet ve mesajlarda il adları Türkçe yazılsın (GUMUSHANE → GÜMÜŞHANE).
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
   "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.
   Bir sonraki güncellemede tüm birimlere (Malzeme dahil) birebir aynı görsel ve sistemle eklenecek.
