@@ -1404,7 +1404,7 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
             Err.Raise vbObjectError + 875, , "Satir dogrulanamadi: " & (i + 1)
 KAYDET:
             depo = UCase$(Trim$(CStr(ham(i + 1, 2))))
-            If Not (Len(depo) = 4 And Left$(depo, 1) = "K" And depo >= "K001" And depo <= "K999") Then
+            If Not AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
                 Err.Raise vbObjectError + 876, , "Beklenmeyen depo: " & depo
             End If
             stok = stok + 1
@@ -1616,7 +1616,7 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
             Err.Raise vbObjectError + 875, , "Satir dogrulanamadi: " & (i + 1)
 KAYDET:
             depo = UCase$(Trim$(CStr(ham(i + 1, 2))))
-            If Not (Len(depo) = 4 And Left$(depo, 1) = "K" And depo >= "K001" And depo <= "K999") Then
+            If Not AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
                 Err.Raise vbObjectError + 876, , "Beklenmeyen depo: " & depo
             End If
             stok = stok + 1

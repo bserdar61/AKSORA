@@ -169,7 +169,7 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
     If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
     Set ws = BIRIM_SAYFA(HUB)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 7 Then BIRIM_CIZ ws, ""
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 8 Then BIRIM_CIZ ws, ""
     ws.Visible = xlSheetVisible
     ws.Move Before:=ThisWorkbook.Worksheets(1)
     ws.Select Replace:=True
@@ -613,7 +613,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     Set ws = BIRIM_SAYFA(ad)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 7 Then BIRIM_CIZ ws, baslik
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 8 Then BIRIM_CIZ ws, baslik
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ad
@@ -753,7 +753,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Loop
     ws.Rows("1:44").RowHeight = 15
     ws.Range("BX1").Value2 = tag
-    ws.Range("BX2").Value2 = 7
+    ws.Range("BX2").Value2 = 8
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
@@ -799,7 +799,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
         BIRIM_KART ws, "MUS", 722, "03", "Müþteri Birimi", _
             "", "Seri numaralý malzeme takibi" & vbLf & "Ýlçe stok kontrolleri" & vbLf & _
             "Yüklenici stok kontrolleri" & vbLf & "Müþteri depo takibi", _
-            "Ýþlemlere geç", "AKSORA_BIRIM_MUSTERI", RGB(32, 133, 158), False
+            "Ýþlemlere geç", "AKSORA_BIRIM_MUSTERI", RGB(32, 133, 158), True
         BIRIM_TEXT ws, "SECIM_NOT", "Ýhtiyacýnýz olan iþlem alanýna tek seçimle ulaþýn.", 35, 565, 1000, 24, 10, RGB(87, 121, 142), False
     Else
         BIRIM_TEXT ws, "PANEL_EYEBROW", "BÝRÝM ÇALIÞMA ALANI", 35, 157, 900, 24, 11, RGB(0, 126, 113), True

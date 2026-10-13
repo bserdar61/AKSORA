@@ -45,6 +45,14 @@ End Function
 Public Function AKSORA_IL_DEPO_GECERLI(ByVal depo As String, ByVal tur As String, ByVal il As String) As Boolean
     Dim kod As String, n As Long, a As Variant, x As Variant
     kod = UCase$(Trim$(depo))
+    ' Ilce tarafina CDP ve EPP icin PB01-PB999 (planli bakim) depolari da dahildir.
+    If UCase$(Trim$(tur)) = "ILCE" And Left$(kod, 2) = "PB" Then
+        If (Len(kod) = 4 Or Len(kod) = 5) And Mid$(kod, 3) Like String$(Len(kod) - 2, "#") Then
+            n = CLng(Mid$(kod, 3))
+            AKSORA_IL_DEPO_GECERLI = (n >= 1 And n <= 999)
+        End If
+        Exit Function
+    End If
     Select Case UCase$(Trim$(tur))
         Case "NORMAL", "ILCE"
             If Len(kod) <> 4 Then Exit Function

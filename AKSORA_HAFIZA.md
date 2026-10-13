@@ -52,6 +52,12 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   bütün iller güncellemesi bu haliyle kilitli. Kullanıcı istemedikçe müşteri birimine dokunulmaz.
 - Kilit sürümü: commit dc1d8e4 (final/AKSORA.xlsm). Yeni işler bu dosyanın / kullanıcının son yüklediği dosyanın üzerine kurulur.
 
+- Birim seçim ekranında Müşteri Birimi AKTİF (BIRIM_CIZ sürüm BX2=8).
+
+## Malzeme birimi depo kuralı
+- İlçe tarafı (CDP ve EPP): K001–K999 + PB01–PB999 (AKSORA_IL_DEPO_GECERLI "ILCE"). Hızlı okuma (AKHZ) bu kuralı kullanır;
+  eski yedek yöntem SAP'de yalnız K aralığını sorgular.
+
 ## Müşteri birimi il bilgileri
 | İl | Tesis | CDP depoları | İlçe | Yüklenici |
 |---|---|---|---|---|
