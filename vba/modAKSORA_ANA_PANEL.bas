@@ -635,3 +635,22 @@ Public Function AKSORA_PANEL_SON_SURE() As Double
     On Error GoTo 0
     If Len(t) > 1 Then AKSORA_PANEL_SON_SURE = Val(Mid$(t, 2))
 End Function
+
+' Guncelleme bitince: panel yenilenir, ana panel tek ve hazir halde ekrana gelir.
+Public Sub AKSORA_ANA_PANEL_GOSTER()
+    Dim ws As Worksheet, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ANA PANEL")
+    If ws Is Nothing Then Exit Sub
+    ev = application.EnableEvents
+    application.ScreenUpdating = False
+    PANEL_YENILE
+    application.EnableEvents = False
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    application.EnableEvents = ev
+    AKSORA_V13_GORUNUM ws
+    application.ScreenUpdating = True
+    DoEvents
+    On Error GoTo 0
+End Sub

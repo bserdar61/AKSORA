@@ -219,12 +219,12 @@ Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
     ANA_TUM_STOKLARI_GUNCELLE_V2
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     AKSORA_HATA_GOSTER "Tüm stok güncelleme", Err.Number, Err.Description
 End Sub
@@ -238,12 +238,12 @@ Public Sub PANEL_CDP_GUNCELLE()
     CDP_STOK_GUNCELLE_V2
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     AKSORA_HATA_GOSTER "CDP stok güncelleme", Err.Number, Err.Description
 End Sub
@@ -257,12 +257,12 @@ Public Sub PANEL_EPP_GUNCELLE()
     EPP_STOK_GUNCELLE_V2
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     AKSORA_HATA_GOSTER "EPP stok güncelleme", Err.Number, Err.Description
 End Sub
@@ -276,12 +276,12 @@ Public Sub PANEL_ILCE_GUNCELLE()
     ILCE_STOK_GUNCELLE_V2
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     AKSORA_HATA_GOSTER "Ýlçe stok güncelleme", Err.Number, Err.Description
 End Sub
@@ -295,12 +295,12 @@ Public Sub PANEL_YUKLENICI_GUNCELLE()
     YUKLENICI_STOK_GUNCELLE_V2
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
-    PANEL_YENILE
+    AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     AKSORA_HATA_GOSTER "Yüklenici stok güncelleme", Err.Number, Err.Description
 End Sub

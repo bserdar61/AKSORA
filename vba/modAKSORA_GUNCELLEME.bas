@@ -72,10 +72,13 @@ ToplamSure = ANA_TUM_GECEN_SURE(baslangic)
 
 ANA_SESSIZ_MOD = False
 CORE_DURUM vbNullString
-PANEL_YENILE
+AKSORA_PANEL_SURE_KAYDET baslangic
+AKSORA_PANEL_CANLI = False
 AKSORA_V11_BICIMLER
 AKSORA_V11_ARAMA_TARIH
 AKSORA_V10_TARIH_GOSTER
+' Sonuc penceresi acilmadan once guncel ana panel ekranda gosterilir.
+AKSORA_ANA_PANEL_GOSTER
 
 MsgBox _
 "TÜM STOK GÜNCELLEMELERÝ TAMAMLANDI." & vbCrLf & vbCrLf & _
