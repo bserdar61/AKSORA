@@ -11,6 +11,8 @@ Private mAK14Toplam As Double
 Private mAK14Arayuz As Double
 Private Const PARA As String = "#,##0.00 ""TL"""
 Private Const miktar As String = "#,##0"
+Private mHzVeri(1 To 2) As Variant
+Private mHzHazir(1 To 2) As Boolean
 
 Public Sub AKSORA_V11_ESKI_KONTROL_SIL()
     Dim ws As Worksheet
@@ -409,6 +411,7 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_GUNCELLE").Fill.ForeColor.RGB = RGB(125, 140, 135)
     application.ScreenUpdating = True
     basladi = True
+    sonuc = AKHZ_ON_YUKLE() & vbCrLf
     For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = CStr(il)
         bilgi = ""
@@ -439,6 +442,7 @@ Bitir:
     mAK14Arayuz = AK14_GECEN_SURE(arayuzBas)
 Temizle:
     On Error Resume Next
+    AKHZ_TEMIZLE
     If basladi Then
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
         AKSORA_V12_BUTON_RENK
@@ -817,4 +821,222 @@ End Sub
 
 Public Function AKSORA_MUSTERI_IL_VERI_GUNCELLE(ByVal il As String, ByRef bilgi As String) As Boolean
     AKSORA_MUSTERI_IL_VERI_GUNCELLE = AK11_IL_GUNCELLE(il, bilgi)
+End Function
+
+'==========================================================
+' HIZLI TOPLU OKUMA
+' CDP ve EPP'de birer MB52 (bes il birden, tum depolar) calisir; liste arka
+' planda metin dosyasi olarak alinir (Excel acilmaz). Il / normal / ilce /
+' yuklenici ayrimi bellekte depo koduna gore yapilir. Herhangi bir adim
+' basarisizsa o sistem icin eski il il okuma yontemi kullanilir.
+'==========================================================
+Public Sub AKHZ_TEMIZLE()
+    mHzVeri(1) = Empty: mHzVeri(2) = Empty
+    mHzHazir(1) = False: mHzHazir(2) = False
+End Sub
+
+Public Function AKHZ_ON_YUKLE() As String
+    Dim i As Long, sistem As String, v As Variant, mesaj As String, sonuc As String, bas As Double
+    AKHZ_TEMIZLE
+    For i = 1 To 2
+        sistem = IIf(i = 1, "CDP", "EPP")
+        mesaj = vbNullString: bas = Timer
+        AK11_DURUM sistem & " | Beþ ilin stoklarý tek seferde alýnýyor..."
+        v = AKHZ_SISTEM_OKU(sistem, mesaj)
+        If IsArray(v) Then
+            mHzVeri(i) = v: mHzHazir(i) = True
+            sonuc = sonuc & sistem & ": 5 il tek sorguda alýndý (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(bas), "0.0") & " sn)" & vbCrLf
+        Else
+            sonuc = sonuc & sistem & ": hýzlý okuma yapýlamadý, il il okundu (" & mesaj & ")" & vbCrLf
+        End If
+        AKSORA_SAP_TESHIS_YAZ "Toplu hýzlý okuma | " & sistem & " | " & IIf(mHzHazir(i), "tamam", "olmadý: " & mesaj)
+    Next i
+    AKHZ_ON_YUKLE = sonuc
+End Function
+
+Private Sub AKHZ_BEKLE(ByVal saniye As Double)
+    Dim bas As Double
+    bas = Timer
+    Do While AK14_GECEN_SURE(bas) < saniye
+        DoEvents
+        AKSORA_TOPLU_SURE_TIK
+    Loop
+End Sub
+
+Private Function AKHZ_GRID(ByVal ses As Object, ByVal saniye As Double) As Object
+    Dim bas As Double, g As Object
+    bas = Timer
+    Do
+        Set g = Nothing
+        On Error Resume Next
+        If Not ses.Busy Then Set g = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False)
+        On Error GoTo 0
+        If Not g Is Nothing Then Set AKHZ_GRID = g: Exit Function
+        If AK14_GECEN_SURE(bas) > saniye Then Exit Function
+        AKHZ_BEKLE 0.2
+    Loop
+End Function
+
+Private Function AKHZ_PANEL(ByVal ses As Object) As Boolean
+    Dim duzen As Object, i As Long, ad As String, tanim As String, bulunan As Long, bas As Double
+    On Error GoTo Hata
+    ses.FindById("wnd[0]/tbar[1]/btn[33]").Press
+    bas = Timer
+    Do While ses.FindById("wnd[1]", False) Is Nothing
+        If AK14_GECEN_SURE(bas) > 15 Then Exit Function
+        AKHZ_BEKLE 0.1
+    Loop
+    Set duzen = ses.FindById("wnd[1]/usr/subSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell")
+    bulunan = -1
+    For i = 0 To CLng(duzen.RowCount) - 1
+        ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
+        tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
+        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
+            bulunan = i: Exit For
+        End If
+    Next i
+    If bulunan < 0 Then ses.FindById("wnd[1]").SendVKey 12: Exit Function
+    duzen.SetCurrentCell bulunan, "TEXT"
+    duzen.SelectedRows = CStr(bulunan)
+    duzen.ClickCurrentCell
+    AKHZ_BEKLE 0.3
+    AKHZ_PANEL = True
+    Exit Function
+Hata:
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+End Function
+
+Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String) As Variant
+    Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long
+    Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long
+    On Error GoTo Hata
+    Set ses = SAP_SESSION_AL(sistem, h)
+    If ses Is Nothing Then mesaj = "SAP oturumu bulunamadý " & h: Exit Function
+    ses.StartTransaction "MB52"
+    AKHZ_BEKLE 0.3
+    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = AKSORA_IL_TESIS("RIZE", sistem)
+    ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = AKSORA_IL_TESIS("ARTVIN", sistem)
+    ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
+    ses.FindById("wnd[0]").SendVKey 0
+    AKHZ_BEKLE 0.3
+    ses.FindById("wnd[0]").SendVKey 8
+    Set alv = AKHZ_GRID(ses, 900)
+    If alv Is Nothing Then mesaj = "MB52 listesi açýlmadý": Exit Function
+    If Not AKHZ_PANEL(ses) Then mesaj = "PANEL düzeni seçilemedi": Exit Function
+    Set alv = AKHZ_GRID(ses, 120)
+    If alv Is Nothing Then mesaj = "PANEL listesi açýlmadý": Exit Function
+    On Error Resume Next
+    alv.PressToolbarButton "&DELETE_FILTER"
+    Err.Clear
+    On Error GoTo Hata
+    Set alv = AKHZ_GRID(ses, 60)
+    If alv Is Nothing Then mesaj = "Liste hazýr olmadý": Exit Function
+    If CLng(alv.ColumnOrder.Count) < 12 Then mesaj = "PANEL düzeninde 12 sütun yok": Exit Function
+    satirSayisi = CLng(alv.RowCount)
+    v = AKSORA_ALV_METIN_AL(ses, alv, "TOPLU_" & sistem)
+    If Not IsArray(v) Then mesaj = "Liste metin dosyasý olarak alýnamadý": Exit Function
+    If UBound(v, 2) < 12 Then mesaj = "Metin dosyasýnda 12 sütun yok": Exit Function
+    ' Baslik satiri: ilk satirlarda en az 4 dolu hucre.
+    For r = 1 To application.Min(15, UBound(v, 1))
+        dolu = 0
+        For c = 1 To 12
+            If Len(Trim$(CStr(v(r, c)))) > 0 Then dolu = dolu + 1
+        Next c
+        If dolu >= 4 Then baslik = r: Exit For
+    Next r
+    If baslik = 0 Then mesaj = "Metin dosyasýnda baþlýk bulunamadý": Exit Function
+    veriSatiri = UBound(v, 1) - baslik
+    ' Eksik satir kabul edilmez: dosya ALV ile birebir ayni olmali.
+    If veriSatiri <> satirSayisi Then
+        mesaj = "Satýr sayýsý tutmadý (SAP " & satirSayisi & " / dosya " & veriSatiri & ")"
+        Exit Function
+    End If
+    AKHZ_SISTEM_OKU = AKHZ_KIRP(v, baslik + 1)
+    Exit Function
+Hata:
+    mesaj = "Hata " & Err.Number & ": " & Err.Description
+    On Error Resume Next
+    If Not ses Is Nothing Then
+        If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+    End If
+End Function
+
+Private Function AKHZ_KIRP(ByRef v As Variant, ByVal ilk As Long) As Variant
+    Dim s() As Variant, r As Long, c As Long
+    ReDim s(1 To UBound(v, 1) - ilk + 1, 1 To 12)
+    For r = ilk To UBound(v, 1)
+        For c = 1 To 12: s(r - ilk + 1, c) = v(r, c): Next c
+    Next r
+    AKHZ_KIRP = s
+End Function
+
+Private Function AKHZ_SAYI(ByVal v As Variant) As Double
+    Dim t As String, eksi As Boolean
+    If VarType(v) = vbDouble Or VarType(v) = vbLong Or VarType(v) = vbInteger Or VarType(v) = vbCurrency Then
+        AKHZ_SAYI = CDbl(v): Exit Function
+    End If
+    t = Replace(Replace(Trim$(CStr(v)), ChrW(160), ""), " ", "")
+    If Len(t) = 0 Then Exit Function
+    If Right$(t, 1) = "-" Then eksi = True: t = Left$(t, Len(t) - 1)
+    If Left$(t, 1) = "-" Then eksi = True: t = Mid$(t, 2)
+    If InStr(t, ",") > 0 Then
+        If InStrRev(t, ".") > InStrRev(t, ",") Then
+            t = Replace(t, ",", "")
+        Else
+            t = Replace(Replace(t, ".", ""), ",", ".")
+        End If
+    ElseIf t Like "*#.###" And Not t Like "*.*.*" Then
+        ' Yalniz binlik ayirac (1.234) Turkce gosterimde tam sayidir.
+        t = Replace(t, ".", "")
+    Else
+        t = Replace(t, ".", "")
+    End If
+    If Not IsNumeric(Replace(t, ".", "")) Then Err.Raise vbObjectError + 1990, , "Sayý okunamadý: " & CStr(v)
+    AKHZ_SAYI = Val(t)
+    If eksi Then AKHZ_SAYI = -AKHZ_SAYI
+End Function
+
+' 0 = hizli veri yok (eski yontem), 1 = veri hazir, 2 = gecerli satir yok.
+Public Function AKHZ_VERI(ByVal adim As Long, ByVal il As String, ByRef veri As Variant, _
+    ByRef satir As Long, ByRef sutun As Long, ByRef hataMetni As String) As Long
+    Dim i As Long, v As Variant, tesis As String, tur As String, sistem As String
+    Dim r As Long, c As Long, n As Long, sonuc() As Variant, idx() As Long, depo As String
+    On Error GoTo Hata
+    If adim < 1 Or adim > 6 Then Exit Function
+    i = IIf(adim Mod 2 = 1, 1, 2)
+    If Not mHzHazir(i) Then Exit Function
+    sistem = IIf(i = 1, "CDP", "EPP")
+    tur = Choose((adim + 1) \ 2, "NORMAL", "ILCE", "YUKLENICI")
+    tesis = AKSORA_IL_TESIS(il, sistem)
+    v = mHzVeri(i)
+    ReDim idx(1 To UBound(v, 1))
+    For r = 1 To UBound(v, 1)
+        If Trim$(CStr(v(r, 1))) = tesis Then
+            If Len(Trim$(CStr(v(r, 7)))) > 0 Then
+                depo = UCase$(Trim$(CStr(v(r, 2))))
+                If AKSORA_IL_DEPO_GECERLI(depo, tur, il) Then n = n + 1: idx(n) = r
+            End If
+        End If
+    Next r
+    If n = 0 Then
+        hataMetni = sistem & " " & tur & " için geçerli stok satýrý yok."
+        AKHZ_VERI = 2: Exit Function
+    End If
+    ReDim sonuc(1 To n, 1 To 12)
+    For r = 1 To n
+        For c = 1 To 12: sonuc(r, c) = Trim$(CStr(v(idx(r), c))): Next c
+        sonuc(r, 2) = UCase$(CStr(sonuc(r, 2)))
+        sonuc(r, 9) = AKHZ_SAYI(sonuc(r, 9))
+        sonuc(r, 11) = AKHZ_SAYI(sonuc(r, 11))
+        If CDbl(sonuc(r, 9)) <> 0 Then sonuc(r, 12) = CDbl(sonuc(r, 11)) / CDbl(sonuc(r, 9)) Else sonuc(r, 12) = 0#
+    Next r
+    veri = sonuc: satir = n: sutun = 12
+    AKHZ_VERI = 1
+    Exit Function
+Hata:
+    ' Okunamayan veri sessizce yazilmaz; bu adim eski yontemle SAP'den tekrar alinir.
+    AKSORA_SAP_TESHIS_YAZ "Toplu hýzlý veri " & il & " adým " & adim & ": " & Err.Description
+    AKHZ_VERI = 0
 End Function

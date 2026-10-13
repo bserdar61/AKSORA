@@ -97,9 +97,17 @@ Public Function AKIL_SAP_VERI_AL( _
     Dim sure As Double, hataMetni As String
     Dim basarili As Boolean
     Dim sistem As String, tur As String
-    Dim olcumBas As Double, kontrolBas As Double, okumaSure As Double
+    Dim olcumBas As Double, kontrolBas As Double, okumaSure As Double, hizli As Long
 
     olcumBas = Timer
+    ' Toplu guncellemede bes ilin verisi onceden tek sorguda alinmissa bellekten verilir.
+    hizli = AKHZ_VERI(adim, il, veri, satir, sutun, hataMetni)
+    If hizli > 0 Then
+        sistem = IIf(adim Mod 2 = 1, "CDP", "EPP")
+        tur = Choose((adim + 1) \ 2, "NORMAL", "ILCE", "YUKLENICI")
+        basarili = (hizli = 1)
+        GoTo HIZLI_SONRASI
+    End If
     Select Case adim
         Case 1
             sistem = "CDP": tur = "NORMAL"
@@ -135,6 +143,7 @@ Public Function AKIL_SAP_VERI_AL( _
             Err.Raise vbObjectError + 801, _
                       "AKIL_SAP_VERI_AL", "Geçersiz iþlem adýmý."
     End Select
+HIZLI_SONRASI:
 
     okumaSure = Timer - olcumBas
     If okumaSure < 0 Then okumaSure = okumaSure + 86400#

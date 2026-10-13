@@ -112,6 +112,15 @@ End Sub
 '----------------------------------------------------------
 ' SAP TESHIS VE PENCERE YARDIMCILARI
 '----------------------------------------------------------
+' Diger birimlerin kullanimi icin: ALV listesini Excel acmadan metin dosyasi olarak okur.
+Public Function AKSORA_ALV_METIN_AL(ByVal ses As Object, ByVal alv As Object, ByVal etiket As String) As Variant
+    AKSORA_ALV_METIN_AL = MS_AlvMetin(ses, alv, etiket)
+End Function
+
+Public Sub AKSORA_SAP_TESHIS_YAZ(ByVal metin As String)
+    MS_Teshis Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | " & metin
+End Sub
+
 Private Function MS_TeshisYolu() As String
     Dim k As String
     k = ThisWorkbook.Path
