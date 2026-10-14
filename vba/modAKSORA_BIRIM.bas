@@ -1125,7 +1125,7 @@ Private Sub Y_PANEL_TEMIZLE(ByVal ws As Worksheet)
     If ilk Is Nothing Or son Is Nothing Then Exit Sub
     x0 = ilk.Left: x1 = son.Left + son.Width: g = 6
     For i = 6 To 7
-        Set yeni = son.Duplicate.Item(1)
+        Set yeni = son.Duplicate
         yeni.Name = "MUSTERI_HIZLI_" & i
         yeni.Top = son.Top
     Next i
