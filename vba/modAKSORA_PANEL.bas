@@ -1088,7 +1088,9 @@ ByVal ws As Worksheet)
     Next sayfa
     If enSon > 0 Then ozet = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") Else ozet = "Henüz SAP güncellemesi yapýlmadý"
     sure = AKSORA_PANEL_SON_SURE()
-    If sure > 0 Then ozet = ozet & "   |   Güncelleme süresi " & AKSORA_SAYI_METNI(sure, "0.00") & " sn"
+    If sure > 0 Then ozet = ozet & "   |   Ýl güncelleme süresi " & AKSORA_SURE_METNI(sure)
+    sure = AKSORA_TOPLU_SON_SURE("_AKSORA_MALZEME_TOPLU_SURE")
+    If sure > 0 Then ozet = ozet & "   |   Bütün iller " & AKSORA_SURE_METNI(sure)
     ozet = ozet & "   |   CDP " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("CDP_STOK", "C3"), 0) & " satýr" & _
         "   |   EPP " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("EPP_STOK", "C3"), 0) & " satýr" & _
         "   |   Ýlçe " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("ÝLÇE_STOK", "C3"), 0) & " satýr" & _

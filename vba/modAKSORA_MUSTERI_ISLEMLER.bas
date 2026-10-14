@@ -1062,7 +1062,9 @@ Public Function AKSORA_MUSTERI_OZET() As String
     Next i
     If enSon > 0 Then
         sure = M_SON_SURE()
-        If sure > 0 Then metin = "   |   Güncelleme süresi " & AKSORA_SAYI_METNI(sure, "0.00") & " sn" & metin
+        If AKSORA_TOPLU_SON_SURE("_AKSORA_MUSTERI_SON_SURE") > 0 Then _
+            metin = "   |   Bütün iller " & AKSORA_SURE_METNI(AKSORA_TOPLU_SON_SURE("_AKSORA_MUSTERI_SON_SURE")) & metin
+        If sure > 0 Then metin = "   |   Ýl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
         metin = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") & metin
     Else
         metin = "Henüz SAP güncellemesi yapýlmadý" & metin

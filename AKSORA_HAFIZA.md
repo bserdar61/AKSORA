@@ -41,6 +41,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   MB52 serbest stokta olmayan seri: satır görünür, adet 0, tutar 0. Sonuçta mutabakat: AKSORA vs MB52.
 - Malzeme: CDP 7151–7155, EPP 7051–7055. Bütün iller: sistem başına tek MB52 (5 il). Tek il düğmeleri:
   sistem başına tek MB52 (o il), CDP/EPP normal-ilçe-yüklenici bellekten dilimlenir (AKHZ_TEK_AL).
+- Panel şeridi: "İl güncelleme süresi" + "Bütün iller" (toplu süre ayrı Name: _AKSORA_MALZEME_TOPLU_SURE / _AKSORA_MUSTERI_SON_SURE).
 - Güncelleme bitişi: panel düğmeleri → ana panel + tek özet; stok sayfası düğmeleri → aynı sayfa +
   tek özet; bütün iller → ana panel. Süre şeritte görünür.
 - İl seçimi: seçim ekranı tek görünür sayfa; il tıklaması ekran/olay kapalı tek seferde.

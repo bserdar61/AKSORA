@@ -496,7 +496,12 @@ Temizle:
     application.StatusBar = False: application.DisplayStatusBar = True
     ANA_SESSIZ_MOD = sessiz: AKSORA_V11_MESGUL = False
     If basladi Then mAK14Toplam = AK14_GECEN_SURE(toplamBas)
-    If basladi And Len(Hata) = 0 Then AKSORA_PANEL_SURE_KAYDET toplamBas
+    If basladi And Len(Hata) = 0 Then
+        ' Bütün iller suresi il suresinden ayri saklanir (panel seridinde ikisi de gorunur).
+        On Error Resume Next
+        ThisWorkbook.names.Add Name:="_AKSORA_MALZEME_TOPLU_SURE", RefersTo:="=" & Trim$(Str$(Round(AK14_GECEN_SURE(toplamBas), 2))), Visible:=False
+        On Error GoTo 0
+    End If
     If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
     mTopluSaatAktif = False
     ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).

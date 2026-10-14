@@ -648,6 +648,24 @@ Public Sub AKSORA_PANEL_SURE_KAYDET(ByVal bas As Double)
     On Error GoTo 0
 End Sub
 
+' Sure metni: 60 sn altinda "39,40 sn", ustunde "3 dk 42 sn".
+Public Function AKSORA_SURE_METNI(ByVal sn As Double) As String
+    If sn < 60 Then
+        AKSORA_SURE_METNI = AKSORA_SAYI_METNI(sn, "0.00") & " sn"
+    Else
+        AKSORA_SURE_METNI = CStr(Int(sn / 60)) & " dk " & Format$(Int(sn) Mod 60, "00") & " sn"
+    End If
+End Function
+
+' Bütün iller (toplu) guncellemesinin son suresi: malzeme veya musteri.
+Public Function AKSORA_TOPLU_SON_SURE(ByVal ad As String) As Double
+    Dim t As String
+    On Error Resume Next
+    t = ThisWorkbook.names(ad).RefersTo
+    On Error GoTo 0
+    If Len(t) > 1 Then AKSORA_TOPLU_SON_SURE = Val(Mid$(t, 2))
+End Function
+
 Public Function AKSORA_PANEL_SON_SURE() As Double
     Dim t As String
     On Error Resume Next
