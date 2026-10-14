@@ -1936,18 +1936,24 @@ Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
     bas = Val(CStr(r.Range("BX31").Value2))
     If bas < 9 Then Exit Sub
     ust = r.Rows(bas).Top: eskiH = r.Rows(bas).Height
-    If eskiH >= 44 Then Exit Sub
-    fark = 44 - eskiH
-    For Each s In r.Shapes
-        If Left$(s.Name, 12) = "AKSORA_RP_DM" And s.Top >= ust + eskiH - 1 Then s.Top = s.Top + fark
-    Next s
-    r.Rows(bas).RowHeight = 44
+    ' Form listesi dusuk yakinlastirmada en az ~22 piksel cizilir; satir bu payi tasir,
+    ' liste satirin ustune yaslanir ve tablo basligina asla inmez.
+    If eskiH < 56 Then
+        fark = 56 - eskiH
+        For Each s In r.Shapes
+            If Left$(s.Name, 12) = "AKSORA_RP_DM" And s.Top >= ust + eskiH - 1 Then s.Top = s.Top + fark
+        Next s
+        r.Rows(bas).RowHeight = 56
+    End If
     For Each s In r.Shapes
         t = s.Name
         If t = "AKSORA_RP_DM_BASLIK" Or t = "AKSORA_RP_DM_SECIM_ETIKET" Then
-            s.Top = ust + 4: s.Height = 36
+            s.Top = ust + 2: s.Height = 24
+            On Error Resume Next
+            s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+            On Error GoTo 0
         ElseIf t = "AKSORA_RP_DM_LISTE" Then
-            s.Top = ust + 12: s.Height = 20
+            s.Top = ust + 4: s.Height = 18
         ElseIf t = "AKSORA_RP_DM_ZEMIN" Then
             If s.Top < ust + 1 And s.Top > ust - 1 Then s.Height = s.Height + fark
         End If
