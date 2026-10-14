@@ -12,6 +12,7 @@ Private Const cw As Double = 1080
 Private Const CH As Double = 660
 Private mYonlendirme As Boolean
 Private mGorunum As Boolean
+Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V1"
 
 ' Yalniz yeni sayfalari ve ThisWorkbook acilis yonlendirmesini kurar.
 Public Sub AKSORA_BIRIM_KUR()
@@ -939,7 +940,6 @@ End Function
 ' Ana panel, stok ve rapor sayfalari musteri biriminin kilitli tasarimindan
 ' kopyalanir; Hakedis ve Teminat sayfalari ayni basliklarla hazirlanir.
 '==========================================================
-Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V1"
 
 Private Function Y_ADLAR() As Variant
     Y_ADLAR = Array("Y_ANA PANEL", "Y_HAKEDÝÞ", "Y_TEMÝNAT", _
@@ -1100,7 +1100,7 @@ Private Sub Y_PANEL_TEMIZLE(ByVal ws As Worksheet)
     If ilk Is Nothing Or son Is Nothing Then Exit Sub
     x0 = ilk.Left: x1 = son.Left + son.Width: g = 6
     For i = 6 To 7
-        Set yeni = son.Duplicate
+        Set yeni = son.Duplicate.Item(1)
         yeni.Name = "MUSTERI_HIZLI_" & i
         yeni.Top = son.Top
     Next i
