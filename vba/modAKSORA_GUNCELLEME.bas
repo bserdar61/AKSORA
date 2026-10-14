@@ -11,6 +11,7 @@ Dim NormalSatir As Long, IlceSatir As Long, YukSatir As Long
 Dim NormalDeger As Double, IlceDeger As Double, YukDeger As Double
 Dim GenelSatir As Long, GenelDeger As Double
 Dim hataNo As Long, hataAciklama As String
+Dim t0 As Double, tNormal As Double, tIlce As Double, tYuk As Double, tKars As Double, tPanel As Double, dokum As String
 If Not AKSORA_SAP_GUNCELLEME_IZNI() Then Exit Sub
 On Error GoTo Hata
 
@@ -31,10 +32,12 @@ ANA_TUM_SAYFA_KONTROL "ÝLÇE_RAPORLAR"
 ANA_TUM_SAYFA_KONTROL "YÜKLENÝCÝ_STOK"
 ANA_TUM_SAYFA_KONTROL "YÜKLENÝCÝ_RAPOR"
 
+t0 = Timer
 CORE_DURUM "[1/3] Normal stok sistemi güncelleniyor..."
 PANEL_CANLI_DURUM "1/3 | CDP ve EPP normal stoklarý SAP'den alýnýyor..."
 ANA_NORMAL_STOK_GUNCELLE_V2
 
+tNormal = ANA_TUM_GECEN_SURE(t0): t0 = Timer
 NormalSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("STOKLAR").Range("C3"))
 NormalDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("STOKLAR").Range("C4"))
 If NormalSatir <= 0 Then Err.Raise vbObjectError + 6002, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Normal stok güncellemesi sonrasýnda veri bulunamadý."
@@ -43,6 +46,7 @@ CORE_DURUM "[2/3] Ýlçe stok sistemi güncelleniyor..."
 PANEL_CANLI_DURUM "2/3 | Ýlçe stoklarý SAP'den alýnýyor..."
 ILCE_STOK_GUNCELLE_V2
 
+tIlce = ANA_TUM_GECEN_SURE(t0): t0 = Timer
 IlceSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("ÝLÇE_STOK").Range("C3"))
 IlceDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("ÝLÇE_STOK").Range("C4"))
 If IlceSatir <= 0 Then Err.Raise vbObjectError + 6011, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Ýlçe stok güncellemesi sonrasýnda veri bulunamadý."
@@ -52,6 +56,7 @@ CORE_DURUM "[3/3] Yüklenici stok sistemi güncelleniyor..."
 PANEL_CANLI_DURUM "3/3 | Yüklenici stoklarý SAP'den alýnýyor..."
 YUKLENICI_STOK_GUNCELLE_V2
 
+tYuk = ANA_TUM_GECEN_SURE(t0): t0 = Timer
 YukSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK").Range("C3"))
 YukDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK").Range("C4"))
 If YukSatir <= 0 Then Err.Raise vbObjectError + 6021, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Yüklenici stok güncellemesi sonrasýnda veri bulunamadý."
@@ -63,7 +68,9 @@ DoEvents
 
 CORE_DURUM "Stok karþýlaþtýrma tarihleri güncelleniyor..."
 PANEL_CANLI_DURUM "Stok karþýlaþtýrma tarihleri güncelleniyor..."
+t0 = Timer
 STOK_KARS_TARIHLERI_YUKLE
+tKars = ANA_TUM_GECEN_SURE(t0)
 
 
 GenelSatir = NormalSatir + IlceSatir + YukSatir
@@ -73,12 +80,20 @@ ToplamSure = ANA_TUM_GECEN_SURE(baslangic)
 ANA_SESSIZ_MOD = False
 CORE_DURUM vbNullString
 AKSORA_PANEL_SURE_KAYDET baslangic
+t0 = Timer
 AKSORA_PANEL_CANLI = False
 AKSORA_V11_BICIMLER
 AKSORA_V11_ARAMA_TARIH
 AKSORA_V10_TARIH_GOSTER
 ' Sonuc penceresi acilmadan once guncel ana panel ekranda gosterilir.
 AKSORA_ANA_PANEL_GOSTER
+tPanel = ANA_TUM_GECEN_SURE(t0)
+dokum = vbCrLf & "Süre dökümü" & vbCrLf & _
+" Normal (CDP+EPP) : " & AKSORA_SAYI_METNI(tNormal, "0.0") & " sn" & vbCrLf & _
+" Ýlçe             : " & AKSORA_SAYI_METNI(tIlce, "0.0") & " sn" & vbCrLf & _
+" Yüklenici        : " & AKSORA_SAYI_METNI(tYuk, "0.0") & " sn" & vbCrLf & _
+" Karþýlaþtýrma    : " & AKSORA_SAYI_METNI(tKars, "0.0") & " sn" & vbCrLf & _
+" Panel ve ekran   : " & AKSORA_SAYI_METNI(tPanel, "0.0") & " sn"
 
 MsgBox _
 "TÜM STOK GÜNCELLEMELERÝ TAMAMLANDI." & vbCrLf & vbCrLf & _
@@ -95,7 +110,7 @@ MsgBox _
 " Satýr : " & AKSORA_SAYI_METNI(GenelSatir, "#,##0") & vbCrLf & _
 " Deðer : " & AKSORA_SAYI_METNI(GenelDeger, "#,##0.00") & " TL" & vbCrLf & vbCrLf & _
 "Kontroller : BAÞARILI" & vbCrLf & _
-"Toplam Süre: " & AKSORA_SAYI_METNI(ToplamSure, "0.00") & " sn", _
+"Toplam Süre: " & AKSORA_SAYI_METNI(ToplamSure, "0.00") & " sn" & vbCrLf & dokum, _
 vbInformation, "AKSORA - TÜM STOKLAR"
 
 Exit Sub
