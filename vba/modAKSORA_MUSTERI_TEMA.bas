@@ -777,7 +777,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_KPI_YENILE()
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
-    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    Set ws = AKSORA_ARAMA_SAYFASI()
     ws.Unprotect ""
     ' Filtre yalnizca sonuc alanini kapsamiyorsa yeniden kurulur.
     If ws.AutoFilterMode Then
@@ -801,7 +801,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
-    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    Set ws = AKSORA_ARAMA_SAYFASI()
     kod = ws.Shapes(CStr(application.Caller)).AlternativeText
     Select Case kod
         Case "TUMU", "GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN"
@@ -827,7 +827,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_FILTRE(ByVal kod As String)
     ev = application.EnableEvents
     On Error GoTo Hata
     application.EnableEvents = False
-    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    Set ws = AKSORA_ARAMA_SAYFASI()
     kod = UCase$(Trim$(kod))
     Select Case kod
         Case "GIRESUN": isim = "GÝRESUN"
@@ -874,6 +874,14 @@ Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
     Resume Cikis
 End Sub
+
+' Arama sayfasi: etkin sayfa yatirim aramasiysa o, degilse musteri aramasi.
+Public Function AKSORA_ARAMA_SAYFASI() As Worksheet
+    On Error Resume Next
+    If ActiveSheet.Name = "Y_MALZEME_ARA" Then Set AKSORA_ARAMA_SAYFASI = ActiveSheet
+    On Error GoTo 0
+    If AKSORA_ARAMA_SAYFASI Is Nothing Then Set AKSORA_ARAMA_SAYFASI = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+End Function
 
 Public Sub AKSORA_MUSTERI_ARAMA_ANA_DON()
     With ThisWorkbook.Worksheets("M_ANA PANEL")
@@ -1239,7 +1247,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_KPI_HESAPLA(ByVal ws As Worksheet)
     Static mesgul As Boolean
     Dim ev As Boolean, korumali As Boolean, son As Long, adet As Long
     Dim hataNo As Long, hataMetni As String
-    If mesgul Or ws.Name <> "M_MALZEME_ARA" Then Exit Sub
+    If mesgul Or (ws.Name <> "M_MALZEME_ARA" And ws.Name <> "Y_MALZEME_ARA") Then Exit Sub
     mesgul = True: ev = application.EnableEvents
     On Error GoTo Hata
     application.EnableEvents = False

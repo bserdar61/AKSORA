@@ -1100,6 +1100,15 @@ Hata:
     End If
 End Function
 
+' Yatirim birimi: ilin CDP/EPP MB52 listesi (PANEL duzeni, 12 sutun, tum depolar).
+Public Function AKSORA_YATIRIM_MB52(ByVal sistem As String, ByVal il As String, ByRef mesaj As String) As Variant
+    AKSORA_YATIRIM_MB52 = AKHZ_SISTEM_OKU(sistem, mesaj, AKSORA_IL_TESIS(il, sistem))
+End Function
+
+Public Function AKSORA_YATIRIM_SAYI(ByVal v As Variant) As Double
+    AKSORA_YATIRIM_SAYI = AKHZ_SAYI(v)
+End Function
+
 Private Function AKHZ_KIRP(ByRef v As Variant, ByVal ilk As Long, ByVal kayma As Long) As Variant
     Dim s() As Variant, r As Long, c As Long
     ReDim s(1 To UBound(v, 1) - ilk + 1, 1 To 12)

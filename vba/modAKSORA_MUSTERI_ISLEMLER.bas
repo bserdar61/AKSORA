@@ -19,7 +19,34 @@ End Function
 
 Private Function M_STOK(ByVal ad As String) As Boolean
     M_STOK = (ad = "M_CDP_STOK" Or ad = "M_ÝLÇE_STOK" Or ad = "M_YÜKLENÝCÝ_STOK")
+    ' Yatirim birimi stok sayfalari ayni tasarim ve filtre sistemini kullanir.
+    If Left$(ad, 2) = "Y_" And Right$(ad, 5) = "_STOK" Then M_STOK = True
 End Function
+
+Private Function M_ARAMA(ByVal ad As String) As Boolean
+    M_ARAMA = (ad = "M_MALZEME_ARA" Or ad = "Y_MALZEME_ARA")
+End Function
+
+' Rapor sayfasinin kaynak stok sayfasi (musteri ve yatirim).
+Private Function M_RAPOR_KAYNAK(ByVal ad As String) As Worksheet
+    Select Case ad
+        Case "M_CDP_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_CDP_STOK")
+        Case "M_ÝLÇE_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
+        Case "M_YÜKLENÝCÝ_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
+        Case Else
+            If Left$(ad, 2) = "Y_" And Right$(ad, 6) = "_RAPOR" Then _
+                Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets(Left$(ad, Len(ad) - 6) & "_STOK")
+    End Select
+End Function
+
+' Yatirim birimi: stok ve rapor sayfalari musteri motoruyla kurulur.
+Public Sub AKSORA_MUSTERI_STOK_KUR_DIS(ByVal ws As Worksheet)
+    M_STOK_KUR ws
+End Sub
+
+Public Sub AKSORA_MUSTERI_RAPOR_KUR_DIS(ByVal ws As Worksheet)
+    M_BOS_RAPOR ws
+End Sub
 
 Private Function M_METIN(ByVal s As Shape) As String
     On Error Resume Next
@@ -241,7 +268,7 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
     Next i
     ' Sayfa basligi secili ile gore.
     Set s = M_SEKIL(ws, "AKT1_STOK_BASLIK")
-    If Not s Is Nothing Then s.TextFrame2.TextRange.Text = Replace(Mid$(ws.Name, 3), "_", " ") & "  |  " & M_IL_ADI() & " Ýl Müdürlüðü"
+    If Not s Is Nothing And Left$(ws.Name, 2) = "M_" Then s.TextFrame2.TextRange.Text = Replace(Mid$(ws.Name, 3), "_", " ") & "  |  " & M_IL_ADI() & " Ýl Müdürlüðü"
     If CStr(ws.Range("BX8").Value2) <> "MUSTERI_STOK_V2" Then
         If Len(CStr(ws.Range("BX12").Value2)) > 0 And IsNumeric(ws.Range("BX12").Value2) Then _
             ws.Columns(10).ColumnWidth = CDbl(ws.Range("BX12").Value2)
@@ -436,12 +463,8 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     Dim sira() As Long, pay() As Double, adlar As Variant, oranlar As Variant, toplamPay As Double
     Dim t As Long, seri As Series, ilk As Long, eskiSon As Long, tablo As Range, x As Double
     Dim renkler As Variant
-    Select Case ws.Name
-        Case "M_CDP_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_CDP_STOK")
-        Case "M_ÝLÇE_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
-        Case "M_YÜKLENÝCÝ_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
-        Case Else: Exit Sub
-    End Select
+    Set kaynak = M_RAPOR_KAYNAK(ws.Name)
+    If kaynak Is Nothing Then Exit Sub
     kol = 5
     ' Depo bazli ozet: ad, satir, deger, fiyatsiz satir, seri numarali satir
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
@@ -772,27 +795,40 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim ws As Worksheet, kaynak As Worksheet, ad As Variant, veri As Variant, buffer() As Variant, sonuc() As Variant
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
+    Dim yat As Boolean, sayfalar As Variant, etiketler As Variant
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    Set ws = AKSORA_ARAMA_SAYFASI()
+    yat = (ws.Name = "Y_MALZEME_ARA")
+    If yat Then
+        sayfalar = Array("Y_CDP_YATIRIM_STOK", "Y_EPP_YATIRIM_STOK", "Y_CDP_YÜKLENÝCÝ_STOK", "Y_EPP_YÜKLENÝCÝ_STOK")
+        etiketler = Array("CDP YATIRIM", "EPP YATIRIM", "CDP YÜKLENÝCÝ", "EPP YÜKLENÝCÝ")
+    Else
+        sayfalar = Array("M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+        etiketler = Array("CDP", "ÝLÇE", "YÜKLENÝCÝ")
+    End If
     q = Trim$(CStr(ws.Range("B6").Value2))
     If Len(q) < 2 Then MsgBox "En az iki karakter giriniz.", vbInformation, "AKSORA": Exit Sub
     application.EnableEvents = False: application.ScreenUpdating = False
     ReDim buffer(1 To 14, 1 To 500)
     ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
-    ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
-    If Len(ekran) = 0 Then ekran = "ARTVIN"
+    If yat Then
+        ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_CDP_YATIRIM_STOK").Range("BX19").Value2)))
+    Else
+        ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+        If Len(ekran) = 0 Then ekran = "ARTVIN"
+    End If
     For Each il In AKSORA_MUSTERI_ILLER()
     kod = CStr(il)
-    For i = 1 To 3
-        ad = Choose(i, "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK")
+    For i = 1 To UBound(sayfalar) + 1
+        ad = sayfalar(i - 1)
         veri = Empty
         If kod = ekran Then
             Set kaynak = ThisWorkbook.Worksheets(CStr(ad))
             son = AKSORA_M_SON(kaynak)
             If son >= 7 Then veri = kaynak.Range("A7:N" & son).Value2
         Else
-            Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
+            If yat Then Set kaynak = AKSORA_YATIRIM_ARSIV_SAYFA(kod, i) Else Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
             If Not kaynak Is Nothing Then
                 son = kaynak.Cells(kaynak.Rows.Count, "E").End(xlUp).Row
                 If son >= 2 Then veri = kaynak.Range("A2:N" & son).Value2
@@ -804,11 +840,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
                     n = n + 1
                     If n > UBound(buffer, 2) Then ReDim Preserve buffer(1 To 14, 1 To UBound(buffer, 2) + 500)
                     For c = 1 To 11: buffer(c, n) = veri(r, c): Next c
-                    Select Case CStr(ad)
-                        Case "M_CDP_STOK": buffer(12, n) = "CDP"
-                        Case "M_ÝLÇE_STOK": buffer(12, n) = "ÝLÇE"
-                        Case Else: buffer(12, n) = "YÜKLENÝCÝ"
-                    End Select
+                    buffer(12, n) = etiketler(i - 1)
                     buffer(14, n) = veri(r, 14)
                     Select Case kod
                         Case "GIRESUN": buffer(13, n) = "GÝRESUN"
@@ -844,7 +876,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
     ' Secili il dugmesi korunur: sonuc o ile gore listelenir.
     AKSORA_MUSTERI_ARAMA_FILTRE CStr(ws.Range("BX21").Value2)
-    If n = 0 Then MsgBox "Müþteri stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
+    If n = 0 Then MsgBox IIf(yat, "Yatýrým", "Müþteri") & " stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
 Cikis:
     On Error Resume Next
     If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
@@ -898,7 +930,7 @@ Private Sub M_TABLO_BICIM(ByVal ws As Worksheet, ByVal ilk As Long, ByVal son As
     If eskiSon < ilk + 200 Then eskiSon = ilk + 200
     If eskiSon > son Then
         ws.Range(ws.Cells(application.Max(ilk, son + 1), 1), ws.Cells(eskiSon, sonKol)).ClearFormats
-        If ws.Name = "M_MALZEME_ARA" Then
+        If M_ARAMA(ws.Name) Then
             ws.Range(ws.Rows(ilk), ws.Rows(eskiSon)).RowHeight = 22.05
         Else
             ws.Range(ws.Rows(application.Max(ilk, son + 1)), ws.Rows(eskiSon)).RowHeight = ws.StandardHeight
@@ -922,7 +954,7 @@ Private Sub M_TABLO_BICIM(ByVal ws As Worksheet, ByVal ilk As Long, ByVal son As
             End With
         End If
     End With
-    ws.Range(ws.Rows(ilk), ws.Rows(son)).RowHeight = IIf(ws.Name = "M_MALZEME_ARA", 22.05, 20.25)
+    ws.Range(ws.Rows(ilk), ws.Rows(son)).RowHeight = IIf(M_ARAMA(ws.Name), 22.05, 20.25)
     M_BANT_KUR ws, alan
     If Len(metinKol) > 0 Then
         For Each c In Split(metinKol, ",")
@@ -1296,7 +1328,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_TEMIZLE()
     Dim ws As Worksheet, eski As Long, ev As Boolean, sc As Boolean
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
+    Set ws = AKSORA_ARAMA_SAYFASI()
     application.EnableEvents = False: application.ScreenUpdating = False
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
@@ -1353,11 +1385,13 @@ Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
     Dim r As Long, n As Long, korumali As Boolean, ev As Boolean, farkli As Boolean
     If mesgul Then Exit Sub
     If AKSORA_V11_MESGUL Then Exit Sub
-    Select Case ws.Name
-        Case "M_MALZEME_ARA": ilk = 13
-        Case "M_CDP_STOK", "M_ÝLÇE_STOK", "M_YÜKLENÝCÝ_STOK": ilk = 7
-        Case Else: Exit Sub
-    End Select
+    If M_ARAMA(ws.Name) Then
+        ilk = 13
+    ElseIf M_STOK(ws.Name) Then
+        ilk = 7
+    Else
+        Exit Sub
+    End If
     son = AKSORA_M_SON(ws)
     If son < ilk Then Exit Sub
     mesgul = True: ev = application.EnableEvents
@@ -1877,12 +1911,8 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     Dim co As ChartObject, seri As Series, m As Long, adlar() As String, oranlar() As Double
     Dim renkler As Variant, satirY As Double, adim As Double, lx As Double, lw As Double
     Dim depAdlar() As String, depAdet() As Double, dsira() As Long, p As Long, yazi As String
-    Select Case ws.Name
-        Case "M_CDP_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_CDP_STOK")
-        Case "M_ÝLÇE_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
-        Case "M_YÜKLENÝCÝ_RAPOR": Set kaynak = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
-        Case Else: Exit Sub
-    End Select
+    Set kaynak = M_RAPOR_KAYNAK(ws.Name)
+    If kaynak Is Nothing Then Exit Sub
     ' Eski bolum temizlenir (yalniz bu bolumun sekilleri ve satirlari).
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 12) = "AKSORA_RP_DM" Then ws.Shapes(i).Delete

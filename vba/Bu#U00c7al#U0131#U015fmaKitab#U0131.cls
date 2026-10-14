@@ -283,7 +283,7 @@ End Sub
 
 Private Sub Workbook_SheetCalculate(ByVal sh As Object)
     If Not TypeOf sh Is Worksheet Then Exit Sub
-    If sh.Name <> "M_MALZEME_ARA" Then Exit Sub
+    If sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" Then Exit Sub
     If Not application.EnableEvents Then Exit Sub
     On Error GoTo Hata
     AKSORA_MUSTERI_ARAMA_KPI_HESAPLA sh
