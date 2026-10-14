@@ -21,7 +21,7 @@ var sh = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var bayrak = sh.ExpandEnvironmentStrings("%TEMP%") + "\\AKSORA_ACILIS.flag";
 var bas = new Date().getTime();
-var poz = 0, gorulen = false;
+var poz = 0, gorulen = false, calisan = null;
 
 function klasor() {
   var cl = aksora.commandLine, m = cl.match(/^\s*"([^"]+)"/);
@@ -86,11 +86,16 @@ function baslat() {
   t.WriteLine("  f.WriteLine \"HATA: \" & Err.Description");
   t.WriteLine("  f.Close");
   t.WriteLine("  xl.Visible = True");
+  t.WriteLine("  WScript.Quit");
   t.WriteLine("End If");
   t.WriteLine("xl.Visible = True");
   t.WriteLine("xl.UserControl = True");
+  t.WriteLine("Set f = CreateObject(\"Scripting.FileSystemObject\").CreateTextFile(WScript.Arguments(1), True)");
+  t.WriteLine("f.WriteLine \"BITTI\": f.Close");
   t.Close();
-  sh.Run("wscript.exe //nologo \"" + vbs + "\" \"" + x + "\" \"" + bayrak + "\"", 0, false);
+  // Exec: acici betik bitince (Excel acildi) pencere her durumda kapanir.
+  try { calisan = sh.Exec("wscript.exe //nologo \"" + vbs + "\" \"" + x + "\" \"" + bayrak + "\""); }
+  catch (e) { sh.Run("wscript.exe //nologo \"" + vbs + "\" \"" + x + "\" \"" + bayrak + "\"", 0, false); }
   setInterval(adim, 40);
   setInterval(kontrol, 250);
 }
@@ -111,6 +116,9 @@ function kontrol() {
     try { var f = fso.OpenTextFile(bayrak, 1); hata = f.AtEndOfStream ? "" : f.ReadLine(); f.Close(); } catch (e) {}
     if (hata.indexOf("HATA") == 0) { document.getElementById("durum").innerText = hata; setTimeout(function(){ window.close(); }, 6000); return; }
     if (!gorulen) { gorulen = true; setTimeout(function(){ window.close(); }, 300); }
+  }
+  if (calisan != null && !gorulen) {
+    try { if (calisan.Status != 0) { gorulen = true; setTimeout(function(){ window.close(); }, 300); } } catch (e) {}
   }
   if (gecen > 180000) window.close();
 }
