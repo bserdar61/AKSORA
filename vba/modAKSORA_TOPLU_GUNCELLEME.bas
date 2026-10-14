@@ -391,7 +391,7 @@ Private Function AK11_IL_GUNCELLE(ByVal il As String, ByRef aciklama As String) 
     yaziliyor = False
     application.ScreenUpdating = True
     AK11_IL_GUNCELLE = True
-    aciklama = AK_IL_ADI(il) & ": güncellendi"
+    aciklama = AK_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(ilBas), "0.0") & " sn)"
     excelSure = AK14_GECEN_SURE(ilBas) - sapSure
     AK14_SURE_KAYDET il, sapSure, excelSure, True
     Exit Function
@@ -517,7 +517,8 @@ Temizle:
     ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
     If basladi Then AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas))
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
+        "   (il baþýna ortalama " & AKSORA_SAYI_METNI(AK14_GECEN_SURE(toplamBas) / 5, "0.0") & " sn)"
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
     Else
