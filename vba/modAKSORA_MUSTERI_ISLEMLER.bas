@@ -795,7 +795,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim ws As Worksheet, kaynak As Worksheet, ad As Variant, veri As Variant, buffer() As Variant, sonuc() As Variant
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
-    Dim yat As Boolean, sayfalar As Variant, etiketler As Variant
+    Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = AKSORA_ARAMA_SAYFASI()
@@ -861,9 +861,17 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ws.Range("A13:N" & eski).ClearContents
     If n > 0 Then
         ReDim sonuc(1 To n, 1 To 14)
-        For r = 1 To n
-            For c = 1 To 14: sonuc(r, c) = buffer(c, r): Next c
-        Next r
+        ' Yatirim aramasinda D depolari her zaman ustte (malzeme stok birimi mantigi).
+        For gec = 1 To IIf(yat, 2, 1)
+            For r = 1 To n
+                dahil = True
+                If yat Then dahil = ((UCase$(Left$(CStr(buffer(2, r)), 1)) = "D") = (gec = 1))
+                If dahil Then
+                    k = k + 1
+                    For c = 1 To 14: sonuc(k, c) = buffer(c, r): Next c
+                End If
+            Next r
+        Next gec
         ws.Range("A13").Resize(n, 14).Value2 = sonuc
     End If
     M_TABLO_BICIM ws, 13, n + 12, 13, "3,6", "7,11"

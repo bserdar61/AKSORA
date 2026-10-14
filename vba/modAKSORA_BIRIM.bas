@@ -1730,7 +1730,8 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     application.ScreenUpdating = sc
     bilgi = Y_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(sure, "0.0") & " sn)"
     Y_GUNCELLE = True
-    If Not mYToplu Then Y_SERIT "Güncelleme tamamlandý   |   " & Y_SERIT_METNI(), 2
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlandý  |  " & Y_SERIT_METNI(), 2
+    If Not mYToplu And Not sessiz Then Y_PANEL_GOSTER
     If Not sessiz Then MsgBox "Yatýrým birimi | " & Y_IL_ADI(il) & " güncellendi." & vbCrLf & ozet & vbCrLf & vbCrLf & _
         "CDP / EPP yatýrým depolarý: D002, D011" & vbCrLf & _
         "Yüklenici depolarý: " & Join(AKSORA_IL_YUKLENICI(il), ", ") & vbCrLf & _
@@ -1746,7 +1747,7 @@ Hata:
     bilgi = Y_IL_ADI(il) & ": güncellenemedi; " & hMesaj
     On Error Resume Next
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = True
-    If Not mYToplu Then Y_SERIT "Güncelleme tamamlanamadý   |   " & hMesaj, 3
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlanamadý  |  " & hMesaj, 3
     If Not sessiz Then MsgBox "Yatýrým stoklarý güncellenemedi." & vbCrLf & hMesaj, vbExclamation, "AKSORA | Yatýrým Birimi"
     On Error GoTo 0
     Resume Cikis
@@ -1811,27 +1812,35 @@ Private Function Y_SERIT_METNI() As String
         Y_OZET ThisWorkbook.Worksheets(CStr(adlar(i))), d, satir, deger, tarih
         If tarih > enSon Then enSon = tarih
         toplam = toplam + deger
-        metin = metin & "   |   " & Choose(i + 1, "CDP Yatýrým ", "EPP Yatýrým ", "CDP Yüklenici ", "EPP Yüklenici ") & _
+        metin = metin & "  |  " & Choose(i + 1, "CDP Yatýrým ", "EPP Yatýrým ", "CDP Yüklenici ", "EPP Yüklenici ") & _
             AKSORA_SAYI_METNI(satir, "#,##0") & " satýr"
     Next i
     If enSon = 0 Then
-        Y_SERIT_METNI = Y_IL_ADI(il) & " Yatýrým Birimi   |   Henüz SAP güncellemesi yapýlmadý   |   CDP ve EPP yatýrým: D002, D011   |   Yüklenici: malzeme stok birimindeki yüklenici depolarý"
+        Y_SERIT_METNI = "Henüz SAP güncellemesi yapýlmadý  |  CDP ve EPP yatýrým: D002, D011  |  Yüklenici: malzeme stok birimindeki yüklenici depolarý"
         Exit Function
     End If
     If AKSORA_TOPLU_SON_SURE("_AKSORA_YATIRIM_SON_SURE") > 0 Then _
-        metin = "   |   Bütün iller " & AKSORA_SURE_METNI(AKSORA_TOPLU_SON_SURE("_AKSORA_YATIRIM_SON_SURE")) & metin
+        metin = "  |  Bütün iller " & AKSORA_SURE_METNI(AKSORA_TOPLU_SON_SURE("_AKSORA_YATIRIM_SON_SURE")) & metin
     On Error Resume Next
     t = ThisWorkbook.names("_AKSORA_YATIRIM_SURE_" & il).RefersTo
     On Error GoTo 0
     If Len(t) > 1 Then sure = Val(Mid$(t, 2))
-    If sure > 0 Then metin = "   |   Ýl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
-    Y_SERIT_METNI = Y_IL_ADI(il) & " Yatýrým Birimi   |   Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") & metin & _
-        "   |   Toplam stok deðeri " & Y_TL(toplam)
+    If sure > 0 Then metin = "  |  Ýl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
+    Y_SERIT_METNI = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") & metin & _
+        "  |  Toplam stok deðeri " & Y_TL(toplam)
 End Function
 
 ' durum: 0 bilgi, 1 calisiyor, 2 tamam, 3 hata
+' Seridin ustune binen IL DEGISTIR dugmesinin sol kenari (yoksa 0).
+Private Function Y_SERIT_SAG(ByVal ws As Worksheet, ByVal s As Shape) As Double
+    Dim b As Shape
+    Set b = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    If b Is Nothing Then Exit Function
+    If b.Left > s.Left And b.Left < s.Left + s.Width And b.Top < s.Top + s.Height And b.Top + b.Height > s.Top Then Y_SERIT_SAG = b.Left
+End Function
+
 Private Sub Y_SERIT(ByVal metin As String, ByVal durum As Long)
-    Dim ws As Worksheet, s As Shape, korumali As Boolean
+    Dim ws As Worksheet, s As Shape, korumali As Boolean, pt As Double, gen As Double, ust As Double
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("Y_ANA PANEL")
     Set s = ws.Shapes("MUSTERI_ANA_SECIM_SERIDI")
@@ -1840,9 +1849,38 @@ Private Sub Y_SERIT(ByVal metin As String, ByVal durum As Long)
     If korumali Then ws.Unprotect ""
     s.Fill.ForeColor.RGB = Choose(durum + 1, RGB(224, 242, 254), RGB(254, 243, 199), RGB(220, 252, 231), RGB(254, 226, 226))
     s.TextFrame2.TextRange.Text = metin
+    If Val(s.AlternativeText) <= 0 Then s.AlternativeText = CStr(s.TextFrame2.TextRange.Font.Size)
+    pt = Val(s.AlternativeText)
+    gen = s.Width - s.TextFrame2.MarginLeft - s.TextFrame2.MarginRight - 8
+    ust = Y_SERIT_SAG(ws, s)
+    If ust > 0 Then gen = application.Min(gen, ust - s.Left - s.TextFrame2.MarginLeft - 8)
+    Do While pt > 7 And Len(metin) * pt * 0.56 > gen
+        pt = pt - 0.5
+    Loop
+    s.TextFrame2.TextRange.Font.Size = pt
     s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Choose(durum + 1, RGB(12, 45, 79), RGB(146, 64, 14), RGB(21, 128, 61), RGB(153, 27, 27))
     If korumali Then Y_KORU ws
     If durum = 1 Then DoEvents
+    On Error GoTo 0
+End Sub
+
+' Guncelleme bitince ana panel ekrana getirilir.
+Private Sub Y_PANEL_GOSTER()
+    Dim ws As Worksheet, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("Y_ANA PANEL")
+    If ws Is Nothing Then Exit Sub
+    If ActiveSheet Is ws Then Exit Sub
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    mYonlendirme = True
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    mYonlendirme = False
+    application.EnableEvents = ev
+    AKSORA_YATIRIM_GORUNUM ws
+    application.ScreenUpdating = True
+    DoEvents
     On Error GoTo 0
 End Sub
 
@@ -1978,6 +2016,7 @@ Bitir:
     Y_PANEL_YENILE
     Y_ARAMA_TARIH
     application.StatusBar = False
+    Y_PANEL_GOSTER
     application.ScreenUpdating = sc
     On Error GoTo 0
     MsgBox "Yatýrým birimi | Bütün iller" & vbCrLf & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, vbCrLf & hataMetni & vbCrLf, "") & vbCrLf & _
