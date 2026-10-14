@@ -1041,29 +1041,46 @@ End Sub
 ' Eksik Y_ sayfalari musteri sayfalarindan kopyalanarak kurulur (veri tasinmaz).
 Private Sub Y_KUR()
     Dim adlar As Variant, i As Long, ws As Worksheet, kaynak As Worksheet, gor As XlSheetVisibility
-    Dim da As Boolean, kad As String
+    Dim da As Boolean, kad As String, adim As String, no As Long, metin As String, yeniAd As String
     adlar = Y_ADLAR()
     da = application.DisplayAlerts: application.DisplayAlerts = False
+    On Error GoTo Hata
     For i = 0 To UBound(adlar)
+        adim = CStr(adlar(i)) & " / kontrol"
         Set ws = Nothing
         On Error Resume Next
         Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
-        On Error GoTo 0
+        On Error GoTo Hata
+        ' Yarim kalmis (etiketsiz) sayfa silinip yeniden kurulur.
+        If Not ws Is Nothing Then
+            If CStr(ws.Range("BX1").Value2) <> Y_ETIKET Then
+                adim = CStr(adlar(i)) & " / yarým sayfayý silme"
+                ws.Visible = xlSheetVisible
+                ws.Delete
+                Set ws = Nothing
+            End If
+        End If
         If ws Is Nothing Then
             Select Case Y_TUR(CStr(adlar(i)))
                 Case "PANEL": kad = "M_ANA PANEL"
                 Case "STOK": kad = "M_CDP_STOK"
                 Case Else: kad = "M_CDP_RAPOR"
             End Select
+            adim = CStr(adlar(i)) & " / kaynak " & kad
             Set kaynak = ThisWorkbook.Worksheets(kad)
             gor = kaynak.Visible
             kaynak.Visible = xlSheetVisible
-            kaynak.Copy after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
-            Set ws = ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+            ' Kopya kaynagin hemen yanina alinir (sondaki gizli sayfalar etkilemez).
+            adim = CStr(adlar(i)) & " / kopyalama"
+            kaynak.Copy after:=kaynak
+            Set ws = ThisWorkbook.Sheets(kaynak.Index + 1)
             kaynak.Visible = gor
+            Set kaynak = Nothing
+            adim = CStr(adlar(i)) & " / ad verme (" & ws.Name & ")"
             ws.Name = CStr(adlar(i))
             ws.Unprotect ""
             ws.Range("BX1:BX40").ClearContents
+            adim = CStr(adlar(i)) & " / içerik"
             Select Case Y_TUR(ws.Name)
                 Case "PANEL": Y_PANEL_TEMIZLE ws
                 Case "STOK": Y_STOK_TEMIZLE ws
@@ -1075,6 +1092,14 @@ Private Sub Y_KUR()
         End If
     Next i
     application.DisplayAlerts = da
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not kaynak Is Nothing Then kaynak.Visible = gor
+    application.DisplayAlerts = da
+    On Error GoTo 0
+    Err.Raise no, "Y_KUR", adim & " | " & metin
 End Sub
 
 Private Sub Y_PANEL_TEMIZLE(ByVal ws As Worksheet)
@@ -1162,9 +1187,11 @@ Private Sub Y_RAPOR_TEMIZLE(ByVal ws As Worksheet)
     ws.Range(ws.Rows(9), ws.Rows(son)).RowHeight = ws.StandardHeight
     ws.Range("A9").Value2 = "Veri bekleniyor: depo tanýmlarý yapýlýnca rapor oluþacak."
     ws.Range("A9").Font.Italic = True: ws.Range("A9").Font.Color = RGB(100, 116, 139)
+    On Error Resume Next
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 12) = "AKSORA_RP_DM" Then ws.Shapes(i).Delete
     Next i
+    On Error GoTo 0
     For Each co In ws.ChartObjects
         On Error Resume Next
         Do While co.Chart.SeriesCollection.Count > 0: co.Chart.SeriesCollection(1).Delete: Loop
@@ -1186,10 +1213,17 @@ End Sub
 ' Hakedis ve Teminat: rapor basligi korunur, icerik hedef kartlariyla doldurulur.
 Private Sub Y_BOS_KUR(ByVal ws As Worksheet)
     Dim i As Long, ad As String, w As Double, y As Double, s As Shape, x As Double, kw As Double, kutular As Variant, renk As Variant
-    For i = ws.Shapes.Count To 1 Step -1
-        ad = ws.Shapes(i).Name
-        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0) Then ws.Shapes(i).Delete
-    Next i
+    Dim silinecek As Collection, sv As Variant
+    Set silinecek = New Collection
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0) Then silinecek.Add ad
+    Next s
+    On Error Resume Next
+    For Each sv In silinecek
+        ws.Shapes(CStr(sv)).Delete
+    Next sv
+    On Error GoTo 0
     ws.Range("A3:Z300").Clear
     ws.Range(ws.Rows(3), ws.Rows(300)).RowHeight = ws.StandardHeight
     Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
@@ -1372,7 +1406,7 @@ Private Sub Y_GIRIS(ByVal kod As String)
 Cikis:
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = True
-    If no <> 0 Then MsgBox "Yatýrým birimi açýlamadý: " & metin, vbExclamation, "AKSORA"
+    If no <> 0 Then MsgBox "Yatýrým birimi açýlamadý." & vbCrLf & metin & vbCrLf & "(Hata " & no & ")", vbExclamation, "AKSORA"
     Exit Sub
 Hata:
     no = Err.Number: metin = Err.Description
