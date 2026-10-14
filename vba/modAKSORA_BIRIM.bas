@@ -2017,6 +2017,7 @@ Private Sub Y_ARAMA_TEMIZLE(ByVal ws As Worksheet)
     ws.Range("A13:N" & son).ClearContents
     ws.Range("B6").MergeArea.ClearContents
     ws.Range(ws.Cells(13, 75), ws.Cells(son, 75)).ClearContents
+    AKSORA_ARAMA_FAZLA_SATIR ws, 13
     ws.Range("BX21").Value2 = "TUMU"
     Y_BAGLA Y_SEKIL(ws, "btnMalzemeAnaPanel"), "Y_ANA PANEL"
     Set s = Y_SEKIL(ws, "btnMalzemeAra")

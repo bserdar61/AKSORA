@@ -159,6 +159,20 @@ Public Sub AKSORA_MUSTERI_ALT_BANT(ByVal ws As Worksheet)
     On Error GoTo 0
 End Sub
 
+' Arama sayfasi: sonuclarin altinda bicimli bos satir birakilmaz (dosya sismesi ve yavas acilis).
+Public Sub AKSORA_ARAMA_FAZLA_SATIR(ByVal ws As Worksheet, ByVal son As Long)
+    Dim kullanilan As Long
+    On Error Resume Next
+    If son < 212 Then son = 212
+    kullanilan = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+    If kullanilan > son + 50 Then
+        If ws.FilterMode Then ws.ShowAllData
+        ws.Range(ws.Rows(son + 1), ws.Rows(kullanilan)).Delete
+        kullanilan = ws.UsedRange.Row
+    End If
+    On Error GoTo 0
+End Sub
+
 Public Sub AKSORA_MUSTERI_SAYFA_HAZIRLA(ByVal ws As Worksheet)
     Dim s As Shape, ev As Boolean, koruma As Boolean, hataNo As Long, hataMetni As String, imza As String
     If mHazir Or Not M_SAYFA(ws.Name) Then Exit Sub
@@ -932,6 +946,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ws.AutoFilterMode = False
     eski = application.Max(13, AKSORA_M_SON(ws))
     ws.Range("A13:N" & eski).ClearContents
+    AKSORA_ARAMA_FAZLA_SATIR ws, n + 13
     If n > 0 Then
         ReDim sonuc(1 To n, 1 To 14)
         ' Yatirim aramasinda D depolari her zaman ustte (malzeme stok birimi mantigi).
@@ -1417,6 +1432,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_TEMIZLE()
     eski = application.Max(13, AKSORA_M_SON(ws))
     ws.Range("A13:N" & eski).ClearContents
     ws.Range("B6").MergeArea.ClearContents
+    AKSORA_ARAMA_FAZLA_SATIR ws, 13
     M_TABLO_BICIM ws, 13, 12, 13, "", ""
     ws.Range(ws.Cells(13, 75), ws.Cells(application.Max(13, eski), 75)).ClearContents
     AKSORA_MUSTERI_ARAMA_KPI_YENILE

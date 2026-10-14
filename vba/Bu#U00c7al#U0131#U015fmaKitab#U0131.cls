@@ -3,10 +3,13 @@ BEGIN
   MultiUse = -1  'True
 END
 Attribute VB_Name = "BuÇalýþmaKitabý"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
 Option Explicit
 
 Private Sub Workbook_Open()
@@ -19,15 +22,16 @@ Private Sub Workbook_Open()
 
     On Error GoTo Hata
 
-    AKSORA_SAYI_AYIRACLARI
+    ' Yukleme ekrani ilk is olarak gelir.
     AKSORA_V13_ACILIS = True
-
     application.EnableEvents = False
     application.ScreenUpdating = False
 
     adim = "Yükleme ekraný"
 
     SPLASH_GOSTER
+
+    AKSORA_SAYI_AYIRACLARI
     SPLASH_DURUM 0.12, "Baþlangýç ayarlarý hazýrlanýyor..."
 
     adim = "Makro korumalarý"
@@ -156,6 +160,16 @@ Private Sub Workbook_Deactivate()
 
 End Sub
 
+
+' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    Dim wn As Window
+    On Error Resume Next
+    For Each wn In ThisWorkbook.Windows
+        If wn.View <> xlNormalView Then wn.View = xlNormalView
+        If wn.Zoom < 40 Then wn.Zoom = 100
+    Next wn
+End Sub
 
 Private Sub Workbook_BeforeClose( _
     Cancel As Boolean)

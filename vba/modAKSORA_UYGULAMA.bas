@@ -22,6 +22,8 @@ Private mDurumKaydedildi As Boolean
 
 Private mExcelGizli As Boolean
 Private mSplashKapandi As Boolean
+Private mSplashBas As Double
+Private mSplashYuzde As Double
 
 
 '==========================================================
@@ -166,6 +168,8 @@ Public Sub SPLASH_GOSTER()
 
     mExcelGizli = False
 
+    mSplashBas = Timer: mSplashYuzde = 0
+
 
     On Error GoTo Hata
 
@@ -206,10 +210,8 @@ Public Sub SPLASH_DURUM( _
 
     If mSplashKapandi Then Exit Sub
 
-
-    frmSplash.SplashIlerle _
-        Yuzde, _
-        mesaj
+    ' Cubuk hedefe adim adim dolar (yukleme ekrani goz onunde ilerler).
+    SPLASH_AKIT Yuzde, mesaj
 
 
     On Error GoTo 0
@@ -220,9 +222,42 @@ End Sub
 '==========================================================
 ' SPLASH KAPAT
 '==========================================================
+Private Sub SPLASH_AKIT(ByVal hedef As Double, ByVal mesaj As String)
+    Dim i As Long, adim As Long, bas As Double, y As Double, t As Double
+    On Error Resume Next
+    If hedef > 1 Then hedef = 1
+    If hedef < mSplashYuzde Then hedef = mSplashYuzde
+    adim = 12
+    bas = mSplashYuzde
+    For i = 1 To adim
+        y = bas + (hedef - bas) * i / adim
+        frmSplash.SplashIlerle y, mesaj
+        t = Timer
+        Do While Timer - t < 0.025 And Timer >= t
+            DoEvents
+        Loop
+    Next i
+    mSplashYuzde = hedef
+    On Error GoTo 0
+End Sub
+
 Public Sub SPLASH_KAPAT()
 
+    Dim gecen As Double
+
     If mSplashKapandi Then Exit Sub
+
+    ' Yukleme ekrani en az ~2 sn gorunur ve %100'e dolarak kapanir.
+    On Error Resume Next
+    SPLASH_AKIT 1, "AKSORA hazýr"
+    gecen = Timer - mSplashBas
+    If gecen < 0 Then gecen = gecen + 86400#
+    Do While gecen < 2
+        DoEvents
+        gecen = Timer - mSplashBas
+        If gecen < 0 Then gecen = gecen + 86400#
+    Loop
+    On Error GoTo 0
 
 
     mSplashKapandi = True
