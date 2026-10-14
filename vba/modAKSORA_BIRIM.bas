@@ -1042,6 +1042,7 @@ End Sub
 Private Sub Y_KUR()
     Dim adlar As Variant, i As Long, ws As Worksheet, kaynak As Worksheet, gor As XlSheetVisibility
     Dim da As Boolean, kad As String, adim As String, no As Long, metin As String, yeniAd As String
+    Dim onceki As Collection, sh As Object, varmi As Boolean
     adlar = Y_ADLAR()
     da = application.DisplayAlerts: application.DisplayAlerts = False
     On Error GoTo Hata
@@ -1072,8 +1073,21 @@ Private Sub Y_KUR()
             kaynak.Visible = xlSheetVisible
             ' Kopya kaynagin hemen yanina alinir (sondaki gizli sayfalar etkilemez).
             adim = CStr(adlar(i)) & " / kopyalama"
+            Set onceki = New Collection
+            For Each sh In ThisWorkbook.Sheets
+                onceki.Add sh.Name, sh.Name
+            Next sh
             kaynak.Copy after:=kaynak
-            Set ws = ThisWorkbook.Sheets(kaynak.Index + 1)
+            ' Yeni sayfa konumdan degil, onceki listede olmamasindan bulunur (gizli sayfa kaymasi).
+            Set ws = Nothing
+            For Each sh In ThisWorkbook.Sheets
+                varmi = False
+                On Error Resume Next
+                varmi = (Len(onceki(sh.Name)) > 0)
+                On Error GoTo Hata
+                If Not varmi Then Set ws = sh: Exit For
+            Next sh
+            If ws Is Nothing Then Err.Raise 9, , "kopya sayfa bulunamadý"
             kaynak.Visible = gor
             Set kaynak = Nothing
             adim = CStr(adlar(i)) & " / ad verme (" & ws.Name & ")"
