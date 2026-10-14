@@ -170,6 +170,16 @@ Public Function AKSORA_IL_SON_TARIH(ByVal il As String) As Date
     Next i
 End Function
 
+Private Function AK_IL_ADI(ByVal il As String) As String
+    Select Case UCase$(Trim$(il))
+        Case "GIRESUN": AK_IL_ADI = "GÝRESUN"
+        Case "RIZE": AK_IL_ADI = "RÝZE"
+        Case "GUMUSHANE": AK_IL_ADI = "GÜMÜÞHANE"
+        Case "ARTVIN": AK_IL_ADI = "ARTVÝN"
+        Case Else: AK_IL_ADI = UCase$(Trim$(il))
+    End Select
+End Function
+
 Private Function AK12_TARIH(ByVal v As Variant) As Date
     Dim n As Double
     If IsError(v) Or IsEmpty(v) Then Exit Function
@@ -381,7 +391,7 @@ Private Function AK11_IL_GUNCELLE(ByVal il As String, ByRef aciklama As String) 
     yaziliyor = False
     application.ScreenUpdating = True
     AK11_IL_GUNCELLE = True
-    aciklama = il & ": güncellendi"
+    aciklama = AK_IL_ADI(il) & ": güncellendi"
     excelSure = AK14_GECEN_SURE(ilBas) - sapSure
     AK14_SURE_KAYDET il, sapSure, excelSure, True
     Exit Function
@@ -399,7 +409,7 @@ Hata:
         On Error GoTo 0
     End If
     application.ScreenUpdating = True
-    aciklama = il & ": güncellenemedi; " & Hata & geri
+    aciklama = AK_IL_ADI(il) & ": güncellenemedi; " & Hata & geri
     excelSure = AK14_GECEN_SURE(ilBas) - sapSure
     AK14_SURE_KAYDET il, sapSure, excelSure, False
     ' A rollback error must stop the batch, never be presented as preserved data.
@@ -507,6 +517,7 @@ Temizle:
     ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
     If basladi Then AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas))
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
     Else
