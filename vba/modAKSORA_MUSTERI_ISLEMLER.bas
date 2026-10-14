@@ -2189,6 +2189,7 @@ Public Sub AKSORA_MUSTERI_DAGILIM_SEC()
     If korumali Then ws.Unprotect ""
     ws.Range("BX30").Value2 = Trim$(t)
     M_DEPO_DAGILIM ws
+    If Left$(ws.Name, 2) = "Y_" Then AKSORA_YATIRIM_DM_DUZEN ws
     M_LEJANT_KARE ws
 Cikis:
     On Error Resume Next

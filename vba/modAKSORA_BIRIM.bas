@@ -15,6 +15,7 @@ Private mGorunum As Boolean
 Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
 Private mYCalisiyor As Boolean
 Private mYToplu As Boolean
+Private mYOdak As String
 
 ' Yalniz yeni sayfalari ve ThisWorkbook acilis yonlendirmesini kurar.
 Public Sub AKSORA_BIRIM_KUR()
@@ -952,7 +953,7 @@ End Function
 '==========================================================
 
 Private Function Y_ADLAR() As Variant
-    Y_ADLAR = Array("Y_ANA PANEL", "Y_MALZEME_ARA", "Y_HAKEDÝÞ", "Y_TEMÝNAT", _
+    Y_ADLAR = Array("Y_ANA PANEL", "Y_TEMÝNAT", "Y_HAKEDÝÞ", "Y_MALZEME_ARA", _
         "Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR", "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR", _
         "Y_CDP_YÜKLENÝCÝ_STOK", "Y_CDP_YÜKLENÝCÝ_RAPOR", "Y_EPP_YÜKLENÝCÝ_STOK", "Y_EPP_YÜKLENÝCÝ_RAPOR")
 End Function
@@ -1450,6 +1451,7 @@ Private Sub Y_GIRIS(ByVal kod As String)
     For Each ad In Y_ADLAR()
         ThisWorkbook.Worksheets(CStr(ad)).Visible = xlSheetVisible
     Next ad
+    Y_SEKME_SIRASI
     Set panel = ThisWorkbook.Worksheets("Y_ANA PANEL")
     panel.Select Replace:=True
     For Each k In ThisWorkbook.Worksheets
@@ -1650,6 +1652,9 @@ Private Sub Y_STOK_YENIDEN(ByVal ws As Worksheet, ByVal il As String)
     r.Unprotect ""
     Y_YAZ Y_SEKIL(r, "AKT1_RAPOR_BASLIK"), "AKSORA | " & Y_BASLIK(r.Name) & "  |  " & Y_IL_ADI(il)
     AKSORA_MUSTERI_RAPOR_KUR_DIS r
+    On Error Resume Next
+    AKSORA_YATIRIM_DM_DUZEN r
+    On Error GoTo 0
     Y_BAGLA Y_SEKIL(r, "btnAnaPanelDon"), "Y_ANA PANEL"
     Y_KORU r
 End Sub
@@ -1870,7 +1875,6 @@ Private Sub Y_PANEL_GOSTER()
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("Y_ANA PANEL")
     If ws Is Nothing Then Exit Sub
-    If ActiveSheet Is ws Then Exit Sub
     ev = application.EnableEvents
     application.ScreenUpdating = False: application.EnableEvents = False
     mYonlendirme = True
@@ -1881,7 +1885,73 @@ Private Sub Y_PANEL_GOSTER()
     AKSORA_YATIRIM_GORUNUM ws
     application.ScreenUpdating = True
     DoEvents
+    ' Excel islem bitince baska sayfayi one getirirse panel tekrar secilir.
+    mYOdak = ws.Name
+    application.OnTime Now + TimeSerial(0, 0, 1), BIRIM_MAKRO("AKSORA_YATIRIM_ODAK")
     On Error GoTo 0
+End Sub
+
+Private Sub Y_SAYFA_SEC(ByVal ws As Worksheet)
+    Dim ev As Boolean, sc As Boolean
+    On Error Resume Next
+    If ws Is Nothing Then Exit Sub
+    If ActiveSheet Is ws Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False
+    mYonlendirme = True
+    ws.Select Replace:=True
+    mYonlendirme = False
+    application.EnableEvents = ev
+    AKSORA_YATIRIM_GORUNUM ws
+    application.ScreenUpdating = sc
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_ODAK()
+    Dim ad As String
+    ad = mYOdak: mYOdak = vbNullString
+    If Len(ad) = 0 Or mYCalisiyor Or mYToplu Then Exit Sub
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If ActiveSheet.Name = ad Then Exit Sub
+    If Not AKSORA_YATIRIM_SAYFA(ActiveSheet) Then Exit Sub
+    Y_SAYFA_SEC ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+End Sub
+
+' Sekmeler: Ana panel, Teminat, Hakedis, Malzeme arama, ardindan stok/rapor ciftleri.
+Private Sub Y_SEKME_SIRASI()
+    Dim adlar As Variant, i As Long, onceki As Worksheet, ws As Worksheet
+    adlar = Y_ADLAR()
+    For i = 1 To UBound(adlar)
+        Set onceki = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        If ws.Index <> onceki.Index + 1 Then ws.Move after:=onceki
+    Next i
+End Sub
+
+' Rapor alt bolumu: depo secim listesi baslik satirinda tablo basligina binmez.
+Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
+    Dim bas As Long, ust As Double, eskiH As Double, fark As Double, s As Shape, t As String
+    bas = Val(CStr(r.Range("BX31").Value2))
+    If bas < 9 Then Exit Sub
+    ust = r.Rows(bas).Top: eskiH = r.Rows(bas).Height
+    If eskiH >= 44 Then Exit Sub
+    fark = 44 - eskiH
+    For Each s In r.Shapes
+        If Left$(s.Name, 12) = "AKSORA_RP_DM" And s.Top >= ust + eskiH - 1 Then s.Top = s.Top + fark
+    Next s
+    r.Rows(bas).RowHeight = 44
+    For Each s In r.Shapes
+        t = s.Name
+        If t = "AKSORA_RP_DM_BASLIK" Or t = "AKSORA_RP_DM_SECIM_ETIKET" Then
+            s.Top = ust + 4: s.Height = 36
+        ElseIf t = "AKSORA_RP_DM_LISTE" Then
+            s.Top = ust + 12: s.Height = 20
+        ElseIf t = "AKSORA_RP_DM_ZEMIN" Then
+            If s.Top < ust + 1 And s.Top > ust - 1 Then s.Height = s.Height + fark
+        End If
+    Next s
 End Sub
 
 Private Sub Y_PANEL_YENILE()
@@ -1991,11 +2061,12 @@ End Sub
 ' Bes ilin yatirim ve yuklenici stoklari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
 Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
     Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
-    Dim hataMetni As String, metin As String, sc As Boolean
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet
     If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
     If MsgBox("Beþ ilin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) yatýrým ve yüklenici stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
         vbYesNo + vbQuestion, "AKSORA | Yatýrým Birimi") <> vbYes Then Exit Sub
     sc = application.ScreenUpdating
+    If TypeOf ActiveSheet Is Worksheet Then Set baslangic = ActiveSheet
     mYToplu = True: bas = Timer
     application.ScreenUpdating = True
     On Error GoTo Hata
@@ -2004,6 +2075,7 @@ Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
         Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor..."
         If Y_GUNCELLE(CStr(il), "1234", True, bilgi) Then adet = adet + 1
         sonuc = sonuc & bilgi & vbCrLf
+        Y_SAYFA_SEC baslangic
     Next il
 Bitir:
     On Error Resume Next
