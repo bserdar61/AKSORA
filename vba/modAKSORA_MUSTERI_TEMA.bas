@@ -1179,6 +1179,7 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
     End With
     ' Yakinlastirma, kenar hizalama ve kart yerlesimi (pencere/veri degismedikce atlanir).
     If ws.Name = "M_ANA PANEL" Then
+        AKSORA_MUSTERI_ALT_BANT ws
         ' Ana panel ozgun yerlesimiyle pencereye sigdirilir (sekiller tasinmaz).
         genislik = ws.Range("A1:L1").Width
         For Each s In ws.Shapes

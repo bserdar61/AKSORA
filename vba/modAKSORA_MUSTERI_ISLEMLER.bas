@@ -86,6 +86,79 @@ Private Sub M_BAGLA(ByVal ws As Worksheet, ByVal s As Shape)
     If Len(makro) > 0 Then s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & makro
 End Sub
 
+' Il gecisinde pencere tek parca cizilir (ara durumlar ekrana yansimaz).
+Public Function AKSORA_PENCERE_KILIT(ByVal kilitle As Boolean) As Boolean
+    On Error Resume Next
+    If kilitle Then
+        AKSORA_PENCERE_KILIT = (M_PencereKilit(application.hwnd) <> 0)
+    Else
+        M_PencereKilit 0
+    End If
+    On Error GoTo 0
+End Function
+
+' Ana panel alt bolumu: hizli erisim, lacivert kurum bandi ve panel kontrol seridi
+' satir izgarasina sabitlenir (B25:T26, B28:AB29, satir 30); kayma olursa duzelir.
+Public Sub AKSORA_MUSTERI_ALT_BANT(ByVal ws As Worksheet)
+    Dim alt As Shape, yazi As Shape, foto As Shape, s As Shape, r As Range, h As Range
+    Dim i As Long, korumali As Boolean, t As String
+    If ws.Name <> "M_ANA PANEL" Then Exit Sub
+    Set alt = M_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
+    If alt Is Nothing Then Exit Sub
+    On Error Resume Next
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    For i = 25 To 29
+        If ws.Rows(i).Hidden Then ws.Rows(i).Hidden = False
+        If ws.Rows(i).RowHeight <> 19.95 Then ws.Rows(i).RowHeight = 19.95
+    Next i
+    If ws.Rows(30).Hidden Then ws.Rows(30).Hidden = False
+    If ws.Rows(30).RowHeight <> 16 Then ws.Rows(30).RowHeight = 16
+    Set h = ws.Range("B25:T26")
+    For Each s In ws.Shapes
+        If Left$(s.Name, 14) = "MUSTERI_HIZLI_" Then
+            s.Placement = xlFreeFloating
+            If Abs(s.Top - (h.Top + 1)) > 0.5 Then s.Top = h.Top + 1
+            If Abs(s.Height - (h.Height - 2)) > 0.5 Then s.Height = h.Height - 2
+        End If
+    Next s
+    Set r = ws.Range("B28:AB29")
+    alt.Placement = xlFreeFloating
+    If Abs(alt.Top - r.Top) > 0.5 Then alt.Top = r.Top
+    If Abs(alt.Height - r.Height) > 0.5 Then alt.Height = r.Height
+    alt.Visible = msoTrue
+    alt.ZOrder msoBringToFront
+    Set yazi = M_SEKIL(ws, "AKSORA15_ALT_KURUM")
+    If Not yazi Is Nothing Then
+        yazi.Placement = xlFreeFloating
+        yazi.Left = alt.Left: yazi.Width = alt.Width: yazi.Top = alt.Top: yazi.Height = alt.Height
+        t = Trim$(Replace(Replace(yazi.TextFrame2.TextRange.Text, vbCr, ""), vbLf, ""))
+        If Len(t) = 0 Then
+            yazi.TextFrame2.TextRange.Text = "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & M_IL_ADI() & " Ýl Müdürlüðü"
+            yazi.TextFrame2.TextRange.Font.Size = 10: yazi.TextFrame2.TextRange.Font.bold = msoTrue
+            yazi.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+            yazi.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+            yazi.TextFrame2.VerticalAnchor = msoAnchorMiddle
+        End If
+        yazi.Visible = msoTrue
+        yazi.ZOrder msoBringToFront
+    End If
+    Set s = M_SEKIL(ws, "AKSORA15_PANEL_TARIHI")
+    If Not s Is Nothing Then
+        s.Placement = xlFreeFloating
+        s.Left = alt.Left: s.Width = alt.Width
+        s.Top = alt.Top + alt.Height: s.Height = 16
+        s.ZOrder msoBringToFront
+    End If
+    Set foto = M_SEKIL(ws, "AKSORA15_TEK_ARKA_PLAN")
+    If Not foto Is Nothing Then
+        If alt.Top > foto.Top And Abs(foto.Top + foto.Height - alt.Top) > 0.5 Then foto.Height = alt.Top - foto.Top
+    End If
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
+        UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
+End Sub
+
 Public Sub AKSORA_MUSTERI_SAYFA_HAZIRLA(ByVal ws As Worksheet)
     Dim s As Shape, ev As Boolean, koruma As Boolean, hataNo As Long, hataMetni As String, imza As String
     If mHazir Or Not M_SAYFA(ws.Name) Then Exit Sub
@@ -1235,6 +1308,7 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         End With
     End If
     On Error GoTo 0
+    AKSORA_MUSTERI_ALT_BANT ws
     M_YAZ ws, "AKSORA15_KART_BASLIK_B", "CDP / " & AKSORA_MUSTERI_TESIS()
     ' Islem dugmeleri
     makro = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!"

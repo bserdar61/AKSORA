@@ -446,7 +446,7 @@ Private Sub MUSTERI_SECIM_CIZ(ByVal ws As Worksheet)
 End Sub
 
 Public Sub AKSORA_MUSTERI_GIRIS()
-    Dim ws As Worksheet
+    Dim ws As Worksheet, kilit As Boolean
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(MUK)
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
@@ -455,11 +455,19 @@ Public Sub AKSORA_MUSTERI_GIRIS()
         MsgBox "Seçilen ilin müþteri birimi þu an aktif deðil. Aktif iller: Artvin, Trabzon, Gümüþhane, Giresun, Rize.", vbInformation, "AKSORA"
     Else
         ' Secilen ilin stoklari ekrana yuklenir (onceki ilin verisi kendi kaydina saklanir).
+        ' Gecis boyunca ekran ve pencere kilitli: ara sayfalar gorunmez, tek seferde panel gelir.
+        application.ScreenUpdating = False
+        kilit = AKSORA_PENCERE_KILIT(True)
         AKSORA_MUSTERI_IL_DEGIS CStr(ws.Range("AZ1").Value2)
+        application.ScreenUpdating = False
         AKSORA_MUSTERI_TEMA_AC
+        If kilit Then AKSORA_PENCERE_KILIT False
+        application.ScreenUpdating = True
     End If
     Exit Sub
 Hata:
+    If kilit Then AKSORA_PENCERE_KILIT False
+    application.ScreenUpdating = True
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
