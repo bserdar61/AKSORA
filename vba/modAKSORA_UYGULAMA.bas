@@ -185,6 +185,8 @@ Public Sub SPLASH_GOSTER()
 
     frmSplash.SplashBaslat
 
+    SPLASH_ISARET
+
 
     Exit Sub
 
@@ -238,6 +240,17 @@ Private Sub SPLASH_AKIT(ByVal hedef As Double, ByVal mesaj As String)
         Loop
     Next i
     mSplashYuzde = hedef
+    On Error GoTo 0
+End Sub
+
+' Masaustu baslaticisi (AKSORA_BASLAT.hta) bu isareti gorunce kendi bekleme ekranini kapatir.
+Private Sub SPLASH_ISARET()
+    Dim f As Integer
+    On Error Resume Next
+    f = FreeFile
+    Open Environ$("TEMP") & "\AKSORA_ACILIS.flag" For Output As #f
+    Print #f, "HAZIR"
+    Close #f
     On Error GoTo 0
 End Sub
 

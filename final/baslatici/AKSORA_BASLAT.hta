@@ -1,0 +1,135 @@
+﻿<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>AKSORA</title>
+<HTA:APPLICATION ID="aksora" APPLICATIONNAME="AKSORA_BASLAT" BORDER="none" CAPTION="no"
+  SHOWINTASKBAR="yes" SINGLEINSTANCE="yes" SYSMENU="no" SCROLL="no" INNERBORDER="no"
+  CONTEXTMENU="no" SELECTION="no" ICON="AKSORA.ico" WINDOWSTATE="normal" />
+<style>
+  body { margin:0; padding:0; background:#ffffff; font-family:"Segoe UI", Arial, sans-serif; overflow:hidden; }
+  #kutu { width:520px; height:330px; border:1px solid #c9d6e3; background:#ffffff; text-align:center; }
+  #logo { margin-top:22px; width:120px; height:120px; }
+  #baslik { font-size:26px; font-weight:bold; color:#1f4e79; margin-top:6px; letter-spacing:2px; }
+  #alt { font-size:13px; color:#6e7d8c; margin-top:2px; }
+  #durum { font-size:12px; color:#1f4e79; margin-top:18px; height:16px; }
+  #arka { width:260px; height:8px; background:#e0e4ea; margin:10px auto 0 auto; overflow:hidden; position:relative; }
+  #bar { width:0px; height:8px; background:#2f90d9; position:absolute; left:0; top:0; }
+  #imza { font-size:10px; color:#9aa7b4; margin-top:22px; }
+</style>
+<script language="JScript">
+var sh = new ActiveXObject("WScript.Shell");
+var fso = new ActiveXObject("Scripting.FileSystemObject");
+var bayrak = sh.ExpandEnvironmentStrings("%TEMP%") + "\\AKSORA_ACILIS.flag";
+var bas = new Date().getTime();
+var poz = 0, gorulen = false;
+
+function klasor() {
+  var cl = aksora.commandLine, m = cl.match(/^\s*"([^"]+)"/);
+  var yol = m ? m[1] : cl.split(" ")[0];
+  return fso.GetParentFolderName(yol);
+}
+
+function excelYolu(k) {
+  var y = k + "\\AKSORA.xlsm";
+  if (fso.FileExists(y)) return y;
+  var e = new Enumerator(fso.GetFolder(k).Files);
+  for (; !e.atEnd(); e.moveNext()) {
+    var ad = e.item().Name.toUpperCase();
+    if (ad.indexOf("AKSORA") == 0 && ad.slice(-5) == ".XLSM" && ad.indexOf("~$") != 0) return e.item().Path;
+  }
+  return "";
+}
+
+// Masaustunde AKSORA kisayolu bu baslaticiya baglanir (ikonuyla).
+function kisayol(k) {
+  try {
+    var mas = sh.SpecialFolders("Desktop");
+    var lnk = sh.CreateShortcut(mas + "\\AKSORA.lnk");
+    var hedef = k + "\\AKSORA_BASLAT.hta";
+    if (lnk.TargetPath.toUpperCase() != hedef.toUpperCase()) {
+      lnk.TargetPath = hedef;
+      lnk.WorkingDirectory = k;
+      if (fso.FileExists(k + "\\AKSORA.ico")) lnk.IconLocation = k + "\\AKSORA.ico,0";
+      lnk.Description = "AKSORA";
+      lnk.Save();
+    }
+  } catch (e) {}
+}
+
+// Excel gorunmez acilir; AKSORA kendi yukleme ekranini acinca bu pencere kapanir.
+function baslat() {
+  var k = klasor(), x = excelYolu(k);
+  if (x == "") { document.getElementById("durum").innerText = "AKSORA.xlsm bu klasörde bulunamadı."; setTimeout(function(){ window.close(); }, 5000); return; }
+  kisayol(k);
+  try { if (fso.FileExists(bayrak)) fso.DeleteFile(bayrak, true); } catch (e) {}
+  var vbs = sh.ExpandEnvironmentStrings("%TEMP%") + "\\AKSORA_AC.vbs";
+  var t = fso.CreateTextFile(vbs, true);
+  t.WriteLine("On Error Resume Next");
+  // AKSORA zaten aciksa ikinci kez acilmaz, acik olan one getirilir.
+  t.WriteLine("Set ex = GetObject(, \"Excel.Application\")");
+  t.WriteLine("If Err.Number = 0 Then");
+  t.WriteLine("  For Each wb In ex.Workbooks");
+  t.WriteLine("    If LCase(wb.FullName) = LCase(WScript.Arguments(0)) Then");
+  t.WriteLine("      ex.Visible = True: wb.Activate");
+  t.WriteLine("      Set f = CreateObject(\"Scripting.FileSystemObject\").CreateTextFile(WScript.Arguments(1), True)");
+  t.WriteLine("      f.WriteLine \"ACIK\": f.Close");
+  t.WriteLine("      WScript.Quit");
+  t.WriteLine("    End If");
+  t.WriteLine("  Next");
+  t.WriteLine("End If");
+  t.WriteLine("Err.Clear");
+  t.WriteLine("Set xl = CreateObject(\"Excel.Application\")");
+  t.WriteLine("xl.Visible = False");
+  t.WriteLine("xl.Workbooks.Open WScript.Arguments(0)");
+  t.WriteLine("If Err.Number <> 0 Then");
+  t.WriteLine("  Set f = CreateObject(\"Scripting.FileSystemObject\").CreateTextFile(WScript.Arguments(1), True)");
+  t.WriteLine("  f.WriteLine \"HATA: \" & Err.Description");
+  t.WriteLine("  f.Close");
+  t.WriteLine("  xl.Visible = True");
+  t.WriteLine("End If");
+  t.WriteLine("xl.Visible = True");
+  t.WriteLine("xl.UserControl = True");
+  t.Close();
+  sh.Run("wscript.exe //nologo \"" + vbs + "\" \"" + x + "\" \"" + bayrak + "\"", 0, false);
+  setInterval(adim, 40);
+  setInterval(kontrol, 250);
+}
+
+function adim() {
+  // Dolup bosalan akis: bekleme suresince cubuk hareket eder.
+  poz += 4; if (poz > 330) poz = -70;
+  var b = document.getElementById("bar");
+  b.style.left = poz + "px"; b.style.width = "70px";
+  var s = Math.floor((new Date().getTime() - bas) / 1000);
+  document.getElementById("durum").innerText = "AKSORA açılıyor...  " + s + " sn";
+}
+
+function kontrol() {
+  var gecen = new Date().getTime() - bas;
+  if (fso.FileExists(bayrak)) {
+    var hata = "";
+    try { var f = fso.OpenTextFile(bayrak, 1); hata = f.AtEndOfStream ? "" : f.ReadLine(); f.Close(); } catch (e) {}
+    if (hata.indexOf("HATA") == 0) { document.getElementById("durum").innerText = hata; setTimeout(function(){ window.close(); }, 6000); return; }
+    if (!gorulen) { gorulen = true; setTimeout(function(){ window.close(); }, 300); }
+  }
+  if (gecen > 180000) window.close();
+}
+
+function yerles() {
+  var w = 522, h = 332;
+  window.resizeTo(w, h);
+  window.moveTo((screen.availWidth - w) / 2, (screen.availHeight - h) / 2);
+}
+</script>
+</head>
+<body onload="yerles(); setTimeout(baslat, 50);">
+<div id="kutu">
+  <img id="logo" src="AKSORA_LOGO.png">
+  <div id="baslik">AKSORA</div>
+  <div id="alt">Stok ve Verimlilik, AKSORA!</div>
+  <div id="durum">AKSORA açılıyor...</div>
+  <div id="arka"><div id="bar"></div></div>
+  <div id="imza">Çoruh EDAŞ</div>
+</div>
+</body>
+</html>
