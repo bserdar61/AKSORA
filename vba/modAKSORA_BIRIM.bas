@@ -201,6 +201,11 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
         AKSORA_BIRIM_OLAY = True
         Exit Function
     End If
+    If AKSORA_YATIRIM_SAYFA(sh) Then
+        AKSORA_YATIRIM_GORUNUM sh
+        AKSORA_BIRIM_OLAY = True
+        Exit Function
+    End If
     If Not BIRIM_YENI_SAYFA(CStr(sh.Name)) Then Exit Function
     If sh.Name = MUK Or sh.Name = YAK Then MUSTERI_KAPAK_GORUNUM sh Else BIRIM_GORUNUM sh
     AKSORA_BIRIM_OLAY = True
@@ -211,6 +216,11 @@ Public Function AKSORA_BIRIM_AKTIF_GORUNUM() As Boolean
     If Not TypeOf ActiveSheet Is Worksheet Then Exit Function
     If AKSORA_MUSTERI_TEMA_SAYFA(ActiveSheet) Then
         AKSORA_MUSTERI_TEMA_GORUNUM ActiveSheet
+        AKSORA_BIRIM_AKTIF_GORUNUM = True
+        Exit Function
+    End If
+    If AKSORA_YATIRIM_SAYFA(ActiveSheet) Then
+        AKSORA_YATIRIM_GORUNUM ActiveSheet
         AKSORA_BIRIM_AKTIF_GORUNUM = True
         Exit Function
     End If
@@ -513,6 +523,11 @@ Private Sub YATIRIM_KAPAK_AC()
     ws.Visible = xlSheetVisible: ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE YAK
     ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVeryHidden
+    ' Il secim ekrani tek gorunur sayfa: arkada acik kalan sayfalara kayma olmaz.
+    Dim yk As Worksheet
+    For Each yk In ThisWorkbook.Worksheets
+        If yk.Name <> YAK And yk.Visible = xlSheetVisible Then yk.Visible = xlSheetVeryHidden
+    Next yk
     YATIRIM_KAPAK_GORUNUM ws
 Cikis:
     mYonlendirme = False
@@ -543,22 +558,32 @@ Private Sub YATIRIM_KAPAK_GORUNUM(ByVal ws As Worksheet)
 End Sub
 
 Public Sub AKSORA_YATIRIM_IL_SEC()
-    Dim ws As Worksheet, ix As Long, keys As Variant
-    On Error GoTo Hata
+    Dim ws As Worksheet, ix As Long, keys As Variant, ev As Boolean, metin As String
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     If ActiveSheet.Name <> YAK Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(YAK)
     ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
     If ix < 1 Or ix > 5 Then Exit Sub
     keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    ' Secim tek seferde cizilir; olaylar baska sayfaya gecis yaptirmaz.
+    application.ScreenUpdating = False: application.EnableEvents = False
     ws.Unprotect pw
     ws.Range("AZ1").Value2 = keys(ix - 1)
     YATIRIM_SECIM_CIZ ws
 Cikis:
-    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Protect Password:=pw, UserInterfaceOnly:=True
+        If Not (ActiveSheet Is ws) Then ws.Activate
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(metin) > 0 Then MsgBox metin, vbExclamation, "AKSORA"
     Exit Sub
 Hata:
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    metin = Err.Description
     Resume Cikis
 End Sub
 
@@ -568,6 +593,9 @@ Private Sub YATIRIM_SECIM_CIZ(ByVal ws As Worksheet)
     names = Array("GÝRESUN", "TRABZON", "RÝZE", "GÜMÜÞHANE", "ARTVÝN")
     key = CStr(ws.Range("AZ1").Value2)
     ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇÝLÝ ÝL: -"
+    On Error Resume Next
+    ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = "Yatýrým birimi: depo tanýmlarý bekleniyor"
+    On Error GoTo 0
     For i = 1 To 5
         With ws.Shapes("AKSORA_V4_IL_" & i)
             If keys(i - 1) = key Then
@@ -589,7 +617,7 @@ Public Sub AKSORA_YATIRIM_GIRIS()
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
         MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
     Else
-        MsgBox "Yatýrým Birimi iþlem ekranlarý hazýrlanýyor.", vbInformation, "AKSORA"
+        Y_GIRIS CStr(ws.Range("AZ1").Value2)
     End If
     Exit Sub
 Hata:
@@ -905,3 +933,449 @@ End Sub
 Private Function BIRIM_MAKRO(ByVal ad As String) As String
     BIRIM_MAKRO = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & ad
 End Function
+
+'==========================================================
+' YATIRIM BIRIMI (Y_ sayfalari)
+' Ana panel, stok ve rapor sayfalari musteri biriminin kilitli tasarimindan
+' kopyalanir; Hakedis ve Teminat sayfalari ayni basliklarla hazirlanir.
+'==========================================================
+Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V1"
+
+Private Function Y_ADLAR() As Variant
+    Y_ADLAR = Array("Y_ANA PANEL", "Y_HAKEDÝÞ", "Y_TEMÝNAT", _
+        "Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR", "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR", _
+        "Y_CDP_YÜKLENÝCÝ_STOK", "Y_CDP_YÜKLENÝCÝ_RAPOR", "Y_EPP_YÜKLENÝCÝ_STOK", "Y_EPP_YÜKLENÝCÝ_RAPOR")
+End Function
+
+Private Function Y_BASLIK(ByVal ad As String) As String
+    Select Case ad
+        Case "Y_ANA PANEL": Y_BASLIK = "ANA PANEL"
+        Case "Y_HAKEDÝÞ": Y_BASLIK = "HAKEDÝÞ"
+        Case "Y_TEMÝNAT": Y_BASLIK = "TEMÝNAT TAKÝBÝ"
+        Case Else: Y_BASLIK = Replace(Replace(Mid$(ad, 3), "_", " "), "RAPOR", "RAPORU")
+    End Select
+End Function
+
+Private Function Y_TUR(ByVal ad As String) As String
+    If ad = "Y_ANA PANEL" Then
+        Y_TUR = "PANEL"
+    ElseIf ad = "Y_HAKEDÝÞ" Or ad = "Y_TEMÝNAT" Then
+        Y_TUR = "BOS"
+    ElseIf Right$(ad, 5) = "_STOK" Then
+        Y_TUR = "STOK"
+    Else
+        Y_TUR = "RAPOR"
+    End If
+End Function
+
+Public Function AKSORA_YATIRIM_SAYFA(ByVal sh As Object) As Boolean
+    Dim ad As Variant
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If Left$(sh.Name, 2) <> "Y_" Then Exit Function
+    For Each ad In Y_ADLAR()
+        If sh.Name = CStr(ad) Then AKSORA_YATIRIM_SAYFA = (CStr(sh.Range("BX1").Value2) = Y_ETIKET): Exit Function
+    Next ad
+End Function
+
+Private Function Y_IL_ADI(ByVal kod As String) As String
+    Select Case UCase$(Trim$(kod))
+        Case "GIRESUN": Y_IL_ADI = "Giresun"
+        Case "TRABZON": Y_IL_ADI = "Trabzon"
+        Case "RIZE": Y_IL_ADI = "Rize"
+        Case "GUMUSHANE": Y_IL_ADI = "Gümüþhane"
+        Case Else: Y_IL_ADI = "Artvin"
+    End Select
+End Function
+
+Private Function Y_SEKIL(ByVal ws As Worksheet, ByVal ad As String) As Shape
+    On Error Resume Next
+    Set Y_SEKIL = ws.Shapes(ad)
+    On Error GoTo 0
+End Function
+
+Private Sub Y_YAZ(ByVal s As Shape, ByVal metin As String)
+    If s Is Nothing Then Exit Sub
+    On Error Resume Next
+    s.TextFrame2.TextRange.Text = metin
+    On Error GoTo 0
+End Sub
+
+Private Function Y_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, ByVal punto As Single, _
+    ByVal renk As Long, ByVal kalin As Boolean, ByVal hiz As MsoParagraphAlignment) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    s.Name = ad: s.Fill.Visible = msoFalse: s.line.Visible = msoFalse: s.Placement = xlFreeFloating
+    With s.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoTrue
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = punto
+        .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        .TextRange.Font.Fill.ForeColor.RGB = renk
+        .TextRange.ParagraphFormat.Alignment = hiz
+    End With
+    Set Y_METIN = s
+End Function
+
+Private Function Y_KUTU(ByVal ws As Worksheet, ByVal ad As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal dolgu As Long, ByVal kenar As Long) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    s.Name = ad: s.Adjustments.Item(1) = 0.08: s.Placement = xlFreeFloating
+    s.Fill.ForeColor.RGB = dolgu: s.Shadow.Visible = msoFalse
+    If kenar < 0 Then s.line.Visible = msoFalse Else s.line.ForeColor.RGB = kenar: s.line.Weight = 1
+    Set Y_KUTU = s
+End Function
+
+Private Sub Y_BAGLA(ByVal s As Shape, ByVal hedef As String)
+    If s Is Nothing Then Exit Sub
+    If Len(hedef) > 0 Then
+        s.AlternativeText = hedef
+        s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_SAYFA_AC")
+    Else
+        s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_GUNCELLE")
+    End If
+End Sub
+
+' Eksik Y_ sayfalari musteri sayfalarindan kopyalanarak kurulur (veri tasinmaz).
+Private Sub Y_KUR()
+    Dim adlar As Variant, i As Long, ws As Worksheet, kaynak As Worksheet, gor As XlSheetVisibility
+    Dim da As Boolean, kad As String
+    adlar = Y_ADLAR()
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    For i = 0 To UBound(adlar)
+        Set ws = Nothing
+        On Error Resume Next
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        On Error GoTo 0
+        If ws Is Nothing Then
+            Select Case Y_TUR(CStr(adlar(i)))
+                Case "PANEL": kad = "M_ANA PANEL"
+                Case "STOK": kad = "M_CDP_STOK"
+                Case Else: kad = "M_CDP_RAPOR"
+            End Select
+            Set kaynak = ThisWorkbook.Worksheets(kad)
+            gor = kaynak.Visible
+            kaynak.Visible = xlSheetVisible
+            kaynak.Copy after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+            Set ws = ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+            kaynak.Visible = gor
+            ws.Name = CStr(adlar(i))
+            ws.Unprotect ""
+            ws.Range("BX1:BX40").ClearContents
+            Select Case Y_TUR(ws.Name)
+                Case "PANEL": Y_PANEL_TEMIZLE ws
+                Case "STOK": Y_STOK_TEMIZLE ws
+                Case "RAPOR": Y_RAPOR_TEMIZLE ws
+                Case Else: Y_BOS_KUR ws
+            End Select
+            ws.Range("BX1").Value2 = Y_ETIKET
+            ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next i
+    application.DisplayAlerts = da
+End Sub
+
+Private Sub Y_PANEL_TEMIZLE(ByVal ws As Worksheet)
+    Dim s As Shape, ad As String, i As Long, ilk As Shape, son As Shape, x0 As Double, x1 As Double, bw As Double, g As Double
+    Dim adlar As Variant, hedefler As Variant, yeni As Shape
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Left$(ad, 20) = "AKSORA15_KART_DEGER_" Then
+            If Right$(ad, 1) = "0" Then Y_YAZ s, "Veri bekleniyor" Else Y_YAZ s, "-"
+        End If
+        If Left$(ad, 18) = "AKSORA15_KART_LED_" Then s.Fill.ForeColor.RGB = RGB(145, 162, 176)
+    Next s
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "TEMÝNAT TAKÝBÝ": Y_BAGLA Y_SEKIL(ws, "btnBaglantiKontrol"), "Y_TEMÝNAT"
+    Y_YAZ Y_SEKIL(ws, "btnMalzemeAraPanel"), "HAKEDÝÞ": Y_BAGLA Y_SEKIL(ws, "btnMalzemeAraPanel"), "Y_HAKEDÝÞ"
+    Y_YAZ Y_SEKIL(ws, "btnTumStok"), "TÜM STOKLARI GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnTumStok"), ""
+    Y_YAZ Y_SEKIL(ws, "btnCDP"), "CDP YATIRIM GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnCDP"), ""
+    Y_YAZ Y_SEKIL(ws, "btnIlce"), "EPP YATIRIM GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnIlce"), ""
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "YÜKLENÝCÝ GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnYuk"), ""
+    Set s = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_BIRIM_YATIRIM")
+    ' Hizli erisim: 8 sayfa ayni satirda esit aralikla.
+    Set ilk = Y_SEKIL(ws, "MUSTERI_HIZLI_0"): Set son = Y_SEKIL(ws, "MUSTERI_HIZLI_5")
+    If ilk Is Nothing Or son Is Nothing Then Exit Sub
+    x0 = ilk.Left: x1 = son.Left + son.Width: g = 6
+    For i = 6 To 7
+        Set yeni = son.Duplicate
+        yeni.Name = "MUSTERI_HIZLI_" & i
+        yeni.Top = son.Top
+    Next i
+    bw = (x1 - x0 - 7 * g) / 8
+    adlar = Array("CDP YATIRIM STOK", "CDP YATIRIM RAPOR", "EPP YATIRIM STOK", "EPP YATIRIM RAPOR", _
+        "CDP YÜKLENÝCÝ STOK", "CDP YÜKLENÝCÝ RAPOR", "EPP YÜKLENÝCÝ STOK", "EPP YÜKLENÝCÝ RAPOR")
+    hedefler = Array("Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR", "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR", _
+        "Y_CDP_YÜKLENÝCÝ_STOK", "Y_CDP_YÜKLENÝCÝ_RAPOR", "Y_EPP_YÜKLENÝCÝ_STOK", "Y_EPP_YÜKLENÝCÝ_RAPOR")
+    For i = 0 To 7
+        Set s = Y_SEKIL(ws, "MUSTERI_HIZLI_" & i)
+        If Not s Is Nothing Then
+            s.Left = x0 + i * (bw + g): s.Width = bw: s.Top = ilk.Top: s.Height = ilk.Height
+            Y_YAZ s, CStr(adlar(i))
+            On Error Resume Next
+            s.TextFrame2.WordWrap = msoTrue
+            s.TextFrame2.MarginLeft = 2: s.TextFrame2.MarginRight = 2
+            On Error GoTo 0
+            Y_BAGLA s, CStr(hedefler(i))
+        End If
+    Next i
+End Sub
+
+Private Sub Y_STOK_TEMIZLE(ByVal ws As Worksheet)
+    Dim son As Long, s As Shape, i As Long
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    son = application.Max(7, ws.Cells(ws.Rows.Count, 5).End(xlUp).Row)
+    ws.Range("A7:N" & son).Clear
+    ws.Range(ws.Cells(7, 75), ws.Cells(son, 75)).ClearContents
+    ws.Range(ws.Rows(7), ws.Rows(son)).RowHeight = ws.StandardHeight
+    ws.Range("C2").MergeArea.Cells(1, 1).Value2 = "-"
+    ws.Range("C3").MergeArea.Cells(1, 1).Value2 = 0
+    ws.Range("C4").MergeArea.Cells(1, 1).Value2 = 0
+    ws.Range("A7").Value2 = "Veri bekleniyor: yatýrým depo tanýmlarý yapýlýnca stoklar SAP'den alýnacak."
+    ws.Range("A7").Font.Italic = True: ws.Range("A7").Font.Color = RGB(100, 116, 139)
+    For Each s In ws.Shapes
+        If InStr(s.Name, "STOK_KPI_DEGER_") > 0 Then
+            i = Val(Mid$(s.Name, InStrRev(s.Name, "_") + 1))
+            On Error Resume Next
+            If i >= 0 And i <= 2 Then s.DrawingObject.Formula = "='" & Replace(ws.Name, "'", "''") & "'!C" & CStr(i + 2)
+            On Error GoTo 0
+        End If
+        If InStr(s.Name, "STOK_KPI_ETIKET_2") > 0 Then Y_YAZ s, "Toplam Stok Deðeri"
+        If InStr(s.Name, "DEPO_KART_LISTE") > 0 Then
+            On Error Resume Next
+            s.ControlFormat.RemoveAllItems: s.ControlFormat.AddItem "TÜMÜ": s.ControlFormat.Value = 1
+            s.OnAction = ""
+            On Error GoTo 0
+        End If
+    Next s
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+    Y_BAGLA Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), ""
+End Sub
+
+Private Sub Y_RAPOR_TEMIZLE(ByVal ws As Worksheet)
+    Dim son As Long, s As Shape, i As Long, ad As String, co As ChartObject
+    son = application.Max(60, ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 5)
+    ws.Range("A9:E" & son).Clear
+    ws.Range(ws.Rows(9), ws.Rows(son)).RowHeight = ws.StandardHeight
+    ws.Range("A9").Value2 = "Veri bekleniyor: depo tanýmlarý yapýlýnca rapor oluþacak."
+    ws.Range("A9").Font.Italic = True: ws.Range("A9").Font.Color = RGB(100, 116, 139)
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 12) = "AKSORA_RP_DM" Then ws.Shapes(i).Delete
+    Next i
+    For Each co In ws.ChartObjects
+        On Error Resume Next
+        Do While co.Chart.SeriesCollection.Count > 0: co.Chart.SeriesCollection(1).Delete: Loop
+        On Error GoTo 0
+    Next co
+    For Each s In ws.Shapes
+        ad = s.Name
+        If InStr(ad, "_DEGER_A3_E6") > 0 Then Y_YAZ s, "-"
+        If InStr(ad, "_DEGER_F3_J6") > 0 Then Y_YAZ s, "0"
+        If InStr(ad, "_DEGER_K3_Q6") > 0 Then Y_YAZ s, "0,00 TL"
+        If InStr(ad, "_ETIKET_K3_Q6") > 0 Then Y_YAZ s, "TOPLAM STOK DEÐERÝ"
+        If Left$(ad, 21) = "AKSORA_RP_HALKA_RENK_" Or Left$(ad, 19) = "AKSORA_RP_HALKA_AD_" Then s.Visible = msoFalse
+        If Left$(ad, 20) = "AKSORA_RP_HALKA_PAY_" And ad <> "AKSORA_RP_HALKA_PAY_BASLIK" Then s.Visible = msoFalse
+        If ad = "AKSORA_RP_HALKA_MERKEZ" Then Y_YAZ s, "TOPLAM STOK" & vbLf & "Veri bekleniyor"
+    Next s
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+End Sub
+
+' Hakedis ve Teminat: rapor basligi korunur, icerik hedef kartlariyla doldurulur.
+Private Sub Y_BOS_KUR(ByVal ws As Worksheet)
+    Dim i As Long, ad As String, w As Double, y As Double, s As Shape, x As Double, kw As Double, kutular As Variant, renk As Variant
+    For i = ws.Shapes.Count To 1 Step -1
+        ad = ws.Shapes(i).Name
+        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0) Then ws.Shapes(i).Delete
+    Next i
+    ws.Range("A3:Z300").Clear
+    ws.Range(ws.Rows(3), ws.Rows(300)).RowHeight = ws.StandardHeight
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1200 Else w = s.Width
+    y = 70
+    If ws.Name = "Y_HAKEDÝÞ" Then
+        Y_KUTU ws, "Y_KART_ZEMIN", 12, y, w - 24, 300, RGB(244, 248, 252), RGB(207, 227, 242)
+        Y_METIN ws, "Y_KART_ETIKET", "YAPIM AÞAMASINDA", 32, y + 16, 300, 18, 9, RGB(0, 125, 110), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_BASLIK", "Otomatik hakediþ", 32, y + 36, w - 64, 30, 20, RGB(12, 45, 79), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_METIN", "Sözleþme birim fiyatlarý ve metrajdan hakediþ tutarý otomatik hesaplanýr; önceki hakediþle kümülatif kontrol, " & _
+            "kesintiler ve fiyat farký tek ekranda. Hedef: elle hesap hatasýný sýfýra indirmek, hakediþ hazýrlamayý günlerden saniyelere düþürmek.", _
+            32, y + 72, w - 64, 48, 11, RGB(51, 65, 85), False, msoAlignLeft
+        kutular = Array("Metraj ve birim fiyat", "Kümülatif kontrol", "Kesinti ve fiyat farký", "Günlerden saniyelere")
+        kw = (w - 64 - 3 * 12) / 4
+        For i = 0 To 3
+            x = 32 + i * (kw + 12)
+            Y_KUTU ws, "Y_HEDEF_" & i, x, y + 140, kw, 70, RGB(255, 255, 255), RGB(207, 227, 242)
+            Y_METIN ws, "Y_HEDEF_NO_" & i, "0" & CStr(i + 1), x + 12, y + 150, 40, 22, 14, RGB(0, 125, 110), True, msoAlignLeft
+            Y_METIN ws, "Y_HEDEF_AD_" & i, CStr(kutular(i)), x + 12, y + 174, kw - 24, 26, 11, RGB(12, 45, 79), True, msoAlignLeft
+        Next i
+        Y_METIN ws, "Y_KART_NOT", "Sayfa tasarýmý netleþtiðinde bu alan hakediþ giriþ ve hesap ekranýna dönüþecek.", 32, y + 240, w - 64, 20, 9, RGB(100, 116, 139), False, msoAlignLeft
+    Else
+        Y_KUTU ws, "Y_KART_ZEMIN", 12, y, w - 24, 330, RGB(244, 248, 252), RGB(207, 227, 242)
+        Y_METIN ws, "Y_KART_ETIKET", "YAPIM AÞAMASINDA", 32, y + 16, 300, 18, 9, RGB(0, 125, 110), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_BASLIK", "Teminat ve yüklenici stok riski", 32, y + 36, w - 64, 30, 20, RGB(12, 45, 79), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_METIN", "Her yüklenici için belirlenen teminat tutarý, yüklenici deposundaki malzemeyle karþýlaþtýrýlýr. SAP deposu ile fiziki depo yan yana konur; " & _
+            "sahada kullanýlmýþ ama hakediþi bekleyen malzemeler seçilip ""hakediþ bekliyor"" olarak iþaretlenir. Geriye kalan açýklanamayan fark yüklenicinin gerçek riskidir.", _
+            32, y + 72, w - 64, 48, 11, RGB(51, 65, 85), False, msoAlignLeft
+        kutular = Array("SAP'deki yüklenici deposu", "Sayýlan fiziki depo", "Hakediþ bekleyen", "Açýk risk")
+        renk = Array(RGB(18, 62, 102), RGB(234, 244, 251), RGB(255, 241, 214), RGB(254, 226, 226))
+        kw = (w - 64 - 3 * 34) / 4
+        For i = 0 To 3
+            x = 32 + i * (kw + 34)
+            Set s = Y_KUTU(ws, "Y_HEDEF_" & i, x, y + 140, kw, 56, CLng(renk(i)), -1)
+            Y_METIN ws, "Y_HEDEF_AD_" & i, CStr(kutular(i)), x + 8, y + 148, kw - 16, 40, 12, IIf(i = 0, RGB(255, 255, 255), RGB(12, 45, 79)), True, msoAlignCenter
+            If i < 3 Then Y_METIN ws, "Y_HEDEF_OP_" & i, IIf(i < 2, ChrW(8722), "="), x + kw, y + 148, 34, 40, 20, RGB(12, 45, 79), True, msoAlignCenter
+        Next i
+        Set s = Y_KUTU(ws, "Y_ORAN_ZEMIN", 32, y + 214, w - 64, 40, RGB(12, 45, 79), -1)
+        Y_METIN ws, "Y_ORAN_METIN", "Risk oraný = Açýk risk ÷ Teminat tutarý   •   yüklenici bazýnda, otomatik", 48, y + 214, w - 96, 40, 13, RGB(255, 255, 255), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_NOT", "Proje kapanýþýnda yüklenici bazýnda tek sayfalýk risk raporu. Yüklenici deposu verisi AKSORA'da zaten okunuyor.", 32, y + 268, w - 64, 20, 9, RGB(100, 116, 139), False, msoAlignLeft
+    End If
+    For Each s In ws.Shapes
+        If InStr(s.Name, "FILIGRAN") > 0 Then s.Top = y + 350
+    Next s
+End Sub
+
+' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
+Private Sub Y_IL_UYGULA(ByVal kod As String)
+    Dim ad As Variant, ws As Worksheet, il As String, s As Shape, korumali As Boolean
+    il = Y_IL_ADI(kod)
+    For Each ad In Y_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        If CStr(ws.Range("BX20").Value2) <> kod Then
+            korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+            ws.Unprotect ""
+            Select Case Y_TUR(ws.Name)
+                Case "PANEL"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_B"), "CDP YATIRIM / " & AKSORA_IL_TESIS(kod, "CDP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_L"), "EPP YATIRIM / " & AKSORA_IL_TESIS(kod, "EPP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "YÜKLENÝCÝ (CDP + EPP)"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_ALT_KURUM"), "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & il & " Ýl Müdürlüðü"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "Yatýrým Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
+                    Set s = Y_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
+                    If Not s Is Nothing Then
+                        s.Fill.ForeColor.RGB = RGB(224, 242, 254)
+                        Y_YAZ s, il & " Yatýrým Birimi   |   Depo tanýmlarý yapýlýnca CDP ve EPP yatýrým ile yüklenici stoklarý SAP'den alýnacak"
+                        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(12, 45, 79)
+                    End If
+                    Y_BANNER ws, kod
+                Case "STOK"
+                    Y_YAZ Y_SEKIL(ws, "AKT1_STOK_BASLIK"), Y_BASLIK(ws.Name) & "  |  " & il & " Ýl Müdürlüðü"
+                Case Else
+                    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | " & Y_BASLIK(ws.Name) & "  |  " & il
+                    Y_YAZ Y_SEKIL(ws, "AKSORA_RP_ALT"), "AKSORA  |  " & Y_BASLIK(ws.Name) & "  |  " & il & " Ýl Müdürlüðü"
+            End Select
+            ws.Range("BX20").Value2 = kod
+            If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next ad
+End Sub
+
+' Panel bandi: AKSORA_YATIRIM_PANEL_BANTLARI.png varsa o kullanilir (5 il, musteri bandiyla ayni duzen).
+Private Sub Y_BANNER(ByVal ws As Worksheet, ByVal kod As String)
+    Dim yol As String, eski As Shape, s As Shape, h As Double, bolum As Long, sinirlar As Variant
+    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_YATIRIM_PANEL_BANTLARI.png"
+    If Len(Dir$(yol)) = 0 Then yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_MUSTERI_PANEL_BANTLARI.png"
+    If Len(Dir$(yol)) = 0 Then Exit Sub
+    Set eski = Y_SEKIL(ws, "MUSTERI_ANA_BANNER")
+    If eski Is Nothing Then Exit Sub
+    Select Case UCase$(kod)
+        Case "GIRESUN": bolum = 0
+        Case "TRABZON": bolum = 1
+        Case "RIZE": bolum = 2
+        Case "GUMUSHANE": bolum = 3
+        Case Else: bolum = 4
+    End Select
+    Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
+    h = s.Height
+    sinirlar = Array(0, 149, 297, 448, 597, 742)
+    s.PictureFormat.CropTop = h * CDbl(sinirlar(bolum)) / 742
+    s.PictureFormat.CropBottom = h * (742 - CDbl(sinirlar(bolum + 1))) / 742
+    s.LockAspectRatio = msoFalse
+    s.Left = eski.Left: s.Top = eski.Top: s.Width = eski.Width: s.Height = eski.Height
+    s.Placement = xlFreeFloating
+    eski.Delete
+    s.Name = "MUSTERI_ANA_BANNER"
+    s.ZOrder msoBringToFront
+End Sub
+
+' Sayfa gorunumu: pencereye sigar, sekmeler acik, kaydirma basa.
+Public Sub AKSORA_YATIRIM_GORUNUM(ByVal ws As Worksheet)
+    Dim s As Shape, gen As Double, alt As Double, z As Double
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    For Each s In ws.Shapes
+        If s.Visible = msoTrue Then
+            gen = application.Max(gen, s.Left + s.Width)
+            alt = application.Max(alt, s.Top + s.Height)
+        End If
+    Next s
+    If gen <= 0 Then gen = ws.Range("A1:L1").Width
+    With ThisWorkbook.Windows(1)
+        If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+        .DisplayWorkbookTabs = True: .DisplayGridlines = False: .DisplayHeadings = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = True
+        z = (.UsableWidth - 8) / gen * 100
+        If ws.Name = "Y_ANA PANEL" And alt > 0 Then z = application.Min(z, (.UsableHeight - 8) / alt * 100)
+        z = application.Max(10, application.Min(400, Fix(z)))
+        If .Zoom <> z Then .Zoom = z
+        .ScrollRow = 1: .ScrollColumn = 1
+    End With
+    On Error Resume Next
+    ws.Range("A1").Select
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_SAYFA_AC()
+    Dim hedef As Worksheet, ad As String, ev As Boolean
+    On Error GoTo Hata
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    ad = ActiveSheet.Shapes(CStr(application.Caller)).AlternativeText
+    Set hedef = ThisWorkbook.Worksheets(ad)
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    hedef.Visible = xlSheetVisible
+    hedef.Select Replace:=True
+    AKSORA_YATIRIM_GORUNUM hedef
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    application.EnableEvents = True: application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_YATIRIM_GUNCELLE()
+    MsgBox "Yatýrým biriminde depo tanýmlarý henüz yapýlmadý." & vbCrLf & _
+        "Tanýmlar verildiðinde CDP ve EPP yatýrým ile yüklenici stoklarý SAP'den tek tuþla alýnacak.", vbInformation, "AKSORA | Yatýrým Birimi"
+End Sub
+
+' Il secim ekranindan giris: sayfalar kurulur, secili ile uyarlanir, yalniz Y_ sayfalari gorunur.
+Private Sub Y_GIRIS(ByVal kod As String)
+    Dim ev As Boolean, sc As Boolean, ad As Variant, k As Worksheet, panel As Worksheet, no As Long, metin As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    Y_KUR
+    Y_IL_UYGULA kod
+    For Each ad In Y_ADLAR()
+        ThisWorkbook.Worksheets(CStr(ad)).Visible = xlSheetVisible
+    Next ad
+    Set panel = ThisWorkbook.Worksheets("Y_ANA PANEL")
+    panel.Select Replace:=True
+    For Each k In ThisWorkbook.Worksheets
+        If Not AKSORA_YATIRIM_SAYFA(k) Then
+            If k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden
+        End If
+    Next k
+    AKSORA_YATIRIM_GORUNUM panel
+Cikis:
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If no <> 0 Then MsgBox "Yatýrým birimi açýlamadý: " & metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    application.DisplayAlerts = True
+    Resume Cikis
+End Sub

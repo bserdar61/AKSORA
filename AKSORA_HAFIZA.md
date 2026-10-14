@@ -89,6 +89,13 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   malzeme pivot tablosu (Malzeme, Tanım, Miktar, Pay, Toplam Değer + TOPLAM) + sağda halka grafik (ilk 9 + Diğer) ve lejant.
   Seçim BX30, bölüm satırları BX31:BX32. Şekiller AKSORA_RP_DM_*; üst halka döngüsü bunlara dokunmaz.
 
+## Yatırım birimi (başlangıç, 14.10.2026)
+- Giriş: YATIRIM IL SECIM → il → PANELE GİRİŞ → Y_GIRIS: eksik Y_ sayfaları müşteri sayfalarından kopyalanır (Y_KUR), ile uyarlanır (Y_IL_UYGULA), yalnız Y_ sayfaları görünür.
+- Sayfalar: Y_ANA PANEL (M_ANA PANEL kopyası; kartlar CDP YATIRIM / EPP YATIRIM / YÜKLENİCİ; orta sıra TEMİNAT TAKİBİ · TÜM STOK · HAKEDİŞ; 8 hızlı erişim),
+  Y_HAKEDİŞ, Y_TEMİNAT (hedef kartları), Y_CDP/EPP_YATIRIM_STOK/RAPOR, Y_CDP/EPP_YÜKLENİCİ_STOK/RAPOR (M_CDP_STOK / M_CDP_RAPOR kopyası, veri boş).
+- Etiket BX1 = AKSORA_YATIRIM_V1, il BX20. Panel bandı: AKSORA_YATIRIM_PANEL_BANTLARI.png (yoksa müşteri bandı).
+- Güncelle düğmeleri şimdilik bilgi mesajı (depo tanımları bekleniyor).
+
 ## Sıradaki işler
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
   "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.
