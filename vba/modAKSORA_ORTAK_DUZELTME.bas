@@ -279,7 +279,8 @@ Public Sub AKFIX_KARS_TARIHLER()
             n = n + 1
         End If
     Next k
-    If n > 3 Then w.Range("X2:X" & n - 1).Sort Key1:=w.Range("X2"), Order1:=xlAscending, Header:=xlNo
+    ' En guncel tarih listenin basinda (secim icin asagi kaydirmak gerekmez).
+    If n > 3 Then w.Range("X2:X" & n - 1).Sort Key1:=w.Range("X2"), Order1:=xlDescending, Header:=xlNo
     For r = 2 To n - 1
         w.Cells(r, "X").Value = Format$(CDate(w.Cells(r, "X").Value2), "dd.mm.yyyy hh:nn:ss")
         w.Cells(r, "Y").Value = "AKFIX-" & CStr(r)
@@ -292,8 +293,8 @@ Public Sub AKFIX_KARS_TARIHLER()
                 .IgnoreBlank = True: .InCellDropdown = True: .ShowError = True
             End With
         Next k
-        w.Range("B6").Value = w.Cells(application.Max(2, n - 2), "X").Value
-        w.Range("I6").Value = w.Cells(n - 1, "X").Value
+        w.Range("B6").Value = w.Cells(IIf(n > 3, 3, 2), "X").Value
+        w.Range("I6").Value = w.Cells(2, "X").Value
     End If
     If sec = "TUMU" Then
         alt = "TÜMÜ | "
