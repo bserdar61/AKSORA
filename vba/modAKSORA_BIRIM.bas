@@ -3258,7 +3258,22 @@ End Sub
 
 ' Giris ve guncelleme sonrasi: hata olsa bile birim acilir, hata durum seridine yazilir.
 Private Sub Y_ALT_SAYFALAR(ByVal il As String)
-    Dim da As Boolean
+    Dim da As Boolean, ad As Variant, ws As Worksheet, s As Shape, var As Boolean
+    ' AKSORA amblemi tum yatirim sayfalarindan kaldirilir.
+    On Error Resume Next
+    For Each ad In Y_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        var = False
+        For Each s In ws.Shapes
+            If InStr(s.Name, "FILIGRAN") > 0 Then var = True: Exit For
+        Next s
+        If var Then
+            ws.Unprotect ""
+            Y_FILIGRAN ws
+            ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next ad
+    On Error GoTo 0
     da = application.DisplayAlerts
     application.DisplayAlerts = False
     On Error Resume Next
