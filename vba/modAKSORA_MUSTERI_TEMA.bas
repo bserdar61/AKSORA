@@ -994,7 +994,7 @@ Private Function TEMA_RESIM_YOLU(ByVal kaynak As Worksheet, ByVal sekil As Shape
         If TEMA_DOSYA_VAR(alt) Then TEMA_RESIM_YOLU = alt: Exit Function
         aday = Replace(alt, "/", application.PathSeparator)
         aday = Mid$(aday, InStrRev(aday, application.PathSeparator) + 1)
-        If TEMA_DOSYA_VAR(klasor & aday) Then TEMA_RESIM_YOLU = klasor & aday: Exit Function
+        If TEMA_DOSYA_VAR(AKSORA_GORSEL(aday)) Then TEMA_RESIM_YOLU = AKSORA_GORSEL(aday): Exit Function
     End If
     ad = UCase$(sekil.Name)
     If InStr(ad, "FILIGRAN") > 0 Or ad = "AKSORA_STOK_SON_SEFFAF_LOGO" Then
@@ -1021,7 +1021,7 @@ Private Function TEMA_RESIM_YOLU(ByVal kaynak As Worksheet, ByVal sekil As Shape
         End If
     End If
     If Len(aday) > 0 Then
-        If TEMA_DOSYA_VAR(klasor & aday) Then TEMA_RESIM_YOLU = klasor & aday
+        If TEMA_DOSYA_VAR(AKSORA_GORSEL(aday)) Then TEMA_RESIM_YOLU = AKSORA_GORSEL(aday)
     End If
 End Function
 

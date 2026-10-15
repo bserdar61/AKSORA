@@ -155,12 +155,18 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   alt sıra CDP İLÇE GÜNCELLE | TÜM İLÇE STOKLARINI GÜNCELLE (yeşil) | EPP İLÇE GÜNCELLE.
 - Malzeme il bandı: AKSORA_PANEL_BANNER_<IL>.png yerine birleşik AKSORA_MALZEME_PANEL_BANTLARI.jpg (AKSORA_MALZEME_BANT_EKLE).
 
-## Klasör dosyaları (Excel'in yanında gerekli olanlar)
-AKSORA.xlsm, AKSORA_BASLAT.hta, AKSORA.ico, AKSORA_LOGO.png, AKSORA_SPLASH_LOGO.bmp, AKSORA_BIRIM_BANNER_03.png,
-AKSORA_PANEL_TEK_PARCA_V7.png, AKSORA_PANEL_SADE_P1.png, AKSORA_RAPOR_BANNER.png, AKSORA_RAPOR_FILIGRAN.png,
-AKSORA_MUSTERI_BANT.png, AKSORA_MUSTERI_PANEL_BANTLARI.png, AKSORA_YATIRIM_BANT.png, AKSORA_YATIRIM_PANEL_BANTLARI.png,
-AKSORA_ILCE_BANT.jpg, AKSORA_ILCE_PANEL_BANTLARI.jpg, AKSORA_MALZEME_PANEL_BANTLARI.jpg.
-Gereksiz: AKSORA.vbs, KUR.vbs, AKSORA_MASAUSTU.ico, AKSORA_PANEL_BANNER.png, AKSORA_PANEL_BANNER_<5 il>.png, AKSORA_SAP_TESHIS.txt (günlük, yeniden oluşur).
+## Klasör düzeni (15.10.2026, paylaşım için)
+AKSORA\  AKSORA.xlsm, AKSORA_BASLAT.hta
+AKSORA\GORSELLER\BANNER  AKSORA_BIRIM_BANNER_03, AKSORA_PANEL_TEK_PARCA_V7, AKSORA_PANEL_SADE_P1, AKSORA_RAPOR_BANNER,
+                         AKSORA_MALZEME/MUSTERI/YATIRIM/ILCE_PANEL_BANTLARI
+AKSORA\GORSELLER\KAPAK   AKSORA_MUSTERI_BANT, AKSORA_YATIRIM_BANT, AKSORA_ILCE_BANT
+AKSORA\GORSELLER\LOGO    AKSORA.ico, AKSORA_LOGO.png, AKSORA_SPLASH_LOGO.bmp, AKSORA_RAPOR_FILIGRAN.png
+AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* yedekleri (klasör varsa oraya yazılır)
+- Kod tüm görselleri AKSORA_GORSEL(ad) ile arar: kök, GORSELLER\BANNER, \KAPAK, \LOGO, GORSELLER (jpg tercih). Yeni görsel
+  yolu yazarken ThisWorkbook.Path & "\..." KULLANMA, AKSORA_GORSEL kullan. Kayıt klasörü: AKSORA_KAYIT_KLASORU().
+- HTA: ICON ve logo GORSELLER\LOGO (logo kökte de aranır); masaüstü kısayol simgesi yeni yere bağlanır.
+- final/duzen/AKSORA_KLASOR_DUZENLE.vbs: kullanıcının klasörünü bu düzene getirir (silmez; eski dosyalar _SILINEBILIR'e).
+  Gereksiz: AKSORA.vbs, KUR.vbs, AKSORA_MASAUSTU.ico, AKSORA_PANEL_BANNER.png, AKSORA_PANEL_BANNER_<5 il>.png.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

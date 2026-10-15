@@ -12,8 +12,8 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
     Dim ev As Boolean, scr As Boolean, hataNo As Long, hataAciklama As String
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("ANA PANEL")
-    f = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_TEK_PARCA_V7.png"
-    banner = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_BANNER.png"
+    f = AKSORA_GORSEL("AKSORA_PANEL_TEK_PARCA_V7.png")
+    banner = AKSORA_GORSEL("AKSORA_PANEL_BANNER.png")
     If Len(Dir$(f)) = 0 Then
         MsgBox "AKSORA_PANEL_TEK_PARCA_V7.png bulunamadi. Resmi Excel ile ayni klasore koy.", vbExclamation, "AKSORA"
         Exit Sub

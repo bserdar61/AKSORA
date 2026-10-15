@@ -4,7 +4,7 @@
 <title>AKSORA</title>
 <HTA:APPLICATION ID="aksora" APPLICATIONNAME="AKSORA_BASLAT" BORDER="none" CAPTION="no"
   SHOWINTASKBAR="yes" SINGLEINSTANCE="yes" SYSMENU="no" SCROLL="no" INNERBORDER="no"
-  CONTEXTMENU="no" SELECTION="no" ICON="AKSORA.ico" WINDOWSTATE="normal" />
+  CONTEXTMENU="no" SELECTION="no" ICON="GORSELLER/LOGO/AKSORA.ico" WINDOWSTATE="normal" />
 <style>
   body { margin:0; padding:0; background:#ffffff; font-family:"Segoe UI", Arial, sans-serif; overflow:hidden; }
   #kutu { width:520px; height:330px; border:1px solid #c9d6e3; background:#ffffff; text-align:center; }
@@ -46,10 +46,14 @@ function kisayol(k) {
     var mas = sh.SpecialFolders("Desktop");
     var lnk = sh.CreateShortcut(mas + "\\AKSORA.lnk");
     var hedef = k + "\\AKSORA_BASLAT.hta";
-    if (lnk.TargetPath.toUpperCase() != hedef.toUpperCase()) {
+    // Simge: duzenli klasorde GORSELLER\LOGO, eski duzende Excel'in yaninda.
+    var ikon = k + "\\GORSELLER\\LOGO\\AKSORA.ico";
+    if (!fso.FileExists(ikon)) ikon = k + "\\AKSORA.ico";
+    var ikonYer = fso.FileExists(ikon) ? ikon + ",0" : "";
+    if (lnk.TargetPath.toUpperCase() != hedef.toUpperCase() || (ikonYer != "" && lnk.IconLocation.toUpperCase() != ikonYer.toUpperCase())) {
       lnk.TargetPath = hedef;
       lnk.WorkingDirectory = k;
-      if (fso.FileExists(k + "\\AKSORA.ico")) lnk.IconLocation = k + "\\AKSORA.ico,0";
+      if (ikonYer != "") lnk.IconLocation = ikonYer;
       lnk.Description = "AKSORA";
       lnk.Save();
     }
@@ -132,7 +136,7 @@ function yerles() {
 </head>
 <body onload="yerles(); setTimeout(baslat, 50);">
 <div id="kutu">
-  <img id="logo" src="AKSORA_LOGO.png">
+  <img id="logo" src="GORSELLER/LOGO/AKSORA_LOGO.png" onerror="this.onerror=null;this.src='AKSORA_LOGO.png';">
   <div id="baslik">AKSORA</div>
   <div id="alt">Stok ve Verimlilik, AKSORA!</div>
   <div id="durum">AKSORA açılıyor...</div>

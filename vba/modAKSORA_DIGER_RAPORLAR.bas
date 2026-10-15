@@ -550,7 +550,7 @@ End Sub
 Private Function AK_Yol(ByVal ad As String) As String
     Dim p As String
     If Len(ThisWorkbook.Path) = 0 Then Exit Function
-    p = ThisWorkbook.Path & application.PathSeparator & ad
+    p = AKSORA_GORSEL(ad)
     If Len(Dir$(p)) > 0 Then AK_Yol = p
 End Function
 
@@ -1183,7 +1183,7 @@ Public Sub AKSORA_RAPOR_AMBLEM_HIZALA(ByVal sayfaAdi As String)
         If eskiLogo.AlternativeText = "AKSORA_FILIGRAN_DUZGUN_V2" Then Set logo = eskiLogo
     End If
     If logo Is Nothing Then
-        yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_RAPOR_FILIGRAN.png"
+        yol = AKSORA_GORSEL("AKSORA_RAPOR_FILIGRAN.png")
         If Len(Dir$(yol)) = 0 Then
             Err.Raise vbObjectError + 7171, , "AKSORA_RAPOR_FILIGRAN.png dosyasini Excel dosyasinin yanina kopyalayin."
         End If

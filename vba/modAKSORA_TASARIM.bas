@@ -33,7 +33,7 @@ Public Sub AKSORA_P1_S2_R1_KUR()
     If Len(ThisWorkbook.Path) = 0 Or ThisWorkbook.ReadOnly Then
         Err.Raise vbObjectError + 9300, , "Önce dosyanýn yazýlabilir .xlsm kopyasýný kaydedin."
     End If
-    If Len(Dir$(ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_SADE_P1.png")) = 0 Then
+    If Len(Dir$(AKSORA_GORSEL("AKSORA_PANEL_SADE_P1.png"))) = 0 Then
         Err.Raise vbObjectError + 9301, , "AKSORA_PANEL_SADE_P1.png Excel dosyasýnýn yanýnda bulunmalýdýr."
     End If
     adim = "Aktif sayfa / tasarým durumu"
@@ -76,7 +76,7 @@ Public Sub AKSORA_P1_S2_R1_KUR()
         End If
     Next ad
     application.EnableEvents = False: application.ScreenUpdating = False
-    yedek = ThisWorkbook.Path & application.PathSeparator & "AKSORA_TASARIM_ONCESI_" & _
+    yedek = AKSORA_KAYIT_KLASORU() & application.PathSeparator & "AKSORA_TASARIM_ONCESI_" & _
         Format$(Now, "yyyymmdd_hhnnss") & ".xlsm"
     If Len(Dir$(yedek)) > 0 Then Err.Raise vbObjectError + 9303, , "Ayný saniyede ikinci kurulum yapýlmaz."
     adim = "Kurulum öncesi yedek dosyayý kaydetme"
@@ -213,7 +213,7 @@ Private Sub T_Panel(ByVal ws As Worksheet)
     Set eski = T_Sekil(ws, "AKSORA15_TEK_ARKA_PLAN")
     If eski Is Nothing Then Err.Raise vbObjectError + 9310, , "Panelin mevcut arka planý bulunamadý."
     If eski.AlternativeText <> "AKSORA_P1_SADE_V1" Then
-        f = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_SADE_P1.png"
+        f = AKSORA_GORSEL("AKSORA_PANEL_SADE_P1.png")
         If Len(Dir$(f)) = 0 Then Err.Raise vbObjectError + 9311, , "Sade panel görseli bulunamadý."
         Set s = ws.Shapes.AddPicture(f, msoFalse, msoTrue, r.Left, r.Top, r.Width, r.Height)
         s.Name = AKT_PREFIX & "PANEL_GECICI"

@@ -464,7 +464,7 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
                   "Eski yöntemle il il okuma yaklaþýk 4-5 dakika sürer." & vbCrLf & _
                   "Devam edilsin mi?", vbYesNo + vbExclamation, "AKSORA | Bütün Ýller") <> vbYes Then
             sonuc = "Güncelleme iptal edildi. Stoklar deðiþtirilmedi." & vbCrLf & vbCrLf & _
-                "Teþhis dosyasý: " & ThisWorkbook.Path & "\AKSORA_SAP_TESHIS.txt"
+                "Teþhis dosyasý: " & AKSORA_KAYIT_KLASORU() & "\AKSORA_SAP_TESHIS.txt"
             GoTo Temizle
         End If
     End If

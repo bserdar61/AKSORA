@@ -125,8 +125,7 @@ End Sub
 
 Private Function MS_TeshisYolu() As String
     Dim k As String
-    k = ThisWorkbook.Path
-    If Len(k) = 0 Or Left$(k, 4) = "http" Then k = Environ$("TEMP")
+    k = AKSORA_KAYIT_KLASORU()
     MS_TeshisYolu = k & application.PathSeparator & "AKSORA_SAP_TESHIS.txt"
 End Function
 

@@ -45,7 +45,7 @@ Public Sub AKSORA_BIRIM_KUR()
     BIRIM_SAYFA_KONTROL MUS
     BIRIM_SAYFA_KONTROL MUK
     BIRIM_SAYFA_KONTROL YAK
-    yedek = ThisWorkbook.Path & application.PathSeparator & _
+    yedek = AKSORA_KAYIT_KLASORU() & application.PathSeparator & _
         "AKSORA_BIRIM_ONCESI_" & Format$(Now, "yyyymmdd_hhnnss") & ".xlsm"
     If Len(Dir$(yedek)) > 0 Then Err.Raise vbObjectError + 1602, , "Yedek dosya zaten var. Tekrar deneyin."
     ThisWorkbook.SaveCopyAs yedek
@@ -292,9 +292,9 @@ Private Sub MUSTERI_KAPAK_AC()
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_MUSTERI_BANT.png"
+    yol = AKSORA_GORSEL("AKSORA_MUSTERI_BANT.png")
     If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1610, , _
-        "AKSORA_MUSTERI_BANT.png Excel dosyasinin yaninda bulunmalidir."
+        "AKSORA_MUSTERI_BANT.png AKSORA klasöründe (GORSELLER) bulunmalýdýr."
     BIRIM_SAYFA_KONTROL MUK
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
@@ -493,9 +493,9 @@ Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
         yol = AKSORA_GORSEL("AKSORA_ILCE_BANT.png")
         bantVar = (Len(Dir$(yol)) > 0)
     Else
-        yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_YATIRIM_BANT.png"
+        yol = AKSORA_GORSEL("AKSORA_YATIRIM_BANT.png")
         If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1610, , _
-            "AKSORA_YATIRIM_BANT.png Excel dosyasinin yaninda bulunmalidir."
+            "AKSORA_YATIRIM_BANT.png AKSORA klasöründe (GORSELLER) bulunmalýdýr."
         bantVar = True
     End If
     BIRIM_SAYFA_KONTROL ad
@@ -804,9 +804,9 @@ End Sub
 
 Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Dim i As Long, s As Shape, yol As String, resimYukseklik As Double, kw As Double
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_BIRIM_BANNER_03.png"
+    yol = AKSORA_GORSEL("AKSORA_BIRIM_BANNER_03.png")
     If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
-        "AKSORA_BIRIM_BANNER_03.png Excel dosyasinin yaninda bulunmalidir."
+        "AKSORA_BIRIM_BANNER_03.png AKSORA klasöründe (GORSELLER) bulunmalýdýr."
     ws.Unprotect pw
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 6) = "BIRIM_" Then ws.Shapes(i).Delete
@@ -824,16 +824,16 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
     BIRIM_RECT ws, "ZEMIN", 0, 0, cw, CH, RGB(236, 248, 254), -1, 1
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_TEK_PARCA_V7.png"
+    yol = AKSORA_GORSEL("AKSORA_PANEL_TEK_PARCA_V7.png")
     If Len(Dir$(yol)) > 0 Then
         Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 126, cw, 483)
         s.Name = "BIRIM_FOTOGRAF": s.Placement = xlFreeFloating: s.Locked = True
     End If
     Set s = BIRIM_RECT(ws, "FOTO_SIS", 0, 126, cw, 483, RGB(235, 248, 255), -1, 1)
     s.Fill.Transparency = 0.45
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_BIRIM_BANNER_03.png"
+    yol = AKSORA_GORSEL("AKSORA_BIRIM_BANNER_03.png")
     If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
-        "AKSORA_BIRIM_BANNER_03.png Excel dosyasinin yaninda bulunmalidir."
+        "AKSORA_BIRIM_BANNER_03.png AKSORA klasöründe (GORSELLER) bulunmalýdýr."
     Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
     s.Name = "BIRIM_BANNER_03"
     resimYukseklik = s.Height

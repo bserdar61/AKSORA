@@ -2,12 +2,33 @@ Attribute VB_Name = "modAKSORA_IL_AYARLARI"
 Option Explicit
 ' AKSORA il kodlari. Yalnizca okuma/dogrulama; mevcut makrolari ve gorselleri degistirmez.
 ' Kaynak: kullanicinin 30.09.2026 tarihinde teyit ettigi SAP kodlari.
-' Gorsel dosyasi: ayni adli .jpg varsa o kullanilir (calisma kitabina ~5 kat kucuk gomulur).
+' Gorsel dosyasi: AKSORA klasorunde GORSELLER\BANNER, GORSELLER\KAPAK, GORSELLER\LOGO altinda
+' (eski duzende Excel'in yaninda) aranir. Ayni adli .jpg varsa o kullanilir (calisma kitabina ~5 kat kucuk gomulur).
 Public Function AKSORA_GORSEL(ByVal ad As String) As String
-    Dim kok As String, jpg As String
-    kok = ThisWorkbook.Path & application.PathSeparator
+    Dim kok As String, jpg As String, ps As String, alt As Variant, k As String
+    ps = application.PathSeparator
+    kok = ThisWorkbook.Path & ps
     jpg = Left$(ad, InStrRev(ad, ".")) & "jpg"
-    If Len(Dir$(kok & jpg)) > 0 Then AKSORA_GORSEL = kok & jpg Else AKSORA_GORSEL = kok & ad
+    On Error Resume Next
+    For Each alt In Array("", "GORSELLER" & ps & "BANNER" & ps, "GORSELLER" & ps & "KAPAK" & ps, _
+        "GORSELLER" & ps & "LOGO" & ps, "GORSELLER" & ps)
+        k = kok & CStr(alt)
+        If Len(Dir$(k & jpg)) > 0 Then AKSORA_GORSEL = k & jpg: Exit Function
+        If Len(Dir$(k & ad)) > 0 Then AKSORA_GORSEL = k & ad: Exit Function
+    Next alt
+    On Error GoTo 0
+    AKSORA_GORSEL = kok & ad
+End Function
+
+' Teshis ve yedek dosyalari: AKSORA klasorunde KAYITLAR varsa oraya, yoksa Excel'in yanina.
+Public Function AKSORA_KAYIT_KLASORU() As String
+    Dim k As String
+    k = ThisWorkbook.Path
+    If Len(k) = 0 Or Left$(k, 4) = "http" Then AKSORA_KAYIT_KLASORU = Environ$("TEMP"): Exit Function
+    On Error Resume Next
+    If Len(Dir$(k & application.PathSeparator & "KAYITLAR", vbDirectory)) > 0 Then k = k & application.PathSeparator & "KAYITLAR"
+    On Error GoTo 0
+    AKSORA_KAYIT_KLASORU = k
 End Function
 
 Public Function AKSORA_AKTIF_IL() As String
@@ -355,7 +376,7 @@ End Sub
 ' AKSORA_MALZEME_PANEL_BANTLARI.jpg (5 il alt alta: Giresun, Trabzon, Rize, Gumushane, Artvin).
 Public Function AKSORA_MALZEME_BANT_EKLE(ByVal ws As Worksheet, ByVal il As String, ByVal x As Double, ByVal y As Double) As Shape
     Dim yol As String, s As Shape, h As Double, i As Long
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_BANNER_" & il & ".png"
+    yol = AKSORA_GORSEL("AKSORA_PANEL_BANNER_" & il & ".png")
     If Len(Dir$(yol)) > 0 Then
         Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, x, y, -1, -1)
         h = s.Height

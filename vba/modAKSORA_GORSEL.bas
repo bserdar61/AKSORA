@@ -107,8 +107,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
         .ForeColor = RGB(102, 120, 138)
     End With
 
-    logoYolu = ThisWorkbook.Path & _
-        application.PathSeparator & "AKSORA_SPLASH_LOGO.bmp"
+    logoYolu = AKSORA_GORSEL("AKSORA_SPLASH_LOGO.bmp")
 
     If Len(Dir$(logoYolu)) > 0 Then
         Set frm.imgLogo.Picture = LoadPicture(logoYolu)
