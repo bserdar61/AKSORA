@@ -95,12 +95,16 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Depolar: CDP ve EPP yatırım = D002, D011; yüklenici = malzeme birimindeki ilin yüklenici depoları (AKSORA_IL_YUKLENICI).
 - Veri: MB52 PANEL düzeni (AKSORA_YATIRIM_MB52) → 14 sütun müşteri stok düzeni; il kayıtları _YA_<IL>_<1..4> (paketli).
 - Arama: Y_MALZEME_ARA yalnız yatırım verisini tarar; D depoları her zaman üstte.
-- Teminat Takibi (Y_TEMİNAT): yüklenici depo bazında CDP+EPP depo değeri, sarı hücreye teminat tutarı;
-  kalan teminat, kullanım % (veri çubuğu), durum (GÜVENLİ <%80, DİKKAT %80-100, AŞIM >%100). Tutarlar _Y_TEMINAT'ta il|depo anahtarıyla.
-- Otomatik Hakediş (Y_HAKEDİŞ): yüklenici seçimi, sözleşme bilgileri, 30 kalem (birim fiyat × metraj, önceki/bu dönem/kümülatif,
-  sözleşme miktarı aşımı kırmızı), özet: fiyat farkı, KDV, damga, teminat kesintisi, KDV tevkifatı, malzeme/diğer kesinti, ödenecek.
-  Düğmeler: HAKEDİŞİ KAYDET (_Y_HAKEDIS_GECMIS), YENİ DÖNEME GEÇ (kümülatif→önceki, no+1), PDF AL. Girişler _Y_HAKEDIS'te.
-- Girişler Workbook_SheetChange → AKSORA_YATIRIM_DEGISIM ile anında kaydedilir.
+- Teminat Takibi (Y_TEMİNAT): 3 bölüm. (1) Yüklenici teminat durumu: teminat (giriş), DEPODA (teminata tabi), SAHADA (hakediş bekleyen),
+  kalan, kullanım % (depoda ÷ teminat), durum (GÜVENLİ <%80, DİKKAT %80-100, AŞIM >%100), sahada >45 gün sayısı.
+  (2) Depo–yüklenici eşleşmesi: aynı firmanın depoları aynı yüklenici adıyla toplanır (varsayılan: depo adındaki "26.GR.01 " öneki atılır).
+  (3) Malzeme detayı (depo+malzeme toplamı): Konum Depoda/Sahada/Kısmi (+sahadaki adet), işaret tarihi, sahada gün; yüklenici seçici filtre.
+  Kayıt _Y_TEMINAT: T|il|YÜKLENİCİ, E|il|DEPO, K|il|DEPO|MALZEME.
+- Hakediş (Y_HAKEDİŞ): şimdilik PROJE – STOK KARŞILAŞTIRMASI. PROJE EXCELİ YÜKLE: kod/tanım/miktar/birim/fiyat sütunları otomatik bulunur
+  (başlıksız listede 7-12 haneli kod sütunu). Karşılaştırma: seçili yüklenici deposu (veya tümü) + yatırım depoları (D002/D011);
+  durum EKSİK / Yatırımdan tamamlanır / Depoda yeterli / Projede yok (iade). Proje _Y_PROJE'de il bazında. Hakediş hesabı uzman görüşü sonrası
+  (sayfada akış kartları ile yer ayrıldı).
+- Teminat girişleri Workbook_SheetChange → AKSORA_YATIRIM_DEGISIM ile anında kaydedilir.
 
 ## Dosya boyutu ve kayıt biçimi (15.10.2026)
 - İl kayıtları (_MA_*, _YA_*) PAKET1 biçiminde: A1 tarih, B1 il, C1 "PAKET1", D1 satır sayısı; A2.. bloklar
