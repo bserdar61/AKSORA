@@ -916,7 +916,8 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     For i = 1 To UBound(sayfalar) + 1
         ad = sayfalar(i - 1)
         veri = Empty
-        If kod = ekran Then
+        ' Yatirim ve ilce: her zaman il kaydindan okunur (stok sayfasindaki filtre aramayi daraltmaz).
+        If kod = ekran And Not yat And Not ilc Then
             Set kaynak = ThisWorkbook.Worksheets(CStr(ad))
             son = AKSORA_M_SON(kaynak)
             If son >= 7 Then veri = kaynak.Range("A7:N" & son).Value2

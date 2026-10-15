@@ -3413,15 +3413,15 @@ End Sub
 
 Private Function I_ADLAR() As Variant
     I_ADLAR = Array("I_ANA PANEL", "I_MALZEME_ARA", "I_STOK_KARÞILAÞTIRMA", "I_CDP_ÝLÇELER_STOK", _
-        "I_CDP_ÝLÇELER_RAPOR", "I_ÝSG_MALZEMELERÝ")
+        "I_CDP_ÝLÇELER_RAPOR", "I_EPP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_RAPOR", "I_ÝSG_MALZEMELERÝ")
 End Function
 
 Private Function I_TUR(ByVal ad As String) As String
     Select Case ad
         Case "I_ANA PANEL": I_TUR = "PANEL"
         Case "I_MALZEME_ARA": I_TUR = "ARAMA"
-        Case "I_CDP_ÝLÇELER_STOK": I_TUR = "STOK"
-        Case "I_CDP_ÝLÇELER_RAPOR": I_TUR = "RAPOR"
+        Case "I_CDP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_STOK": I_TUR = "STOK"
+        Case "I_CDP_ÝLÇELER_RAPOR", "I_EPP_ÝLÇELER_RAPOR": I_TUR = "RAPOR"
         Case "I_STOK_KARÞILAÞTIRMA": I_TUR = "KARS"
         Case Else: I_TUR = "BOS"
     End Select
@@ -3493,8 +3493,7 @@ Private Sub I_BAGLA(ByVal ws As Worksheet)
 End Sub
 
 Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
-    Dim s As Shape, ad As String, i As Long, ilk As Shape, son As Shape, x0 As Double, x1 As Double, bw As Double, g As Double
-    Dim adlar As Variant, hedefler As Variant, b As Variant
+    Dim s As Shape, ad As String, b As Variant
     For Each s In ws.Shapes
         ad = s.Name
         If Left$(ad, 20) = "AKSORA15_KART_DEGER_" Then
@@ -3514,22 +3513,50 @@ Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
     Y_YAZ Y_SEKIL(ws, "btnYuk"), "ÝSG MALZEMELERÝ": Y_BAGLA Y_SEKIL(ws, "btnYuk"), "I_ÝSG_MALZEMELERÝ"
     Set s = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
     If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_BIRIM_ILCE")
-    ' Hizli erisim: 5 sayfa ayni satirda esit aralikla.
-    Set ilk = Y_SEKIL(ws, "MUSTERI_HIZLI_0"): Set son = Y_SEKIL(ws, "MUSTERI_HIZLI_5")
-    If ilk Is Nothing Or son Is Nothing Then Exit Sub
-    x0 = ilk.Left: x1 = son.Left + son.Width: g = 6
-    son.Delete
-    bw = (x1 - x0 - 4 * g) / 5
-    adlar = Array("MALZEME ARAMA", "STOK KARÞILAÞTIRMA", "CDP ÝLÇELER STOK", "CDP ÝLÇELER RAPOR", "ÝSG MALZEMELERÝ")
-    hedefler = Array("I_MALZEME_ARA", "I_STOK_KARÞILAÞTIRMA", "I_CDP_ÝLÇELER_STOK", "I_CDP_ÝLÇELER_RAPOR", "I_ÝSG_MALZEMELERÝ")
-    For i = 0 To 4
+    I_HIZLI ws
+End Sub
+
+' Hizli erisim: 7 sayfa ayni satirda esit aralikla (eksik dugme ilk dugmeden cogaltilir).
+Private Sub I_HIZLI(ByVal ws As Worksheet)
+    Dim s As Shape, ilk As Shape, i As Long, x0 As Double, x1 As Double, bw As Double, g As Double
+    Dim adlar As Variant, hedefler As Variant, yeni As Shape
+    Set ilk = Y_SEKIL(ws, "MUSTERI_HIZLI_0")
+    If ilk Is Nothing Then Exit Sub
+    x0 = ilk.Left: x1 = CDbl(Val(CStr(ws.Range("BX26").Value2))): g = 6
+    If x1 <= x0 Then
+        For Each s In ws.Shapes
+            If Left$(s.Name, 14) = "MUSTERI_HIZLI_" Then x1 = application.Max(x1, s.Left + s.Width)
+        Next s
+        ws.Range("BX26").Value2 = x1
+    End If
+    For i = 1 To 6
+        If Y_SEKIL(ws, "MUSTERI_HIZLI_" & i) Is Nothing Then
+            Set yeni = ilk.Duplicate
+            yeni.Name = "MUSTERI_HIZLI_" & i
+        End If
+    Next i
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 14) = "MUSTERI_HIZLI_" Then
+            If Val(Mid$(ws.Shapes(i).Name, 15)) > 6 Then ws.Shapes(i).Delete
+        End If
+    Next i
+    bw = (x1 - x0 - 6 * g) / 7
+    adlar = Array("MALZEME ARAMA", "STOK KARÞILAÞTIRMA", "CDP ÝLÇE STOK", "CDP ÝLÇE RAPOR", "EPP ÝLÇE STOK", "EPP ÝLÇE RAPOR", "ÝSG MALZEMELERÝ")
+    hedefler = Array("I_MALZEME_ARA", "I_STOK_KARÞILAÞTIRMA", "I_CDP_ÝLÇELER_STOK", "I_CDP_ÝLÇELER_RAPOR", _
+        "I_EPP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_RAPOR", "I_ÝSG_MALZEMELERÝ")
+    For i = 0 To 6
         Set s = Y_SEKIL(ws, "MUSTERI_HIZLI_" & i)
         If Not s Is Nothing Then
             s.Left = x0 + i * (bw + g): s.Width = bw: s.Top = ilk.Top: s.Height = ilk.Height
             Y_YAZ s, CStr(adlar(i))
+            On Error Resume Next
+            s.TextFrame2.WordWrap = msoTrue
+            s.TextFrame2.MarginLeft = 2: s.TextFrame2.MarginRight = 2
+            On Error GoTo 0
             Y_BAGLA s, CStr(hedefler(i))
         End If
     Next i
+    ws.Range("BX25").Value2 = "IP_V2"
 End Sub
 
 ' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
@@ -3729,16 +3756,57 @@ End Function
 
 ' Il degisince stok sayfasi o ilin kaydindan yuklenir (kayit yoksa bos).
 Private Sub I_IL_VERI(ByVal kod As String)
-    Dim ws As Worksheet, ar As Worksheet, a As Variant, tarih As Variant
-    Set ws = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
-    If CStr(ws.Range("BX19").Value2) = kod Then Exit Sub
+    Dim ar As Worksheet, a As Variant, tarih As Variant
+    If CStr(ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2) = kod And _
+        CStr(ThisWorkbook.Worksheets("I_EPP_ÝLÇELER_STOK").Range("BX19").Value2) = kod Then Exit Sub
     Set ar = I_ARSIV_SAYFA(kod, False)
     If Not ar Is Nothing Then
         tarih = ar.Range("A1").Value
         a = AKSORA_PAKET_OKU(ar)
+        I_DEPO_KAYDET kod, a
     End If
-    Y_STOK_YAZ ws, a, kod, tarih
+    I_STOK_YAZ kod, a, tarih
 End Sub
+
+' CDP ve EPP ilce stoklari ayri sayfalara (kayit tek: _IA_<IL>).
+Private Sub I_STOK_YAZ(ByVal il As String, ByVal a As Variant, ByVal tarih As Variant)
+    Y_STOK_YAZ ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK"), I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "CDP")), il, tarih
+    Y_STOK_YAZ ThisWorkbook.Worksheets("I_EPP_ÝLÇELER_STOK"), I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "EPP")), il, tarih
+End Sub
+
+' Ilin ilce depolari kalici listede tutulur (stogu olmayan depo da sayilir).
+Private Sub I_DEPO_KAYDET(ByVal il As String, ByVal a As Variant)
+    Dim d As Object, r As Long, k As String, kayit As Object, x As Variant
+    If Not IsArray(a) Then Exit Sub
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For r = 1 To UBound(a, 1)
+        k = UCase$(I_TEMIZ(a(r, 2)))
+        If Len(k) > 0 Then
+            If Not d.Exists(k) Then d(k) = I_TEMIZ(a(r, 3))
+            If Len(CStr(d(k))) = 0 Then d(k) = I_TEMIZ(a(r, 3))
+        End If
+    Next r
+    Set kayit = Y_KAYIT_SOZLUK("_I_DEPO")
+    For Each x In d.keys
+        If Not kayit.Exists(UCase$(il) & "|" & CStr(x)) Then
+            Y_KAYIT_YAZ "_I_DEPO", UCase$(il) & "|" & CStr(x), CStr(d(x))
+        ElseIf Len(CStr(d(x))) > 0 And CStr(kayit(UCase$(il) & "|" & CStr(x))(0)) <> CStr(d(x)) Then
+            Y_KAYIT_YAZ "_I_DEPO", UCase$(il) & "|" & CStr(x), CStr(d(x))
+        End If
+    Next x
+End Sub
+
+' Ilin bilinen ilce depolari: depo -> ad.
+Private Function I_DEPOLAR(ByVal il As String) As Object
+    Dim d As Object, kayit As Object, x As Variant, onek As String
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set kayit = Y_KAYIT_SOZLUK("_I_DEPO")
+    onek = UCase$(Trim$(il)) & "|"
+    For Each x In kayit.keys
+        If Left$(CStr(x), Len(onek)) = onek Then d(Mid$(CStr(x), Len(onek) + 1)) = CStr(kayit(x)(0))
+    Next x
+    Set I_DEPOLAR = d
+End Function
 
 Private Sub I_DURUM(ByVal metin As String)
     application.StatusBar = "AKSORA | Ýlçe Yönetim | " & metin
@@ -3758,6 +3826,10 @@ Public Sub AKSORA_ILCE_GUNCELLE()
         Case "btnIlce": kapsam = "E"
         Case Else: kapsam = "CE"
     End Select
+    On Error Resume Next
+    If Left$(ActiveSheet.Name, 6) = "I_CDP_" Then kapsam = "C"
+    If Left$(ActiveSheet.Name, 6) = "I_EPP_" Then kapsam = "E"
+    On Error GoTo 0
     I_GUNCELLE I_AKTIF_IL(), kapsam, False, bilgi
 End Sub
 
@@ -3808,11 +3880,12 @@ Private Function I_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     ar.Range("A1").Value = tarih: ar.Range("B1").Value2 = il
     AKSORA_PAKET_YAZ ar, a
     I_GECMIS_EKLE il, a, tarih
+    I_DEPO_KAYDET il, a
     sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
     ThisWorkbook.names.Add Name:="_AKSORA_ILCE_SURE_" & il, RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
     application.Calculation = hesap: application.EnableEvents = ev
     If ekran Then
-        Y_STOK_YAZ ws, a, il, tarih
+        I_STOK_YAZ il, a, tarih
         I_ALT_SAYFALAR il, True
         I_PANEL_YENILE
         Y_ARAMA_TARIH True
@@ -3911,15 +3984,14 @@ End Sub
 Private Function I_SERIT_METNI() As String
     Dim sh As Worksheet, d As Object, satir As Long, deger As Double, tarih As Date, metin As String, i As Long
     Dim toplam As Double, il As String, t As String, sure As Double, sistem As Variant
-    Set sh = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
     il = I_AKTIF_IL()
     For Each sistem In Array("CDP", "EPP")
+        Set sh = ThisWorkbook.Worksheets("I_" & CStr(sistem) & "_ÝLÇELER_STOK")
         Set d = CreateObject("Scripting.Dictionary")
         satir = 0: deger = 0
         I_OZET sh, AKSORA_IL_TESIS(il, CStr(sistem)), d, satir, deger, tarih
         toplam = toplam + deger
-        metin = metin & "  |  " & CStr(sistem) & " Ýlçe " & AKSORA_SAYI_METNI(d.Count, "#,##0") & " depo, " & _
-            AKSORA_SAYI_METNI(satir, "#,##0") & " satýr"
+        metin = metin & "  |  " & CStr(sistem) & " Ýlçe " & AKSORA_SAYI_METNI(satir, "#,##0") & " satýr"
     Next sistem
     If tarih = 0 Then
         I_SERIT_METNI = "Henüz SAP güncellemesi yapýlmadý  |  CDP " & AKSORA_IL_TESIS(il, "CDP") & " ve EPP " & _
@@ -3933,30 +4005,33 @@ Private Function I_SERIT_METNI() As String
     On Error GoTo 0
     If Len(t) > 1 Then sure = Val(Mid$(t, 2))
     If sure > 0 Then metin = "  |  Ýl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
-    I_SERIT_METNI = "Son güncelleme " & Format$(tarih, "dd.mm.yyyy hh:nn") & metin & "  |  Toplam stok deðeri " & Y_TL(toplam)
+    I_SERIT_METNI = "Son güncelleme " & Format$(tarih, "dd.mm.yyyy hh:nn") & "  |  " & I_DEPOLAR(il).Count & " ilçe deposu" & metin & _
+        "  |  Toplam stok deðeri " & Y_TL(toplam)
 End Function
 
 Private Sub I_PANEL_YENILE()
     Dim ws As Worksheet, sh As Worksheet, isg As Worksheet, i As Long, k As String, d As Object, il As String
     Dim satir As Long, deger As Double, tarih As Date, depo As Long
     Set ws = ThisWorkbook.Worksheets("I_ANA PANEL")
-    Set sh = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
     Set isg = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
     il = I_AKTIF_IL()
     ws.Unprotect ""
+    ' Depo sayisi: ilin butun ilce depolari (stogu olmasa da).
+    depo = I_DEPOLAR(il).Count
+    If CStr(ws.Range("BX25").Value2) <> "IP_V2" Then I_HIZLI ws
     For i = 0 To 2
         k = Choose(i + 1, "B", "L", "Q")
         Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
         satir = 0: deger = 0: tarih = 0
         If i < 2 Then
+            Set sh = ThisWorkbook.Worksheets(IIf(i = 0, "I_CDP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_STOK"))
             I_OZET sh, AKSORA_IL_TESIS(il, IIf(i = 0, "CDP", "EPP")), d, satir, deger, tarih
-            depo = d.Count
             If satir = 0 Then tarih = 0
         Else
-            I_OZET sh, "", d, satir, deger, tarih
+            I_OZET ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK"), "", d, satir, deger, tarih
+            I_OZET ThisWorkbook.Worksheets("I_EPP_ÝLÇELER_STOK"), "", d, satir, deger, tarih
             satir = CLng(I_SAYI(isg.Range("BZ21").Value2))
             deger = I_SAYI(isg.Range("BZ22").Value2)
-            depo = CLng(I_SAYI(isg.Range("BZ24").Value2))
         End If
         If tarih > 0 Then
             Y_KART_DURUM ws, k, "GÜNCEL", RGB(34, 197, 94), RGB(21, 128, 61)
@@ -4293,6 +4368,9 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
             If Len(CStr(depolar(p(0)))) = 0 Then depolar(p(0)) = x(k)(0)
         Next k
     Next x
+    For Each k In I_DEPOLAR(il).keys
+        If Not depolar.Exists(CStr(k)) Then depolar(CStr(k)) = I_DEPOLAR(il)(k)
+    Next k
     I_ANAHTAR_SIRALA depolar
     sec = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
     If Len(sec) > 0 And Not depolar.Exists(sec) Then sec = vbNullString
@@ -4572,7 +4650,6 @@ Private Sub I_ISG_KUR(ByVal il As String)
     Dim rI As Long, rH As Long, blok() As Variant, idx() As Long, anah() As String, x As Variant, sifir As Long
     Dim toplam As Double, kw As Double, y As Double, rr As Range, birim() As String, dd As Object, dk As Variant
     Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
-    Set sh = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
     Y_SAYFA_SIFIRLA ws
@@ -4586,9 +4663,9 @@ Private Sub I_ISG_KUR(ByVal il As String)
     Next i
     Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
     Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
-    son = AKSORA_M_SON(sh)
+    v = AKSORA_PAKET_OKU(I_ARSIV_SAYFA(il, False))
+    If IsArray(v) Then son = 7 + UBound(v, 1) Else son = 0
     If son >= 7 Then
-        v = sh.Range("A7:N" & son).Value2
         For r = 1 To UBound(v, 1)
             If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) And Not IsError(v(r, 6)) Then
                 dp = UCase$(Trim$(CStr(v(r, 2)))): mk = Trim$(CStr(v(r, 5)))

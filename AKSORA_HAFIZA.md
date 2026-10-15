@@ -119,7 +119,9 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Hub'da 4. kart (04 İlçe Yönetim Birimi, AKSORA_BIRIM_ILCE); hub BX2 sürümü 9 (4 kart, genişlik (1080-68-54)/4).
 - İl seçimi: "ILCE IL SECIM" (KAPAK kopyası, YATIRIM_KAPAK_AC ilce:=True); bant AKSORA_ILCE_BANT.png varsa eklenir.
 - Sayfalar (I_, etiket AKSORA_ILCE_V1, sıra sabit): I_ANA PANEL, I_MALZEME_ARA, I_STOK_KARŞILAŞTIRMA, I_CDP_İLÇELER_STOK,
-  I_CDP_İLÇELER_RAPOR, I_İSG_MALZEMELERİ. Panel/arama/stok/rapor müşteri şablonundan kopya (Y_KUR ilce:=True).
+  I_CDP_İLÇELER_RAPOR, I_EPP_İLÇELER_STOK, I_EPP_İLÇELER_RAPOR, I_İSG_MALZEMELERİ (CDP ve EPP AYRI sayfalar; kayıt tek _IA_<IL>).
+  Panel hızlı erişim 7 düğme (I_HIZLI, BX25 IP_V2). Depo sayısı = ilin bilinen tüm ilçe depoları (_I_DEPO kalıcı liste; stoksuz depo da sayılır).
+  Yatırım ve ilçe aramaları her zaman il kaydından okur (stok sayfasındaki filtre aramayı daraltmaz). Panel/arama/stok/rapor müşteri şablonundan kopya (Y_KUR ilce:=True).
 - Veri: CDP 7151-7155 + EPP 7051-7055, yalnız K001-K999 depoları; ikisi tek stok sayfasında (depo|tesis|malzeme sıralı).
   Kayıt _IA_<IL> (PAKET1). Tek sistem güncellenince diğerinin son kaydı korunur.
 - Günlük geçmiş _IH_<IL>: her sütun bir gün (günün son güncellemesi), en fazla 20 gün; satır depo TAB tesis TAB malzeme TAB
@@ -129,7 +131,11 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   Durum: AZALDI / ARTTI / DEMONTAJ GİRİŞ. N sütunu DEMONTAJ KONTROLÜ: azalan (çıkma olmayan) her malzeme için aynı depo+tesis+malzemede
   ÇIKMA BEDELSİZ (SAP: CIKMA/BDSZ) değerlemeli artış aranır; yoksa kırmızı "DEMONTAJ GİRİŞİ YAPINIZ • adet", az ise "EKSİK DEMONTAJ • giren/azalan".
   Filtreler: TÜMÜ, AZALAN, ARTAN, DEMONTAJ GİRİŞ, DEMONTAJ YAPINIZ. Geçmiş kaydı değerlemeyi de tutar (9 alan).
-- İSG sayfası şimdilik bekliyor (kullanıcı farklı plan verecek).
+- İSG sayfası şimdilik bekliyor (kullanıcı yeni tasarım verecek). İSG malzeme ana listesi: docs/isg/ISG_MALZEME_KOD.xlsx
+  (kullanıcının dosyası, 859 satır) ve tekilleştirilmiş docs/isg/ISG_MALZEME_KOD.csv (293 malzeme; sütunlar: Mal grubu; Mal Grubu Tanımı;
+  Malzeme; Malzeme kısa metni). Mal grupları: M01030101-04 ISG MALZEMELERI, H01010000 ISG, M01010101/201/301/302 HIRDAVAT,
+  M01050100 KIYAFET MALZEMELERI, M03540000 ELEKTRIK MALZEMELERI, M01040101 MATBAA. Yeni İSG tasarımında eşleşme bu listedeki
+  malzeme kodlarıyla yapılacak (anahtar kelime yerine).
 - İSG: anahtar kelimeler (_I_AYAR "ISG"), malzeme × ilçe matrisi, stoksuz hücre kırmızı. Panel Q kartı İSG özetini gösterir.
 - Panel bandı AKSORA_ILCE_PANEL_BANTLARI.jpg (yoksa müşteri bandı).
 
