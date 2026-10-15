@@ -4073,7 +4073,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Dim ws As Worksheet, tarihler As Collection, w As Double, s As Shape, nT As Long, i As Long, j As Long
     Dim eskiT As String, yeniT As String, dE As Object, dY As Object, anahtar As Object, k As Variant, p() As String
     Dim depolar As Object, sec As String, bw As Double, bh As Double, sat As Long, sut As Long, nB As Long, y As Double
-    Dim rB As Long, rT As Long, rH As Long, n As Long, mE As Double, mY As Double, vE As Double, vY As Double
+    Dim rB As Long, rT As Long, rH As Long, n As Long, mEski As Double, mYeni As Double, vEski As Double, vYeni As Double
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, tE As Double, tY As Double
     Dim nArt As Long, nAz As Long, t As Variant, ad As String, kw As Double, rr As Range, x As Variant, birimler() As String
     Dim secAd As String
@@ -4219,36 +4219,36 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
         ReDim birimler(1 To anahtar.Count)
     End If
     For Each k In anahtar.keys
-        mE = 0: mY = 0: vE = 0: vY = 0
-        If dE.Exists(k) Then t = dE(k): mE = t(3): vE = t(4)
-        If dY.Exists(k) Then t = dY(k): mY = t(3): vY = t(4)
-        tE = tE + vE: tY = tY + vY
-        If Abs(mY - mE) > 0.0005 Or Abs(vY - vE) > 0.005 Then
+        mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
+        If dE.Exists(k) Then t = dE(k): mEski = t(3): vEski = t(4)
+        If dY.Exists(k) Then t = dY(k): mYeni = t(3): vYeni = t(4)
+        tE = tE + vEski: tY = tY + vYeni
+        If Abs(mYeni - mEski) > 0.0005 Or Abs(vYeni - vEski) > 0.005 Then
             n = n + 1
             p = Split(CStr(k), "|")
             blok(n, 1) = IIf(Left$(p(1), 2) = "70", "EPP", "CDP")
             blok(n, 2) = p(0): blok(n, 3) = p(2)
             blok(n, 4) = t(1): blok(n, 5) = t(2)
-            blok(n, 6) = mE: blok(n, 7) = mY: blok(n, 8) = mY - mE
-            blok(n, 9) = Round(vE, 2): blok(n, 10) = Round(vY, 2): blok(n, 11) = Round(vY - vE, 2)
-            If mE <= 0 And mY > 0 Then
+            blok(n, 6) = mEski: blok(n, 7) = mYeni: blok(n, 8) = mYeni - mEski
+            blok(n, 9) = Round(vEski, 2): blok(n, 10) = Round(vYeni, 2): blok(n, 11) = Round(vYeni - vEski, 2)
+            If mEski <= 0 And mYeni > 0 Then
                 blok(n, 12) = "Yeni giriþ"
-            ElseIf mY <= 0 And mE > 0 Then
+            ElseIf mYeni <= 0 And mEski > 0 Then
                 blok(n, 12) = "Tükendi"
-            ElseIf mY > mE + 0.0005 Then
+            ElseIf mYeni > mEski + 0.0005 Then
                 blok(n, 12) = "Arttý"
-            ElseIf mY < mE - 0.0005 Then
+            ElseIf mYeni < mEski - 0.0005 Then
                 blok(n, 12) = "Azaldý"
             Else
                 blok(n, 12) = "Deðer deðiþti"
             End If
-            If mY > mE Then
+            If mYeni > mEski Then
                 nArt = nArt + 1
-            ElseIf mY < mE Then
+            ElseIf mYeni < mEski Then
                 nAz = nAz + 1
             End If
             birimler(n) = CStr(t(2))
-            anah(n) = Format$(1E+15 - Abs(vY - vE) * 100, "0000000000000000")
+            anah(n) = Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
             idx(n) = n
         End If
     Next k
