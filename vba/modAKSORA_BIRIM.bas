@@ -6,7 +6,7 @@ Private Const YAT As String = "YATIRIM PANEL"
 Private Const MUS As String = "MUSTERI PANEL"
 Private Const MUK As String = "MUSTERI IL SECIM"
 Private Const YAK As String = "YATIRIM IL SECIM"
-Private Const ILK As String = "ILCE IL SECIM"
+Private Const ILCE_KAPAK As String = "ILCE IL SECIM"
 Private Const tag As String = "AKSORA_BIRIM_V1"
 Private Const pw As String = ""
 Private Const cw As Double = 1080
@@ -218,7 +218,7 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
         Exit Function
     End If
     If Not BIRIM_YENI_SAYFA(CStr(sh.Name)) Then Exit Function
-    If sh.Name = MUK Or sh.Name = YAK Or sh.Name = ILK Then MUSTERI_KAPAK_GORUNUM sh Else BIRIM_GORUNUM sh
+    If sh.Name = MUK Or sh.Name = YAK Or sh.Name = ILCE_KAPAK Then MUSTERI_KAPAK_GORUNUM sh Else BIRIM_GORUNUM sh
     AKSORA_BIRIM_OLAY = True
 End Function
 
@@ -236,12 +236,12 @@ Public Function AKSORA_BIRIM_AKTIF_GORUNUM() As Boolean
         Exit Function
     End If
     If Not BIRIM_YENI_SAYFA(CStr(ActiveSheet.Name)) Then Exit Function
-    If ActiveSheet.Name = MUK Or ActiveSheet.Name = YAK Or ActiveSheet.Name = ILK Then MUSTERI_KAPAK_GORUNUM ActiveSheet Else BIRIM_GORUNUM ActiveSheet
+    If ActiveSheet.Name = MUK Or ActiveSheet.Name = YAK Or ActiveSheet.Name = ILCE_KAPAK Then MUSTERI_KAPAK_GORUNUM ActiveSheet Else BIRIM_GORUNUM ActiveSheet
     AKSORA_BIRIM_AKTIF_GORUNUM = True
 End Function
 
 Private Function BIRIM_YENI_SAYFA(ByVal ad As String) As Boolean
-    BIRIM_YENI_SAYFA = (ad = HUB Or ad = YAT Or ad = MUS Or ad = MUK Or ad = YAK Or ad = ILK)
+    BIRIM_YENI_SAYFA = (ad = HUB Or ad = YAT Or ad = MUS Or ad = MUK Or ad = YAK Or ad = ILCE_KAPAK)
 End Function
 
 Public Sub AKSORA_BIRIM_MALZEME()
@@ -478,7 +478,7 @@ Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
-' Il secim ekrani: yatirim (YAK) ve ilce yonetim (ILK) ayni KAPAK kopyasini kullanir.
+' Il secim ekrani: yatirim (YAK) ve ilce yonetim (ILCE_KAPAK) ayni KAPAK kopyasini kullanir.
 Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
     Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape
     Dim yol As String, ev As Boolean, sc As Boolean, no As Long, metin As String
@@ -486,7 +486,7 @@ Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
-    ad = IIf(ilce, ILK, YAK)
+    ad = IIf(ilce, ILCE_KAPAK, YAK)
     If ilce Then
         yol = AKSORA_GORSEL("AKSORA_ILCE_BANT.png")
         bantVar = (Len(Dir$(yol)) > 0)
@@ -587,7 +587,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_IL_SEC()
     Dim ws As Worksheet, ix As Long, keys As Variant, ev As Boolean, metin As String
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
-    If ActiveSheet.Name <> YAK And ActiveSheet.Name <> ILK Then Exit Sub
+    If ActiveSheet.Name <> YAK And ActiveSheet.Name <> ILCE_KAPAK Then Exit Sub
     ev = application.EnableEvents
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(ActiveSheet.Name)
@@ -598,7 +598,7 @@ Public Sub AKSORA_YATIRIM_IL_SEC()
     application.ScreenUpdating = False: application.EnableEvents = False
     ws.Unprotect pw
     ws.Range("AZ1").Value2 = keys(ix - 1)
-    YATIRIM_SECIM_CIZ ws, (ws.Name = ILK)
+    YATIRIM_SECIM_CIZ ws, (ws.Name = ILCE_KAPAK)
 Cikis:
     On Error Resume Next
     If Not ws Is Nothing Then
@@ -694,7 +694,7 @@ End Sub
 
 Private Sub BIRIM_DIGERLERINI_GIZLE(ByVal secilen As String)
     Dim ad As Variant, ws As Worksheet
-    For Each ad In Array(HUB, YAT, MUS, MUK, YAK, ILK)
+    For Each ad In Array(HUB, YAT, MUS, MUK, YAK, ILCE_KAPAK)
         If CStr(ad) <> secilen Then
             Set ws = Nothing
             On Error Resume Next
@@ -3444,7 +3444,7 @@ End Sub
 Public Sub AKSORA_ILCE_GIRIS()
     Dim ws As Worksheet
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets(ILK)
+    Set ws = ThisWorkbook.Worksheets(ILCE_KAPAK)
     If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
         MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
     Else
@@ -4524,7 +4524,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
             Next dk
             blok(i, sonK) = Round(t(3), 2)
             toplam = toplam + t(3)
-        Next i
+        Next x
         Y_SIRALA anah, idx, 1, nM
         ReDim v(1 To nM, 1 To sonK)
         For i = 1 To nM
