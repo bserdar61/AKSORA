@@ -16,6 +16,7 @@ Private mGorunum As Boolean
 Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
 Private Const I_ETIKET As String = "AKSORA_ILCE_V1"
 Private Const I_GECMIS_GUN As Long = 20
+Private Const I_TF As String = "dd.mm.yyyy hh:nn:ss"
 Private mYCalisiyor As Boolean
 Private mYToplu As Boolean
 Private mYOdak As String
@@ -1112,6 +1113,7 @@ Private Sub Y_KUR(Optional ByVal ilce As Boolean)
                 Case "PANEL": kad = "M_ANA PANEL"
                 Case "ARAMA": kad = "M_MALZEME_ARA"
                 Case "STOK": kad = "M_CDP_STOK"
+                Case "KARS": kad = "STOK_KARÞILAÞTIRMA"
                 Case Else: kad = "M_CDP_RAPOR"
             End Select
             adim = CStr(adlar(i)) & " / kaynak " & kad
@@ -3420,6 +3422,7 @@ Private Function I_TUR(ByVal ad As String) As String
         Case "I_MALZEME_ARA": I_TUR = "ARAMA"
         Case "I_CDP_ÝLÇELER_STOK": I_TUR = "STOK"
         Case "I_CDP_ÝLÇELER_RAPOR": I_TUR = "RAPOR"
+        Case "I_STOK_KARÞILAÞTIRMA": I_TUR = "KARS"
         Case Else: I_TUR = "BOS"
     End Select
 End Function
@@ -3462,6 +3465,7 @@ Private Sub I_TEMIZLE(ByVal ws As Worksheet)
         Case "ARAMA": Y_ARAMA_TEMIZLE ws
         Case "STOK": Y_STOK_TEMIZLE ws
         Case "RAPOR": Y_RAPOR_TEMIZLE ws
+        Case "KARS": I_KARS_HAZIRLA ws
         Case Else: Y_SAYFA_SIFIRLA ws
     End Select
     If I_TUR(ws.Name) = "STOK" Then ws.Range("A7").Value2 = "Veri bekleniyor: SAP STOKLARINI GÜNCELLE ile ilçe depolarý (K001-K999) SAP'den alýnýr."
@@ -3571,6 +3575,7 @@ Private Sub I_GIRIS(ByVal kod As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     kod = UCase$(Trim$(kod))
+    I_ESKI_KARS_SIL
     Y_KUR True
     I_IL_UYGULA kod
     I_IL_VERI kod
@@ -3598,6 +3603,20 @@ Hata:
     no = Err.Number: metin = Err.Description
     application.DisplayAlerts = True
     Resume Cikis
+End Sub
+
+' Ilk surumdeki (rapor kopyasi) karsilastirma sayfasi kaldirilir; yerine malzeme biriminin kopyasi kurulur.
+Private Sub I_ESKI_KARS_SIL()
+    Dim ws As Worksheet, da As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+    If CStr(ws.Range("BX25").Value2) = "IK_V2" Then Exit Sub
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    ws.Visible = xlSheetVisible
+    ws.Delete
+    application.DisplayAlerts = da
 End Sub
 
 ' Karsilastirma ve ISG sayfalari: hata olsa bile birim acilir, hata seride yazilir.
@@ -3960,7 +3979,9 @@ End Sub
 
 '---------- Gunluk stok gecmisi (karsilastirma icin) ----------
 ' _IH_<IL>: her sutun bir gun (gunun son guncellemesi). 1. satir tarih, alti metin bloklari.
-' Satir: depo TAB uretim yeri TAB malzeme TAB depo adi TAB tanim TAB birim TAB miktar TAB deger.
+' Satir: depo TAB uretim yeri TAB malzeme TAB degerleme TAB depo adi TAB tanim TAB birim TAB miktar TAB deger.
+' (Eski 8 alanli kayitlarda degerleme yoktur.)
+
 Private Function I_TEMIZ(ByVal v As Variant) As String
     If IsError(v) Or IsEmpty(v) Then Exit Function
     I_TEMIZ = Replace(Replace(Replace(Trim$(CStr(v)), vbTab, " "), vbLf, " "), vbCr, " ")
@@ -3977,7 +3998,7 @@ Private Sub I_GECMIS_EKLE(ByVal il As String, ByVal a As Variant, ByVal tarih As
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     If IsArray(a) Then
         For r = 1 To UBound(a, 1)
-            k = I_TEMIZ(a(r, 2)) & vbTab & I_TEMIZ(a(r, 1)) & vbTab & I_TEMIZ(a(r, 5))
+            k = I_TEMIZ(a(r, 2)) & vbTab & I_TEMIZ(a(r, 1)) & vbTab & I_TEMIZ(a(r, 5)) & vbTab & I_TEMIZ(a(r, 9))
             If d.Exists(k) Then
                 t = d(k)
             Else
@@ -4037,12 +4058,13 @@ Private Function I_GECMIS_TARIHLER(ByVal il As String) As Collection
     Set I_GECMIS_TARIHLER = sonuc
 End Function
 
-' Bir gunun stoku: depo|uretim yeri|malzeme -> (depo adi, tanim, birim, miktar, deger).
+' Bir gunun stoku: depo|uretim yeri|malzeme|degerleme -> (depo adi, tanim, birim, miktar, deger).
 Private Function I_GECMIS_OKU(ByVal il As String, ByVal metin As String) As Object
     Dim ws As Worksheet, son As Long, c As Long, x As Variant, d As Object, r As Long, satirlar() As String, f() As String
     Dim i As Long
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set I_GECMIS_OKU = d
+    If Len(metin) = 0 Then Exit Function
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("_IH_" & UCase$(Trim$(il)))
     On Error GoTo 0
@@ -4051,7 +4073,7 @@ Private Function I_GECMIS_OKU(ByVal il As String, ByVal metin As String) As Obje
     For c = 1 To son
         x = ws.Cells(1, c).Value
         If IsDate(x) Then
-            If Format$(CDate(x), "dd.mm.yyyy hh:nn") = metin Then Exit For
+            If Format$(CDate(x), I_TF) = metin Then Exit For
         End If
     Next c
     If c > son Then Exit Function
@@ -4060,55 +4082,173 @@ Private Function I_GECMIS_OKU(ByVal il As String, ByVal metin As String) As Obje
         satirlar = Split(CStr(ws.Cells(r, c).Value2), vbLf)
         For i = 0 To UBound(satirlar)
             f = Split(satirlar(i), vbTab)
-            If UBound(f) >= 7 Then d(f(0) & "|" & f(1) & "|" & f(2)) = Array(f(3), f(4), f(5), Val(f(6)), Val(f(7)))
+            If UBound(f) >= 8 Then
+                d(f(0) & "|" & f(1) & "|" & f(2) & "|" & f(3)) = Array(f(4), f(5), f(6), Val(f(7)), Val(f(8)))
+            ElseIf UBound(f) = 7 Then
+                d(f(0) & "|" & f(1) & "|" & f(2) & "|") = Array(f(3), f(4), f(5), Val(f(6)), Val(f(7)))
+            End If
         Next i
         r = r + 1
     Loop
 End Function
 
-'---------- STOK KARSILASTIRMA ----------
-' Ilce dugmesi secilir; eski ve yeni gun listeden secilir (varsayilan: yeni = son guncelleme,
-' eski = bir onceki gunun son guncellemesi). Degisen kalemler deger farkina gore listelenir.
+'---------- STOK KARSILASTIRMA (ilce) ----------
+' Sayfa malzeme stok biriminin STOK_KARÞILAÞTIRMA sayfasinin kopyasidir (ayni gorunum).
+' Il dugmeleri yerine ilce depo dugmeleri; durumlar AZALDI / ARTTI / DEMONTAJ GÝRÝÞ.
+' Demontaj kontrolu: azalan her malzeme icin ayni depo + uretim yeri + malzemede
+' CIKMA BEDELSIZ degerlemeli stok artisi aranir. Yoksa DEMONTAJ GÝRÝÞÝ YAPINIZ (kirmizi).
+
+Private Function I_DEMONTAJ_MI(ByVal degerleme As String) As Boolean
+    Dim t As String
+    t = Y_NORM(degerleme)
+    t = Replace(Replace(Replace(Replace(t, " ", ""), "_", ""), "-", ""), ".", "")
+    I_DEMONTAJ_MI = (InStr(t, "CIKMA") > 0 And InStr(t, "BEDELSIZ") > 0)
+End Function
+
+' Kopya sayfa ilk kurulumda ilce birimine uyarlanir.
+Private Sub I_KARS_HAZIRLA(ByVal ws As Worksheet)
+    Dim i As Long, s As Shape, adlar As Variant, metinler As Variant, makrolar As Variant, son As Long
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    For i = ws.Shapes.Count To 1 Step -1
+        Set s = ws.Shapes(i)
+        If Left$(s.Name, 7) = "AKSKV1_" Or s.Name = "AKSORA_GECMIS_KAYIT_NOTU" Then s.Delete
+    Next i
+    son = application.Max(400, ws.UsedRange.Row + ws.UsedRange.Rows.Count)
+    ws.Range("A16:N" & son).Clear
+    ws.Range("X1:AD" & son).ClearContents
+    ws.Range("B6").MergeArea.ClearContents: ws.Range("I6").MergeArea.ClearContents
+    ws.Range("B7").MergeArea.ClearContents: ws.Range("I7").MergeArea.ClearContents
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    metinler = Array("TÜMÜ", "AZALAN", "ARTAN", "DEMONTAJ GÝRÝÞ", "DEMONTAJ YAPINIZ", "KARÞILAÞTIR")
+    makrolar = Array("AKSORA_ILCE_KF_TUMU", "AKSORA_ILCE_KF_AZALAN", "AKSORA_ILCE_KF_ARTAN", _
+        "AKSORA_ILCE_KF_DEMONTAJ", "AKSORA_ILCE_KF_EKSIK", "AKSORA_ILCE_KARS_YENILE")
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then
+            Y_YAZ s, CStr(metinler(i))
+            s.OnAction = BIRIM_MAKRO(CStr(makrolar(i)))
+            If i = 4 Then
+                s.Fill.ForeColor.RGB = RGB(185, 28, 28)
+                On Error Resume Next
+                s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+                On Error GoTo 0
+            End If
+        End If
+    Next i
+    ws.Range("G9").Value2 = "DEMONTAJ GÝRÝÞ"
+    ws.Range("J9").Value2 = "DEMONTAJ GÝRÝÞÝ YAPINIZ"
+    ws.Range("O6").Value2 = "KARÞILAÞTIRILACAK ÝLÇE"
+    ws.Range("F15").Value2 = "DEÐERLEME"
+    ' Demontaj kontrolu sutunu (N): tablo basligi M ile ayni bicimde.
+    ws.Columns("N").ColumnWidth = 34
+    With ws.Range("N15")
+        .Interior.Color = ws.Range("M15").Interior.Color
+        .Font.Name = ws.Range("M15").Font.Name: .Font.Size = ws.Range("M15").Font.Size
+        .Font.bold = ws.Range("M15").Font.bold: .Font.Color = ws.Range("M15").Font.Color
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .Borders.LineStyle = ws.Range("M15").Borders(xlEdgeBottom).LineStyle
+    End With
+    ws.Range("N15").Value2 = "DEMONTAJ KONTROLÜ"
+    ws.Range("BX25").Value2 = "IK_V2"
+End Sub
+
+' Ilce dugmeleri (O sutunu): TÜMÜ + ilin K001-K999 depolari; secili olan yesil.
+Private Sub I_KARS_DUGMELER(ByVal ws As Worksheet, ByVal depolar As Object, ByVal sec As String)
+    Dim i As Long, s As Shape, x As Double, y0 As Double, w As Double, k As Variant, ad As String, kod As String
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 7) = "I_KV_D_" Then ws.Shapes(i).Delete
+    Next i
+    x = ws.Range("O8").Left + 2: y0 = ws.Range("O8").Top: w = ws.Range("O8:P8").Width - 4
+    i = 0
+    For Each k In I_DUGME_LISTESI(depolar)
+        kod = CStr(k)
+        If Len(kod) = 0 Then ad = "TÜM ÝLÇELER" Else ad = I_DEPO_KISA(CStr(depolar(kod))) & vbLf & kod
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y0 + i * 46, w, 40)
+        s.Name = "I_KV_D_" & i
+        s.AlternativeText = kod
+        s.line.Visible = msoFalse
+        s.Placement = xlFreeFloating
+        s.LockAspectRatio = msoFalse
+        With s.TextFrame2
+            .MarginLeft = 4: .MarginRight = 4: .MarginTop = 1: .MarginBottom = 1
+            .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoTrue
+            .TextRange.Text = ad
+            .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+            .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
+            If Len(kod) > 0 Then .TextRange.Characters(Len(ad) - Len(kod) + 1, Len(kod)).Font.Size = 8
+        End With
+        If UCase$(kod) = sec Then
+            s.Fill.ForeColor.RGB = RGB(0, 121, 103)
+            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        Else
+            s.Fill.ForeColor.RGB = RGB(230, 240, 248)
+            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(24, 55, 88)
+        End If
+        s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_KARS_SEC")
+        i = i + 1
+    Next k
+    Set s = Y_SEKIL(ws, "AKSORA_KARS_SABIT_ACIKLAMA")
+    If Not s Is Nothing Then
+        s.Left = x: s.Width = w: s.Top = y0 + i * 46 + 2
+        Y_YAZ s, "Seçili ilçe deposunun kayýtlý stok geçmiþi karþýlaþtýrýlýr."
+        s.TextFrame2.WordWrap = msoTrue: s.Height = 30
+    End If
+End Sub
+
 Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
-    Dim ws As Worksheet, tarihler As Collection, w As Double, s As Shape, nT As Long, i As Long, j As Long
-    Dim eskiT As String, yeniT As String, dE As Object, dY As Object, anahtar As Object, k As Variant, p() As String
-    Dim depolar As Object, sec As String, bw As Double, bh As Double, sat As Long, sut As Long, nB As Long, y As Double
-    Dim rB As Long, rT As Long, rH As Long, n As Long, mEski As Double, mYeni As Double, vEski As Double, vYeni As Double
-    Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, tE As Double, tY As Double
-    Dim nArt As Long, nAz As Long, t As Variant, ad As String, kw As Double, rr As Range, x As Variant, birimler() As String
-    Dim secAd As String
+    Dim ws As Worksheet, tarihler As Collection, nT As Long, i As Long, j As Long, eskiT As String, yeniT As String
+    Dim dE As Object, dY As Object, anahtar As Object, grup As Object, depolar As Object, k As Variant, x As Variant, p() As String
+    Dim sec As String, gk As String, t As Variant, n As Long, son As Long, r As Long
+    Dim mEski As Double, mYeni As Double, vEski As Double, vYeni As Double, tE As Double, tY As Double
+    Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
+    Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
+    If CStr(ws.Range("BX25").Value2) <> "IK_V2" Then I_KARS_HAZIRLA ws
     If CStr(ws.Range("BX22").Value2) <> il Then sifirla = True: ws.Range("BX30").ClearContents
-    Y_SAYFA_SIFIRLA ws
-    I_BAGLA ws
-    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
-    If s Is Nothing Then w = 1544 Else w = s.Width
-    Y_KOLONLAR ws, Array(64, 64, 104, w - 1112, 56, 106, 106, 100, 128, 128, 140, 116)
-    ' Gunler (en yeni ustte) ve varsayilan secim
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    ' Gunler (en yeni ustte): X sutunu tarih listesi
     Set tarihler = I_GECMIS_TARIHLER(il)
     nT = tarihler.Count
-    ws.Range("BZ1:BZ40").NumberFormat = "@"
+    ws.Range("X1:X200").ClearContents
+    ws.Range("X1:X200").NumberFormat = "@"
+    ws.Range("X1").Value2 = "GÖRÜNEN"
     For i = 1 To nT
-        ws.Cells(i, 78).Value2 = Format$(tarihler(i), "dd.mm.yyyy hh:nn")
+        ws.Cells(i + 1, 24).Value2 = Format$(tarihler(i), I_TF)
     Next i
-    eskiT = CStr(ws.Range("BX32").Value2): yeniT = CStr(ws.Range("BX33").Value2)
+    eskiT = Trim$(CStr(ws.Range("B6").Value2)): yeniT = Trim$(CStr(ws.Range("I6").Value2))
     If Not sifirla Then
         If Not I_LISTEDE(tarihler, eskiT) Or Not I_LISTEDE(tarihler, yeniT) Then sifirla = True
     End If
-    If sifirla And nT > 0 Then
-        yeniT = Format$(tarihler(1), "dd.mm.yyyy hh:nn")
-        eskiT = yeniT
-        For i = 2 To nT
-            If Int(CDbl(tarihler(i))) < Int(CDbl(tarihler(1))) Then eskiT = Format$(tarihler(i), "dd.mm.yyyy hh:nn"): Exit For
-        Next i
+    If sifirla Then
+        eskiT = vbNullString: yeniT = vbNullString
+        If nT > 0 Then
+            ' Varsayilan: yeni = son guncelleme, eski = bir onceki gunun son guncellemesi.
+            yeniT = Format$(tarihler(1), I_TF)
+            eskiT = yeniT
+            For i = 2 To nT
+                If Int(CDbl(tarihler(i))) < Int(CDbl(tarihler(1))) Then eskiT = Format$(tarihler(i), I_TF): Exit For
+            Next i
+        End If
     End If
-    If nT = 0 Then eskiT = vbNullString: yeniT = vbNullString
-    ws.Range("BX32").Value2 = eskiT: ws.Range("BX33").Value2 = yeniT
+    For Each x In Array("B6", "I6")
+        With ws.Range(CStr(x))
+            .MergeArea.NumberFormat = "@"
+            .Validation.Delete
+            If nT > 0 Then
+                .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="=$X$2:$X$" & (nT + 1)
+                .Validation.IgnoreBlank = True: .Validation.InCellDropdown = True
+            End If
+        End With
+    Next x
+    ws.Range("B6").Value2 = eskiT: ws.Range("I6").Value2 = yeniT
+    ws.Range("BX34").Value2 = "B6": ws.Range("BX35").Value2 = "I6"
     Set dE = I_GECMIS_OKU(il, eskiT)
     Set dY = I_GECMIS_OKU(il, yeniT)
-    ' Ilce depolari (iki gunun birlesimi), depo koduna gore
+    ' Ilce depolari (iki gunun birlesimi)
     Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
     For Each x In Array(dY, dE)
         For Each k In x.keys
@@ -4117,205 +4257,186 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
             If Len(CStr(depolar(p(0)))) = 0 Then depolar(p(0)) = x(k)(0)
         Next k
     Next x
+    I_ANAHTAR_SIRALA depolar
     sec = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
     If Len(sec) > 0 And Not depolar.Exists(sec) Then sec = vbNullString
     ws.Range("BX30").Value2 = sec
-    I_ANAHTAR_SIRALA depolar
-    ' Satir yerlesimi
-    nB = depolar.Count + 1
-    sut = 8
-    sat = (nB + sut - 1) \ sut
-    rB = 9
-    rT = rB + sat + 1
-    rH = rT + 4
-    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
-    ws.Rows(7).RowHeight = 10
-    ws.Rows(8).RowHeight = 30
-    ws.Range(ws.Rows(rB), ws.Rows(rB + sat - 1)).RowHeight = 40
-    ws.Rows(rB + sat).RowHeight = 10
-    ws.Rows(rT).RowHeight = 30
-    ws.Rows(rT + 1).RowHeight = 18
-    ws.Rows(rT + 2).RowHeight = 12
-    ws.Rows(rT + 3).RowHeight = 30
-    ws.Rows(rH).RowHeight = 30
-    Y_BOLUM ws, 8, "ÝLÇE SEÇÝMÝ", "Karþýlaþtýrma seçilen ilçe deposu için yapýlýr."
-    ' Ilce dugmeleri
-    bw = (w - (sut - 1) * 8) / sut: bh = 34
-    i = 0
-    For Each k In I_DUGME_LISTESI(depolar)
-        y = ws.Rows(rB + i \ sut).Top + 3
-        If Len(CStr(k)) = 0 Then
-            ad = "TÜM ÝLÇELER" & vbLf & AKSORA_SAYI_METNI(depolar.Count, "0") & " depo"
-        Else
-            ad = CStr(k) & vbLf & I_DEPO_KISA(CStr(depolar(k)))
-        End If
-        Set s = Y_DUGME(ws, "I_KS_DUGME_" & i, ad, (i Mod sut) * (bw + 8), y, bw, bh, RGB(26, 75, 120), "AKSORA_ILCE_KARS_SEC")
-        s.AlternativeText = CStr(k)
-        s.Adjustments.Item(1) = 0.15
-        s.TextFrame2.TextRange.Font.Size = 9
-        s.TextFrame2.MarginLeft = 3: s.TextFrame2.MarginRight = 3
-        If UCase$(CStr(k)) <> sec Then
-            s.Fill.ForeColor.RGB = RGB(234, 244, 251)
-            s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(165, 196, 224): s.line.Weight = 0.75
-            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(12, 45, 79)
-        Else
-            s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(47, 144, 217): s.line.Weight = 2
-        End If
-        i = i + 1
-    Next k
-    ' Tarih secimi
-    ws.Cells(rT, 1).Value2 = "ESKÝ TARÝH"
-    ws.Cells(rT, 6).Value2 = "YENÝ TARÝH"
-    For Each x In Array(1, 6)
-        With ws.Range(ws.Cells(rT, CLng(x)), ws.Cells(rT, CLng(x) + 1))
-            .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlCenter
-            .Font.Name = "Aptos": .Font.Size = 11: .Font.bold = True: .Font.Color = RGB(64, 74, 89)
-        End With
-    Next x
-    For Each x In Array(3, 8)
-        With ws.Range(ws.Cells(rT, CLng(x)), ws.Cells(rT, CLng(x) + 1))
-            .Merge
-            .NumberFormat = "@": .Locked = False
-            .Interior.Color = RGB(255, 255, 255)
-            .Font.Name = "Aptos": .Font.Size = 11: .Font.bold = True: .Font.Color = RGB(12, 45, 79)
-            .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-            With .Borders
-                .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(165, 190, 214)
-            End With
-        End With
-        If nT > 0 Then
-            With ws.Cells(rT, CLng(x)).Validation
-                .Delete
-                .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="=$BZ$1:$BZ$" & nT
-                .IgnoreBlank = True: .InCellDropdown = True
-                .ErrorMessage = "Listeden bir tarih seçiniz."
-            End With
-        End If
-    Next x
-    ws.Cells(rT, 3).Value2 = eskiT
-    ws.Cells(rT, 8).Value2 = yeniT
-    Y_DUGME ws, "I_KS_YENILE", "KARÞILAÞTIR", ws.Cells(rT, 11).Left + 6, ws.Rows(rT).Top + 1, ws.Cells(rT, 11).Width - 6, _
-        ws.Rows(rT).Height - 2, RGB(44, 95, 145), "AKSORA_ILCE_KARS_YENILE"
-    ws.Cells(rT + 1, 3).Value2 = "Varsayýlan: yeni tarih son güncelleme, eski tarih bir önceki günün son güncellemesi. Listede en yeni tarih en üstte."
-    With ws.Range(ws.Cells(rT + 1, 3), ws.Cells(rT + 1, 11))
-        .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlCenter
-    End With
-    ws.Cells(rT + 1, 3).Font.Size = 9: ws.Cells(rT + 1, 3).Font.Color = RGB(100, 116, 139)
-    ws.Range(ws.Rows(rT), ws.Rows(rT + 1)).Interior.Color = RGB(244, 247, 251)
-    ws.Range(ws.Cells(rT, 3), ws.Cells(rT, 4)).Interior.Color = RGB(255, 255, 255)
-    ws.Range(ws.Cells(rT, 8), ws.Cells(rT, 9)).Interior.Color = RGB(255, 255, 255)
-    ws.Range("BX34").Value2 = ws.Cells(rT, 3).Address(False, False)
-    ws.Range("BX35").Value2 = ws.Cells(rT, 8).Address(False, False)
-    ' Karsilastirma
+    I_KARS_DUGMELER ws, depolar, sec
+    ' Kalemler ve demontaj gruplari (depo|uretim yeri|malzeme)
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
     For Each x In Array(dE, dY)
         For Each k In x.keys
             If Len(sec) = 0 Or UCase$(Split(CStr(k), "|")(0)) = sec Then anahtar(k) = True
         Next k
     Next x
-    n = 0
-    If anahtar.Count > 0 Then
-        ReDim blok(1 To anahtar.Count, 1 To 12): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
-        ReDim birimler(1 To anahtar.Count)
-    End If
     For Each k In anahtar.keys
         mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
         If dE.Exists(k) Then t = dE(k): mEski = t(3): vEski = t(4)
         If dY.Exists(k) Then t = dY(k): mYeni = t(3): vYeni = t(4)
         tE = tE + vEski: tY = tY + vYeni
-        If Abs(mYeni - mEski) > 0.0005 Or Abs(vYeni - vEski) > 0.005 Then
-            n = n + 1
+        p = Split(CStr(k), "|")
+        gk = p(0) & "|" & p(1) & "|" & p(2)
+        If Not grup.Exists(gk) Then grup(gk) = Array(0#, 0#)
+        g = grup(gk)
+        If I_DEMONTAJ_MI(p(3)) Then
+            If mYeni > mEski Then g(1) = g(1) + (mYeni - mEski)
+        ElseIf mYeni < mEski Then
+            g(0) = g(0) + (mEski - mYeni)
+        End If
+        grup(gk) = g
+    Next k
+    n = 0
+    If anahtar.Count > 0 Then
+        ReDim blok(1 To anahtar.Count, 1 To 14): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
+    End If
+    For Each k In anahtar.keys
+        mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
+        If dE.Exists(k) Then t = dE(k): mEski = t(3): vEski = t(4)
+        If dY.Exists(k) Then t = dY(k): mYeni = t(3): vYeni = t(4)
+        If Abs(mYeni - mEski) > 0.0005 Then
             p = Split(CStr(k), "|")
-            blok(n, 1) = IIf(Left$(p(1), 2) = "70", "EPP", "CDP")
-            blok(n, 2) = p(0): blok(n, 3) = p(2)
-            blok(n, 4) = t(1): blok(n, 5) = t(2)
-            blok(n, 6) = mEski: blok(n, 7) = mYeni: blok(n, 8) = mYeni - mEski
-            blok(n, 9) = Round(vEski, 2): blok(n, 10) = Round(vYeni, 2): blok(n, 11) = Round(vYeni - vEski, 2)
-            If mEski <= 0 And mYeni > 0 Then
-                blok(n, 12) = "Yeni giriþ"
-            ElseIf mYeni <= 0 And mEski > 0 Then
-                blok(n, 12) = "Tükendi"
-            ElseIf mYeni > mEski + 0.0005 Then
-                blok(n, 12) = "Arttý"
-            ElseIf mYeni < mEski - 0.0005 Then
-                blok(n, 12) = "Azaldý"
-            Else
-                blok(n, 12) = "Deðer deðiþti"
-            End If
+            demontaj = I_DEMONTAJ_MI(p(3))
+            kontrol = vbNullString
             If mYeni > mEski Then
-                nArt = nArt + 1
-            ElseIf mYeni < mEski Then
-                nAz = nAz + 1
+                If demontaj Then
+                    durum = "DEMONTAJ GÝRÝÞ": nDm = nDm + 1: sira = 5: kontrol = "Demontaj giriþi"
+                Else
+                    durum = "ARTTI": nAr = nAr + 1: sira = 4
+                End If
+            Else
+                durum = "AZALDI": nAz = nAz + 1: sira = 3
+                If Not demontaj Then
+                    g = grup(p(0) & "|" & p(1) & "|" & p(2))
+                    If g(1) <= 0.0005 Then
+                        kontrol = "DEMONTAJ GÝRÝÞÝ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni) & " " & CStr(t(2))
+                        sira = 1: nEk = nEk + 1
+                    ElseIf g(1) + 0.0005 < g(0) Then
+                        kontrol = "EKSÝK DEMONTAJ  •  " & I_MIKTAR_METNI(g(1)) & " / " & I_MIKTAR_METNI(g(0)) & " " & CStr(t(2))
+                        sira = 2: nEk = nEk + 1
+                    Else
+                        kontrol = "Demontaj girildi"
+                    End If
+                End If
             End If
-            birimler(n) = CStr(t(2))
-            anah(n) = Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
+            n = n + 1
+            blok(n, 1) = durum: blok(n, 2) = p(1): blok(n, 3) = p(0): blok(n, 4) = p(2)
+            blok(n, 5) = t(1): blok(n, 6) = p(3)
+            blok(n, 7) = mEski: blok(n, 8) = mYeni: blok(n, 9) = mYeni - mEski
+            blok(n, 10) = t(2)
+            blok(n, 11) = Round(vEski, 2): blok(n, 12) = Round(vYeni, 2): blok(n, 13) = Round(vYeni - vEski, 2)
+            blok(n, 14) = kontrol
+            anah(n) = CStr(sira) & Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
             idx(n) = n
         End If
     Next k
-    If Len(sec) > 0 Then secAd = sec & "  " & I_DEPO_KISA(CStr(depolar(sec))) Else secAd = vbNullString
-    Y_BOLUM ws, rT + 3, "DEÐÝÞEN MALZEMELER", IIf(Len(sec) > 0, secAd, "Tüm ilçe depolarý") & _
-        IIf(Len(eskiT) > 0, "  |  " & eskiT & "  " & ChrW(8594) & "  " & yeniT, "")
-    Y_BASLIK_SATIRI ws.Range(ws.Cells(rH, 1), ws.Cells(rH, 12)), Array("Sistem", "Depo", "Malzeme", "Malzeme Tanýmý", "Birim", _
-        "Eski Miktar", "Yeni Miktar", "Miktar Farký", "Eski Deðer", "Yeni Deðer", "Deðer Farký", "Durum")
+    ' Tablo
+    son = application.Max(16, ws.Cells(ws.Rows.Count, 4).End(xlUp).Row, ws.Cells(ws.Rows.Count, 14).End(xlUp).Row)
+    ws.Range("A16:N" & son + 1).Clear
     If n > 0 Then
         Y_SIRALA anah, idx, 1, n
-        ReDim sonuc(1 To n, 1 To 12)
+        ReDim sonuc(1 To n, 1 To 14)
         For i = 1 To n
-            For j = 1 To 12: sonuc(i, j) = blok(idx(i), j): Next j
+            For j = 1 To 14: sonuc(i, j) = blok(idx(i), j): Next j
         Next i
-        ws.Range(ws.Cells(rH + 1, 2), ws.Cells(rH + n, 3)).NumberFormat = "@"
-        ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + n, 12)).Value2 = sonuc
-        Y_TABLO_GOVDE ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + n, 12))
-        ws.Range(ws.Rows(rH + 1), ws.Rows(rH + n)).RowHeight = 19
-        For i = 1 To n
-            For j = 6 To 8
-                Y_MIKTAR_BICIM ws.Cells(rH + i, j)
+        ws.Range("B16:F" & n + 15).NumberFormat = "@"
+        ws.Range("A16").Resize(n, 14).Value2 = sonuc
+        With ws.Range("A16:N" & n + 15)
+            .Interior.Color = RGB(255, 255, 255)
+            .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(225, 230, 236): .Borders.Weight = xlThin
+            .VerticalAlignment = xlCenter
+            .Font.Name = "Aptos": .Font.Size = 10
+        End With
+        ws.Range("A16:D" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("F16:F" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("J16:J" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("G16:I" & n + 15).HorizontalAlignment = xlRight
+        ws.Range("K16:M" & n + 15).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
+        ws.Range("A16:A" & n + 15).Font.bold = True
+        ws.Range("N16:N" & n + 15).HorizontalAlignment = xlCenter
+        For r = 16 To n + 15
+            For j = 7 To 9
+                Y_MIKTAR_BICIM ws.Cells(r, j)
             Next j
-        Next i
-        ws.Range(ws.Cells(rH + 1, 9), ws.Cells(rH + n, 10)).NumberFormat = "#,##0.00 ""TL"""
-        ws.Range(ws.Cells(rH + 1, 11), ws.Cells(rH + n, 11)).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
-        ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + n, 3)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(rH + 1, 5), ws.Cells(rH + n, 5)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(rH + 1, 12), ws.Cells(rH + n, 12)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(rH + 1, 4), ws.Cells(rH + n, 4)).IndentLevel = 1
-        Set rr = ws.Range(ws.Cells(rH + 1, 12), ws.Cells(rH + n, 12))
-        Y_DURUM_KF rr, "Arttý", RGB(220, 252, 231), RGB(21, 128, 61)
-        Y_DURUM_KF rr, "Yeni giriþ", RGB(219, 234, 254), RGB(29, 78, 216)
-        Y_DURUM_KF rr, "Azaldý", RGB(254, 243, 199), RGB(180, 83, 9)
-        Y_DURUM_KF rr, "Tükendi", RGB(254, 226, 226), RGB(185, 28, 28)
-        ws.Range(ws.Cells(rH, 1), ws.Cells(rH + n, 12)).AutoFilter
+            Select Case CStr(ws.Cells(r, 1).Value2)
+                Case "AZALDI": ws.Cells(r, 1).Font.Color = RGB(192, 0, 0)
+                Case "ARTTI": ws.Cells(r, 1).Font.Color = RGB(0, 140, 75)
+                Case Else: ws.Cells(r, 1).Font.Color = RGB(29, 78, 216)
+            End Select
+            kontrol = CStr(ws.Cells(r, 14).Value2)
+            If Left$(kontrol, 8) = "DEMONTAJ" And InStr(kontrol, "YAPINIZ") > 0 Then
+                ws.Cells(r, 14).Interior.Color = RGB(220, 38, 38): ws.Cells(r, 14).Font.Color = RGB(255, 255, 255): ws.Cells(r, 14).Font.bold = True
+            ElseIf Left$(kontrol, 5) = "EKSÝK" Then
+                ws.Cells(r, 14).Interior.Color = RGB(254, 243, 199): ws.Cells(r, 14).Font.Color = RGB(180, 83, 9): ws.Cells(r, 14).Font.bold = True
+            ElseIf kontrol = "Demontaj girildi" Then
+                ws.Cells(r, 14).Font.Color = RGB(21, 128, 61)
+            ElseIf kontrol = "Demontaj giriþi" Then
+                ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
+            End If
+        Next r
+        ws.Range("A15:N" & n + 15).AutoFilter
     Else
-        ws.Cells(rH + 1, 1).Value2 = IIf(nT < 2, "Karþýlaþtýrma için bu ilde en az iki farklý günde ilçe stok güncellemesi yapýlmalýdýr" & _
+        ws.Range("A16").Value2 = IIf(nT < 2, "Karþýlaþtýrma için bu ilde en az iki farklý günde ilçe stok güncellemesi yapýlmalýdýr" & _
             IIf(nT = 1, " (mevcut kayýt: " & yeniT & ").", "."), "Seçilen tarihler arasýnda stok deðiþikliði yok.")
-        ws.Cells(rH + 1, 1).Font.Italic = True: ws.Cells(rH + 1, 1).Font.Color = RGB(100, 116, 139)
+        ws.Range("A16").Font.Italic = True: ws.Range("A16").Font.Color = RGB(100, 116, 139)
     End If
-    ' KPI
-    ws.Range("BZ21").Value2 = IIf(Len(sec) > 0, secAd, "TÜM ÝLÇELER")
-    ws.Range("BZ22").Value2 = AKSORA_SAYI_METNI(n, "#,##0") & " kalem  •  " & nArt & " artan / " & nAz & " azalan"
-    ws.Range("BZ23").Value2 = Y_TL(tE) & "  " & ChrW(8594) & "  " & Y_TL(tY)
-    ws.Range("BZ24").Value2 = IIf(tY - tE > 0, "+", "") & Y_TL(tY - tE)
-    y = ws.Rows(3).Top + 1
-    kw = (w - 3 * 12) / 4
-    Y_KPI ws, 1, 0, y, kw, 63.7, "SEÇÝLÝ ÝLÇE", "$BZ$21", RGB(35, 119, 204)
-    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "DEÐÝÞEN KALEM", "$BZ$22", RGB(245, 158, 11)
-    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "STOK DEÐERÝ  (ESKÝ " & ChrW(8594) & " YENÝ)", "$BZ$23", RGB(39, 160, 94)
-    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "NET DEÐER FARKI", "$BZ$24", RGB(220, 38, 38)
-    For i = 1 To 3
-        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
-        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 13
-    Next i
+    ' Ozet kutulari
+    ws.Range("A10").Value = nAz: ws.Range("D10").Value = nAr: ws.Range("G10").Value = nDm: ws.Range("J10").Value = nEk
+    ws.Range("J10").Font.Color = IIf(nEk > 0, RGB(192, 0, 0), RGB(24, 55, 88))
+    ws.Range("A12").Value = Round(tE, 2): ws.Range("D12").Value = Round(tY, 2)
+    ws.Range("G12").Value = Round(tY - tE, 2): ws.Range("J12").Value = n
+    ws.Range("A12,D12,G12").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("G12").Font.Color = IIf(tY - tE < 0, RGB(192, 0, 0), IIf(tY - tE > 0, RGB(0, 140, 75), RGB(24, 55, 88)))
+    ws.Range("B7").Value2 = IIf(Len(eskiT) > 0, "Son karþýlaþtýrýlan: " & eskiT, "")
+    ws.Range("I7").Value2 = IIf(Len(yeniT) > 0, "Son karþýlaþtýrýlan: " & yeniT, "")
+    ws.Range("A3").Value2 = UCase$(Y_IL_ADI(il)) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " + EPP " & AKSORA_IL_TESIS(il, "EPP") & _
+        " | Ýlçe Depolarý (K001-K999)" & IIf(Len(sec) > 0, " | " & sec & " " & I_DEPO_KISA(CStr(depolar(sec))), "")
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
-    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | STOK KARÞILAÞTIRMA  |  " & Y_IL_ADI(il)
+    I_BAGLA ws
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
 End Sub
 
+Private Function I_MIKTAR_METNI(ByVal x As Double) As String
+    If x = Int(x) Then I_MIKTAR_METNI = AKSORA_SAYI_METNI(x, "#,##0") Else I_MIKTAR_METNI = AKSORA_SAYI_METNI(x, "#,##0.###")
+End Function
+
 Private Function I_LISTEDE(ByVal c As Collection, ByVal metin As String) As Boolean
     Dim x As Variant
     For Each x In c
-        If Format$(x, "dd.mm.yyyy hh:nn") = metin Then I_LISTEDE = True: Exit Function
+        If Format$(x, I_TF) = metin Then I_LISTEDE = True: Exit Function
     Next x
 End Function
+
+' Hizli filtreler: TUMU, AZALDI, ARTTI, DEMONTAJ GIRIS, DEMONTAJ YAPINIZ (eksik/yok).
+Private Sub I_KARS_FILTRE(ByVal tur As String)
+    Dim ws As Worksheet, son As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    ws.Unprotect ""
+    If ws.FilterMode Then ws.ShowAllData
+    son = ws.Cells(ws.Rows.Count, 4).End(xlUp).Row
+    If son >= 16 Then
+        If Not ws.AutoFilterMode Then ws.Range("A15:N" & son).AutoFilter
+        Select Case tur
+            Case "AZALDI", "ARTTI", "DEMONTAJ GÝRÝÞ"
+                ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:=tur
+            Case "EKSIK"
+                ws.AutoFilter.Range.AutoFilter Field:=14, Criteria1:="=DEMONTAJ GÝRÝÞÝ YAPINIZ*", Operator:=xlOr, Criteria2:="=EKSÝK DEMONTAJ*"
+        End Select
+    End If
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_KF_TUMU(): I_KARS_FILTRE "": End Sub
+Public Sub AKSORA_ILCE_KF_AZALAN(): I_KARS_FILTRE "AZALDI": End Sub
+Public Sub AKSORA_ILCE_KF_ARTAN(): I_KARS_FILTRE "ARTTI": End Sub
+Public Sub AKSORA_ILCE_KF_DEMONTAJ(): I_KARS_FILTRE "DEMONTAJ GÝRÝÞ": End Sub
+Public Sub AKSORA_ILCE_KF_EKSIK(): I_KARS_FILTRE "EKSIK": End Sub
 
 ' Depo kodlari artan sirada (sozluk yeniden kurulur).
 Private Sub I_ANAHTAR_SIRALA(ByRef d As Object)

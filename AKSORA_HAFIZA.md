@@ -124,8 +124,12 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   Kayıt _IA_<IL> (PAKET1). Tek sistem güncellenince diğerinin son kaydı korunur.
 - Günlük geçmiş _IH_<IL>: her sütun bir gün (günün son güncellemesi), en fazla 20 gün; satır depo TAB tesis TAB malzeme TAB
   depo adı TAB tanım TAB birim TAB miktar TAB değer.
-- Stok karşılaştırma: ilçe düğmeleri (TÜM İLÇELER + depolar), eski/yeni tarih listesi (en yeni üstte; varsayılan yeni = son,
-  eski = önceki günün son kaydı), değişen kalemler değer farkına göre. Malzeme biriminin karşılaştırma sayfası da aynı varsayılan.
+- Stok karşılaştırma (IK_V2): malzeme biriminin STOK_KARŞILAŞTIRMA sayfasının kopyası (birebir görünüm). İl düğmeleri yerine
+  ilçe depo düğmeleri (O sütunu, I_KV_D_*). Tarihler B6/I6 (liste X sütunu, en yeni üstte; varsayılan yeni = son, eski = önceki günün son).
+  Durum: AZALDI / ARTTI / DEMONTAJ GİRİŞ. N sütunu DEMONTAJ KONTROLÜ: azalan (çıkma olmayan) her malzeme için aynı depo+tesis+malzemede
+  ÇIKMA BEDELSİZ değerlemeli artış aranır; yoksa kırmızı "DEMONTAJ GİRİŞİ YAPINIZ • adet", az ise "EKSİK DEMONTAJ • giren/azalan".
+  Filtreler: TÜMÜ, AZALAN, ARTAN, DEMONTAJ GİRİŞ, DEMONTAJ YAPINIZ. Geçmiş kaydı değerlemeyi de tutar (9 alan).
+- İSG sayfası şimdilik bekliyor (kullanıcı farklı plan verecek).
 - İSG: anahtar kelimeler (_I_AYAR "ISG"), malzeme × ilçe matrisi, stoksuz hücre kırmızı. Panel Q kartı İSG özetini gösterir.
 - Panel bandı AKSORA_ILCE_PANEL_BANTLARI.jpg (yoksa müşteri bandı).
 
