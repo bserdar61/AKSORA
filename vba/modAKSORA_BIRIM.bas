@@ -2725,7 +2725,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ws.Range(ws.Cells(YH_KALEM_ILK, 11), ws.Cells(son + 1, 11)).HorizontalAlignment = xlCenter
     ' Kumulatif kontrol: sozlesme miktari asilirsa satir uyarisi
     Set rr = ws.Range(ws.Cells(YH_KALEM_ILK, 8), ws.Cells(son, 11))
-    With rr.FormatConditions.Add(Type:=xlExpression, Formula1:=Y_YEREL(ws, "=AND(N($E" & YH_KALEM_ILK & ")>0,N($H" & YH_KALEM_ILK & ")>$E" & YH_KALEM_ILK & ")"))
+    With rr.FormatConditions.Add(Type:=xlExpression, Formula1:=Y_YEREL(ws, "=AND(N(INDEX($E:$E,ROW()))>0,N(INDEX($H:$H,ROW()))>INDEX($E:$E,ROW()))"))
         .Interior.Color = RGB(254, 226, 226): .Font.Color = RGB(185, 28, 28): .Font.bold = True
     End With
     ws.Cells(son + 1, 1).Value2 = "TOPLAM"
