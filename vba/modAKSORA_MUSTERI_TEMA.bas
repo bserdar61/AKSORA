@@ -1379,6 +1379,7 @@ End Sub
 Public Sub AKSORA_MUSTERI_TOPLU_DURUM(ByVal metin As String)
     mMusteriTopluMetin = metin
     AKSORA_MUSTERI_TOPLU_TIK True
+    If AKSORA_MUSTERI_TOPLU_AKTIF Then AKSORA_MUSTERI_SERIT "Güncelleniyor  •  Bütün iller  •  " & metin, 1
     application.StatusBar = "AKSORA | " & metin
     DoEvents
 End Sub
@@ -1420,7 +1421,9 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     ANA_SESSIZ_MOD = True: AKSORA_V11_MESGUL = True
     mMusteriTopluBas = Timer: mMusteriTopluSaniye = -1
     AKSORA_MUSTERI_TOPLU_AKTIF = True
-    ws.Visible = xlSheetVisible: ws.Activate
+    ws.Visible = xlSheetVisible
+    ' Bütün iller guncellemesi ana panelden izlenir (serit + kartlar).
+    AKSORA_MUSTERI_PANEL_ON
     application.ScreenUpdating = True
     AKSORA_MUSTERI_TOPLU_DURUM "Güncelleme hazýrlanýyor..."
     For Each il In AKSORA_MUSTERI_ILLER()

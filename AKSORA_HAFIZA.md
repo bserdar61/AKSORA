@@ -145,7 +145,22 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   Liste değişirse docs/isg güncellenip I_ISG_LISTE yeniden üretilir (fx/isg_gen.py mantığı).
 - Panel bandı AKSORA_ILCE_PANEL_BANTLARI.jpg (yoksa müşteri bandı).
 
+## Canlı güncelleme (15.10.2026, tüm birimler)
+- Her birimde güncelleme (tek il ve bütün iller) ANA PANEL'de izlenir: panel ekrana gelir, kartlar mavi LED + "Güncelleniyor...",
+  şerit müşteri paneli teması (açık sarı RGB(255,246,219), kahverengi kalın yazı RGB(146,64,14); tamam yeşil (209,250,229)/(6,95,70);
+  hata (254,226,226)/(153,27,27); bilgi (224,242,254)/(12,45,79)). Metin "Güncelleniyor  •  [Bütün iller n/5  •]  il  •  adım".
+- Malzeme: AKSORA_PANEL_GUNCELLENIYOR + AKSORA_PANEL_SERIT (B6); bütün iller artık MALZEME_ARA yerine ANA PANEL'de.
+  Müşteri: AKSORA_MUSTERI_PANEL_ON (MS_CEKIRDEK başı, bütün iller başı). Yatırım/İlçe: Y_CANLI_BASLAT, Y_DURUM/I_DURUM, mYSira.
+- İlçe paneli büyük düğmeler (BX27 DUGME_V1): üst sıra STOK / DEMONTAJ KONTROLÜ | MALZEME ARAMA | İSG ZİMMET KONTROLÜ (aynı beyaz),
+  alt sıra CDP İLÇE GÜNCELLE | TÜM İLÇE STOKLARINI GÜNCELLE (yeşil) | EPP İLÇE GÜNCELLE.
+- Malzeme il bandı: AKSORA_PANEL_BANNER_<IL>.png yerine birleşik AKSORA_MALZEME_PANEL_BANTLARI.jpg (AKSORA_MALZEME_BANT_EKLE).
+
+## Klasör dosyaları (Excel'in yanında gerekli olanlar)
+AKSORA.xlsm, AKSORA_BASLAT.hta, AKSORA.ico, AKSORA_LOGO.png, AKSORA_SPLASH_LOGO.bmp, AKSORA_BIRIM_BANNER_03.png,
+AKSORA_PANEL_TEK_PARCA_V7.png, AKSORA_PANEL_SADE_P1.png, AKSORA_RAPOR_BANNER.png, AKSORA_RAPOR_FILIGRAN.png,
+AKSORA_MUSTERI_BANT.png, AKSORA_MUSTERI_PANEL_BANTLARI.png, AKSORA_YATIRIM_BANT.png, AKSORA_YATIRIM_PANEL_BANTLARI.png,
+AKSORA_ILCE_BANT.jpg, AKSORA_ILCE_PANEL_BANTLARI.jpg, AKSORA_MALZEME_PANEL_BANTLARI.jpg.
+Gereksiz: AKSORA.vbs, KUR.vbs, AKSORA_MASAUSTU.ico, AKSORA_PANEL_BANNER.png, AKSORA_PANEL_BANNER_<5 il>.png, AKSORA_SAP_TESHIS.txt (günlük, yeniden oluşur).
+
 ## Sıradaki işler
-- Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
-  "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.
-  Bir sonraki güncellemede tüm birimlere (Malzeme dahil) birebir aynı görsel ve sistemle eklenecek.
+- (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

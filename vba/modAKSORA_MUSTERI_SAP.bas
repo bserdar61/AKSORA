@@ -52,7 +52,7 @@ Private Sub MS_Durum(ByVal metin As String)
     application.StatusBar = "AKSORA | Müþteri | " & metin
     If Abs(Timer - mSeritZaman) >= 1 Then
         mSeritZaman = Timer
-        AKSORA_MUSTERI_SERIT "Güncelleniyor  •  " & metin, 1
+        AKSORA_MUSTERI_SERIT "Güncelleniyor  •  " & IIf(AKSORA_MUSTERI_TOPLU_AKTIF, MS_IlKod() & "  •  ", "") & metin, 1
     End If
     DoEvents
 End Sub
@@ -1690,6 +1690,7 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
     mFiyatsiz = vbNullString: mFiyatsizAdet = 0
     mBasZamanMetin = Format$(Now - TimeSerial(0, 0, 2), "yyyymmddhhnnss")
     MS_OleUyariKapat
+    AKSORA_MUSTERI_PANEL_ON
     AKSORA_MUSTERI_PANEL_YENILE True
     AKSORA_MUSTERI_SERIT "SAP güncellemesi baþlatýlýyor...", 1
     ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation

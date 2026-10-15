@@ -781,14 +781,8 @@ Private Sub T_PanelTekBanner(ByVal ws As Worksheet, ByVal r As Range)
     Next s
     Set s = T_Sekil(ws, ad)
     If s Is Nothing Then
-        f = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_BANNER_" & il & ".png"
-        If Len(Dir$(f)) = 0 Then Err.Raise vbObjectError + 9400, , "Ýl baþlýk görseli eksik: " & il
-        Set s = ws.Shapes.AddPicture(f, msoFalse, msoTrue, r.Left, r.Top, -1, -1)
-        s.Name = ad: h0 = s.Height
-        With s.PictureFormat
-            .CropTop = h0 * 225 / 684
-            .CropBottom = h0 * 224 / 684
-        End With
+        Set s = AKSORA_MALZEME_BANT_EKLE(ws, il, r.Left, r.Top)
+        s.Name = ad
     End If
     T_Yerlestir s, r.Left, r.Top, r.Width, r.Height
     s.Visible = msoTrue: s.OnAction = "": s.ZOrder msoBringToFront

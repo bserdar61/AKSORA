@@ -20,6 +20,7 @@ Private Const I_TF As String = "dd.mm.yyyy hh:nn:ss"
 Private mYCalisiyor As Boolean
 Private mYToplu As Boolean
 Private mYOdak As String
+Private mYSira As String
 Private Const YT_ILK As Long = 10
 Private Const YH_KALEM_ILK As Long = 23
 Private Const YH_KALEM_ADET As Long = 30
@@ -1724,8 +1725,27 @@ End Sub
 '---------- Guncelleme ----------
 Private Sub Y_DURUM(ByVal metin As String)
     application.StatusBar = "AKSORA | Yatýrým | " & metin
-    If mYToplu Then Y_TOPLU_DURUM metin Else Y_SERIT metin, 1
+    If mYToplu Then Y_TOPLU_DURUM metin
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1
     DoEvents
+End Sub
+
+' Guncelleme basinda (tek il ve butun iller): ana panel ekrana gelir, kartlar mavi
+' "Güncelleniyor...", serit acik sari (musteri ana paneli temasi). Islem panelden izlenir.
+Private Sub Y_CANLI_BASLAT(ByVal sayfa As String, ByVal metin As String)
+    Dim ws As Worksheet, k As Variant
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sayfa)
+    If ws Is Nothing Then Exit Sub
+    If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws
+    ws.Unprotect ""
+    For Each k In Array("B", "L", "Q")
+        Y_KART_DURUM ws, CStr(k), "Güncelleniyor...", RGB(59, 130, 246), RGB(29, 78, 216)
+    Next k
+    Y_KORU ws
+    application.ScreenUpdating = True
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1, sayfa
+    On Error GoTo 0
 End Sub
 
 Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal sessiz As Boolean, ByRef bilgi As String) As Boolean
@@ -1739,6 +1759,7 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     On Error GoTo Hata
     il = UCase$(Trim$(il))
     ekran = (CStr(ThisWorkbook.Worksheets("Y_CDP_YATIRIM_STOK").Range("BX19").Value2) = il)
+    Y_CANLI_BASLAT "Y_ANA PANEL", Y_IL_ADI(il) & "  •  SAP baðlantýsý hazýrlanýyor..."
     AKSORA_V11_MESGUL = True
     If InStr(kapsam, "1") > 0 Or InStr(kapsam, "3") > 0 Then
         Y_DURUM Y_IL_ADI(il) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " stoklarý SAP'den alýnýyor..."
@@ -1898,7 +1919,7 @@ Private Sub Y_SERIT(ByVal metin As String, ByVal durum As Long, Optional ByVal s
     If s Is Nothing Then Exit Sub
     korumali = ws.ProtectDrawingObjects
     If korumali Then ws.Unprotect ""
-    s.Fill.ForeColor.RGB = Choose(durum + 1, RGB(224, 242, 254), RGB(254, 243, 199), RGB(220, 252, 231), RGB(254, 226, 226))
+    s.Fill.ForeColor.RGB = Choose(durum + 1, RGB(224, 242, 254), RGB(255, 246, 219), RGB(209, 250, 229), RGB(254, 226, 226))
     s.TextFrame2.TextRange.Text = metin
     If Val(s.AlternativeText) <= 0 Then s.AlternativeText = CStr(s.TextFrame2.TextRange.Font.Size)
     pt = Val(s.AlternativeText)
@@ -1909,7 +1930,8 @@ Private Sub Y_SERIT(ByVal metin As String, ByVal durum As Long, Optional ByVal s
         pt = pt - 0.5
     Loop
     s.TextFrame2.TextRange.Font.Size = pt
-    s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Choose(durum + 1, RGB(12, 45, 79), RGB(146, 64, 14), RGB(21, 128, 61), RGB(153, 27, 27))
+    s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Choose(durum + 1, RGB(12, 45, 79), RGB(146, 64, 14), RGB(6, 95, 70), RGB(153, 27, 27))
+    s.TextFrame2.TextRange.Font.bold = msoTrue
     If korumali Then Y_KORU ws
     If durum = 1 Then DoEvents
     On Error GoTo 0
@@ -2114,7 +2136,7 @@ End Sub
 ' Bes ilin yatirim ve yuklenici stoklari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
 Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
     Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
-    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long
     If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
     If MsgBox("Beþ ilin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) yatýrým ve yüklenici stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
         vbYesNo + vbQuestion, "AKSORA | Yatýrým Birimi") <> vbYes Then Exit Sub
@@ -2125,14 +2147,14 @@ Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
     On Error GoTo Hata
     For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
         bilgi = vbNullString
+        adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
         Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor..."
         If Y_GUNCELLE(CStr(il), "1234", True, bilgi) Then adet = adet + 1
         sonuc = sonuc & bilgi & vbCrLf
-        Y_SAYFA_SEC baslangic
     Next il
 Bitir:
     On Error Resume Next
-    mYToplu = False
+    mYToplu = False: mYSira = vbNullString
     sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
     ThisWorkbook.names.Add Name:="_AKSORA_YATIRIM_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
     metin = IIf(Len(hataMetni) > 0, "Ýþlem durduruldu. ", "Ýþlem tamamlandý. ") & adet & "/5 il güncellendi." & vbLf & _
@@ -3516,6 +3538,31 @@ Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
     I_HIZLI ws
 End Sub
 
+' Buyuk dugmeler: ust sira islem sayfalari ayni beyaz temada (STOK / DEMONTAJ | MALZEME ARAMA |
+' ISG ZIMMET), alt sira guncellemeler (CDP | TUM ILCE - yesil, farkli | EPP). Bir kez uygulanir (BX27).
+Private Sub I_PANEL_DUGME_DUZEN(ByVal ws As Worksheet)
+    Dim l1 As Shape, m1 As Shape, r1 As Shape, l2 As Shape, m2 As Shape, r2 As Shape, g As Variant
+    Set l1 = Y_SEKIL(ws, "btnBaglantiKontrol"): Set m1 = Y_SEKIL(ws, "btnTumStok"): Set r1 = Y_SEKIL(ws, "btnMalzemeAraPanel")
+    Set l2 = Y_SEKIL(ws, "btnCDP"): Set m2 = Y_SEKIL(ws, "btnIlce"): Set r2 = Y_SEKIL(ws, "btnYuk")
+    If l1 Is Nothing Or m1 Is Nothing Or r1 Is Nothing Or l2 Is Nothing Or m2 Is Nothing Or r2 Is Nothing Then Exit Sub
+    g = Array(m1.Left, m1.Top, m1.Width, m1.Height, r1.Left, r1.Top, r1.Width, r1.Height, _
+        m2.Left, m2.Top, m2.Width, m2.Height, r2.Left, r2.Top, r2.Width, r2.Height)
+    On Error Resume Next
+    r1.Left = g(0): r1.Top = g(1): r1.Width = g(2): r1.Height = g(3)
+    l1.PickUp: r2.Apply
+    r2.Left = g(4): r2.Top = g(5): r2.Width = g(6): r2.Height = g(7)
+    With r2.TextFrame2.TextRange.Font
+        .Size = l1.TextFrame2.TextRange.Font.Size
+        .bold = l1.TextFrame2.TextRange.Font.bold
+        .Fill.ForeColor.RGB = l1.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
+    End With
+    m1.Left = g(8): m1.Top = g(9): m1.Width = g(10): m1.Height = g(11)
+    m1.TextFrame2.TextRange.Font.Size = l2.TextFrame2.TextRange.Font.Size
+    m2.Left = g(12): m2.Top = g(13): m2.Width = g(14): m2.Height = g(15)
+    On Error GoTo 0
+    ws.Range("BX27").Value2 = "DUGME_V1"
+End Sub
+
 ' Hizli erisim: 7 sayfa ayni satirda esit aralikla (eksik dugme ilk dugmeden cogaltilir).
 Private Sub I_HIZLI(ByVal ws As Worksheet)
     Dim s As Shape, ilk As Shape, i As Long, x0 As Double, x1 As Double, bw As Double, g As Double
@@ -3559,7 +3606,8 @@ Private Sub I_HIZLI(ByVal ws As Worksheet)
             Y_BAGLA s, CStr(hedefler(i))
         End If
     Next i
-    ws.Range("BX25").Value2 = "IP_V3"
+    If CStr(ws.Range("BX27").Value2) <> "DUGME_V1" Then I_PANEL_DUGME_DUZEN ws
+    ws.Range("BX25").Value2 = "IP_V4"
 End Sub
 
 ' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
@@ -3820,7 +3868,8 @@ End Function
 
 Private Sub I_DURUM(ByVal metin As String)
     application.StatusBar = "AKSORA | Ýlçe Yönetim | " & metin
-    If mYToplu Then Y_TOPLU_DURUM metin, "I_MALZEME_ARA" Else Y_SERIT metin, 1, "I_ANA PANEL"
+    If mYToplu Then Y_TOPLU_DURUM metin, "I_MALZEME_ARA"
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1, "I_ANA PANEL"
     DoEvents
 End Sub
 
@@ -3856,6 +3905,7 @@ Private Function I_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     il = UCase$(Trim$(il))
     Set ws = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
     ekran = (CStr(ws.Range("BX19").Value2) = il)
+    Y_CANLI_BASLAT "I_ANA PANEL", Y_IL_ADI(il) & "  •  SAP baðlantýsý hazýrlanýyor..."
     AKSORA_V11_MESGUL = True
     If InStr(kapsam, "C") > 0 Then
         I_DURUM Y_IL_ADI(il) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " ilçe depolarý SAP'den alýnýyor..."
@@ -3930,7 +3980,7 @@ End Function
 ' Bes ilin ilce depolari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
 Public Sub AKSORA_ILCE_BUTUN_ILLER()
     Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
-    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long
     If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
     If MsgBox("Beþ ilin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) CDP ve EPP ilçe depo stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
         vbYesNo + vbQuestion, "AKSORA | Ýlçe Yönetim Birimi") <> vbYes Then Exit Sub
@@ -3941,14 +3991,14 @@ Public Sub AKSORA_ILCE_BUTUN_ILLER()
     On Error GoTo Hata
     For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
         bilgi = vbNullString
+        adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
         Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor...", "I_MALZEME_ARA"
         If I_GUNCELLE(CStr(il), "CE", True, bilgi) Then adet = adet + 1
         sonuc = sonuc & bilgi & vbCrLf
-        Y_SAYFA_SEC baslangic
     Next il
 Bitir:
     On Error Resume Next
-    mYToplu = False
+    mYToplu = False: mYSira = vbNullString
     sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
     ThisWorkbook.names.Add Name:="_AKSORA_ILCE_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
     metin = IIf(Len(hataMetni) > 0, "Ýþlem durduruldu. ", "Ýþlem tamamlandý. ") & adet & "/5 il güncellendi." & vbLf & _
@@ -4028,7 +4078,7 @@ Private Sub I_PANEL_YENILE()
     ws.Unprotect ""
     ' Depo sayisi: ilin butun ilce depolari (stogu olmasa da).
     depo = I_DEPOLAR(il).Count
-    If CStr(ws.Range("BX25").Value2) <> "IP_V3" Then I_HIZLI ws
+    If CStr(ws.Range("BX25").Value2) <> "IP_V4" Then I_HIZLI ws
     For i = 0 To 2
         k = Choose(i + 1, "B", "L", "Q")
         Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare

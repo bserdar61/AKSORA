@@ -305,6 +305,7 @@ Private Sub AK11_DURUM(ByVal metin As String)
     End If
     Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
     mTopluDurumMetni = metin
+    If AKSORA_PANEL_CANLI Then AKSORA_PANEL_SERIT "Güncelleniyor  •  Bütün iller  •  " & metin
     If mTopluSaatAktif Then
         AKSORA_TOPLU_SURE_TIK True
     Else
@@ -445,8 +446,14 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     application.ScreenUpdating = False
     AKSORA_V11_ARAMA_DUGME
     ThisWorkbook.Worksheets("MALZEME_ARA").Visible = xlSheetVisible
-    ThisWorkbook.Worksheets("MALZEME_ARA").Activate
     ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_GUNCELLE").Fill.ForeColor.RGB = RGB(125, 140, 135)
+    ' Bütün iller guncellemesi ana panelden izlenir (serit + kartlar, musteri paneli temasi).
+    With ThisWorkbook.Worksheets("ANA PANEL")
+        .Visible = xlSheetVisible
+        .Activate
+    End With
+    AKSORA_V13_GORUNUM ThisWorkbook.Worksheets("ANA PANEL")
+    AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
     application.ScreenUpdating = True
     basladi = True
     sonuc = AKHZ_ON_YUKLE() & vbCrLf
@@ -515,6 +522,7 @@ Temizle:
     If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
     mTopluSaatAktif = False
     ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
+    AKSORA_PANEL_CANLI = False
     If basladi Then AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
@@ -871,6 +879,8 @@ Public Sub AKSORA_TOPLU_SURE_TIK(Optional ByVal zorla As Boolean = False)
     If Not zorla And saniye = mTopluSonSaniye Then Exit Sub
     ' UI-only update: no event, calculation, stock or SAP state changes.
     On Error Resume Next
+    If AKSORA_PANEL_CANLI Then AKSORA_PANEL_SERIT "Güncelleniyor  •  Bütün iller  •  " & mTopluDurumMetni & _
+        "  •  Geçen süre " & Format$(saniye \ 60, "00") & ":" & Format$(saniye Mod 60, "00")
     Set s = ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_DURUM")
     If s Is Nothing Then Exit Sub
     s.TextFrame2.TextRange.Text = mTopluDurumMetni & vbLf & _

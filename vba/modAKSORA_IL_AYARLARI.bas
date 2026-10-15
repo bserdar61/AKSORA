@@ -288,15 +288,7 @@ Public Sub AKSORA_PANEL_IL_GORSELI_YENILE()
     Set yeni = ws.Shapes(ad)
     On Error GoTo Hata
 
-    If yeni Is Nothing Then
-        yol = ThisWorkbook.Path & application.PathSeparator & _
-              "AKSORA_PANEL_BANNER_" & il & ".png"
-
-        If Len(Dir$(yol)) = 0 Then
-            Err.Raise vbObjectError + 850, , _
-                      "Ýl görseli bulunamadý: " & yol
-        End If
-    End If
+    ' Il gorseli tek dosyadan ya da birlesik AKSORA_MALZEME_PANEL_BANTLARI.jpg dosyasindan gelir.
 
     cizim = ws.ProtectDrawingObjects
     icerik = ws.ProtectContents
@@ -308,16 +300,8 @@ Public Sub AKSORA_PANEL_IL_GORSELI_YENILE()
     If korumali Then ws.Unprotect
 
     If yeni Is Nothing Then
-        Set yeni = ws.Shapes.AddPicture( _
-            yol, msoFalse, msoTrue, eski.Left, eski.Top, -1, -1)
-
+        Set yeni = AKSORA_MALZEME_BANT_EKLE(ws, il, eski.Left, eski.Top)
         yeni.Name = ad
-        h0 = yeni.Height
-
-        With yeni.PictureFormat
-            .CropTop = h0 * 225 / 684
-            .CropBottom = h0 * 224 / 684
-        End With
     End If
 
     With yeni
@@ -367,4 +351,31 @@ Hata:
     Err.Raise hataNo, "AKSORA_PANEL_IL_GORSELI_YENILE", hataMetni
 End Sub
 
-
+' Malzeme ana panel il bandi: AKSORA_PANEL_BANNER_<IL>.png varsa o, yoksa birlesik
+' AKSORA_MALZEME_PANEL_BANTLARI.jpg (5 il alt alta: Giresun, Trabzon, Rize, Gumushane, Artvin).
+Public Function AKSORA_MALZEME_BANT_EKLE(ByVal ws As Worksheet, ByVal il As String, ByVal x As Double, ByVal y As Double) As Shape
+    Dim yol As String, s As Shape, h As Double, i As Long
+    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_PANEL_BANNER_" & il & ".png"
+    If Len(Dir$(yol)) > 0 Then
+        Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, x, y, -1, -1)
+        h = s.Height
+        s.PictureFormat.CropTop = h * 225 / 684
+        s.PictureFormat.CropBottom = h * 224 / 684
+    Else
+        yol = AKSORA_GORSEL("AKSORA_MALZEME_PANEL_BANTLARI.jpg")
+        If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 850, , _
+            "Ýl görseli bulunamadý: AKSORA_MALZEME_PANEL_BANTLARI.jpg Excel dosyasýnýn yanýnda olmalýdýr."
+        Select Case UCase$(Trim$(il))
+            Case "GIRESUN": i = 0
+            Case "TRABZON": i = 1
+            Case "RIZE": i = 2
+            Case "GUMUSHANE": i = 3
+            Case Else: i = 4
+        End Select
+        Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, x, y, -1, -1)
+        h = s.Height
+        s.PictureFormat.CropTop = h * (i + 225 / 684) / 5
+        s.PictureFormat.CropBottom = h * (4 - i + 224 / 684) / 5
+    End If
+    Set AKSORA_MALZEME_BANT_EKLE = s
+End Function

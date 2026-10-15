@@ -256,6 +256,27 @@ Public Sub AKSORA_MUSTERI_ARAMA_TARIH_YENILE()
     On Error GoTo 0
 End Sub
 
+' Guncelleme basinda ana panel ekrana gelir; islem seritten izlenir.
+Public Sub AKSORA_MUSTERI_PANEL_ON()
+    Dim hedef As Worksheet, ev As Boolean
+    On Error Resume Next
+    Set hedef = ThisWorkbook.Worksheets("M_ANA PANEL")
+    If hedef Is Nothing Then Exit Sub
+    If Not (ActiveSheet Is hedef) Then
+        ev = application.EnableEvents
+        application.ScreenUpdating = False: application.EnableEvents = False
+        ThisWorkbook.Activate
+        hedef.Visible = xlSheetVisible
+        hedef.Select Replace:=True
+        application.EnableEvents = ev
+        AKSORA_MUSTERI_TEMA_GORUNUM hedef
+        AKSORA_MUSTERI_SECIM_BASA hedef
+    End If
+    application.ScreenUpdating = True
+    DoEvents
+    On Error GoTo 0
+End Sub
+
 ' Musteri ana paneli hazir halde, tek seferde ekrana getirilir (toplu guncelleme sonu).
 Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
     Dim hedef As Worksheet, ev As Boolean, kilit As Boolean
