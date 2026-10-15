@@ -2509,7 +2509,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     Next i
     nD = ozet.Count: nL = det.Count
     a1 = 10: b1 = a1 + application.Max(nD, 1) - 1
-    a3 = b1 + 8: b3 = a3 + application.Max(nL, 1) - 1
+    a3 = b1 + 9: b3 = a3 + application.Max(nL, 1) - 1
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10
     ws.Rows(a1 - 2).RowHeight = 30: ws.Rows(a1 - 1).RowHeight = 30
