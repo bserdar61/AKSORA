@@ -1658,6 +1658,7 @@ Private Sub Y_STOK_YENIDEN(ByVal ws As Worksheet, ByVal il As String)
     Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
     Y_BAGLA Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), ""
     Y_YAZ Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), "SAP STOKLARINI GÜNCELLE"
+    Y_FILIGRAN ws
     Y_KORU ws
     Set r = ThisWorkbook.Worksheets(Left$(ws.Name, Len(ws.Name) - 5) & "_RAPOR")
     r.Unprotect ""
@@ -1665,6 +1666,7 @@ Private Sub Y_STOK_YENIDEN(ByVal ws As Worksheet, ByVal il As String)
     AKSORA_MUSTERI_RAPOR_KUR_DIS r
     On Error Resume Next
     AKSORA_YATIRIM_DM_DUZEN r
+    Y_FILIGRAN r
     On Error GoTo 0
     Y_BAGLA Y_SEKIL(r, "btnAnaPanelDon"), "Y_ANA PANEL"
     Y_KORU r
@@ -2446,14 +2448,14 @@ Private Sub Y_MIKTAR_BICIM(ByVal c As Range, Optional ByVal birim As String = ""
 End Sub
 
 ' AKSORA amblemi icerigin altina, sag kenara alinir.
-Private Sub Y_FILIGRAN(ByVal ws As Worksheet, ByVal y As Double, ByVal w As Double)
-    Dim s As Shape
-    For Each s In ws.Shapes
-        If InStr(s.Name, "FILIGRAN") > 0 Then
-            s.Top = y: s.Left = w - s.Width - 4
-            s.Placement = xlFreeFloating
-        End If
-    Next s
+Private Sub Y_FILIGRAN(ByVal ws As Worksheet, Optional ByVal y As Double, Optional ByVal w As Double)
+    ' AKSORA amblemi yatirim sayfalarinda kullanilmaz (listelerin ustune biniyordu).
+    Dim i As Long
+    On Error Resume Next
+    For i = ws.Shapes.Count To 1 Step -1
+        If InStr(ws.Shapes(i).Name, "FILIGRAN") > 0 Then ws.Shapes(i).Delete
+    Next i
+    On Error GoTo 0
 End Sub
 
 Private Sub Y_TEMINAT_KUR(ByVal il As String)
