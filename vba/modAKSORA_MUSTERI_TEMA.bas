@@ -230,7 +230,7 @@ Private Sub TEMA_MUSTERI_ANA_DUZEN(ByVal ws As Worksheet)
     Dim yol As String, kod As String, il As String, bolum As Long, h As Double
     Dim r As Range, s As Shape, z As Shape, c As Range, i As Long, ad As String
     Dim sag As Double, cap As Double, sinirlar As Variant
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_MUSTERI_PANEL_BANTLARI.png"
+    yol = AKSORA_GORSEL("AKSORA_MUSTERI_PANEL_BANTLARI.png")
     If Not TEMA_DOSYA_VAR(yol) Then Err.Raise vbObjectError + 1720, , _
         "AKSORA_MUSTERI_PANEL_BANTLARI.png dosyasýný Excel'in yanýna koyun."
     kod = CStr(ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2)

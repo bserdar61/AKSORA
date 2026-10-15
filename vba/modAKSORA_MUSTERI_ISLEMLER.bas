@@ -917,8 +917,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
         Else
             If yat Then Set kaynak = AKSORA_YATIRIM_ARSIV_SAYFA(kod, i) Else Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
             If Not kaynak Is Nothing Then
-                son = kaynak.Cells(kaynak.Rows.Count, "E").End(xlUp).Row
-                If son >= 2 Then veri = kaynak.Range("A2:N" & son).Value2
+                veri = AKSORA_PAKET_OKU(kaynak)
             End If
         End If
         If IsArray(veri) Then

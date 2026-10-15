@@ -71,6 +71,10 @@ Private Sub Workbook_Open()
     adim = "Fiyat listesi"
     AKSORA_MUSTERI_FIYAT_KONTROL
 
+    adim = "Kayýt bakýmý"
+    SPLASH_DURUM 0.85, "Kayýtlar kontrol ediliyor..."
+    AKSORA_ARSIV_BAKIM
+
     ' AKSORA_BIRIM_HOOK_OPEN
     AKSORA_BIRIM_ACILIS
     SPLASH_DURUM 1, "AKSORA hazýr"
@@ -160,6 +164,14 @@ Private Sub Workbook_Deactivate()
 
 End Sub
 
+
+'Yatirim teminat / hakedis girisleri aninda kaydedilir.
+Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    If AKSORA_V13_ACILIS Then Exit Sub
+    If Left$(Sh.Name, 2) <> "Y_" Then Exit Sub
+    On Error Resume Next
+    AKSORA_YATIRIM_DEGISIM Sh, Target
+End Sub
 
 ' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
 Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)

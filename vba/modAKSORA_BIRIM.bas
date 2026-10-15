@@ -16,6 +16,10 @@ Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
 Private mYCalisiyor As Boolean
 Private mYToplu As Boolean
 Private mYOdak As String
+Private Const YT_ILK As Long = 10
+Private Const YH_KALEM_ILK As Long = 23
+Private Const YH_KALEM_ADET As Long = 30
+Private Const YH_GECMIS_ILK As Long = 58
 
 ' Yalniz yeni sayfalari ve ThisWorkbook acilis yonlendirmesini kurar.
 Public Sub AKSORA_BIRIM_KUR()
@@ -1351,8 +1355,8 @@ End Sub
 ' Panel bandi: AKSORA_YATIRIM_PANEL_BANTLARI.png varsa o kullanilir (5 il, musteri bandiyla ayni duzen).
 Private Sub Y_BANNER(ByVal ws As Worksheet, ByVal kod As String)
     Dim yol As String, eski As Shape, s As Shape, h As Double, bolum As Long, sinirlar As Variant
-    yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_YATIRIM_PANEL_BANTLARI.png"
-    If Len(Dir$(yol)) = 0 Then yol = ThisWorkbook.Path & application.PathSeparator & "AKSORA_MUSTERI_PANEL_BANTLARI.png"
+    yol = AKSORA_GORSEL("AKSORA_YATIRIM_PANEL_BANTLARI.png")
+    If Len(Dir$(yol)) = 0 Then yol = AKSORA_GORSEL("AKSORA_MUSTERI_PANEL_BANTLARI.png")
     If Len(Dir$(yol)) = 0 Then Exit Sub
     Set eski = Y_SEKIL(ws, "MUSTERI_ANA_BANNER")
     If eski Is Nothing Then Exit Sub
@@ -1456,6 +1460,7 @@ Private Sub Y_GIRIS(ByVal kod As String)
     Y_IL_VERI kod
     Y_PANEL_YENILE
     Y_ARAMA_TARIH
+    Y_ALT_SAYFALAR kod
     For Each ad In Y_ADLAR()
         ThisWorkbook.Worksheets(CStr(ad)).Visible = xlSheetVisible
     Next ad
@@ -1581,12 +1586,9 @@ End Function
 Private Sub Y_ARSIV_KAYDET(ByVal il As String, ByVal i As Long, ByVal a As Variant, ByVal tarih As Date)
     Dim ar As Worksheet
     Set ar = Y_ARSIV_SAYFA(il, i, True)
-    ar.Cells.ClearContents
-    ar.Range("A:F").NumberFormat = "@": ar.Range("H:J").NumberFormat = "@"
-    ar.Range("A1").NumberFormat = "dd.mm.yyyy hh:mm:ss"
     ar.Range("A1").Value = tarih
     ar.Range("B1").Value2 = UCase$(Trim$(il))
-    If Not IsEmpty(a) Then ar.Range("A2").Resize(UBound(a, 1), 14).Value2 = a
+    AKSORA_PAKET_YAZ ar, a
 End Sub
 
 ' Ilin son yatirim guncellemesi (kayit yoksa 0).
@@ -1633,6 +1635,7 @@ Private Sub Y_STOK_YAZ(ByVal ws As Worksheet, ByVal a As Variant, ByVal il As St
         ws.Range("C2").Value2 = "-"
     End If
     ws.Range("BX19").Value2 = UCase$(Trim$(il))
+    AKSORA_ARAMA_FAZLA_SATIR ws, n + 8
     Y_STOK_YENIDEN ws, il
     If n = 0 Then
         ws.Unprotect ""
@@ -1679,8 +1682,7 @@ Private Sub Y_IL_VERI(ByVal kod As String)
             Set ar = Y_ARSIV_SAYFA(kod, i, False)
             If Not ar Is Nothing Then
                 tarih = ar.Range("A1").Value
-                son = ar.Cells(ar.Rows.Count, "E").End(xlUp).Row
-                If son >= 2 Then a = ar.Range("A2:N" & son).Value2
+                a = AKSORA_PAKET_OKU(ar)
             End If
             Y_STOK_YAZ ws, a, kod, tarih
         End If
@@ -1739,6 +1741,9 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     If ekran Then
         Y_PANEL_YENILE
         Y_ARAMA_TARIH
+        On Error Resume Next
+        Y_TEMINAT_KUR il
+        On Error GoTo Hata
     End If
     application.ScreenUpdating = sc
     bilgi = Y_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(sure, "0.0") & " sn)"
@@ -2112,4 +2117,835 @@ Bitir:
 Hata:
     hataMetni = Err.Description
     Resume Bitir
+End Sub
+
+'==========================================================
+' YATIRIM - TEMINAT TAKIBI VE OTOMATIK HAKEDIS
+' Ortak: rapor sayfalariyla ayni ust bant, numarali KPI kartlari, lacivert tablo
+' basliklari. Giris hucreleri acik sari; hesaplar canli formul. Girilen degerler
+' il ve yuklenici bazinda gizli kayit sayfalarinda saklanir (_Y_TEMINAT, _Y_HAKEDIS).
+'==========================================================
+
+
+Private Function Y_GIRIS_RENK() As Long
+    Y_GIRIS_RENK = RGB(255, 249, 219)
+End Function
+
+' Gizli anahtar-deger kayit sayfasi (A: anahtar, B..: degerler).
+Private Function Y_KAYIT_SAYFA(ByVal ad As String) As Worksheet
+    Dim ws As Worksheet, onceki As Object, sc As Boolean, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If ws Is Nothing Then
+        sc = application.ScreenUpdating: ev = application.EnableEvents
+        application.ScreenUpdating = False: application.EnableEvents = False
+        Set onceki = ActiveSheet
+        Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Visible = xlSheetVeryHidden
+        If Not onceki Is Nothing Then onceki.Activate
+        application.EnableEvents = ev: application.ScreenUpdating = sc
+    End If
+    Set Y_KAYIT_SAYFA = ws
+End Function
+
+Private Function Y_KAYIT_SATIR(ByVal ws As Worksheet, ByVal anahtar As String, ByVal olustur As Boolean) As Long
+    Dim m As Variant, son As Long
+    son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If son >= 1 And Len(CStr(ws.Cells(1, 1).Value2)) > 0 Then
+        m = application.Match(anahtar, ws.Range("A1:A" & son), 0)
+        If Not IsError(m) Then Y_KAYIT_SATIR = CLng(m): Exit Function
+    Else
+        son = 0
+    End If
+    If olustur Then
+        ws.Cells(son + 1, 1).NumberFormat = "@"
+        ws.Cells(son + 1, 1).Value2 = anahtar
+        Y_KAYIT_SATIR = son + 1
+    End If
+End Function
+
+Private Function Y_KOD(ByVal v As Variant) As String
+    Select Case VarType(v)
+        Case vbEmpty, vbNull: Y_KOD = vbNullString
+        Case vbString: Y_KOD = "s" & Replace(Replace(Replace(CStr(v), vbTab, " "), vbLf, " "), vbCr, " ")
+        Case vbBoolean: Y_KOD = IIf(v, "b1", "b0")
+        Case vbError: Y_KOD = vbNullString
+        Case Else: Y_KOD = "n" & Trim$(Str$(CDbl(v)))
+    End Select
+End Function
+
+Private Function Y_COZ(ByVal t As String) As Variant
+    If Len(t) = 0 Then Exit Function
+    Select Case Left$(t, 1)
+        Case "s": Y_COZ = Mid$(t, 2)
+        Case "n": Y_COZ = Val(Mid$(t, 2))
+        Case "b": Y_COZ = (Mid$(t, 2) = "1")
+    End Select
+End Function
+
+' Sutun genislikleri nokta cinsinden.
+Private Sub Y_KOLONLAR(ByVal ws As Worksheet, ByVal gen As Variant)
+    Dim i As Long, k As Long, c As Range
+    For k = 1 To 2
+        For i = 0 To UBound(gen)
+            Set c = ws.Columns(i + 1)
+            If c.ColumnWidth > 0 And c.Width > 0 Then
+                c.ColumnWidth = application.Min(255, c.ColumnWidth * CDbl(gen(i)) / c.Width)
+            Else
+                c.ColumnWidth = CDbl(gen(i)) / 5.6
+            End If
+        Next i
+    Next k
+End Sub
+
+Private Sub Y_SAYFA_SIFIRLA(ByVal ws As Worksheet)
+    Dim s As Shape, ad As String, sil As Collection, sv As Variant
+    Set sil = New Collection
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0) Then sil.Add ad
+    Next s
+    On Error Resume Next
+    For Each sv In sil
+        ws.Shapes(CStr(sv)).Delete
+    Next sv
+    On Error GoTo 0
+    ws.Cells.FormatConditions.Delete
+    ws.Range("A3:Z400").UnMerge
+    ws.Range("A3:Z400").Clear
+    ws.Range("BZ1:BZ40").Clear
+    ws.Range(ws.Rows(3), ws.Rows(400)).RowHeight = ws.StandardHeight
+    ws.Columns("L:Z").ColumnWidth = 8.43
+    ws.Columns("BZ").Hidden = True
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+End Sub
+
+' Rapor sayfalarindaki numarali kart: rozet + etiket + hucreye bagli deger.
+Private Sub Y_KPI(ByVal ws As Worksheet, ByVal i As Long, ByVal x As Double, ByVal y As Double, ByVal w As Double, _
+    ByVal h As Double, ByVal etiket As String, ByVal hucre As String, ByVal renk As Long)
+    Dim s As Shape
+    Set s = Y_KUTU(ws, "Y_KPI_KART_" & i, x, y, w, h, RGB(242, 249, 255), RGB(196, 220, 240))
+    Set s = Y_KUTU(ws, "Y_KPI_IKON_" & i, x + 8, y + 9, 40, h - 18, renk, -1)
+    Y_YAZ s, Format$(i, "00")
+    With s.TextFrame2
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 13: .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter: .VerticalAnchor = msoAnchorMiddle
+        .MarginLeft = 0: .MarginRight = 0
+    End With
+    Y_METIN ws, "Y_KPI_ETIKET_" & i, etiket, x + 58, y + 8, w - 66, 18, 10, RGB(28, 54, 83), True, msoAlignLeft
+    Set s = Y_METIN(ws, "Y_KPI_DEGER_" & i, "-", x + 58, y + 30, w - 66, 28, 17, RGB(22, 58, 96), True, msoAlignLeft)
+    s.DrawingObject.Formula = "='" & Replace(ws.Name, "'", "''") & "'!" & hucre
+End Sub
+
+Private Sub Y_BASLIK_SATIRI(ByVal r As Range, ByVal basliklar As Variant)
+    Dim i As Long
+    For i = 0 To UBound(basliklar)
+        r.Cells(1, i + 1).Value2 = basliklar(i)
+    Next i
+    With r
+        .Interior.Color = RGB(26, 75, 120): .Font.Color = vbWhite
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .WrapText = True
+    End With
+End Sub
+
+Private Sub Y_TABLO_GOVDE(ByVal r As Range)
+    Dim i As Long
+    With r
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.Color = RGB(30, 41, 59)
+        .VerticalAlignment = xlCenter
+        With .Borders(xlInsideHorizontal)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+    End With
+    For i = 2 To r.Rows.Count Step 2
+        r.Rows(i).Interior.Color = RGB(244, 248, 252)
+    Next i
+End Sub
+
+Private Sub Y_GIRIS_HUCRE(ByVal r As Range)
+    r.Interior.Color = Y_GIRIS_RENK()
+    r.Locked = False
+    With r.Borders
+        .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(230, 200, 120)
+    End With
+End Sub
+
+Private Sub Y_TOPLAM_SATIRI(ByVal r As Range)
+    With r
+        .Font.bold = True: .Interior.Color = RGB(226, 236, 247)
+        .Font.Name = "Aptos": .Font.Size = 10: .VerticalAlignment = xlCenter
+        With .Borders(xlEdgeTop)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+    End With
+End Sub
+
+Private Function Y_DUGME(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal renk As Long, ByVal makro As String) As Shape
+    Dim s As Shape
+    Set s = Y_KUTU(ws, ad, x, y, w, h, renk, -1)
+    Y_YAZ s, metin
+    With s.TextFrame2
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter: .VerticalAnchor = msoAnchorMiddle
+    End With
+    s.OnAction = BIRIM_MAKRO(makro)
+    Set Y_DUGME = s
+End Function
+
+Private Sub Y_DURUM_KF(ByVal r As Range, ByVal metin As String, ByVal zemin As Long, ByVal yazi As Long)
+    Dim fc As FormatCondition
+    Set fc = r.FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""" & metin & """")
+    fc.Interior.Color = zemin: fc.Font.Color = yazi: fc.Font.bold = True
+End Sub
+
+' Ilin yuklenici depolari: depo -> (ad, CDP degeri, EPP degeri). Liste sirasi malzeme biriminin sirasi.
+Private Function Y_YUKLENICI_OZET(ByVal il As String) As Object
+    Dim d As Object, x As Variant, i As Long, sh As Worksheet, son As Long, v As Variant, r As Long, dp As String, t As Variant
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each x In AKSORA_IL_YUKLENICI(il)
+        d(CStr(x)) = Array(vbNullString, 0#, 0#)
+    Next x
+    For i = 3 To 4
+        Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
+        son = AKSORA_M_SON(sh)
+        If son >= 7 Then
+            v = sh.Range("A7:N" & son).Value2
+            For r = 1 To UBound(v, 1)
+                If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) Then
+                    dp = UCase$(Trim$(CStr(v(r, 2))))
+                    If Len(dp) > 0 And Len(Trim$(CStr(v(r, 5)))) > 0 Then
+                        If Not d.Exists(dp) Then d(dp) = Array(vbNullString, 0#, 0#)
+                        t = d(dp)
+                        If Len(t(0)) = 0 And Not IsError(v(r, 3)) Then t(0) = Trim$(CStr(v(r, 3)))
+                        If Not IsError(v(r, 11)) Then
+                            If VarType(v(r, 11)) <> vbString And IsNumeric(v(r, 11)) Then t(i - 2) = t(i - 2) + CDbl(v(r, 11))
+                        End If
+                        d(dp) = t
+                    End If
+                End If
+            Next r
+        End If
+    Next i
+    Set Y_YUKLENICI_OZET = d
+End Function
+
+'---------- TEMINAT ----------
+Private Sub Y_TEMINAT_KAYDET(ByVal ws As Worksheet)
+    Dim kayit As Worksheet, il As String, r As Long, son As Long, dp As String, sr As Long
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    If Len(il) = 0 Then Exit Sub
+    son = Val(CStr(ws.Range("BX23").Value2))
+    If son < YT_ILK Then Exit Sub
+    Set kayit = Y_KAYIT_SAYFA("_Y_TEMINAT")
+    For r = YT_ILK To son
+        dp = UCase$(Trim$(CStr(ws.Cells(r, 1).Value2)))
+        If Len(dp) > 0 Then
+            sr = Y_KAYIT_SATIR(kayit, il & "|" & dp, True)
+            kayit.Cells(sr, 2).Value2 = ws.Cells(r, 6).Value2
+            kayit.Cells(sr, 3).Value = Now
+        End If
+    Next r
+End Sub
+
+Private Function Y_TEMINAT_DEGER(ByVal il As String, ByVal dp As String) As Variant
+    Dim kayit As Worksheet, sr As Long
+    Set kayit = Y_KAYIT_SAYFA("_Y_TEMINAT")
+    sr = Y_KAYIT_SATIR(kayit, il & "|" & dp, False)
+    If sr > 0 Then Y_TEMINAT_DEGER = kayit.Cells(sr, 2).Value2
+End Function
+
+Private Sub Y_TEMINAT_KUR(ByVal il As String)
+    Dim ws As Worksheet, d As Object, k As Variant, n As Long, r As Long, son As Long, t As Variant
+    Dim w As Double, x As Double, kw As Double, i As Long, y As Double, s As Shape, tarih As Date, t2 As Variant
+    Dim rr As Range, db As Databar
+    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    il = UCase$(Trim$(il))
+    ws.Unprotect ""
+    Y_TEMINAT_KAYDET ws
+    Y_SAYFA_SIFIRLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    Y_KOLONLAR ws, Array(70, w - 1244, 150, 150, 160, 170, 160, 214, 170)
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10
+    ws.Rows(8).RowHeight = 30
+    ws.Rows(9).RowHeight = 30
+    Set d = Y_YUKLENICI_OZET(il)
+    n = d.Count
+    son = YT_ILK + application.Max(n, 1) - 1
+    ws.Range(ws.Rows(YT_ILK), ws.Rows(son + 1)).RowHeight = 22
+    ws.Rows(son + 2).RowHeight = 12
+    ws.Range(ws.Rows(son + 3), ws.Rows(son + 6)).RowHeight = 18
+    ' Baslik ve tablo
+    ws.Range("A8").Value2 = "YÜKLENÝCÝ BAZINDA TEMÝNAT  –  DEPO KARÞILAÞTIRMASI"
+    With ws.Range("A8:E8")
+        .Merge: .Font.Name = "Aptos": .Font.Size = 13: .Font.bold = True: .Font.Color = RGB(12, 45, 79)
+        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlLeft
+    End With
+    ws.Range("F8").Value2 = "Sarý hücrelere yüklenicinin teminat tutarýný girin; hesaplar anýnda güncellenir."
+    With ws.Range("F8:I8")
+        .Merge: .Font.Name = "Aptos": .Font.Size = 9: .Font.Italic = True: .Font.Color = RGB(100, 116, 139)
+        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlRight
+    End With
+    Y_BASLIK_SATIRI ws.Range("A9:I9"), Array("Depo", "Yüklenici / Depo Adý", "CDP Depo Deðeri", "EPP Depo Deðeri", _
+        "Depodaki Malzeme", "Teminat Tutarý", "Kalan Teminat", "Teminat Kullanýmý", "Durum")
+    r = YT_ILK
+    For Each k In d.keys
+        t = d(k)
+        ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value2 = CStr(k)
+        ws.Cells(r, 2).Value2 = IIf(Len(t(0)) > 0, t(0), "(depoda stok yok)")
+        ws.Cells(r, 3).Value2 = t(1): ws.Cells(r, 4).Value2 = t(2)
+        ws.Cells(r, 5).Formula = "=C" & r & "+D" & r
+        t2 = Y_TEMINAT_DEGER(il, CStr(k))
+        If Not IsEmpty(t2) Then ws.Cells(r, 6).Value2 = t2
+        ws.Cells(r, 7).Formula = "=IF(N(F" & r & ")>0,F" & r & "-E" & r & ","""")"
+        ws.Cells(r, 8).Formula = "=IF(N(F" & r & ")>0,E" & r & "/F" & r & ","""")"
+        ws.Cells(r, 9).Formula = "=IF(N(F" & r & ")<=0,""Teminat girilmedi"",IF(H" & r & ">1,""AÞIM"",IF(H" & r & ">=0.8,""DÝKKAT"",""GÜVENLÝ"")))"
+        r = r + 1
+    Next k
+    If n = 0 Then ws.Cells(YT_ILK, 2).Value2 = "Bu ilde tanýmlý yüklenici deposu yok."
+    Set rr = ws.Range(ws.Cells(YT_ILK, 1), ws.Cells(son, 9))
+    Y_TABLO_GOVDE rr
+    ws.Range(ws.Cells(YT_ILK, 1), ws.Cells(son, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(YT_ILK, 2), ws.Cells(son, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(YT_ILK, 3), ws.Cells(son + 1, 7)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(YT_ILK, 3), ws.Cells(son + 1, 7)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(YT_ILK, 8), ws.Cells(son + 1, 8)).NumberFormat = "0.0%"
+    ws.Range(ws.Cells(YT_ILK, 8), ws.Cells(son + 1, 9)).HorizontalAlignment = xlCenter
+    If n > 0 Then Y_GIRIS_HUCRE ws.Range(ws.Cells(YT_ILK, 6), ws.Cells(son, 6))
+    ' Toplam
+    ws.Cells(son + 1, 1).Value2 = "TOPLAM"
+    ws.Cells(son + 1, 3).Formula = "=SUM(C" & YT_ILK & ":C" & son & ")"
+    ws.Cells(son + 1, 4).Formula = "=SUM(D" & YT_ILK & ":D" & son & ")"
+    ws.Cells(son + 1, 5).Formula = "=SUM(E" & YT_ILK & ":E" & son & ")"
+    ws.Cells(son + 1, 6).Formula = "=SUM(F" & YT_ILK & ":F" & son & ")"
+    ws.Cells(son + 1, 7).Formula = "=IF(F" & son + 1 & ">0,F" & son + 1 & "-SUMIF(F" & YT_ILK & ":F" & son & ","">0"",E" & YT_ILK & ":E" & son & "),"""")"
+    ws.Cells(son + 1, 8).Formula = "=IF(F" & son + 1 & ">0,SUMIF(F" & YT_ILK & ":F" & son & ","">0"",E" & YT_ILK & ":E" & son & ")/F" & son + 1 & ","""")"
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(son + 1, 1), ws.Cells(son + 1, 9))
+    ws.Cells(son + 1, 6).NumberFormat = "#,##0.00 ""TL"""
+    ' Kullanim cubugu ve durum renkleri
+    Set rr = ws.Range(ws.Cells(YT_ILK, 8), ws.Cells(son, 8))
+    On Error Resume Next
+    Set db = rr.FormatConditions.AddDatabar
+    db.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+    db.MaxPoint.Modify newtype:=xlConditionValueNumber, newvalue:=1.2
+    db.BarColor.Color = RGB(47, 144, 217)
+    db.BarFillType = xlDataBarFillSolid
+    On Error GoTo 0
+    Set rr = ws.Range(ws.Cells(YT_ILK, 9), ws.Cells(son, 9))
+    Y_DURUM_KF rr, "AÞIM", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "DÝKKAT", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF rr, "GÜVENLÝ", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_DURUM_KF rr, "Teminat girilmedi", RGB(241, 245, 249), RGB(100, 116, 139)
+    ' Aciklama
+    tarih = 0
+    t2 = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(2))).Range("C2").Value
+    If Not IsError(t2) Then If IsDate(t2) Then tarih = CDate(t2)
+    ws.Cells(son + 3, 1).Value2 = "Teminat kullanýmý = Depodaki malzeme deðeri ÷ Teminat tutarý.   %80 ve üzeri DÝKKAT, %100 üzeri teminat AÞIMI."
+    ws.Cells(son + 4, 1).Value2 = "Depo deðerleri SAP MB52'den alýnýr (CDP + EPP yüklenici depolarý" & _
+        IIf(tarih > 0, ", son güncelleme " & Format$(tarih, "dd.mm.yyyy hh:nn"), ", henüz güncellenmedi") & ")."
+    ws.Cells(son + 5, 1).Value2 = "Girilen teminat tutarlarý il ve yüklenici bazýnda saklanýr; il deðiþtirilince o ilin tutarlarý gelir."
+    With ws.Range(ws.Cells(son + 3, 1), ws.Cells(son + 5, 9))
+        .Font.Name = "Aptos": .Font.Size = 9: .Font.Color = RGB(71, 85, 105)
+    End With
+    ' KPI hucreleri ve kartlar
+    ws.Range("BZ1").Formula = "=F" & son + 1
+    ws.Range("BZ2").Formula = "=E" & son + 1
+    ws.Range("BZ3").Formula = "=IF(F" & son + 1 & ">0,G" & son + 1 & ",""Teminat girilmedi"")"
+    ws.Range("BZ4").Formula = "=COUNTIF(I" & YT_ILK & ":I" & son & ",""AÞIM"")&"" aþým   •   ""&COUNTIF(I" & YT_ILK & ":I" & son & ",""DÝKKAT"")&"" dikkat   /   " & n & " yüklenici"""
+    ws.Range("BZ1:BZ3").NumberFormat = "#,##0.00 ""TL"""
+    y = ws.Rows(3).Top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "TOPLAM TEMÝNAT", "$BZ$1", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "DEPODAKÝ MALZEME (YÜKLENÝCÝ)", "$BZ$2", RGB(39, 160, 94)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "KALAN TEMÝNAT", "$BZ$3", RGB(35, 119, 204)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "RÝSK DURUMU", "$BZ$4", RGB(220, 38, 38)
+    Set s = Y_SEKIL(ws, "Y_KPI_DEGER_4")
+    If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    ws.Range("BX22").Value2 = il
+    ws.Range("BX23").Value2 = son
+    ws.Range("BX20").Value2 = il
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | TEMÝNAT TAKÝBÝ  |  " & Y_IL_ADI(il)
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlUnlockedCells
+End Sub
+
+'---------- HAKEDIS ----------
+Private Function Y_HK_ANAHTAR(ByVal ws As Worksheet) As String
+    Y_HK_ANAHTAR = UCase$(Trim$(CStr(ws.Range("BX22").Value2))) & "|" & UCase$(Trim$(CStr(ws.Range("BX24").Value2)))
+End Function
+
+' Sayfadaki girisler kayda yazilir (ust bilgi B..M, kalemler N).
+Private Sub Y_HAKEDIS_KAYDET(ByVal ws As Worksheet)
+    Dim kayit As Worksheet, sr As Long, anahtar As String, r As Long, c As Long, alan(0 To 6) As String, satirlar() As String
+    Dim ust As Variant, i As Long
+    If Len(CStr(ws.Range("BX24").Value2)) = 0 Or Len(CStr(ws.Range("BX22").Value2)) = 0 Then Exit Sub
+    anahtar = Y_HK_ANAHTAR(ws)
+    Set kayit = Y_KAYIT_SAYFA("_Y_HAKEDIS")
+    sr = Y_KAYIT_SATIR(kayit, anahtar, True)
+    ust = Array("C10", "C11", "C12", "C13", "K10", "J12", "J13", "J14", "J15", "K16", "K17")
+    For i = 0 To UBound(ust)
+        kayit.Cells(sr, i + 2).NumberFormat = "@"
+        kayit.Cells(sr, i + 2).Value2 = Y_KOD(ws.Range(CStr(ust(i))).Value2)
+    Next i
+    ReDim satirlar(0 To YH_KALEM_ADET - 1)
+    For r = 0 To YH_KALEM_ADET - 1
+        For c = 0 To 6
+            alan(c) = Y_KOD(ws.Cells(YH_KALEM_ILK + r, c + 1).Value2)
+        Next c
+        satirlar(r) = Join(alan, vbTab)
+    Next r
+    kayit.Cells(sr, 14).NumberFormat = "@"
+    kayit.Cells(sr, 14).Value2 = Join(satirlar, vbLf)
+End Sub
+
+Private Sub Y_HAKEDIS_YUKLE(ByVal ws As Worksheet)
+    Dim kayit As Worksheet, sr As Long, ust As Variant, i As Long, satirlar() As String, alan() As String, r As Long, c As Long
+    ust = Array("C10", "C11", "C12", "C13", "K10", "J12", "J13", "J14", "J15", "K16", "K17")
+    ws.Range(ws.Cells(YH_KALEM_ILK, 1), ws.Cells(YH_KALEM_ILK + YH_KALEM_ADET - 1, 7)).ClearContents
+    For i = 0 To UBound(ust): ws.Range(CStr(ust(i))).ClearContents: Next i
+    Set kayit = Y_KAYIT_SAYFA("_Y_HAKEDIS")
+    sr = Y_KAYIT_SATIR(kayit, Y_HK_ANAHTAR(ws), False)
+    If sr = 0 Then
+        ' Yeni yuklenici: varsayilan oranlar
+        ws.Range("C12").Value2 = 1
+        ws.Range("J12").Value2 = 0.2
+        ws.Range("J13").Value2 = 0.00948
+        ws.Range("J14").Value2 = 0
+        ws.Range("J15").Value2 = 0
+        Exit Sub
+    End If
+    For i = 0 To UBound(ust)
+        ws.Range(CStr(ust(i))).Value2 = Y_COZ(CStr(kayit.Cells(sr, i + 2).Value2))
+    Next i
+    satirlar = Split(CStr(kayit.Cells(sr, 14).Value2), vbLf)
+    For r = 0 To application.Min(UBound(satirlar), YH_KALEM_ADET - 1)
+        alan = Split(satirlar(r), vbTab)
+        For c = 0 To application.Min(UBound(alan), 6)
+            ws.Cells(YH_KALEM_ILK + r, c + 1).Value2 = Y_COZ(alan(c))
+        Next c
+    Next r
+End Sub
+
+' Gecmis tablosu (secili yuklenicinin kayitli hakedisleri).
+Private Sub Y_HAKEDIS_GECMIS_YAZ(ByVal ws As Worksheet)
+    Dim g As Worksheet, son As Long, v As Variant, r As Long, k As Long, anahtar As String
+    ws.Range(ws.Cells(YH_GECMIS_ILK, 1), ws.Cells(YH_GECMIS_ILK + 11, 11)).ClearContents
+    Set g = Y_KAYIT_SAYFA("_Y_HAKEDIS_GECMIS")
+    anahtar = Y_HK_ANAHTAR(ws)
+    son = g.Cells(g.Rows.Count, 1).End(xlUp).Row
+    If son >= 1 And Len(CStr(g.Cells(1, 1).Value2)) > 0 Then
+        v = g.Range("A1:G" & son).Value2
+        For r = UBound(v, 1) To 1 Step -1
+            If CStr(v(r, 1)) = anahtar Then
+                ws.Cells(YH_GECMIS_ILK + k, 1).Value2 = v(r, 2)
+                ws.Cells(YH_GECMIS_ILK + k, 2).Value2 = v(r, 3)
+                ws.Cells(YH_GECMIS_ILK + k, 4).Value2 = v(r, 4)
+                ws.Cells(YH_GECMIS_ILK + k, 9).Value2 = v(r, 5)
+                ws.Cells(YH_GECMIS_ILK + k, 10).Value2 = v(r, 6)
+                ws.Cells(YH_GECMIS_ILK + k, 11).Value2 = v(r, 7)
+                k = k + 1
+                If k >= 12 Then Exit For
+            End If
+        Next r
+    End If
+    If k = 0 Then ws.Cells(YH_GECMIS_ILK, 2).Value2 = "Bu yüklenici için kayýtlý hakediþ yok."
+End Sub
+
+Private Function Y_HK_LISTE(ByVal il As String) As Variant
+    Dim d As Object, k As Variant, a() As String, i As Long, t As Variant
+    Set d = Y_YUKLENICI_OZET(il)
+    If d.Count = 0 Then Exit Function
+    ReDim a(0 To d.Count - 1)
+    For Each k In d.keys
+        t = d(k)
+        a(i) = CStr(k) & IIf(Len(t(0)) > 0, "  -  " & t(0), "")
+        i = i + 1
+    Next k
+    Y_HK_LISTE = a
+End Function
+
+Private Sub Y_HAKEDIS_KUR(ByVal il As String)
+    Dim ws As Worksheet, w As Double, kw As Double, y As Double, s As Shape, liste As Shape, a As Variant, i As Long, p As Long
+    Dim secim As String, r As Long, son As Long, rr As Range, etiketler As Variant, gen As Variant
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    il = UCase$(Trim$(il))
+    Y_KAYIT_SAYFA "_Y_HAKEDIS"
+    Y_KAYIT_SAYFA "_Y_HAKEDIS_GECMIS"
+    ws.Unprotect ""
+    Y_HAKEDIS_KAYDET ws
+    secim = CStr(ws.Range("BX24").Value2)
+    If CStr(ws.Range("BX22").Value2) <> il Then secim = vbNullString
+    Y_SAYFA_SIFIRLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    gen = Array(70, w - 1134, 70, 130, 110, 110, 110, 110, 150, 160, 114)
+    Y_KOLONLAR ws, gen
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10
+    ws.Rows(8).RowHeight = 28
+    ws.Range(ws.Rows(9), ws.Rows(19)).RowHeight = 21
+    ws.Rows(20).RowHeight = 12
+    ws.Rows(21).RowHeight = 28
+    ws.Rows(22).RowHeight = 32
+    ws.Range(ws.Rows(YH_KALEM_ILK), ws.Rows(YH_KALEM_ILK + YH_KALEM_ADET)).RowHeight = 20
+    son = YH_KALEM_ILK + YH_KALEM_ADET - 1
+    ws.Rows(son + 2).RowHeight = 12
+    ws.Rows(YH_GECMIS_ILK - 2).RowHeight = 28
+    ws.Rows(YH_GECMIS_ILK - 1).RowHeight = 24
+    ws.Range(ws.Rows(YH_GECMIS_ILK), ws.Rows(YH_GECMIS_ILK + 11)).RowHeight = 19
+    ' Bolum basliklari
+    ws.Range("A8").Value2 = "SÖZLEÞME VE DÖNEM"
+    ws.Range("H8").Value2 = "HAKEDÝÞ ÖZETÝ VE KESÝNTÝLER"
+    With ws.Range("A8,H8")
+        .Font.Name = "Aptos": .Font.Size = 12: .Font.bold = True: .Font.Color = RGB(12, 45, 79): .VerticalAlignment = xlCenter
+    End With
+    ' Sol blok: etiket A:B, deger C:E
+    etiketler = Array("Yüklenici", "Sözleþme No", "Sözleþme Bedeli", "Hakediþ No", "Hakediþ Dönemi", "Önceki Hakediþler (ödenecek)", "Sözleþme Kullanýmý")
+    For i = 0 To 6
+        r = 9 + i
+        ws.Range(ws.Cells(r, 1), ws.Cells(r, 2)).Merge
+        ws.Cells(r, 1).Value2 = etiketler(i)
+        ws.Range(ws.Cells(r, 3), ws.Cells(r, 5)).Merge
+    Next i
+    With ws.Range("A9:E15")
+        .Font.Name = "Aptos": .Font.Size = 10: .VerticalAlignment = xlCenter
+        With .Borders(xlInsideHorizontal)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+    End With
+    ws.Range("A9:A15").Font.bold = True: ws.Range("A9:A15").Font.Color = RGB(28, 54, 83): ws.Range("A9:A15").IndentLevel = 1
+    ws.Range("A9:B15").Interior.Color = RGB(242, 249, 255)
+    Y_GIRIS_HUCRE ws.Range("C10:E13")
+    ws.Range("C11").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("C12").NumberFormat = "0"
+    ws.Range("C13").NumberFormat = "@"
+    ws.Range("C10:E15").HorizontalAlignment = xlLeft
+    ws.Range("C10:E15").IndentLevel = 1
+    ws.Range("C14").Formula = "=SUMIFS('_Y_HAKEDIS_GECMIS'!F:F,'_Y_HAKEDIS_GECMIS'!A:A,$BZ$10,'_Y_HAKEDIS_GECMIS'!B:B,""<""&N($C$12))"
+    ws.Range("C14").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("C15").Formula = "=IF(N(C11)>0,J" & son + 1 & "/C11,"""")"
+    ws.Range("C15").NumberFormat = "0.0%"
+    ws.Range("C15").Font.bold = True
+    Set rr = ws.Range("C15")
+    With rr.FormatConditions.Add(Type:=xlCellValue, Operator:=xlGreater, Formula1:="=1")
+        .Font.Color = RGB(185, 28, 28): .Interior.Color = RGB(254, 226, 226)
+    End With
+    ' Sag blok: etiket H:I, oran J, tutar K
+    etiketler = Array("Bu dönem iþ tutarý", "Fiyat farký", "Toplam (KDV hariç)", "KDV", "Damga vergisi", "Teminat kesintisi", _
+        "KDV tevkifatý", "Malzeme kesintisi", "Diðer kesintiler", "Toplam kesinti", "ÖDENECEK TUTAR")
+    For i = 0 To 10
+        r = 9 + i
+        ws.Range(ws.Cells(r, 8), ws.Cells(r, 9)).Merge
+        ws.Cells(r, 8).Value2 = etiketler(i)
+    Next i
+    With ws.Range("H9:K19")
+        .Font.Name = "Aptos": .Font.Size = 10: .VerticalAlignment = xlCenter
+        With .Borders(xlInsideHorizontal)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+    End With
+    ws.Range("H9:H19").IndentLevel = 1: ws.Range("H9:H19").Font.Color = RGB(28, 54, 83)
+    ws.Range("H9:I19").Interior.Color = RGB(242, 249, 255)
+    ws.Range("K9").Formula = "=I" & son + 1
+    ws.Range("K11").Formula = "=K9+N(K10)"
+    ws.Range("K12").Formula = "=K11*N(J12)"
+    ws.Range("K13").Formula = "=K11*N(J13)"
+    ws.Range("K14").Formula = "=K11*N(J14)"
+    ws.Range("K15").Formula = "=K12*N(J15)"
+    ws.Range("K18").Formula = "=SUM(K13:K15)+N(K16)+N(K17)"
+    ws.Range("K19").Formula = "=K11+K12-K18"
+    ws.Range("K9:K19").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("K9:K19").HorizontalAlignment = xlRight
+    ws.Range("J12:J15").NumberFormat = "0.00%"
+    ws.Range("J12:J15").HorizontalAlignment = xlCenter
+    Y_GIRIS_HUCRE ws.Range("K10")
+    Y_GIRIS_HUCRE ws.Range("J12:J15")
+    Y_GIRIS_HUCRE ws.Range("K16:K17")
+    ws.Range("J9").Value2 = "Oran": ws.Range("J9").Font.Size = 8: ws.Range("J9").Font.Color = RGB(100, 116, 139): ws.Range("J9").HorizontalAlignment = xlCenter
+    With ws.Range("H11:K11,H18:K18")
+        .Font.bold = True
+    End With
+    With ws.Range("H19:K19")
+        .Font.bold = True: .Font.Size = 12: .Font.Color = vbWhite: .Interior.Color = RGB(0, 125, 110)
+    End With
+    ' Kalemler
+    ws.Range("A21").Value2 = "HAKEDÝÞ KALEMLERÝ  –  sözleþme birim fiyatý × metraj"
+    With ws.Range("A21:F21")
+        .Merge: .Font.Name = "Aptos": .Font.Size = 12: .Font.bold = True: .Font.Color = RGB(12, 45, 79): .VerticalAlignment = xlCenter
+    End With
+    ws.Range("G21").Value2 = "Sarý hücreler giriþ alanýdýr. Kümülatif miktar sözleþmeyi aþarsa satýr kýrmýzý uyarý verir."
+    With ws.Range("G21:K21")
+        .Merge: .Font.Name = "Aptos": .Font.Size = 9: .Font.Italic = True: .Font.Color = RGB(100, 116, 139)
+        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlRight
+    End With
+    Y_BASLIK_SATIRI ws.Range("A22:K22"), Array("Poz No", "Ýþ Kalemi Tanýmý", "Birim", "Birim Fiyat", "Sözleþme Miktarý", _
+        "Önceki Kümülatif", "Bu Dönem", "Kümülatif Miktar", "Bu Dönem Tutar", "Kümülatif Tutar", "Gerçekleþme")
+    For r = YH_KALEM_ILK To son
+        ws.Cells(r, 8).Formula = "=IF(COUNT(F" & r & ":G" & r & ")=0,"""",N(F" & r & ")+N(G" & r & "))"
+        ws.Cells(r, 9).Formula = "=IF(N(G" & r & ")=0,"""",N(G" & r & ")*N(D" & r & "))"
+        ws.Cells(r, 10).Formula = "=IF(H" & r & "="""","""",N(H" & r & ")*N(D" & r & "))"
+        ws.Cells(r, 11).Formula = "=IF(N(E" & r & ")>0,IF(H" & r & "="""","""",N(H" & r & ")/E" & r & "),"""")"
+    Next r
+    Set rr = ws.Range(ws.Cells(YH_KALEM_ILK, 1), ws.Cells(son, 11))
+    Y_TABLO_GOVDE rr
+    Y_GIRIS_HUCRE ws.Range(ws.Cells(YH_KALEM_ILK, 1), ws.Cells(son, 7))
+    ws.Range(ws.Cells(YH_KALEM_ILK, 1), ws.Cells(son, 1)).NumberFormat = "@"
+    ws.Range(ws.Cells(YH_KALEM_ILK, 1), ws.Cells(son, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(YH_KALEM_ILK, 3), ws.Cells(son, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(YH_KALEM_ILK, 4), ws.Cells(son + 1, 4)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(YH_KALEM_ILK, 5), ws.Cells(son + 1, 8)).NumberFormat = "#,##0.###"
+    ws.Range(ws.Cells(YH_KALEM_ILK, 9), ws.Cells(son + 1, 10)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(YH_KALEM_ILK, 11), ws.Cells(son + 1, 11)).NumberFormat = "0.0%"
+    ws.Range(ws.Cells(YH_KALEM_ILK, 4), ws.Cells(son + 1, 10)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(YH_KALEM_ILK, 11), ws.Cells(son + 1, 11)).HorizontalAlignment = xlCenter
+    ' Kumulatif kontrol: sozlesme miktari asilirsa satir uyarisi
+    Set rr = ws.Range(ws.Cells(YH_KALEM_ILK, 8), ws.Cells(son, 11))
+    With rr.FormatConditions.Add(Type:=xlExpression, Formula1:="=AND(N($E" & YH_KALEM_ILK & ")>0,N($H" & YH_KALEM_ILK & ")>$E" & YH_KALEM_ILK & ")")
+        .Interior.Color = RGB(254, 226, 226): .Font.Color = RGB(185, 28, 28): .Font.bold = True
+    End With
+    ws.Cells(son + 1, 1).Value2 = "TOPLAM"
+    ws.Cells(son + 1, 9).Formula = "=SUM(I" & YH_KALEM_ILK & ":I" & son & ")"
+    ws.Cells(son + 1, 10).Formula = "=SUM(J" & YH_KALEM_ILK & ":J" & son & ")"
+    ws.Cells(son + 1, 11).Formula = "=IF(N(C11)>0,J" & son + 1 & "/C11,"""")"
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(son + 1, 1), ws.Cells(son + 1, 11))
+    ' Gecmis
+    ws.Cells(YH_GECMIS_ILK - 2, 1).Value2 = "KAYITLI HAKEDÝÞLER"
+    With ws.Cells(YH_GECMIS_ILK - 2, 1)
+        .Font.Name = "Aptos": .Font.Size = 12: .Font.bold = True: .Font.Color = RGB(12, 45, 79)
+    End With
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(YH_GECMIS_ILK - 1, 1), ws.Cells(YH_GECMIS_ILK - 1, 11)), _
+        Array("No", "Dönem", "", "Bu Dönem Ýþ Tutarý", "", "", "", "", "Toplam Kesinti", "Ödenecek", "Kayýt Tarihi")
+    Set rr = ws.Range(ws.Cells(YH_GECMIS_ILK, 1), ws.Cells(YH_GECMIS_ILK + 11, 11))
+    Y_TABLO_GOVDE rr
+    ws.Range(ws.Cells(YH_GECMIS_ILK, 1), ws.Cells(YH_GECMIS_ILK + 11, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(YH_GECMIS_ILK, 4), ws.Cells(YH_GECMIS_ILK + 11, 10)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(YH_GECMIS_ILK, 11), ws.Cells(YH_GECMIS_ILK + 11, 11)).NumberFormat = "dd.mm.yyyy hh:nn"
+    ws.Range(ws.Cells(YH_GECMIS_ILK, 11), ws.Cells(YH_GECMIS_ILK + 11, 11)).HorizontalAlignment = xlCenter
+    ' KPI kartlari
+    ws.Range("BZ1").Formula = "=IF(N(C11)>0,C11,""Sözleþme bedeli girilmedi"")"
+    ws.Range("BZ2").Formula = "=J" & son + 1
+    ws.Range("BZ3").Formula = "=K19"
+    ws.Range("BZ4").Formula = "=""No ""&N(C12)&IF(LEN(C13)>0,""   •   ""&C13,"""")"
+    ws.Range("BZ1:BZ3").NumberFormat = "#,##0.00 ""TL"""
+    y = ws.Rows(3).Top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "SÖZLEÞME BEDELÝ", "$BZ$1", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "KÜMÜLATÝF ÝÞ TUTARI", "$BZ$2", RGB(39, 160, 94)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "BU DÖNEM ÖDENECEK", "$BZ$3", RGB(0, 125, 110)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "HAKEDÝÞ", "$BZ$4", RGB(35, 119, 204)
+    ' Yuklenici secimi
+    a = Y_HK_LISTE(il)
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, ws.Range("C9").Left + 2, ws.Range("C9").Top + 2, ws.Range("C9:E9").Width - 4, ws.Rows(9).Height - 4)
+    liste.Name = "Y_HK_YUKLENICI": liste.Placement = xlFreeFloating
+    p = 1
+    If IsArray(a) Then
+        For i = 0 To UBound(a)
+            liste.ControlFormat.AddItem CStr(a(i))
+            If Len(secim) > 0 And Left$(CStr(a(i)), Len(secim)) = secim Then p = i + 1
+        Next i
+        liste.ControlFormat.Value = p
+        secim = Trim$(Split(CStr(a(p - 1)) & "  -  ", "  -  ")(0))
+    Else
+        liste.ControlFormat.AddItem "Yüklenici deposu yok"
+        liste.ControlFormat.Value = 1
+        secim = vbNullString
+    End If
+    liste.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_HAKEDIS_SEC")
+    ' Dugmeler (sol blok altinda)
+    Y_DUGME ws, "Y_HK_KAYDET", "HAKEDÝÞÝ KAYDET", ws.Range("A17").Left, ws.Range("A17").Top, 170, 32, RGB(0, 125, 110), "AKSORA_YATIRIM_HAKEDIS_KAYDET"
+    Y_DUGME ws, "Y_HK_YENI", "YENÝ DÖNEME GEÇ", ws.Range("A17").Left + 180, ws.Range("A17").Top, 170, 32, RGB(16, 57, 94), "AKSORA_YATIRIM_HAKEDIS_YENI"
+    Y_DUGME ws, "Y_HK_PDF", "PDF AL", ws.Range("A17").Left + 360, ws.Range("A17").Top, 120, 32, RGB(35, 119, 204), "AKSORA_YATIRIM_HAKEDIS_PDF"
+    ws.Range("BX22").Value2 = il
+    ws.Range("BX24").Value2 = secim
+    ws.Range("BZ10").Value2 = Y_HK_ANAHTAR(ws)
+    ws.Range("BX20").Value2 = il
+    Y_HAKEDIS_YUKLE ws
+    Y_HAKEDIS_GECMIS_YAZ ws
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | OTOMATÝK HAKEDÝÞ  |  " & Y_IL_ADI(il)
+    ' Yazici yoksa sayfa ayari atlanir.
+    On Error Resume Next
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.Zoom = False: ws.PageSetup.FitToPagesWide = 1: ws.PageSetup.FitToPagesTall = False
+    ws.PageSetup.PrintArea = "$A$1:$K$" & son + 1
+    On Error GoTo 0
+    ws.Range("BX25").Value2 = "HK_V1"
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlUnlockedCells
+End Sub
+
+Public Sub AKSORA_YATIRIM_HAKEDIS_SEC()
+    Dim ws As Worksheet, s As Shape, t As String, ev As Boolean, sc As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set s = ws.Shapes("Y_HK_YUKLENICI")
+    t = CStr(s.ControlFormat.List(s.ControlFormat.Value))
+    t = Trim$(Split(t & "  -  ", "  -  ")(0))
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False: application.ScreenUpdating = False
+    ws.Unprotect ""
+    Y_HAKEDIS_KAYDET ws
+    ws.Range("BX24").Value2 = t
+    ws.Range("BZ10").Value2 = Y_HK_ANAHTAR(ws)
+    Y_HAKEDIS_YUKLE ws
+    Y_HAKEDIS_GECMIS_YAZ ws
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    Exit Sub
+Hata:
+    application.EnableEvents = True: application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Donem kaydi: ayni hakedis no varsa uzerine yazilir.
+Public Sub AKSORA_YATIRIM_HAKEDIS_KAYDET()
+    Dim ws As Worksheet, g As Worksheet, son As Long, r As Long, sr As Long, anahtar As String, no As Long, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    If Len(CStr(ws.Range("BX24").Value2)) = 0 Then MsgBox "Önce yüklenici seçiniz.", vbInformation, "AKSORA": Exit Sub
+    no = CLng(Val(CStr(ws.Range("C12").Value2)))
+    If no < 1 Then MsgBox "Hakediþ numarasý giriniz.", vbInformation, "AKSORA": Exit Sub
+    If Val(CStr(ws.Range("K9").Value2)) = 0 And Val(CStr(ws.Range("K10").Value2)) = 0 Then
+        If MsgBox("Bu dönem iþ tutarý sýfýr. Yine de kaydedilsin mi?", vbYesNo + vbQuestion, "AKSORA") <> vbYes Then Exit Sub
+    End If
+    ev = application.EnableEvents: application.EnableEvents = False
+    ws.Unprotect ""
+    anahtar = Y_HK_ANAHTAR(ws)
+    Set g = Y_KAYIT_SAYFA("_Y_HAKEDIS_GECMIS")
+    son = g.Cells(g.Rows.Count, 1).End(xlUp).Row
+    If Len(CStr(g.Cells(1, 1).Value2)) = 0 Then son = 0
+    For r = 1 To son
+        If CStr(g.Cells(r, 1).Value2) = anahtar And CLng(Val(CStr(g.Cells(r, 2).Value2))) = no Then sr = r: Exit For
+    Next r
+    If sr = 0 Then sr = son + 1
+    g.Cells(sr, 1).NumberFormat = "@"
+    g.Cells(sr, 1).Value2 = anahtar
+    g.Cells(sr, 2).Value2 = no
+    g.Cells(sr, 3).NumberFormat = "@"
+    g.Cells(sr, 3).Value2 = CStr(ws.Range("C13").Value2)
+    g.Cells(sr, 4).Value2 = ws.Range("K11").Value2
+    g.Cells(sr, 5).Value2 = ws.Range("K18").Value2
+    g.Cells(sr, 6).Value2 = ws.Range("K19").Value2
+    g.Cells(sr, 7).Value = Now
+    Y_HAKEDIS_KAYDET ws
+    Y_HAKEDIS_GECMIS_YAZ ws
+    ws.Calculate
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.EnableEvents = ev
+    MsgBox "Hakediþ No " & no & " kaydedildi." & vbCrLf & "Ödenecek tutar: " & Format$(ws.Range("K19").Value2, "#,##0.00") & " TL", vbInformation, "AKSORA | Hakediþ"
+    Exit Sub
+Hata:
+    application.EnableEvents = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Yeni donem: kumulatif miktarlar "onceki"ye aktarilir, bu donem bosaltilir, hakedis no artar.
+Public Sub AKSORA_YATIRIM_HAKEDIS_YENI()
+    Dim ws As Worksheet, g As Worksheet, r As Long, son As Long, kayitli As Boolean, anahtar As String, no As Long, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    If Len(CStr(ws.Range("BX24").Value2)) = 0 Then Exit Sub
+    no = CLng(Val(CStr(ws.Range("C12").Value2)))
+    anahtar = Y_HK_ANAHTAR(ws)
+    Set g = Y_KAYIT_SAYFA("_Y_HAKEDIS_GECMIS")
+    son = g.Cells(g.Rows.Count, 1).End(xlUp).Row
+    For r = 1 To son
+        If CStr(g.Cells(r, 1).Value2) = anahtar And CLng(Val(CStr(g.Cells(r, 2).Value2))) = no Then kayitli = True: Exit For
+    Next r
+    If Not kayitli Then
+        Select Case MsgBox("Hakediþ No " & no & " henüz kaydedilmedi. Önce kaydedilsin mi?", vbYesNoCancel + vbQuestion, "AKSORA | Hakediþ")
+            Case vbCancel: Exit Sub
+            Case vbYes: AKSORA_YATIRIM_HAKEDIS_KAYDET
+        End Select
+    End If
+    ev = application.EnableEvents: application.EnableEvents = False
+    ws.Unprotect ""
+    For r = YH_KALEM_ILK To YH_KALEM_ILK + YH_KALEM_ADET - 1
+        If Len(CStr(ws.Cells(r, 8).Value2)) > 0 And Not IsError(ws.Cells(r, 8).Value2) Then ws.Cells(r, 6).Value2 = ws.Cells(r, 8).Value2
+        ws.Cells(r, 7).ClearContents
+    Next r
+    ws.Range("C12").Value2 = no + 1
+    ws.Range("C13").ClearContents
+    ws.Range("K10").ClearContents: ws.Range("K16:K17").ClearContents
+    Y_HAKEDIS_KAYDET ws
+    ws.Calculate
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.EnableEvents = ev
+    MsgBox "Hakediþ No " & no + 1 & " hazýr. Kümülatif miktarlar önceki hakediþe aktarýldý; bu dönem miktarlarýný girin.", vbInformation, "AKSORA | Hakediþ"
+    Exit Sub
+Hata:
+    application.EnableEvents = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_YATIRIM_HAKEDIS_PDF()
+    Dim ws As Worksheet, yol As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    yol = ThisWorkbook.Path & application.PathSeparator & "HAKEDIS_" & CStr(ws.Range("BX22").Value2) & "_" & _
+        CStr(ws.Range("BX24").Value2) & "_No" & CLng(Val(CStr(ws.Range("C12").Value2))) & "_" & Format$(Now, "yyyymmdd_hhnn") & ".pdf"
+    ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
+        IgnorePrintAreas:=False, OpenAfterPublish:=True
+    Exit Sub
+Hata:
+    MsgBox "PDF oluþturulamadý: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Calisma kitabi SheetChange: teminat ve hakedis girisleri aninda kayda yazilir.
+Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
+    Dim ev As Boolean, c As Range, kayit As Worksheet, sr As Long, il As String, son As Long, alan As Range
+    If Not TypeOf sh Is Worksheet Then Exit Sub
+    If sh.Name <> "Y_TEMÝNAT" And sh.Name <> "Y_HAKEDÝÞ" Then Exit Sub
+    If mYCalisiyor Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Cikis
+    application.EnableEvents = False
+    If sh.Name = "Y_TEMÝNAT" Then
+        il = UCase$(Trim$(CStr(sh.Range("BX22").Value2)))
+        son = Val(CStr(sh.Range("BX23").Value2))
+        If son < YT_ILK Or Len(il) = 0 Then GoTo Cikis
+        Set alan = Intersect(hedef, sh.Range(sh.Cells(YT_ILK, 6), sh.Cells(son, 6)))
+        If alan Is Nothing Then GoTo Cikis
+        Set kayit = Y_KAYIT_SAYFA("_Y_TEMINAT")
+        For Each c In alan.Cells
+            If Len(CStr(sh.Cells(c.Row, 1).Value2)) > 0 Then
+                sr = Y_KAYIT_SATIR(kayit, il & "|" & UCase$(Trim$(CStr(sh.Cells(c.Row, 1).Value2))), True)
+                kayit.Cells(sr, 2).Value2 = c.Value2
+                kayit.Cells(sr, 3).Value = Now
+            End If
+        Next c
+    Else
+        Set alan = Intersect(hedef, sh.Range("C10:E13,K10,J12:J15,K16:K17," & _
+            sh.Range(sh.Cells(YH_KALEM_ILK, 1), sh.Cells(YH_KALEM_ILK + YH_KALEM_ADET - 1, 7)).Address))
+        If Not alan Is Nothing Then Y_HAKEDIS_KAYDET sh
+    End If
+Cikis:
+    application.EnableEvents = ev
+End Sub
+
+' Giris ve guncelleme sonrasi: hata olsa bile birim acilir, hata durum seridine yazilir.
+Private Sub Y_ALT_SAYFALAR(ByVal il As String)
+    On Error Resume Next
+    Y_TEMINAT_KUR il
+    If Err.Number <> 0 Then Y_SERIT "Teminat sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
+    ' Hakedis sayfasi yalniz il veya tasarim surumu degisince yeniden kurulur (girisler korunur).
+    With ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "HK_V1" Then
+            Y_HAKEDIS_KUR il
+        End If
+    End With
+    If Err.Number <> 0 Then Y_SERIT "Hakediþ sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
+    On Error GoTo 0
 End Sub

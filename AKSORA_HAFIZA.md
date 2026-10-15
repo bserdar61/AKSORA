@@ -89,12 +89,26 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   malzeme pivot tablosu (Malzeme, Tanım, Miktar, Pay, Toplam Değer + TOPLAM) + sağda halka grafik (ilk 9 + Diğer) ve lejant.
   Seçim BX30, bölüm satırları BX31:BX32. Şekiller AKSORA_RP_DM_*; üst halka döngüsü bunlara dokunmaz.
 
-## Yatırım birimi (başlangıç, 14.10.2026)
-- Giriş: YATIRIM IL SECIM → il → PANELE GİRİŞ → Y_GIRIS: eksik Y_ sayfaları müşteri sayfalarından kopyalanır (Y_KUR), ile uyarlanır (Y_IL_UYGULA), yalnız Y_ sayfaları görünür.
-- Sayfalar: Y_ANA PANEL (M_ANA PANEL kopyası; kartlar CDP YATIRIM / EPP YATIRIM / YÜKLENİCİ; orta sıra TEMİNAT TAKİBİ · TÜM STOK · HAKEDİŞ; 8 hızlı erişim),
-  Y_HAKEDİŞ, Y_TEMİNAT (hedef kartları), Y_CDP/EPP_YATIRIM_STOK/RAPOR, Y_CDP/EPP_YÜKLENİCİ_STOK/RAPOR (M_CDP_STOK / M_CDP_RAPOR kopyası, veri boş).
-- Etiket BX1 = AKSORA_YATIRIM_V1, il BX20. Panel bandı: AKSORA_YATIRIM_PANEL_BANTLARI.png (yoksa müşteri bandı).
-- Güncelle düğmeleri şimdilik bilgi mesajı (depo tanımları bekleniyor).
+## Yatırım birimi (15.10.2026)
+- Giriş: YATIRIM IL SECIM → il → PANELE GİRİŞ → Y_GIRIS (Y_KUR, Y_IL_UYGULA, Y_IL_VERI, panel, arama tarihleri, Y_ALT_SAYFALAR).
+- Sekme sırası: ANA PANEL, TEMİNAT, HAKEDİŞ, MALZEME ARAMA, CDP stok/rapor, EPP stok/rapor, CDP yük. stok/rapor, EPP yük. stok/rapor.
+- Depolar: CDP ve EPP yatırım = D002, D011; yüklenici = malzeme birimindeki ilin yüklenici depoları (AKSORA_IL_YUKLENICI).
+- Veri: MB52 PANEL düzeni (AKSORA_YATIRIM_MB52) → 14 sütun müşteri stok düzeni; il kayıtları _YA_<IL>_<1..4> (paketli).
+- Arama: Y_MALZEME_ARA yalnız yatırım verisini tarar; D depoları her zaman üstte.
+- Teminat Takibi (Y_TEMİNAT): yüklenici depo bazında CDP+EPP depo değeri, sarı hücreye teminat tutarı;
+  kalan teminat, kullanım % (veri çubuğu), durum (GÜVENLİ <%80, DİKKAT %80-100, AŞIM >%100). Tutarlar _Y_TEMINAT'ta il|depo anahtarıyla.
+- Otomatik Hakediş (Y_HAKEDİŞ): yüklenici seçimi, sözleşme bilgileri, 30 kalem (birim fiyat × metraj, önceki/bu dönem/kümülatif,
+  sözleşme miktarı aşımı kırmızı), özet: fiyat farkı, KDV, damga, teminat kesintisi, KDV tevkifatı, malzeme/diğer kesinti, ödenecek.
+  Düğmeler: HAKEDİŞİ KAYDET (_Y_HAKEDIS_GECMIS), YENİ DÖNEME GEÇ (kümülatif→önceki, no+1), PDF AL. Girişler _Y_HAKEDIS'te.
+- Girişler Workbook_SheetChange → AKSORA_YATIRIM_DEGISIM ile anında kaydedilir.
+
+## Dosya boyutu ve kayıt biçimi (15.10.2026)
+- İl kayıtları (_MA_*, _YA_*) PAKET1 biçiminde: A1 tarih, B1 il, C1 "PAKET1", D1 satır sayısı; A2.. bloklar
+  (satır = 14 alan TAB ile, alan = tür harfi s/n/b + değer, n nokta ondalık; blok ≤30.000 karakter, satırlar LF).
+  Okuma/yazma yalnız AKSORA_PAKET_OKU / AKSORA_PAKET_YAZ / AKSORA_PAKET_ADET ile. Eski biçim açılışta AKSORA_ARSIV_BAKIM ile çevrilir.
+- Base dosya tools/optimize_base.py ile hazırlanır (paketleme + Y stok satır kırpma + görsel küçültme/JPEG).
+- Bant görselleri .jpg varsa o kullanılır (AKSORA_GORSEL). Sonuç: 32,5 MB → 11,4 MB.
+- Masaüstü başlatıcı: AKSORA_BASLAT.hta (+ AKSORA_LOGO.png, AKSORA.ico) Excel'i görünmez açar, AKSORA yükleme ekranı gelince kapanır.
 
 ## Sıradaki işler
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı

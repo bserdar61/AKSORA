@@ -2,6 +2,14 @@ Attribute VB_Name = "modAKSORA_IL_AYARLARI"
 Option Explicit
 ' AKSORA il kodlari. Yalnizca okuma/dogrulama; mevcut makrolari ve gorselleri degistirmez.
 ' Kaynak: kullanicinin 30.09.2026 tarihinde teyit ettigi SAP kodlari.
+' Gorsel dosyasi: ayni adli .jpg varsa o kullanilir (calisma kitabina ~5 kat kucuk gomulur).
+Public Function AKSORA_GORSEL(ByVal ad As String) As String
+    Dim kok As String, jpg As String
+    kok = ThisWorkbook.Path & application.PathSeparator
+    jpg = Left$(ad, InStrRev(ad, ".")) & "jpg"
+    If Len(Dir$(kok & jpg)) > 0 Then AKSORA_GORSEL = kok & jpg Else AKSORA_GORSEL = kok & ad
+End Function
+
 Public Function AKSORA_AKTIF_IL() As String
     Dim s As String
     s = AKFIX_NORMAL(CStr(ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2))

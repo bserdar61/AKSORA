@@ -2289,11 +2289,14 @@ Public Sub AKSORA_MUSTERI_ARSIV_KAYDET(ByVal il As String)
     For i = 1 To 3
         Set kaynak = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
         Set ar = MS_ArsivSayfa(il, i, True)
-        ar.Cells.ClearContents
         ar.Range("A1").Value = kaynak.Range("C2").MergeArea.Cells(1, 1).Value
         ar.Range("B1").Value2 = il
         son = AKSORA_M_SON(kaynak)
-        If son >= 7 Then ar.Range("A2").Resize(son - 6, 14).Value2 = kaynak.Range("A7:N" & son).Value2
+        If son >= 7 Then
+            AKSORA_PAKET_YAZ ar, kaynak.Range("A7:N" & son).Value2
+        Else
+            AKSORA_PAKET_YAZ ar, Empty
+        End If
     Next i
 Cikis:
     application.EnableEvents = ev
@@ -2316,7 +2319,7 @@ Private Function MS_ArsivAyni(ByVal il As String) As Boolean
         a = ar.Range("A1").Value: b = ws.Range("C2").MergeArea.Cells(1, 1).Value
         If IsError(a) Or IsError(b) Then Exit Function
         If CStr(a) <> CStr(b) Then Exit Function
-        If ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1 <> application.Max(0, AKSORA_M_SON(ws) - 6) Then Exit Function
+        If AKSORA_PAKET_ADET(ar) <> application.Max(0, AKSORA_M_SON(ws) - 6) Then Exit Function
     Next i
     MS_ArsivAyni = True
 Yok:
@@ -2380,8 +2383,8 @@ Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
         Set ar = MS_ArsivSayfa(il, i, False)
         tarih(i) = Empty: veri(i) = Empty: n(i) = 0
         If Not ar Is Nothing Then
-            n(i) = ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1
-            If n(i) >= 1 Then veri(i) = ar.Range("A2").Resize(n(i), 14).Value2 Else n(i) = 0
+            n(i) = AKSORA_PAKET_ADET(ar)
+            If n(i) >= 1 Then veri(i) = AKSORA_PAKET_OKU(ar) Else n(i) = 0
             tarih(i) = ar.Range("A1").Value
         End If
     Next i
@@ -2463,4 +2466,173 @@ Hata:
     On Error GoTo 0
     Err.Raise vbObjectError + 1997, "AKSORA_MUSTERI_IL_DEGIS", "Ýl geçiþi " & mevcut & " > " & il & " | adým: " & adim & _
         vbCrLf & "Hata " & CStr(hataNo) & ": " & hataMetni
+End Sub
+
+'==========================================================
+' IL KAYITLARI - SIKISTIRILMIS SAKLAMA (PAKET1)
+' Kayit sayfasinda her satir 14 hucre yerine tek metin satiri olur;
+' satirlar ~30.000 karakterlik bloklar halinde A sutununa yazilir.
+' Alan: tur harfi + deger (s metin, n sayi [nokta ondalik], b mantiksal, bos = Empty).
+' A1 tarih, B1 il, C1 "PAKET1", D1 satir sayisi. Eski (14 sutun) kayitlar da okunur.
+'==========================================================
+Private Function PK_ALAN(ByVal v As Variant) As String
+    Select Case VarType(v)
+        Case vbEmpty, vbNull: PK_ALAN = vbNullString
+        Case vbString: PK_ALAN = "s" & Replace(Replace(Replace(CStr(v), vbTab, " "), vbLf, " "), vbCr, " ")
+        Case vbBoolean: PK_ALAN = IIf(v, "b1", "b0")
+        Case vbError: PK_ALAN = "s#HATA"
+        Case vbDate: PK_ALAN = "n" & Trim$(Str$(CDbl(v)))
+        Case Else: PK_ALAN = "n" & Trim$(Str$(CDbl(v)))
+    End Select
+End Function
+
+Private Function PK_DEGER(ByVal t As String) As Variant
+    If Len(t) = 0 Then Exit Function
+    Select Case Left$(t, 1)
+        Case "s": PK_DEGER = Mid$(t, 2)
+        Case "n": PK_DEGER = Val(Mid$(t, 2))
+        Case "b": PK_DEGER = (Mid$(t, 2) = "1")
+        Case Else: PK_DEGER = t
+    End Select
+End Function
+
+Public Function AKSORA_PAKET_MI(ByVal ar As Worksheet) As Boolean
+    AKSORA_PAKET_MI = (CStr(ar.Range("C1").Value2) = "PAKET1")
+End Function
+
+' Kayittaki satir sayisi (paketli veya eski bicim).
+Public Function AKSORA_PAKET_ADET(ByVal ar As Worksheet) As Long
+    If ar Is Nothing Then Exit Function
+    If AKSORA_PAKET_MI(ar) Then
+        AKSORA_PAKET_ADET = CLng(Val(CStr(ar.Range("D1").Value2)))
+    Else
+        AKSORA_PAKET_ADET = application.Max(0, ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1)
+    End If
+End Function
+
+' Kayit verisi: n x 14 dizi (kayit bossa Empty).
+Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
+    Dim n As Long, blok As Variant, satirlar() As String, alan() As String, sonuc() As Variant
+    Dim b As Long, r As Long, c As Long, k As Long, son As Long, sutun As Long
+    If ar Is Nothing Then Exit Function
+    If Not AKSORA_PAKET_MI(ar) Then
+        n = AKSORA_PAKET_ADET(ar)
+        If n >= 1 Then AKSORA_PAKET_OKU = ar.Range("A2").Resize(n, 14).Value2
+        Exit Function
+    End If
+    n = AKSORA_PAKET_ADET(ar)
+    If n < 1 Then Exit Function
+    sutun = 14
+    ReDim sonuc(1 To n, 1 To sutun)
+    son = ar.Cells(ar.Rows.Count, 1).End(xlUp).Row
+    If son < 2 Then Exit Function
+    ' Uzun metinler hucre hucre okunur (dizi aktariminda uzunluk siniri olabilir).
+    For b = 2 To son
+        blok = ar.Cells(b, 1).Value2
+        If Len(CStr(blok)) = 0 Then GoTo SonrakiBlok
+        satirlar = Split(CStr(blok), vbLf)
+        For r = 0 To UBound(satirlar)
+            k = k + 1
+            If k > n Then Err.Raise vbObjectError + 2201, "AKSORA_PAKET_OKU", ar.Name & ": kayýt satýr sayýsý tutmuyor."
+            alan = Split(satirlar(r), vbTab)
+            For c = 0 To application.Min(UBound(alan), sutun - 1)
+                sonuc(k, c + 1) = PK_DEGER(alan(c))
+            Next c
+        Next r
+SonrakiBlok:
+    Next b
+    If k <> n Then Err.Raise vbObjectError + 2202, "AKSORA_PAKET_OKU", ar.Name & ": kayýt eksik (" & k & "/" & n & ")."
+    AKSORA_PAKET_OKU = sonuc
+End Function
+
+' Veriyi kayda paketli yazar (A1/B1 cagiran tarafindan yazilir, burada korunur).
+Public Sub AKSORA_PAKET_YAZ(ByVal ar As Worksheet, ByVal veri As Variant)
+    Dim n As Long, sutun As Long, r As Long, c As Long, alan() As String, blok() As String
+    Dim satir As String, uz As Long, nb As Long, parca() As String, np As Long, a1 As Variant, b1 As Variant
+    a1 = ar.Range("A1").Value: b1 = ar.Range("B1").Value2
+    ar.Cells.ClearContents
+    ar.Range("A1").NumberFormat = "dd.mm.yyyy hh:mm:ss"
+    ar.Range("A1").Value = a1: ar.Range("B1").Value2 = b1
+    ar.Range("C1").Value2 = "PAKET1"
+    If IsEmpty(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
+    If Not IsArray(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
+    n = UBound(veri, 1) - LBound(veri, 1) + 1
+    sutun = UBound(veri, 2) - LBound(veri, 2) + 1
+    ReDim alan(0 To sutun - 1)
+    ReDim blok(1 To 16)
+    ReDim parca(0 To 255)
+    For r = LBound(veri, 1) To UBound(veri, 1)
+        For c = 0 To sutun - 1
+            alan(c) = PK_ALAN(veri(r, LBound(veri, 2) + c))
+        Next c
+        satir = Join(alan, vbTab)
+        If uz + Len(satir) + 1 > 30000 And np > 0 Then
+            nb = nb + 1
+            ReDim Preserve parca(0 To np - 1)
+            If nb > UBound(blok) Then ReDim Preserve blok(1 To UBound(blok) * 2)
+            blok(nb) = Join(parca, vbLf)
+            ReDim parca(0 To 255): np = 0: uz = 0
+        End If
+        If np > UBound(parca) Then ReDim Preserve parca(0 To UBound(parca) * 2 + 1)
+        parca(np) = satir: np = np + 1: uz = uz + Len(satir) + 1
+    Next r
+    If np > 0 Then
+        nb = nb + 1
+        ReDim Preserve parca(0 To np - 1)
+        If nb > UBound(blok) Then ReDim Preserve blok(1 To UBound(blok) * 2)
+        blok(nb) = Join(parca, vbLf)
+    End If
+    ar.Range("A2").Resize(nb, 1).NumberFormat = "@"
+    For r = 1 To nb
+        ar.Cells(r + 1, 1).Value2 = blok(r)
+    Next r
+    ar.Range("D1").Value2 = n
+End Sub
+
+
+
+' Eski bicimdeki bir kaydi paketler; hata olursa eski hali aynen geri yazilir.
+Private Function PK_DONUSTUR(ByVal ws As Worksheet) As String
+    Dim n As Long, veri As Variant, a1 As Variant, b1 As Variant
+    On Error GoTo Hata
+    n = AKSORA_PAKET_ADET(ws)
+    a1 = ws.Range("A1").Value: b1 = ws.Range("B1").Value2
+    veri = AKSORA_PAKET_OKU(ws)
+    AKSORA_PAKET_YAZ ws, veri
+    If AKSORA_PAKET_ADET(ws) <> n Then Err.Raise vbObjectError + 2203, , "satýr sayýsý doðrulanamadý"
+    Exit Function
+Hata:
+    PK_DONUSTUR = Err.Description
+    On Error Resume Next
+    If IsArray(veri) Then
+        ws.Cells.ClearContents
+        ws.Range("A1").Value = a1: ws.Range("B1").Value2 = b1
+        ws.Range("A2").Resize(n, 14).Value2 = veri
+    End If
+End Function
+
+' Acilista: eski bicimdeki il kayitlari paketlenir; yatirim stok sayfalarindaki
+' kopya artigi bos satirlar silinir.
+Public Sub AKSORA_ARSIV_BAKIM()
+    Dim ws As Worksheet, ad As String, ev As Boolean, sonuc As String
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    For Each ws In ThisWorkbook.Worksheets
+        ad = ws.Name
+        If Left$(ad, 4) = "_MA_" Or Left$(ad, 4) = "_YA_" Then
+            If Not AKSORA_PAKET_MI(ws) Then
+                sonuc = PK_DONUSTUR(ws)
+                If Len(sonuc) > 0 Then AKSORA_SAP_TESHIS_YAZ "Kayýt bakýmý | " & ad & " | " & sonuc
+            End If
+        ElseIf Left$(ad, 2) = "Y_" And Right$(ad, 5) = "_STOK" Then
+            If ws.UsedRange.Row + ws.UsedRange.Rows.Count > AKSORA_M_SON(ws) + 300 Then
+                On Error Resume Next
+                ws.Unprotect ""
+                AKSORA_ARAMA_FAZLA_SATIR ws, application.Max(7, AKSORA_M_SON(ws)) + 2
+                ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+                On Error GoTo 0
+            End If
+        End If
+    Next ws
+    application.EnableEvents = ev
 End Sub
