@@ -3612,7 +3612,7 @@ Private Sub I_ESKI_KARS_SIL()
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
-    If CStr(ws.Range("BX25").Value2) = "IK_V2" Then Exit Sub
+    If Left$(CStr(ws.Range("BX25").Value2), 3) = "IK_" Then Exit Sub
     da = application.DisplayAlerts: application.DisplayAlerts = False
     ws.Visible = xlSheetVisible
     ws.Delete
@@ -4101,8 +4101,9 @@ End Function
 Private Function I_DEMONTAJ_MI(ByVal degerleme As String) As Boolean
     Dim t As String
     t = Y_NORM(degerleme)
-    t = Replace(Replace(Replace(Replace(t, " ", ""), "_", ""), "-", ""), ".", "")
-    I_DEMONTAJ_MI = (InStr(t, "CIKMA") > 0 And InStr(t, "BEDELSIZ") > 0)
+    t = Replace(Replace(Replace(Replace(Replace(t, " ", ""), "_", ""), "-", ""), ".", ""), "/", "")
+    ' SAP degerleme adi: CIKMA/BDSZ (cikma bedelsiz).
+    I_DEMONTAJ_MI = (InStr(t, "CIKMA") > 0 And (InStr(t, "BDSZ") > 0 Or InStr(t, "BEDELSIZ") > 0))
 End Function
 
 ' Kopya sayfa ilk kurulumda ilce birimine uyarlanir.
@@ -4153,47 +4154,81 @@ Private Sub I_KARS_HAZIRLA(ByVal ws As Worksheet)
     ws.Range("BX25").Value2 = "IK_V2"
 End Sub
 
-' Ilce dugmeleri (O sutunu): TÜMÜ + ilin K001-K999 depolari; secili olan yesil.
-Private Sub I_KARS_DUGMELER(ByVal ws As Worksheet, ByVal depolar As Object, ByVal sec As String)
-    Dim i As Long, s As Shape, x As Double, y0 As Double, w As Double, k As Variant, ad As String, kod As String
-    For i = ws.Shapes.Count To 1 Step -1
-        If Left$(ws.Shapes(i).Name, 7) = "I_KV_D_" Then ws.Shapes(i).Delete
-    Next i
-    x = ws.Range("O8").Left + 2: y0 = ws.Range("O8").Top: w = ws.Range("O8:P8").Width - 4
-    i = 0
-    For Each k In I_DUGME_LISTESI(depolar)
-        kod = CStr(k)
-        If Len(kod) = 0 Then ad = "TÜM ÝLÇELER" Else ad = I_DEPO_KISA(CStr(depolar(kod))) & vbLf & kod
-        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y0 + i * 46, w, 40)
-        s.Name = "I_KV_D_" & i
-        s.AlternativeText = kod
-        s.line.Visible = msoFalse
-        s.Placement = xlFreeFloating
-        s.LockAspectRatio = msoFalse
-        With s.TextFrame2
-            .MarginLeft = 4: .MarginRight = 4: .MarginTop = 1: .MarginBottom = 1
-            .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoTrue
-            .TextRange.Text = ad
-            .TextRange.ParagraphFormat.Alignment = msoAlignCenter
-            .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
-            If Len(kod) > 0 Then .TextRange.Characters(Len(ad) - Len(kod) + 1, Len(kod)).Font.Size = 8
-        End With
-        If UCase$(kod) = sec Then
-            s.Fill.ForeColor.RGB = RGB(0, 121, 103)
-            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+' Tablo tek parca: baslik, tarih ve ozet bantlari demontaj sutununu (N) da kapsar;
+' filtre dugmeleri A:N boyunca esit, ANA PANEL sagda.
+Private Sub I_KARS_DUZEN(ByVal ws As Worksheet)
+    Dim r As Long, b As Variant, s As Shape, i As Long, gen As Double, da As Boolean, adlar As Variant
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    ws.Columns("N").ColumnWidth = 30
+    For r = 1 To 14
+        If ws.Cells(r, 13).Interior.Pattern = xlNone Then
+            ws.Cells(r, 14).Interior.Pattern = xlNone
         Else
-            s.Fill.ForeColor.RGB = RGB(230, 240, 248)
-            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(24, 55, 88)
+            ws.Cells(r, 14).Interior.Color = ws.Cells(r, 13).Interior.Color
         End If
-        s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_KARS_SEC")
-        i = i + 1
+    Next r
+    For Each b In Array("A1:M2", "A3:M3", "H5:M5", "I6:M6", "I7:M7", "J9:M9", "J10:M10", "J11:M11", "J12:M12")
+        ws.Range(CStr(b)).UnMerge
+        ws.Range(Replace(CStr(b), "M", "N")).Merge
+    Next b
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    gen = (ws.Range("A1:N1").Width - 5 * 2) / 6
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then
+            s.Placement = xlFreeFloating
+            s.Left = i * (gen + 2): s.Width = gen
+        End If
+    Next i
+    Set s = Y_SEKIL(ws, "btnAnaPanelDon")
+    If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = ws.Columns("O").Left + 12
+    application.DisplayAlerts = da
+    ws.Range("BX25").Value2 = "IK_V3"
+End Sub
+
+' Ilce secimi: tek acilir liste (ilce sayisi arttikca sayfa asagi uzamaz).
+Private Sub I_KARS_SECICI(ByVal ws As Worksheet, ByVal depolar As Object, ByVal sec As String)
+    Dim i As Long, s As Shape, k As Variant, n As Long, secIx As Long, a As Shape
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 7) = "I_KV_D_" Or ws.Shapes(i).Name = "I_KV_SECIM" Then ws.Shapes(i).Delete
+    Next i
+    Set s = ws.Shapes.AddFormControl(xlDropDown, ws.Range("O8").Left + 2, ws.Range("O8").Top + 6, ws.Range("O8:P8").Width - 4, 24)
+    s.Name = "I_KV_SECIM": s.Placement = xlFreeFloating
+    s.ControlFormat.AddItem "TÜM ÝLÇELER  (" & depolar.Count & " depo)"
+    secIx = 1: n = 1
+    For Each k In depolar.keys
+        n = n + 1
+        s.ControlFormat.AddItem CStr(k) & "  -  " & I_DEPO_KISA(CStr(depolar(k)))
+        If UCase$(CStr(k)) = sec Then secIx = n
     Next k
-    Set s = Y_SEKIL(ws, "AKSORA_KARS_SABIT_ACIKLAMA")
-    If Not s Is Nothing Then
-        s.Left = x: s.Width = w: s.Top = y0 + i * 46 + 2
-        Y_YAZ s, "Seçili ilçe deposunun kayýtlý stok geçmiþi karþýlaþtýrýlýr."
-        s.TextFrame2.WordWrap = msoTrue: s.Height = 30
+    s.ControlFormat.DropDownLines = application.Min(30, n)
+    s.ControlFormat.Value = secIx
+    s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_KARS_LISTE")
+    Set a = Y_SEKIL(ws, "AKSORA_KARS_SABIT_ACIKLAMA")
+    If Not a Is Nothing Then
+        a.Left = s.Left: a.Width = s.Width: a.Top = s.Top + s.Height + 6: a.Height = 30
+        Y_YAZ a, "Listeden ilçe deposunu seçin; karþýlaþtýrma seçilen depo için yapýlýr."
+        a.TextFrame2.WordWrap = msoTrue
     End If
+End Sub
+
+Public Sub AKSORA_ILCE_KARS_LISTE()
+    Dim ws As Worksheet, s As Shape, k As String, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set s = ws.Shapes("I_KV_SECIM")
+    If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect ""
+    ws.Range("BX30").Value2 = k
+    I_KARS_KUR CStr(ws.Range("BX22").Value2), False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    application.EnableEvents = True: application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
 Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
@@ -4206,7 +4241,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
-    If CStr(ws.Range("BX25").Value2) <> "IK_V2" Then I_KARS_HAZIRLA ws
+    If CStr(ws.Range("BX25").Value2) <> "IK_V2" And CStr(ws.Range("BX25").Value2) <> "IK_V3" Then I_KARS_HAZIRLA ws
+    If CStr(ws.Range("BX25").Value2) <> "IK_V3" Then I_KARS_DUZEN ws
     If CStr(ws.Range("BX22").Value2) <> il Then sifirla = True: ws.Range("BX30").ClearContents
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
@@ -4261,7 +4297,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     sec = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
     If Len(sec) > 0 And Not depolar.Exists(sec) Then sec = vbNullString
     ws.Range("BX30").Value2 = sec
-    I_KARS_DUGMELER ws, depolar, sec
+    I_KARS_SECICI ws, depolar, sec
     ' Kalemler ve demontaj gruplari (depo|uretim yeri|malzeme)
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
@@ -4312,7 +4348,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                         kontrol = "DEMONTAJ GÝRÝÞÝ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni) & " " & CStr(t(2))
                         sira = 1: nEk = nEk + 1
                     ElseIf g(1) + 0.0005 < g(0) Then
-                        kontrol = "EKSÝK DEMONTAJ  •  " & I_MIKTAR_METNI(g(1)) & " / " & I_MIKTAR_METNI(g(0)) & " " & CStr(t(2))
+                        kontrol = "EKSÝK DEMONTAJ  •  " & I_MIKTAR_METNI(g(0) - g(1)) & " " & CStr(t(2)) & " eksik (" & _
+                            I_MIKTAR_METNI(g(1)) & " / " & I_MIKTAR_METNI(g(0)) & ")"
                         sira = 2: nEk = nEk + 1
                     Else
                         kontrol = "Demontaj girildi"
