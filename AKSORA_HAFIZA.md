@@ -95,7 +95,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Depolar: CDP ve EPP yatırım = D002, D011; yüklenici = malzeme birimindeki ilin yüklenici depoları (AKSORA_IL_YUKLENICI).
 - Veri: MB52 PANEL düzeni (AKSORA_YATIRIM_MB52) → 14 sütun müşteri stok düzeni; il kayıtları _YA_<IL>_<1..4> (paketli).
 - Arama: Y_MALZEME_ARA yalnız yatırım verisini tarar; D depoları her zaman üstte.
-- Teminat Takibi (Y_TEMİNAT, TM_V3): HER DEPO AYRI (ayrı yüklenici/hakediş; gruplama YOK). (1) Depo bazında teminat: teminat (giriş),
+- Teminat Takibi (Y_TEMİNAT, TM_V3): Z ile başlayan depolar (Z007 vb.) yatırım/yüklenici kapsamında DEĞİL; stoksuz depolar listelenmez. HER DEPO AYRI (ayrı yüklenici/hakediş; gruplama YOK). (1) Depo bazında teminat: teminat (giriş),
   DEPODA (teminata tabi), SAHADA (hakediş bekleyen), kalan, kullanım % (depoda ÷ teminat), durum (GÜVENLİ <%80, DİKKAT %80-100, AŞIM >%100),
   sahada >45 gün sayısı. (2) Malzeme detayı sütun sırası: Depo, Depo Adı, Malzeme, Tanım, Miktar (birimiyle), Tutar, Konum
   (Depoda/Sahada/Kısmi), Sahadaki Miktar, Depodaki Tutar, Sahadaki Tutar, Sahada (gün); depo seçici filtre.

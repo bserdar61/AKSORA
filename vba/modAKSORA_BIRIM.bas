@@ -1507,6 +1507,8 @@ Private Function Y_DEPO_UYGUN(ByVal depo As String, ByVal i As Long, ByVal il As
     If i <= 2 Then
         Y_DEPO_UYGUN = (depo = "D002" Or depo = "D011")
     Else
+        ' Z ile baslayan depolar (or. Z007) yatirim / yuklenici kapsaminda degildir.
+        If Left$(depo, 1) = "Z" Then Exit Function
         Y_DEPO_UYGUN = AKSORA_IL_DEPO_GECERLI(depo, "YUKLENICI", il)
     End If
 End Function
@@ -2216,7 +2218,7 @@ Private Function Y_YEREL(ByVal ws As Worksheet, ByVal formul As String) As Strin
 End Function
 
 Private Sub Y_SAYFA_SIFIRLA(ByVal ws As Worksheet)
-    Dim s As Shape, ad As String, sil As Collection, sv As Variant
+    Dim s As Shape, ad As String, sil As Collection, sv As Variant, son As Long
     Set sil = New Collection
     For Each s In ws.Shapes
         ad = s.Name
@@ -2228,12 +2230,15 @@ Private Sub Y_SAYFA_SIFIRLA(ByVal ws As Worksheet)
     Next sv
     On Error GoTo 0
     ws.AutoFilterMode = False
-    ws.Range("A3:Z400").Validation.Delete
+    ' Onceki kurulumdan kalan satirlar (400 sonrasi dahil) tamamen temizlenir.
+    son = application.Max(400, ws.UsedRange.Row + ws.UsedRange.Rows.Count)
+    ws.Range("A3:Z" & son).Validation.Delete
     ws.Cells.FormatConditions.Delete
-    ws.Range("A3:Z400").UnMerge
-    ws.Range("A3:Z400").Clear
+    ws.Range("A3:Z" & son).UnMerge
+    ws.Range("A3:Z" & son).Clear
     ws.Range("BZ1:BZ40").Clear
-    ws.Range(ws.Rows(3), ws.Rows(400)).RowHeight = ws.StandardHeight
+    ws.Range(ws.Rows(3), ws.Rows(son)).Hidden = False
+    ws.Range(ws.Rows(3), ws.Rows(son)).RowHeight = ws.StandardHeight
     ws.Columns("L:Z").ColumnWidth = 8.43
     ws.Columns("BZ").Hidden = True
     Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
@@ -2331,9 +2336,6 @@ End Sub
 Private Function Y_YUKLENICI_OZET(ByVal il As String) As Object
     Dim d As Object, x As Variant, i As Long, sh As Worksheet, son As Long, v As Variant, r As Long, dp As String, t As Variant
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
-    For Each x In AKSORA_IL_YUKLENICI(il)
-        d(CStr(x)) = Array(vbNullString, 0#, 0#)
-    Next x
     For i = 3 To 4
         Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
         son = AKSORA_M_SON(sh)
@@ -2342,7 +2344,7 @@ Private Function Y_YUKLENICI_OZET(ByVal il As String) As Object
             For r = 1 To UBound(v, 1)
                 If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) Then
                     dp = UCase$(Trim$(CStr(v(r, 2))))
-                    If Len(dp) > 0 And Len(Trim$(CStr(v(r, 5)))) > 0 Then
+                    If Len(dp) > 0 And Len(Trim$(CStr(v(r, 5)))) > 0 And Left$(dp, 1) <> "Z" Then
                         If Not d.Exists(dp) Then d(dp) = Array(vbNullString, 0#, 0#)
                         t = d(dp)
                         If Len(t(0)) = 0 And Not IsError(v(r, 3)) Then t(0) = Trim$(CStr(v(r, 3)))
@@ -2355,7 +2357,16 @@ Private Function Y_YUKLENICI_OZET(ByVal il As String) As Object
             Next r
         End If
     Next i
-    Set Y_YUKLENICI_OZET = d
+    ' Sira: ilin yuklenici depo listesi sirasi; listede olmayanlar sonda.
+    Dim s2 As Object
+    Set s2 = CreateObject("Scripting.Dictionary"): s2.CompareMode = vbTextCompare
+    For Each x In AKSORA_IL_YUKLENICI(il)
+        If d.Exists(CStr(x)) Then s2(CStr(x)) = d(CStr(x))
+    Next x
+    For Each x In d.keys
+        If Not s2.Exists(CStr(x)) Then s2(CStr(x)) = d(x)
+    Next x
+    Set Y_YUKLENICI_OZET = s2
 End Function
 
 '---------- TEMINAT ----------
@@ -2485,7 +2496,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
             For r = 1 To UBound(v, 1)
                 If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) Then
                     dp = UCase$(Trim$(CStr(v(r, 2)))): mk = Trim$(CStr(v(r, 5)))
-                    If Len(dp) > 0 And Len(mk) > 0 Then
+                    If Len(dp) > 0 And Len(mk) > 0 And Left$(dp, 1) <> "Z" Then
                         If Not det.Exists(dp & "|" & mk) Then det(dp & "|" & mk) = Array(dp, mk, Trim$(CStr(v(r, 6))), Trim$(CStr(v(r, 8))), 0#, 0#)
                         t = det(dp & "|" & mk)
                         If Not IsError(v(r, 7)) Then If IsNumeric(v(r, 7)) Then t(4) = t(4) + CDbl(v(r, 7))
@@ -2643,17 +2654,31 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     If nL > 0 Then ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(b3, 14)).AutoFilter
     ' Malzeme arama: kod veya tanimin bir bolumu yazilinca liste aninda suzulur.
     With ws.Cells(a3 - 2, 3)
-        .Value2 = "Malzeme ara:": .HorizontalAlignment = xlRight: .VerticalAlignment = xlCenter
-        .Font.bold = True: .Font.Color = RGB(28, 54, 83): .Font.Name = "Aptos": .Font.Size = 10
+        .Value2 = "MALZEME ARA": .HorizontalAlignment = xlRight: .VerticalAlignment = xlCenter
+        .Font.bold = True: .Font.Color = RGB(100, 116, 139): .Font.Name = "Aptos": .Font.Size = 9
+        .IndentLevel = 1
     End With
+    ws.Rows(a3 - 2).RowHeight = 34
     With ws.Cells(a3 - 2, 4)
         .ClearContents: .Locked = False: .NumberFormat = "@"
-        .Interior.Color = RGB(255, 255, 255): .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
-        .VerticalAlignment = xlCenter: .IndentLevel = 1
-        With .Borders
-            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(35, 119, 204)
+        .Interior.Color = RGB(241, 247, 253): .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
+        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlLeft: .IndentLevel = 2
+        .Borders.LineStyle = xlNone
+        With .Validation
+            .Delete
+            .Add Type:=xlValidateInputOnly
+            .InputTitle = "Malzeme ara"
+            .InputMessage = "Malzeme kodunun veya adýnýn bir kýsmýný yazýp Enter'a basýn. Silip Enter: tüm liste."
+            .ShowInput = True
         End With
     End With
+    ' Yuvarlak koseli cerceve (ici bos; tiklama hucreye gecer)
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, ws.Cells(a3 - 2, 4).Left - 2, ws.Cells(a3 - 2, 4).Top + 3, _
+        ws.Cells(a3 - 2, 4).Width + 4, ws.Rows(a3 - 2).Height - 6)
+    s.Name = "Y_TM_ARA_CERCEVE": s.Placement = xlFreeFloating
+    s.Adjustments.Item(1) = 0.5
+    s.Fill.Visible = msoFalse: s.Shadow.Visible = msoFalse
+    s.line.ForeColor.RGB = RGB(47, 144, 217): s.line.Weight = 1.5
     ws.Range("BX29").Value2 = ws.Cells(a3 - 2, 4).Address(False, False)
     ws.Cells(a3 - 2, 7).Value2 = "Depo:"
     ws.Cells(a3 - 2, 7).HorizontalAlignment = xlRight: ws.Cells(a3 - 2, 7).Font.bold = True: ws.Cells(a3 - 2, 7).Font.Color = RGB(28, 54, 83)
@@ -2710,6 +2735,15 @@ Private Sub Y_BOLUM(ByVal ws As Worksheet, ByVal r As Long, ByVal baslik As Stri
     End With
 End Sub
 
+'' Filtre sonrasi Teminat sayfasinda kalinir (Excel baska yatirim sayfasina gecerse geri alinir).
+Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
+    On Error Resume Next
+    If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws
+    mYOdak = ws.Name
+    application.OnTime Now + TimeSerial(0, 0, 1), BIRIM_MAKRO("AKSORA_YATIRIM_ODAK")
+    On Error GoTo 0
+End Sub
+
 Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
     Dim ws As Worksheet, s As Shape, t As String, a As Long, b As Long
     On Error GoTo Hata
@@ -2725,6 +2759,7 @@ Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
         ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:="=" & t
     End If
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Y_TEMINAT_KAL ws
     Exit Sub
 Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
@@ -3253,6 +3288,7 @@ Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
                 End If
             End If
             sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+            Y_TEMINAT_KAL sh
             GoTo Cikis
         End If
     End If
