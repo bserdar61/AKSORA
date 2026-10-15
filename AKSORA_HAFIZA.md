@@ -120,7 +120,12 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - İl seçimi: "ILCE IL SECIM" (KAPAK kopyası, YATIRIM_KAPAK_AC ilce:=True); bant AKSORA_ILCE_BANT.png varsa eklenir.
 - Sayfalar (I_, etiket AKSORA_ILCE_V1, sıra sabit): I_ANA PANEL, I_MALZEME_ARA, I_STOK_KARŞILAŞTIRMA, I_CDP_İLÇELER_STOK,
   I_CDP_İLÇELER_RAPOR, I_EPP_İLÇELER_STOK, I_EPP_İLÇELER_RAPOR, I_İSG_MALZEMELERİ (CDP ve EPP AYRI sayfalar; kayıt tek _IA_<IL>).
-  Panel hızlı erişim 7 düğme (I_HIZLI, BX25 IP_V2). Depo sayısı = ilin bilinen tüm ilçe depoları (_I_DEPO kalıcı liste; stoksuz depo da sayılır).
+  Panel (IP_V3): büyük düğmeler STOK / DEMONTAJ KONTROLÜ, TÜM İLÇE STOKLARINI GÜNCELLE, MALZEME ARAMA, CDP/EPP İLÇE GÜNCELLE,
+  İSG ZİMMET KONTROLÜ; küçük hızlı erişim yalnız CDP/EPP İLÇE STOK-RAPOR (4 düğme, büyük düğmesi olanlar tekrarlanmaz).
+  Q kartı başlığı İSG ZİMMET KONTROLÜ. Hub 04 kartı: İlçe depo stokları / İlçeler arası malzeme arama / Demontaj malzeme kontrolü /
+  İSG zimmet kontrolü (hub BX2 sürüm 10). İl seçim bandı AKSORA_ILCE_BANT.jpg (KAPAK fotoğrafından, üst şerit: İlçe Stok Takibi,
+  İlçeler Arası Malzeme Arama, Demontaj Malzeme Kontrolü, İSG Zimmet Kontrolü, Analiz ve Raporlama; tools/kapak_ilce.py).
+  AKSORA amblemi (FILIGRAN) ilçe sayfalarında kullanılmaz. Depo sayısı = ilin bilinen tüm ilçe depoları (_I_DEPO kalıcı liste; stoksuz depo da sayılır).
   Yatırım ve ilçe aramaları her zaman il kaydından okur (stok sayfasındaki filtre aramayı daraltmaz). Panel/arama/stok/rapor müşteri şablonundan kopya (Y_KUR ilce:=True).
 - Veri: CDP 7151-7155 + EPP 7051-7055, yalnız K001-K999 depoları; ikisi tek stok sayfasında (depo|tesis|malzeme sıralı).
   Kayıt _IA_<IL> (PAKET1). Tek sistem güncellenince diğerinin son kaydı korunur.

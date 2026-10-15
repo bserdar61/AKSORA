@@ -181,7 +181,7 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
     If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
     Set ws = BIRIM_SAYFA(HUB)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 9 Then BIRIM_CIZ ws, ""
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 10 Then BIRIM_CIZ ws, ""
     ws.Visible = xlSheetVisible
     ws.Move Before:=ThisWorkbook.Worksheets(1)
     ws.Select Replace:=True
@@ -678,7 +678,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     Set ws = BIRIM_SAYFA(ad)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 9 Then BIRIM_CIZ ws, baslik
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 10 Then BIRIM_CIZ ws, baslik
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ad
@@ -818,7 +818,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Loop
     ws.Rows("1:44").RowHeight = 15
     ws.Range("BX1").Value2 = tag
-    ws.Range("BX2").Value2 = 9
+    ws.Range("BX2").Value2 = 10
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
@@ -868,7 +868,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
             "Ýþlemlere geç", "AKSORA_BIRIM_MUSTERI", RGB(32, 133, 158), True, kw
         BIRIM_KART ws, "ILC", 34 + 3 * (kw + 18), "04", "Ýlçe Yönetim Birimi", _
             "", "Ýlçe depo stoklarý" & vbLf & "Ýlçeler arasý malzeme arama" & vbLf & _
-            "Ýlçe bazlý stok karþýlaþtýrma" & vbLf & "ÝSG malzemeleri", _
+            "Demontaj malzeme kontrolü" & vbLf & "ÝSG zimmet kontrolü", _
             "Ýþlemlere geç", "AKSORA_BIRIM_ILCE", RGB(79, 70, 160), False, kw
         BIRIM_TEXT ws, "SECIM_NOT", "Ýhtiyacýnýz olan iþlem alanýna tek seçimle ulaþýn.", 35, 565, 1000, 24, 10, RGB(87, 121, 142), False
     Else
@@ -3501,7 +3501,7 @@ Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
         End If
         If Left$(ad, 18) = "AKSORA15_KART_LED_" Then s.Fill.ForeColor.RGB = RGB(145, 162, 176)
     Next s
-    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "STOK KARÞILAÞTIRMA": Y_BAGLA Y_SEKIL(ws, "btnBaglantiKontrol"), "I_STOK_KARÞILAÞTIRMA"
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "STOK / DEMONTAJ KONTROLÜ": Y_BAGLA Y_SEKIL(ws, "btnBaglantiKontrol"), "I_STOK_KARÞILAÞTIRMA"
     Y_YAZ Y_SEKIL(ws, "btnMalzemeAraPanel"), "MALZEME ARAMA": Y_BAGLA Y_SEKIL(ws, "btnMalzemeAraPanel"), "I_MALZEME_ARA"
     Y_YAZ Y_SEKIL(ws, "btnTumStok"), "TÜM ÝLÇE STOKLARINI GÜNCELLE"
     Y_YAZ Y_SEKIL(ws, "btnCDP"), "CDP ÝLÇE GÜNCELLE"
@@ -3510,7 +3510,7 @@ Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
         Set s = Y_SEKIL(ws, CStr(b))
         If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_GUNCELLE")
     Next b
-    Y_YAZ Y_SEKIL(ws, "btnYuk"), "ÝSG MALZEMELERÝ": Y_BAGLA Y_SEKIL(ws, "btnYuk"), "I_ÝSG_MALZEMELERÝ"
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "ÝSG ZÝMMET KONTROLÜ": Y_BAGLA Y_SEKIL(ws, "btnYuk"), "I_ÝSG_MALZEMELERÝ"
     Set s = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
     If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_BIRIM_ILCE")
     I_HIZLI ws
@@ -3529,7 +3529,7 @@ Private Sub I_HIZLI(ByVal ws As Worksheet)
         Next s
         ws.Range("BX26").Value2 = x1
     End If
-    For i = 1 To 6
+    For i = 1 To 3
         If Y_SEKIL(ws, "MUSTERI_HIZLI_" & i) Is Nothing Then
             Set yeni = ilk.Duplicate
             yeni.Name = "MUSTERI_HIZLI_" & i
@@ -3537,14 +3537,17 @@ Private Sub I_HIZLI(ByVal ws As Worksheet)
     Next i
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 14) = "MUSTERI_HIZLI_" Then
-            If Val(Mid$(ws.Shapes(i).Name, 15)) > 6 Then ws.Shapes(i).Delete
+            If Val(Mid$(ws.Shapes(i).Name, 15)) > 3 Then ws.Shapes(i).Delete
         End If
     Next i
-    bw = (x1 - x0 - 6 * g) / 7
-    adlar = Array("MALZEME ARAMA", "STOK KARÞILAÞTIRMA", "CDP ÝLÇE STOK", "CDP ÝLÇE RAPOR", "EPP ÝLÇE STOK", "EPP ÝLÇE RAPOR", "ÝSG MALZEMELERÝ")
-    hedefler = Array("I_MALZEME_ARA", "I_STOK_KARÞILAÞTIRMA", "I_CDP_ÝLÇELER_STOK", "I_CDP_ÝLÇELER_RAPOR", _
-        "I_EPP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_RAPOR", "I_ÝSG_MALZEMELERÝ")
-    For i = 0 To 6
+    bw = (x1 - x0 - 3 * g) / 4
+    ' Buyuk dugmesi olan sayfalar (arama, stok/demontaj, zimmet) burada tekrarlanmaz.
+    adlar = Array("CDP ÝLÇE STOK", "CDP ÝLÇE RAPOR", "EPP ÝLÇE STOK", "EPP ÝLÇE RAPOR")
+    hedefler = Array("I_CDP_ÝLÇELER_STOK", "I_CDP_ÝLÇELER_RAPOR", "I_EPP_ÝLÇELER_STOK", "I_EPP_ÝLÇELER_RAPOR")
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "STOK / DEMONTAJ KONTROLÜ"
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "ÝSG ZÝMMET KONTROLÜ"
+    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "ÝSG ZÝMMET KONTROLÜ"
+    For i = 0 To 3
         Set s = Y_SEKIL(ws, "MUSTERI_HIZLI_" & i)
         If Not s Is Nothing Then
             s.Left = x0 + i * (bw + g): s.Width = bw: s.Top = ilk.Top: s.Height = ilk.Height
@@ -3556,7 +3559,7 @@ Private Sub I_HIZLI(ByVal ws As Worksheet)
             Y_BAGLA s, CStr(hedefler(i))
         End If
     Next i
-    ws.Range("BX25").Value2 = "IP_V2"
+    ws.Range("BX25").Value2 = "IP_V3"
 End Sub
 
 ' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
@@ -3571,7 +3574,7 @@ Private Sub I_IL_UYGULA(ByVal kod As String)
                 Case "PANEL"
                     Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_B"), "CDP ÝLÇELER / " & AKSORA_IL_TESIS(kod, "CDP")
                     Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_L"), "EPP ÝLÇELER / " & AKSORA_IL_TESIS(kod, "EPP")
-                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "ÝSG MALZEMELERÝ"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "ÝSG ZÝMMET KONTROLÜ"
                     Y_YAZ Y_SEKIL(ws, "AKSORA15_ALT_KURUM"), "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & il & " Ýl Müdürlüðü"
                     Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "Ýlçe Yönetim Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
                     Set s = Y_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
@@ -3648,7 +3651,7 @@ End Sub
 
 ' Karsilastirma ve ISG sayfalari: hata olsa bile birim acilir, hata seride yazilir.
 Private Sub I_ALT_SAYFALAR(ByVal il As String, ByVal sifirla As Boolean)
-    Dim da As Boolean
+    Dim da As Boolean, ad As Variant, ws As Worksheet
     da = application.DisplayAlerts
     application.DisplayAlerts = False
     On Error Resume Next
@@ -3656,6 +3659,13 @@ Private Sub I_ALT_SAYFALAR(ByVal il As String, ByVal sifirla As Boolean)
     If Err.Number <> 0 Then Y_SERIT "Stok karþýlaþtýrma sayfasý kurulamadý: " & Err.Description, 3, "I_ANA PANEL": Err.Clear
     I_ISG_KUR il
     If Err.Number <> 0 Then Y_SERIT "ÝSG sayfasý kurulamadý: " & Err.Description, 3, "I_ANA PANEL": Err.Clear
+    ' AKSORA amblemi ilce sayfalarinda kullanilmaz (listelerin ustune biniyordu).
+    For Each ad In I_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        ws.Unprotect ""
+        Y_FILIGRAN ws
+        Y_KORU ws
+    Next ad
     On Error GoTo 0
     application.DisplayAlerts = da
 End Sub
@@ -4018,7 +4028,7 @@ Private Sub I_PANEL_YENILE()
     ws.Unprotect ""
     ' Depo sayisi: ilin butun ilce depolari (stogu olmasa da).
     depo = I_DEPOLAR(il).Count
-    If CStr(ws.Range("BX25").Value2) <> "IP_V2" Then I_HIZLI ws
+    If CStr(ws.Range("BX25").Value2) <> "IP_V3" Then I_HIZLI ws
     For i = 0 To 2
         k = Choose(i + 1, "B", "L", "Q")
         Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
@@ -4504,6 +4514,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     ws.Range("G12").Font.Color = IIf(tY - tE < 0, RGB(192, 0, 0), IIf(tY - tE > 0, RGB(0, 140, 75), RGB(24, 55, 88)))
     ws.Range("B7").Value2 = IIf(Len(eskiT) > 0, "Son karþýlaþtýrýlan: " & eskiT, "")
     ws.Range("I7").Value2 = IIf(Len(yeniT) > 0, "Son karþýlaþtýrýlan: " & yeniT, "")
+    ws.Range("A1").Value2 = "STOK / DEMONTAJ KONTROL MERKEZÝ"
+    Y_FILIGRAN ws
     ws.Range("A3").Value2 = UCase$(Y_IL_ADI(il)) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " + EPP " & AKSORA_IL_TESIS(il, "EPP") & _
         " | Ýlçe Depolarý (K001-K999)" & IIf(Len(sec) > 0, " | " & sec & " " & I_DEPO_KISA(CStr(depolar(sec))), "")
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
@@ -4863,7 +4875,8 @@ Private Sub I_ISG_KUR(ByVal il As String)
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
     ws.Range("BX30").Value2 = secim
     ws.Range("BX27").Value2 = a2 & "|" & b2
-    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | ÝSG MALZEMELERÝ  |  " & Y_IL_ADI(il)
+    Y_FILIGRAN ws
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | ÝSG ZÝMMET KONTROLÜ  |  " & Y_IL_ADI(il)
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
 End Sub
