@@ -2509,16 +2509,18 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     Next i
     nD = ozet.Count: nL = det.Count
     a1 = 10: b1 = a1 + application.Max(nD, 1) - 1
-    a3 = b1 + 5: b3 = a3 + application.Max(nL, 1) - 1
+    a3 = b1 + 8: b3 = a3 + application.Max(nL, 1) - 1
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10
     ws.Rows(a1 - 2).RowHeight = 30: ws.Rows(a1 - 1).RowHeight = 30
-    ws.Rows(a3 - 2).RowHeight = 30: ws.Rows(a3 - 1).RowHeight = 30
+    ' Detay basligi: baslik + depo secimi, arama etiketi, arama kutusu + ARA, aciklama, tablo basligi
+    ws.Rows(a3 - 6).RowHeight = 30: ws.Rows(a3 - 5).RowHeight = 20: ws.Rows(a3 - 4).RowHeight = 28
+    ws.Rows(a3 - 3).RowHeight = 18: ws.Rows(a3 - 2).RowHeight = 8: ws.Rows(a3 - 1).RowHeight = 30
     ws.Range(ws.Rows(a1), ws.Rows(b1 + 1)).RowHeight = 22
     ws.Rows(b1 + 2).RowHeight = 14
     ws.Range(ws.Rows(a3), ws.Rows(b3)).RowHeight = 19
     Y_BOLUM ws, a1 - 2, "DEPO BAZINDA TEMÝNAT DURUMU", "Her depo ayrý yüklenici / ayrý hakediþ. Teminata yalnýz DEPODA duran malzeme tabidir."
-    Y_BOLUM ws, a3 - 2, "MALZEME DETAYI  –  SAHADA / DEPODA", ""
+    Y_BOLUM ws, a3 - 6, "MALZEME DETAYI  –  SAHADA / DEPODA", ""
     Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 11)), Array("Depo", "Depo Adý", "Sistem", "Teminat Tutarý", _
         "Depoda (teminata tabi)", "Sahada (hakediþ bekleyen)", "Kalan Teminat", "Kullaným", "Durum", "Sahada > 45 gün", "")
     Y_BASLIK_SATIRI ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(a3 - 1, 11)), Array("Depo", "Depo Adý", "Malzeme", "Malzeme Tanýmý", _
@@ -2652,38 +2654,42 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     End With
     ' Filtre ve depo secimi
     If nL > 0 Then ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(b3, 14)).AutoFilter
-    ' Malzeme arama: kod veya tanimin bir bolumu yazilinca liste aninda suzulur.
-    With ws.Cells(a3 - 2, 3)
-        .Value2 = "MALZEME ARA": .HorizontalAlignment = xlRight: .VerticalAlignment = xlCenter
-        .Font.bold = True: .Font.Color = RGB(100, 116, 139): .Font.Name = "Aptos": .Font.Size = 9
-        .IndentLevel = 1
+    ' Malzeme arama (musteri arama sayfasiyla ayni gorunum): etiket, kutu + ARA, aciklama.
+    With ws.Range(ws.Cells(a3 - 5, 2), ws.Cells(a3 - 5, 8))
+        .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlBottom
     End With
-    ws.Rows(a3 - 2).RowHeight = 34
-    With ws.Cells(a3 - 2, 4)
-        .ClearContents: .Locked = False: .NumberFormat = "@"
-        .Interior.Color = RGB(241, 247, 253): .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
-        .VerticalAlignment = xlCenter: .HorizontalAlignment = xlLeft: .IndentLevel = 2
-        .Borders.LineStyle = xlNone
-        With .Validation
-            .Delete
-            .Add Type:=xlValidateInputOnly
-            .InputTitle = "Malzeme ara"
-            .InputMessage = "Malzeme kodunun veya adýnýn bir kýsmýný yazýp Enter'a basýn. Silip Enter: tüm liste."
-            .ShowInput = True
+    ws.Cells(a3 - 5, 2).Value2 = "MALZEME ADI VEYA KODU"
+    With ws.Cells(a3 - 5, 2).Font
+        .Name = "Aptos": .Size = 11: .bold = True: .Color = RGB(64, 74, 89)
+    End With
+    With ws.Range(ws.Cells(a3 - 4, 2), ws.Cells(a3 - 4, 7))
+        .Merge
+        .Locked = False: .NumberFormat = "@"
+        .Interior.Color = RGB(255, 255, 255)
+        .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
+        .HorizontalAlignment = xlLeft: .VerticalAlignment = xlCenter: .IndentLevel = 1
+        With .Borders
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(165, 190, 214)
         End With
     End With
-    ' Yuvarlak koseli cerceve (ici bos; tiklama hucreye gecer)
-    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, ws.Cells(a3 - 2, 4).Left - 2, ws.Cells(a3 - 2, 4).Top + 3, _
-        ws.Cells(a3 - 2, 4).Width + 4, ws.Rows(a3 - 2).Height - 6)
-    s.Name = "Y_TM_ARA_CERCEVE": s.Placement = xlFreeFloating
-    s.Adjustments.Item(1) = 0.5
-    s.Fill.Visible = msoFalse: s.Shadow.Visible = msoFalse
-    s.line.ForeColor.RGB = RGB(47, 144, 217): s.line.Weight = 1.5
-    ws.Range("BX29").Value2 = ws.Cells(a3 - 2, 4).Address(False, False)
-    ws.Cells(a3 - 2, 7).Value2 = "Depo:"
-    ws.Cells(a3 - 2, 7).HorizontalAlignment = xlRight: ws.Cells(a3 - 2, 7).Font.bold = True: ws.Cells(a3 - 2, 7).Font.Color = RGB(28, 54, 83)
-    Set liste = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a3 - 2, 8).Left + 4, ws.Cells(a3 - 2, 8).Top + 5, _
-        ws.Range(ws.Cells(a3 - 2, 8), ws.Cells(a3 - 2, 11)).Width - 6, 20)
+    Y_DUGME ws, "Y_TM_ARA", "ARA", ws.Cells(a3 - 4, 8).Left + 6, ws.Cells(a3 - 4, 8).Top + 1, _
+        ws.Cells(a3 - 4, 8).Width - 6, ws.Rows(a3 - 4).Height - 2, RGB(44, 95, 145), "AKSORA_YATIRIM_TEMINAT_ARA"
+    Set s = Y_SEKIL(ws, "Y_TM_ARA")
+    If Not s Is Nothing Then s.Adjustments.Item(1) = 0.18: s.TextFrame2.TextRange.Font.Size = 11
+    With ws.Range(ws.Cells(a3 - 3, 2), ws.Cells(a3 - 3, 8))
+        .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlCenter
+    End With
+    ws.Cells(a3 - 3, 2).Value2 = "Malzeme adý veya kodunun tamamý ya da bir kýsmý ile arama yapabilirsiniz. Boþ býrakýp Enter: tüm liste."
+    With ws.Cells(a3 - 3, 2).Font
+        .Name = "Aptos": .Size = 9: .Color = RGB(100, 116, 139)
+    End With
+    ws.Range(ws.Rows(a3 - 5), ws.Rows(a3 - 3)).Interior.Color = RGB(244, 247, 251)
+    ws.Range(ws.Cells(a3 - 4, 2), ws.Cells(a3 - 4, 7)).Interior.Color = RGB(255, 255, 255)
+    ws.Range("BX29").Value2 = ws.Cells(a3 - 4, 2).Address(False, False)
+    ws.Cells(a3 - 6, 7).Value2 = "Depo:"
+    ws.Cells(a3 - 6, 7).HorizontalAlignment = xlRight: ws.Cells(a3 - 6, 7).Font.bold = True: ws.Cells(a3 - 6, 7).Font.Color = RGB(28, 54, 83)
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a3 - 6, 8).Left + 4, ws.Cells(a3 - 6, 8).Top + 5, _
+        ws.Range(ws.Cells(a3 - 6, 8), ws.Cells(a3 - 6, 11)).Width - 6, 20)
     liste.Name = "Y_TM_SECIM": liste.Placement = xlFreeFloating
     liste.ControlFormat.AddItem "TÜM DEPOLAR"
     For Each k In ozet.keys
@@ -2742,6 +2748,17 @@ Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
     mYOdak = ws.Name
     application.OnTime Now + TimeSerial(0, 0, 1), BIRIM_MAKRO("AKSORA_YATIRIM_ODAK")
     On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_TEMINAT_ARA()
+    Dim ws As Worksheet, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    If Len(CStr(ws.Range("BX29").Value2)) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    application.EnableEvents = True
+    AKSORA_YATIRIM_DEGISIM ws, ws.Range(CStr(ws.Range("BX29").Value2))
+    application.EnableEvents = ev
 End Sub
 
 Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
@@ -3276,7 +3293,7 @@ Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
     If Len(il) = 0 Then GoTo Cikis
     ' Malzeme arama hucresi
     If Len(CStr(sh.Range("BX29").Value2)) > 0 Then
-        If Not Intersect(hedef, sh.Range(CStr(sh.Range("BX29").Value2))) Is Nothing Then
+        If Not Intersect(hedef, sh.Range(CStr(sh.Range("BX29").Value2)).MergeArea) Is Nothing Then
             t = Trim$(CStr(sh.Range(CStr(sh.Range("BX29").Value2)).Value2))
             sh.Unprotect ""
             If Y_ARALIK(sh, "BX27", a, b) Then
