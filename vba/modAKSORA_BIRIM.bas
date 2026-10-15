@@ -4628,206 +4628,283 @@ Hata:
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
-'---------- ISG MALZEMELERI ----------
-' Anahtar kelimelerden biri malzeme taniminda geciyorsa ISG malzemesidir. Matris: malzeme x ilce depo.
-' Stoksuz (0) hucreler kirmizi: hangi ilcede hangi ISG malzemesi eksik hemen gorulur.
-Private Function I_ISG_VARSAYILAN() As String
-    I_ISG_VARSAYILAN = "BARET; KASK; ELDÝVEN; GÖZLÜK; SÝPERLÝK; EMNÝYET KEMERÝ; YELEK; AYAKKABI; ÇÝZME; MASKE; " & _
-        "KULAKLIK; TULUM; YAÐMURLUK; ÝKAZ; BARÝYER; YANGIN; ÝLK YARDIM"
+' Ilce ISG malzemeleri (docs/isg/ISG_ISLEM.csv): kod + Z (kisisel zimmet) / M (manuel sarf).
+Private Function I_ISG_LISTE() As Object
+    Static d As Object
+    Dim s As String, x As Variant
+    If Not d Is Nothing Then Set I_ISG_LISTE = d: Exit Function
+    s = s & "7500050332Z;7500051142Z;7500051144Z;7500050334Z;7500051145Z;7500050240Z;7500000038Z;7500050254Z;7500051153Z;7500051152Z;7500050908Z;7500051135Z;7500000042Z;7500000233Z;"
+    s = s & "7500000067Z;7500050900Z;7500050977Z;7500050266Z;7500000060Z;7500050335Z;7500000253Z;7500001730Z;7500000709Z;7500000710Z;7500000711Z;7500000712Z;7500000713Z;7500000714Z;"
+    s = s & "7500000715Z;7500000716Z;7500000717Z;7500000729Z;7500000733Z;7500000735Z;7500000737Z;7500000739Z;7500000740Z;7500000744Z;7500000747Z;7500000752Z;7500000762Z;7500000769Z;"
+    s = s & "7500000775Z;7500000777Z;7500000785Z;7500000790Z;7500000833Z;7500000837Z;7500000842Z;7500000843Z;7500000844Z;7500000847Z;7500000996Z;7500001021Z;7500001040Z;7500001043Z;"
+    s = s & "7500001045Z;7500001047Z;7500001049Z;7500001051Z;7500001157Z;7500000665Z;7500000666Z;7500000667Z;7500000670Z;7500000671Z;7500001583Z;7500001591Z;7500000683Z;7500000684Z;"
+    s = s & "7500051420Z;7500000687Z;7500001644Z;7500000697Z;7500000699Z;7500000700Z;7500000703Z;7500050815Z;7500050816Z;7500050920Z;7500050858Z;7500050883Z;7500053995M;7500050916Z;"
+    s = s & "7500001435Z;7500001312Z;7500001314Z;7500051046Z;7500050960Z;7500050910Z;7500050909Z;7500050967Z;7500050905Z;7500050787Z;7500051010Z;7500051009Z;7500053643M;7500000381Z;"
+    s = s & "7500000382Z;7500050895Z;7500000473Z;7500050849Z;7500051455Z;7500050398Z;7500051423Z;7500000370Z;7500050931Z;7500050861Z;7500050860Z;7500050887Z;7500051422Z;7500050377Z;"
+    s = s & "7500050876Z;7500000338Z;7500050992Z;7500050875Z;7500050934Z;7500050397Z;7500050921Z;7500050949Z;7500000504Z;7500000507Z;7500000556Z;7500000559Z;7500000496Z;7500000564Z;"
+    s = s & "7500050431Z;7500000616Z;7500000617Z;7500000618Z;7500000458Z;7500050375Z;7500050961Z;7500050962Z;7500050954Z;7500051011Z;7500050938M;7500052804Z;7500053648M;7500051020Z;"
+    s = s & "7500051022Z;7500051023Z;7500051026Z;7500051025Z;7500051131M;7500050843Z;7500050944Z;7500050888Z;7500050790Z;7500050404Z;7500050974Z;7500050871Z;7500050933Z;7500050870Z;"
+    s = s & "7500050868Z;7500050918M;7500050857M;7500050856M;7500050940M;7500050919M;7500001504M;7500001505M;7500050356M;7500001510M;7500001618M;7500050388Z;7500050405M;7500050917Z;"
+    s = s & "7500050981Z;7500001512M;7500050852Z;7500050903M;7500050391Z;7500001475Z;7500050785Z;7500050889Z;7500050929Z;7500050351M;7500001514M;7500001469M;7500000506Z;7500000558Z;"
+    s = s & "7500000498Z;7500000501Z;7500000565Z;7500000568Z;7500000481Z;7500001581Z;7500001580Z;7500050913M;7500050899Z;7500050872Z;7500050348M;7500051001M;7500050345M;7500051000M;"
+    s = s & "7500050924M;7500051003M;7500050923Z;7500050932Z;7500050341Z;7500050912Z;7500051136Z;7500051514Z;7500051513Z;7500050267Z;7500052777Z;7500051147Z;7500051148Z;7500051149Z;"
+    s = s & "7500051150Z;7500026511Z;7500050299Z;7500050243Z;7500000006Z;7500050797Z;7500051424Z;7500051516Z;7500051517Z;7500051134Z;7500052669Z;7500052579Z;7500050926Z;7500050271Z;"
+    s = s & "7500051432Z;7500050265Z;7500001993Z;7500052616Z;7500051028Z;7500050950Z;7500050874Z;7500030895Z;7500050904Z;7500050836Z;7500000080Z;7500050902Z;7500050825Z;7500051137Z;"
+    s = s & "7500053641M;7500051024Z;7500051456Z;7500050988Z;7500050810Z;7500050942Z;7500051073Z;7500050823Z;7500050827Z;7500050824Z;7500050813Z;7500053644M;7500050826Z;7500000226Z;"
+    s = s & "7500000228Z;7500000229Z;7500000232Z;7500000246Z;7500051014Z;7500050833Z;7500050822Z;7500050821Z;7500050820Z;7500000249Z;7500000250Z;7500050247Z;7500050835Z;7500050834Z;"
+    s = s & "7500051138Z;7500050878Z;7500000012Z;7500052668Z;7500000313Z;7500051133Z;7500050809Z;7500050630M;7500050286Z;7500050293Z;7500050290Z;7500050295Z;7500050288Z;7500050268Z;"
+    s = s & "7500050289Z;7500053129Z;7500050287Z;7500050294Z;7500050291Z;7500050296Z;7500050292Z;7500051452M;7500050971Z;7500050914Z;7500051130Z;7500050845Z;7500050968Z;"
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each x In Split(s, ";")
+        If Len(x) > 1 Then d(Left$(CStr(x), Len(x) - 1)) = Right$(CStr(x), 1)
+    Next x
+    Set I_ISG_LISTE = d
 End Function
 
-Private Function I_ISG_KELIMELER() As String
-    Dim d As Object
-    Set d = Y_KAYIT_SOZLUK("_I_AYAR")
-    If d.Exists("ISG") Then I_ISG_KELIMELER = Trim$(CStr(d("ISG")(0)))
-    If Len(I_ISG_KELIMELER) = 0 Then I_ISG_KELIMELER = I_ISG_VARSAYILAN()
-End Function
+'---------- ISG MALZEMELERI ----------
+' Ilce depolarindaki ISG malzemeleri (ana liste: docs/isg). Depoda ISG malzemesi bekletilmez:
+' kisisel zimmet listesindekiler icin ZÝMMET YAPIN, digerleri icin MANUEL SARF YAPIN.
+' Ust bolum ilce ozeti, alt bolum malzeme listesi (ilce secimi ve islem filtreleri).
 
 Private Sub I_ISG_KUR(ByVal il As String)
-    Dim ws As Worksheet, sh As Worksheet, w As Double, s As Shape, son As Long, v As Variant, r As Long, i As Long, j As Long
-    Dim kel As Variant, kn() As String, nk As Long, ta As String, eslesti As Boolean, depolar As Object, mal As Object
-    Dim dp As String, mk As String, t As Variant, nD As Long, nM As Long, cw2 As Double, gen() As Variant, sonK As Long
-    Dim rI As Long, rH As Long, blok() As Variant, idx() As Long, anah() As String, x As Variant, sifir As Long
-    Dim toplam As Double, kw As Double, y As Double, rr As Range, birim() As String, dd As Object, dk As Variant
+    Dim ws As Worksheet, w As Double, s As Shape, v As Variant, r As Long, i As Long, j As Long, liste As Object
+    Dim mal As Object, ozet As Object, depolar As Object, k As Variant, t As Variant, mk As String, dp As String
+    Dim islem As String, a1 As Long, b1 As Long, a2 As Long, b2 As Long, n As Long, nD As Long
+    Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, y As Double, kw As Double
+    Dim zK As Long, zM As Double, sK As Long, sM As Double, toplam As Double, rr As Range, bw As Double
+    Dim dd As Shape, secim As String, birim As String, o As Variant
     Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
+    secim = CStr(ws.Range("BX30").Value2)
+    If CStr(ws.Range("BX22").Value2) <> il Then secim = vbNullString
     Y_SAYFA_SIFIRLA ws
     I_BAGLA ws
     Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
     If s Is Nothing Then w = 1544 Else w = s.Width
-    kel = Split(I_ISG_KELIMELER(), ";")
-    ReDim kn(0 To UBound(kel))
-    For i = 0 To UBound(kel)
-        If Len(Trim$(CStr(kel(i)))) > 0 Then kn(nk) = Y_NORM(CStr(kel(i))): nk = nk + 1
-    Next i
-    Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
+    Y_KOLONLAR ws, Array(70, 190, 64, 100, 100, w - 1034, 110, 130, 270)
+    Set liste = I_ISG_LISTE()
+    ' Ilce depo + malzeme toplamlari (CDP ve EPP birlikte, butun degerlemeler)
     Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
+    Set depolar = I_DEPOLAR(il)
     v = AKSORA_PAKET_OKU(I_ARSIV_SAYFA(il, False))
-    If IsArray(v) Then son = 7 + UBound(v, 1) Else son = 0
-    If son >= 7 Then
+    If IsArray(v) Then
         For r = 1 To UBound(v, 1)
-            If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) And Not IsError(v(r, 6)) Then
-                dp = UCase$(Trim$(CStr(v(r, 2)))): mk = Trim$(CStr(v(r, 5)))
-                If Len(dp) > 0 And Len(mk) > 0 Then
-                    If Not depolar.Exists(dp) Then depolar(dp) = vbNullString
-                    If Len(CStr(depolar(dp))) = 0 And Not IsError(v(r, 3)) Then depolar(dp) = Trim$(CStr(v(r, 3)))
-                    ta = Y_NORM(CStr(v(r, 6)))
-                    eslesti = False
-                    For i = 0 To nk - 1
-                        If InStr(1, ta, kn(i), vbBinaryCompare) > 0 Then eslesti = True: Exit For
-                    Next i
-                    If eslesti Then
-                        If Not mal.Exists(mk) Then mal(mk) = Array(Trim$(CStr(v(r, 6))), Trim$(CStr(v(r, 8))), CreateObject("Scripting.Dictionary"), 0#)
-                        t = mal(mk)
-                        Set dd = t(2)
-                        dd(dp) = I_SAYI(dd(dp)) + I_SAYI(v(r, 7))
-                        t(3) = t(3) + I_SAYI(v(r, 11))
-                        mal(mk) = t
+            mk = Y_KOD_NORM(v(r, 5))
+            If liste.Exists(mk) Then
+                dp = UCase$(I_TEMIZ(v(r, 2)))
+                If Len(dp) > 0 And I_SAYI(v(r, 7)) > 0 Then
+                    If Not depolar.Exists(dp) Then depolar(dp) = I_TEMIZ(v(r, 3))
+                    k = dp & "|" & I_TEMIZ(v(r, 1)) & "|" & mk
+                    If Not mal.Exists(k) Then
+                        mal(k) = Array(dp, I_TEMIZ(v(r, 3)), IIf(Left$(I_TEMIZ(v(r, 1)), 2) = "70", "EPP", "CDP"), _
+                            I_TEMIZ(v(r, 4)), mk, I_TEMIZ(v(r, 6)), 0#, I_TEMIZ(v(r, 8)), 0#, _
+                            IIf(liste(mk) = "Z", "ZÝMMET YAPIN", "MANUEL SARF YAPIN"))
                     End If
+                    t = mal(k)
+                    t(6) = t(6) + I_SAYI(v(r, 7)): t(8) = t(8) + I_SAYI(v(r, 11))
+                    mal(k) = t
                 End If
             End If
         Next r
     End If
     I_ANAHTAR_SIRALA depolar
-    nD = depolar.Count: nM = mal.Count
-    ' Sutunlar: Malzeme, Tanim, Birim, ilce depolari, Toplam, Deger
-    cw2 = 84
-    If nD > 0 Then cw2 = application.Max(58, application.Min(110, (w - 110 - 260 - 56 - 96 - 124) / nD))
-    ReDim gen(0 To nD + 4)
-    gen(0) = 110: gen(1) = application.Max(260, w - 110 - 56 - 96 - 124 - nD * cw2): gen(2) = 56
-    For i = 1 To nD: gen(2 + i) = cw2: Next i
-    gen(nD + 3) = 96: gen(nD + 4) = 124
-    Y_KOLONLAR ws, gen
-    sonK = nD + 5
-    rI = 9: rH = 14
+    ' Ilce ozeti: depo -> (ad, zimmet kalem, zimmet miktar, sarf kalem, sarf miktar, deger)
+    Set ozet = CreateObject("Scripting.Dictionary"): ozet.CompareMode = vbTextCompare
+    For Each k In depolar.keys
+        ozet(CStr(k)) = Array(CStr(depolar(k)), 0, 0#, 0, 0#, 0#)
+    Next k
+    For Each k In mal.keys
+        t = mal(k)
+        If ozet.Exists(CStr(t(0))) Then
+            o = ozet(CStr(t(0)))
+            If Len(CStr(o(0))) = 0 Then o(0) = t(1)
+            If t(9) = "ZÝMMET YAPIN" Then
+                o(1) = o(1) + 1: o(2) = o(2) + t(6): zK = zK + 1: zM = zM + t(6)
+            Else
+                o(3) = o(3) + 1: o(4) = o(4) + t(6): sK = sK + 1: sM = sM + t(6)
+            End If
+            o(5) = o(5) + t(8): toplam = toplam + t(8)
+            ozet(CStr(t(0))) = o
+        End If
+    Next k
+    nD = ozet.Count: n = mal.Count
+    a1 = 10: b1 = a1 + application.Max(nD, 1) - 1
+    a2 = b1 + 7: b2 = a2 + application.Max(n, 1) - 1
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10
-    ws.Rows(8).RowHeight = 30: ws.Rows(rI).RowHeight = 28: ws.Rows(rI + 1).RowHeight = 18
-    ws.Rows(rI + 2).RowHeight = 12: ws.Rows(rH - 1).RowHeight = 30: ws.Rows(rH).RowHeight = 40
-    Y_BOLUM ws, 8, "ÝSG ANAHTAR KELÝMELERÝ", ""
-    ' Anahtar kelime kutusu + UYGULA
-    With ws.Range(ws.Cells(rI, 1), ws.Cells(rI, application.Max(3, sonK - 1)))
-        .Merge
-        .Locked = False: .NumberFormat = "@"
-        .Interior.Color = RGB(255, 255, 255)
-        .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
-        .HorizontalAlignment = xlLeft: .VerticalAlignment = xlCenter: .IndentLevel = 1
-        With .Borders
-            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(165, 190, 214)
-        End With
-    End With
-    ws.Cells(rI, 1).Value2 = I_ISG_KELIMELER()
-    Y_DUGME ws, "I_ISG_UYGULA", "UYGULA", ws.Cells(rI, sonK).Left + 6, ws.Rows(rI).Top + 1, ws.Cells(rI, sonK).Width - 6, _
-        ws.Rows(rI).Height - 2, RGB(44, 95, 145), "AKSORA_ILCE_ISG_UYGULA"
-    ws.Cells(rI + 1, 1).Value2 = "Kelimeleri noktalý virgülle ayýrýn; malzeme tanýmýnda bu kelimelerden biri geçen kalemler ÝSG malzemesi sayýlýr. " & _
-        "Deðiþtirip Enter'a basýn. Kýrmýzý hücre: o ilçede stok yok."
-    ws.Cells(rI + 1, 1).Font.Size = 9: ws.Cells(rI + 1, 1).Font.Color = RGB(100, 116, 139)
-    ws.Range(ws.Rows(rI), ws.Rows(rI + 1)).Interior.Color = RGB(244, 247, 251)
-    ws.Range(ws.Cells(rI, 1), ws.Cells(rI, application.Max(3, sonK - 1))).Interior.Color = RGB(255, 255, 255)
-    ws.Range("BX36").Value2 = ws.Cells(rI, 1).Address(False, False)
-    Y_BOLUM ws, rH - 1, "ÝLÇE BAZINDA ÝSG STOKU", ""
-    ws.Cells(rH - 1, sonK).Value2 = AKSORA_SAYI_METNI(nM, "#,##0") & " kalem  •  " & AKSORA_SAYI_METNI(nD, "#,##0") & " ilçe deposu"
-    With ws.Cells(rH - 1, sonK)
-        .HorizontalAlignment = xlRight: .Font.Size = 9: .Font.Italic = True: .Font.Color = RGB(100, 116, 139)
-    End With
-    ReDim t(0 To sonK - 1)
-    t(0) = "Malzeme": t(1) = "Malzeme Tanýmý": t(2) = "Birim"
-    i = 0
-    For Each x In depolar.keys
-        i = i + 1
-        t(2 + i) = CStr(x) & vbLf & I_DEPO_KISA(CStr(depolar(x)))
-    Next x
-    t(nD + 3) = "TOPLAM": t(nD + 4) = "Stok Deðeri"
-    Y_BASLIK_SATIRI ws.Range(ws.Cells(rH, 1), ws.Cells(rH, sonK)), t
-    ws.Range(ws.Cells(rH, 4), ws.Cells(rH, 3 + nD)).Font.Size = 9
-    If nM > 0 Then
-        ReDim blok(1 To nM, 1 To sonK): ReDim idx(1 To nM): ReDim anah(1 To nM): ReDim birim(1 To nM)
-        i = 0
-        For Each x In mal.keys
-            i = i + 1: idx(i) = i
-            t = mal(x)
-            anah(i) = Y_NORM(CStr(t(0))) & "|" & CStr(x)
-            blok(i, 1) = CStr(x): blok(i, 2) = t(0): blok(i, 3) = t(1): birim(i) = CStr(t(1))
-            j = 0
-            Set dd = t(2)
-            For Each dk In depolar.keys
-                j = j + 1
-                If dd.Exists(dk) Then blok(i, 3 + j) = I_SAYI(dd(dk)) Else blok(i, 3 + j) = 0#
-                blok(i, sonK - 1) = blok(i, sonK - 1) + blok(i, 3 + j)
-                If blok(i, 3 + j) <= 0 Then sifir = sifir + 1
-            Next dk
-            blok(i, sonK) = Round(t(3), 2)
-            toplam = toplam + t(3)
-        Next x
-        Y_SIRALA anah, idx, 1, nM
-        ReDim v(1 To nM, 1 To sonK)
-        For i = 1 To nM
-            For j = 1 To sonK: v(i, j) = blok(idx(i), j): Next j
-        Next i
-        ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + nM, 1)).NumberFormat = "@"
-        ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + nM, sonK)).Value2 = v
-        Y_TABLO_GOVDE ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + nM, sonK))
-        ws.Range(ws.Rows(rH + 1), ws.Rows(rH + nM)).RowHeight = 19
-        ws.Range(ws.Cells(rH + 1, 4), ws.Cells(rH + nM, sonK - 1)).NumberFormat = "#,##0;[Red]-#,##0;0"
-        For i = 1 To nM
-            If v(i, sonK - 1) <> Int(v(i, sonK - 1)) Then ws.Range(ws.Cells(rH + i, 4), ws.Cells(rH + i, sonK - 1)).NumberFormat = "#,##0.###;[Red]-#,##0.###;0"
-        Next i
-        ws.Range(ws.Cells(rH + 1, sonK), ws.Cells(rH + nM, sonK)).NumberFormat = "#,##0.00 ""TL"""
-        ws.Range(ws.Cells(rH + 1, 1), ws.Cells(rH + nM, 1)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(rH + 1, 3), ws.Cells(rH + nM, sonK - 1)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(rH + 1, 2), ws.Cells(rH + nM, 2)).IndentLevel = 1
-        ws.Range(ws.Cells(rH + 1, sonK - 1), ws.Cells(rH + nM, sonK - 1)).Font.bold = True
-        If nD > 0 Then
-            Set rr = ws.Range(ws.Cells(rH + 1, 4), ws.Cells(rH + nM, 3 + nD))
-            With rr.FormatConditions.Add(Type:=xlCellValue, Operator:=xlLessEqual, Formula1:="=0")
-                .Interior.Color = RGB(254, 226, 226): .Font.Color = RGB(185, 28, 28): .Font.bold = True
-            End With
+    ws.Rows(a1 - 2).RowHeight = 30: ws.Rows(a1 - 1).RowHeight = 30
+    ws.Range(ws.Rows(a1), ws.Rows(b1 + 1)).RowHeight = 21
+    ws.Rows(b1 + 2).RowHeight = 14
+    ws.Rows(a2 - 4).RowHeight = 30: ws.Rows(a2 - 3).RowHeight = 32: ws.Rows(a2 - 2).RowHeight = 8: ws.Rows(a2 - 1).RowHeight = 30
+    ws.Range(ws.Rows(a2), ws.Rows(b2)).RowHeight = 19
+    Y_BOLUM ws, a1 - 2, "ÝLÇE BAZINDA ÝSG DURUMU", "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr."
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 9)), Array("Depo", "Depo Adý", "Zimmet Kalem", _
+        "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", "", "ÝSG Stok Deðeri", "Durum")
+    r = a1
+    For Each k In ozet.keys
+        o = ozet(k)
+        ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value2 = CStr(k)
+        ws.Cells(r, 2).Value2 = o(0)
+        ws.Cells(r, 3).Value2 = o(1): ws.Cells(r, 4).Value2 = o(2)
+        ws.Cells(r, 5).Value2 = o(3): ws.Cells(r, 6).Value2 = o(4)
+        ws.Cells(r, 8).Value2 = Round(o(5), 2)
+        If o(1) > 0 And o(3) > 0 Then
+            ws.Cells(r, 9).Value2 = "ZÝMMET + SARF BEKLÝYOR"
+        ElseIf o(1) > 0 Then
+            ws.Cells(r, 9).Value2 = "ZÝMMET BEKLÝYOR"
+        ElseIf o(3) > 0 Then
+            ws.Cells(r, 9).Value2 = "SARF BEKLÝYOR"
+        Else
+            ws.Cells(r, 9).Value2 = "TEMÝZ"
         End If
-        ws.Range(ws.Cells(rH, 1), ws.Cells(rH + nM, sonK)).AutoFilter
+        Y_MIKTAR_BICIM ws.Cells(r, 4): Y_MIKTAR_BICIM ws.Cells(r, 6)
+        r = r + 1
+    Next k
+    If nD = 0 Then ws.Cells(a1, 2).Value2 = "Ýlçe stoklarý güncellenince ilçeler listelenir."
+    ws.Cells(b1 + 1, 2).Value2 = "TOPLAM"
+    ws.Cells(b1 + 1, 3).Value2 = zK: ws.Cells(b1 + 1, 4).Value2 = zM
+    ws.Cells(b1 + 1, 5).Value2 = sK: ws.Cells(b1 + 1, 6).Value2 = sM
+    ws.Cells(b1 + 1, 8).Value2 = Round(toplam, 2)
+    Y_MIKTAR_BICIM ws.Cells(b1 + 1, 4): Y_MIKTAR_BICIM ws.Cells(b1 + 1, 6)
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9))
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(b1 + 1, 1), ws.Cells(b1 + 1, 9))
+    ws.Range(ws.Cells(a1, 1), ws.Cells(b1 + 1, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(b1 + 1, 6)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 2), ws.Cells(b1, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 8), ws.Cells(b1 + 1, 8)).NumberFormat = "#,##0.00 ""TL"""
+    Set rr = ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9))
+    Y_DURUM_KF rr, "ZÝMMET + SARF BEKLÝYOR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "ZÝMMET BEKLÝYOR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "SARF BEKLÝYOR", RGB(219, 234, 254), RGB(29, 78, 216)
+    Y_DURUM_KF rr, "TEMÝZ", RGB(220, 252, 231), RGB(21, 128, 61)
+    ' Malzeme listesi: baslik + ilce secimi, islem filtreleri, tablo
+    Y_BOLUM ws, a2 - 4, "ÝSG MALZEME LÝSTESÝ  –  YAPILACAK ÝÞLEM", ""
+    ws.Cells(a2 - 4, 7).Value2 = "Ýlçe:"
+    ws.Cells(a2 - 4, 7).HorizontalAlignment = xlRight: ws.Cells(a2 - 4, 7).Font.bold = True: ws.Cells(a2 - 4, 7).Font.Color = RGB(28, 54, 83)
+    Set dd = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a2 - 4, 8).Left + 4, ws.Cells(a2 - 4, 8).Top + 4, _
+        ws.Range(ws.Cells(a2 - 4, 8), ws.Cells(a2 - 4, 9)).Width - 6, 22)
+    dd.Name = "I_ISG_SECIM": dd.Placement = xlFreeFloating
+    dd.ControlFormat.AddItem "TÜM ÝLÇELER"
+    i = 1
+    For Each k In ozet.keys
+        dd.ControlFormat.AddItem CStr(k) & "  -  " & I_DEPO_KISA(CStr(ozet(k)(0)))
+        i = i + 1
+        If CStr(k) = secim Then dd.ControlFormat.Value = i
+    Next k
+    If dd.ControlFormat.Value < 1 Then dd.ControlFormat.Value = 1
+    dd.ControlFormat.DropDownLines = application.Min(30, i)
+    dd.OnAction = BIRIM_MAKRO("AKSORA_ILCE_ISG_SEC")
+    bw = (w - 2 * 8) / 3
+    y = ws.Rows(a2 - 3).Top + 2
+    Set s = Y_DUGME(ws, "I_ISG_F_TUMU", "TÜMÜ  (" & n & " kalem)", 0, y, bw, 28, RGB(45, 95, 145), "AKSORA_ILCE_ISG_TUMU")
+    Set s = Y_DUGME(ws, "I_ISG_F_ZIMMET", "ZÝMMET YAPIN  (" & zK & " kalem)", bw + 8, y, bw, 28, RGB(185, 28, 28), "AKSORA_ILCE_ISG_ZIMMET")
+    Set s = Y_DUGME(ws, "I_ISG_F_SARF", "MANUEL SARF YAPIN  (" & sK & " kalem)", 2 * (bw + 8), y, bw, 28, RGB(29, 78, 216), "AKSORA_ILCE_ISG_SARF")
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(a2 - 1, 9)), Array("Depo", "Depo Adý", "Sistem", "Mal Grubu", _
+        "Malzeme", "Malzeme Tanýmý", "Miktar", "Stok Deðeri", "YAPILACAK ÝÞLEM")
+    If n > 0 Then
+        ReDim blok(1 To n, 1 To 10): ReDim anah(1 To n): ReDim idx(1 To n)
+        i = 0
+        For Each k In mal.keys
+            t = mal(k): i = i + 1: idx(i) = i
+            blok(i, 1) = t(0): blok(i, 2) = t(1): blok(i, 3) = t(2): blok(i, 4) = t(3)
+            blok(i, 5) = t(4): blok(i, 6) = t(5): blok(i, 7) = t(6): blok(i, 8) = Round(t(8), 2): blok(i, 9) = t(9): blok(i, 10) = t(7)
+            anah(i) = CStr(t(0)) & "|" & IIf(t(9) = "ZÝMMET YAPIN", "1", "2") & "|" & Y_NORM(CStr(t(5))) & "|" & CStr(t(2))
+        Next k
+        Y_SIRALA anah, idx, 1, n
+        ReDim sonuc(1 To n, 1 To 9)
+        For i = 1 To n
+            For j = 1 To 9: sonuc(i, j) = blok(idx(i), j): Next j
+        Next i
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9)).Value2 = sonuc
+        For i = 1 To n
+            birim = CStr(blok(idx(i), 10))
+            Y_MIKTAR_BICIM ws.Cells(a2 + i - 1, 7), birim
+        Next i
+        Y_TABLO_GOVDE ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9))
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 1)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 3), ws.Cells(b2, 5)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 7), ws.Cells(b2, 7)).HorizontalAlignment = xlRight
+        ws.Range(ws.Cells(a2, 9), ws.Cells(b2, 9)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 2), ws.Cells(b2, 2)).IndentLevel = 1
+        ws.Range(ws.Cells(a2, 6), ws.Cells(b2, 6)).IndentLevel = 1
+        ws.Range(ws.Cells(a2, 8), ws.Cells(b2, 8)).NumberFormat = "#,##0.00 ""TL"""
+        Set rr = ws.Range(ws.Cells(a2, 9), ws.Cells(b2, 9))
+        Y_DURUM_KF rr, "ZÝMMET YAPIN", RGB(220, 38, 38), RGB(255, 255, 255)
+        Y_DURUM_KF rr, "MANUEL SARF YAPIN", RGB(29, 78, 216), RGB(255, 255, 255)
+        ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(b2, 9)).AutoFilter
+        If Len(secim) > 0 Then ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:="=" & secim
     Else
-        ws.Cells(rH + 1, 1).Value2 = IIf(son < 7, "Veri bekleniyor: ilçe stoklarý güncellenince ÝSG malzemeleri listelenir.", _
-            "Anahtar kelimelerle eþleþen malzeme bulunamadý.")
-        ws.Cells(rH + 1, 1).Font.Italic = True: ws.Cells(rH + 1, 1).Font.Color = RGB(100, 116, 139)
+        ws.Cells(a2, 2).Value2 = IIf(IsArray(v) Or nD > 0, "Ýlçe depolarýnda ÝSG malzemesi yok.", "Veri bekleniyor: ilçe stoklarý güncellenince ÝSG malzemeleri listelenir.")
+        ws.Cells(a2, 2).Font.Italic = True: ws.Cells(a2, 2).Font.Color = RGB(100, 116, 139)
     End If
-    ' KPI (panel karti da bu degerleri kullanir)
-    ws.Range("BZ21").Value2 = nM
+    ws.Cells(b2 + 2, 1).Value2 = "ÝSG malzemesi ana listesi ve kiþisel zimmet listesi AKSORA'da kayýtlýdýr (" & liste.Count & _
+        " ÝSG malzemesi). Zimmet listesindekiler kiþiye zimmetlenir, diðerleri manuel sarf edilir."
+    ws.Cells(b2 + 2, 1).Font.Size = 9: ws.Cells(b2 + 2, 1).Font.Color = RGB(71, 85, 105)
+    ' KPI (panel karti BZ21 / BZ22 kullanir)
+    ws.Range("BZ21").Value2 = n
     ws.Range("BZ22").Value2 = Round(toplam, 2)
-    ws.Range("BZ23").Value2 = sifir
-    ws.Range("BZ24").Value2 = nD
-    ws.Range("BZ21,BZ23,BZ24").NumberFormat = "#,##0"
+    ws.Range("BZ23").Value2 = zK & " kalem  •  " & I_MIKTAR_METNI(zM) & " adet"
+    ws.Range("BZ24").Value2 = sK & " kalem  •  " & I_MIKTAR_METNI(sM) & " adet"
+    ws.Range("BZ21").NumberFormat = "#,##0"
     ws.Range("BZ22").NumberFormat = "#,##0.00 ""TL"""
     y = ws.Rows(3).Top + 1
     kw = (w - 3 * 12) / 4
-    Y_KPI ws, 1, 0, y, kw, 63.7, "ÝSG MALZEME ÇEÞÝDÝ", "$BZ$21", RGB(35, 119, 204)
-    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "TOPLAM ÝSG STOK DEÐERÝ", "$BZ$22", RGB(39, 160, 94)
-    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "STOKSUZ ÝLÇE / KALEM", "$BZ$23", RGB(220, 38, 38)
-    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "ÝLÇE DEPO SAYISI", "$BZ$24", RGB(245, 158, 11)
+    Y_KPI ws, 1, 0, y, kw, 63.7, "ÝLÇE DEPOLARINDA ÝSG KALEMÝ", "$BZ$21", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "ÝSG STOK DEÐERÝ", "$BZ$22", RGB(39, 160, 94)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "ZÝMMET YAPILACAK", "$BZ$23", RGB(220, 38, 38)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "MANUEL SARF YAPILACAK", "$BZ$24", RGB(29, 78, 216)
+    For i = 3 To 4
+        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    Next i
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
+    ws.Range("BX30").Value2 = secim
+    ws.Range("BX27").Value2 = a2 & "|" & b2
     Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | ÝSG MALZEMELERÝ  |  " & Y_IL_ADI(il)
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
 End Sub
 
-Public Sub AKSORA_ILCE_ISG_UYGULA()
-    Dim ws As Worksheet, ev As Boolean
+Private Sub I_ISG_FILTRE(ByVal alan As Long, ByVal deger As String)
+    Dim ws As Worksheet, a As Long, b As Long
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
-    If Len(CStr(ws.Range("BX36").Value2)) = 0 Then Exit Sub
-    ev = application.EnableEvents
-    application.ScreenUpdating = False: application.EnableEvents = False
-    Y_KAYIT_YAZ "_I_AYAR", "ISG", Trim$(CStr(ws.Range(CStr(ws.Range("BX36").Value2)).Value2))
-    I_ISG_KUR CStr(ws.Range("BX22").Value2)
-    I_PANEL_YENILE
-    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    ws.Unprotect ""
+    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 9)).AutoFilter
+    If Len(deger) = 0 Then
+        ws.AutoFilter.Range.AutoFilter Field:=alan
+    Else
+        ws.AutoFilter.Range.AutoFilter Field:=alan, Criteria1:="=" & deger
+    End If
+    If alan = 1 Then ws.Range("BX30").Value2 = deger
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     Y_TEMINAT_KAL ws
     Exit Sub
 Hata:
-    application.EnableEvents = True: application.ScreenUpdating = True
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
-' Karsilastirma tarihleri ve ISG anahtar kelimeleri degisince sayfa yenilenir.
+Public Sub AKSORA_ILCE_ISG_SEC()
+    Dim ws As Worksheet, s As Shape, k As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set s = ws.Shapes("I_ISG_SECIM")
+    If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    I_ISG_FILTRE 1, k
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_ISG_TUMU(): I_ISG_FILTRE 9, "": End Sub
+Public Sub AKSORA_ILCE_ISG_ZIMMET(): I_ISG_FILTRE 9, "ZÝMMET YAPIN": End Sub
+Public Sub AKSORA_ILCE_ISG_SARF(): I_ISG_FILTRE 9, "MANUEL SARF YAPIN": End Sub
+
+' Karsilastirma tarihleri degisince sayfa yenilenir.
 Public Sub AKSORA_ILCE_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
     Dim ev As Boolean, a As String
     If Not TypeOf sh Is Worksheet Then Exit Sub
@@ -4841,12 +4918,6 @@ Public Sub AKSORA_ILCE_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
         If Intersect(hedef, sh.Range(a & "," & CStr(sh.Range("BX35").Value2))) Is Nothing Then GoTo Cikis
         application.EnableEvents = False
         AKSORA_ILCE_KARS_YENILE
-    ElseIf sh.Name = "I_ÝSG_MALZEMELERÝ" Then
-        a = CStr(sh.Range("BX36").Value2)
-        If Len(a) = 0 Then GoTo Cikis
-        If Intersect(hedef, sh.Range(a).MergeArea) Is Nothing Then GoTo Cikis
-        application.EnableEvents = False
-        AKSORA_ILCE_ISG_UYGULA
     End If
 Cikis:
     application.EnableEvents = ev

@@ -131,12 +131,13 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   Durum: AZALDI / ARTTI / DEMONTAJ GİRİŞ. N sütunu DEMONTAJ KONTROLÜ: azalan (çıkma olmayan) her malzeme için aynı depo+tesis+malzemede
   ÇIKMA BEDELSİZ (SAP: CIKMA/BDSZ) değerlemeli artış aranır; yoksa kırmızı "DEMONTAJ GİRİŞİ YAPINIZ • adet", az ise "EKSİK DEMONTAJ • giren/azalan".
   Filtreler: TÜMÜ, AZALAN, ARTAN, DEMONTAJ GİRİŞ, DEMONTAJ YAPINIZ. Geçmiş kaydı değerlemeyi de tutar (9 alan).
-- İSG sayfası şimdilik bekliyor (kullanıcı yeni tasarım verecek). İSG malzeme ana listesi: docs/isg/ISG_MALZEME_KOD.xlsx
-  (kullanıcının dosyası, 859 satır) ve tekilleştirilmiş docs/isg/ISG_MALZEME_KOD.csv (293 malzeme; sütunlar: Mal grubu; Mal Grubu Tanımı;
-  Malzeme; Malzeme kısa metni). Mal grupları: M01030101-04 ISG MALZEMELERI, H01010000 ISG, M01010101/201/301/302 HIRDAVAT,
-  M01050100 KIYAFET MALZEMELERI, M03540000 ELEKTRIK MALZEMELERI, M01040101 MATBAA. Yeni İSG tasarımında eşleşme bu listedeki
-  malzeme kodlarıyla yapılacak (anahtar kelime yerine).
-- İSG: anahtar kelimeler (_I_AYAR "ISG"), malzeme × ilçe matrisi, stoksuz hücre kırmızı. Panel Q kartı İSG özetini gösterir.
+- İSG (I_İSG_MALZEMELERİ, 15.10.2026): ana liste docs/isg/ISG_MALZEME_KOD.xlsx/.csv (293 malzeme, 12 mal grubu).
+  KİŞİSEL ZİMMET listesi docs/isg/ZIMMET_GEREKEN.xlsx/.csv (kullanıcının dosyası, 2302 kod, "ZEAM SARFI").
+  Birleşik liste docs/isg/ISG_ISLEM.csv: 293 İSG malzemesinin 261'i ZİMMET, 32'si MANUEL SARF. VBA'da I_ISG_LISTE (kod+Z/M gömülü).
+  Sayfa: KPI (İSG kalem, değer, zimmet yapılacak, manuel sarf yapılacak); İLÇE BAZINDA İSG DURUMU özeti (zimmet/sarf kalem-miktar,
+  değer, durum ZİMMET BEKLİYOR / SARF BEKLİYOR / TEMİZ); İSG MALZEME LİSTESİ (ilçe açılır liste + TÜMÜ / ZİMMET YAPIN / MANUEL SARF YAPIN
+  filtreleri; satırda YAPILACAK İŞLEM: kırmızı ZİMMET YAPIN, mavi MANUEL SARF YAPIN). Veri: _IA_<IL> kaydı (CDP+EPP), kod Y_KOD_NORM ile.
+  Liste değişirse docs/isg güncellenip I_ISG_LISTE yeniden üretilir (fx/isg_gen.py mantığı).
 - Panel bandı AKSORA_ILCE_PANEL_BANTLARI.jpg (yoksa müşteri bandı).
 
 ## Sıradaki işler
