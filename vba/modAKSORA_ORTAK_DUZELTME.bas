@@ -227,7 +227,7 @@ Public Sub AKFIX_KARS_TARIHLER()
     Dim w As Worksheet, idx As Worksheet, d As Object
     Dim il As Variant, iller As Variant, sec As String
     Dim r As Long, son As Long, tarih As Double, ilk As Double, ortakIlk As Double
-    Dim k As Variant, n As Long, alt As String
+    Dim k As Variant, n As Long, alt As String, eskiSatir As Long, gun As Double
     Dim hataNo As Long, hataMetni As String
     On Error GoTo Hata
     Set w = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
@@ -281,6 +281,16 @@ Public Sub AKFIX_KARS_TARIHLER()
     Next k
     ' En guncel tarih listenin basinda (secim icin asagi kaydirmak gerekmez).
     If n > 3 Then w.Range("X2:X" & n - 1).Sort Key1:=w.Range("X2"), Order1:=xlDescending, Header:=xlNo
+    ' Varsayilan: yeni tarih = en son kayit; eski tarih = bir onceki gunun en son kaydi
+    ' (onceki gun yoksa bir onceki kayit).
+    eskiSatir = 2
+    If n > 3 Then
+        gun = Int(CDbl(w.Cells(2, "X").Value2))
+        eskiSatir = 3
+        For r = 3 To n - 1
+            If Int(CDbl(w.Cells(r, "X").Value2)) < gun Then eskiSatir = r: Exit For
+        Next r
+    End If
     For r = 2 To n - 1
         w.Cells(r, "X").Value = Format$(CDate(w.Cells(r, "X").Value2), "dd.mm.yyyy hh:nn:ss")
         w.Cells(r, "Y").Value = "AKFIX-" & CStr(r)
@@ -293,7 +303,7 @@ Public Sub AKFIX_KARS_TARIHLER()
                 .IgnoreBlank = True: .InCellDropdown = True: .ShowError = True
             End With
         Next k
-        w.Range("B6").Value = w.Cells(IIf(n > 3, 3, 2), "X").Value
+        w.Range("B6").Value = w.Cells(eskiSatir, "X").Value
         w.Range("I6").Value = w.Cells(2, "X").Value
     End If
     If sec = "TUMU" Then

@@ -115,6 +115,20 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
 - Bant görselleri .jpg varsa o kullanılır (AKSORA_GORSEL). Sonuç: 32,5 MB → 11,4 MB.
 - Masaüstü başlatıcı: AKSORA_BASLAT.hta (+ AKSORA_LOGO.png, AKSORA.ico) Excel'i görünmez açar, AKSORA yükleme ekranı gelince kapanır.
 
+## İlçe Yönetim birimi (15.10.2026)
+- Hub'da 4. kart (04 İlçe Yönetim Birimi, AKSORA_BIRIM_ILCE); hub BX2 sürümü 9 (4 kart, genişlik (1080-68-54)/4).
+- İl seçimi: "ILCE IL SECIM" (KAPAK kopyası, YATIRIM_KAPAK_AC ilce:=True); bant AKSORA_ILCE_BANT.png varsa eklenir.
+- Sayfalar (I_, etiket AKSORA_ILCE_V1, sıra sabit): I_ANA PANEL, I_MALZEME_ARA, I_STOK_KARŞILAŞTIRMA, I_CDP_İLÇELER_STOK,
+  I_CDP_İLÇELER_RAPOR, I_İSG_MALZEMELERİ. Panel/arama/stok/rapor müşteri şablonundan kopya (Y_KUR ilce:=True).
+- Veri: CDP 7151-7155 + EPP 7051-7055, yalnız K001-K999 depoları; ikisi tek stok sayfasında (depo|tesis|malzeme sıralı).
+  Kayıt _IA_<IL> (PAKET1). Tek sistem güncellenince diğerinin son kaydı korunur.
+- Günlük geçmiş _IH_<IL>: her sütun bir gün (günün son güncellemesi), en fazla 20 gün; satır depo TAB tesis TAB malzeme TAB
+  depo adı TAB tanım TAB birim TAB miktar TAB değer.
+- Stok karşılaştırma: ilçe düğmeleri (TÜM İLÇELER + depolar), eski/yeni tarih listesi (en yeni üstte; varsayılan yeni = son,
+  eski = önceki günün son kaydı), değişen kalemler değer farkına göre. Malzeme biriminin karşılaştırma sayfası da aynı varsayılan.
+- İSG: anahtar kelimeler (_I_AYAR "ISG"), malzeme × ilçe matrisi, stoksuz hücre kırmızı. Panel Q kartı İSG özetini gösterir.
+- Panel bandı AKSORA_ILCE_PANEL_BANTLARI.jpg (yoksa müşteri bandı).
+
 ## Sıradaki işler
 - Canlı güncelleme şeridi (Müşteri ANA PANEL şablonu, kullanıcı onaylı): açık sarı şerit, kahverengi kalın yazı
   "Güncelleniyor • 1/2 | … (tesis)…", kartlarda mavi LED + DURUM "Güncelleniyor..." (mavi), sağda İL DEĞİŞTİR hapı.

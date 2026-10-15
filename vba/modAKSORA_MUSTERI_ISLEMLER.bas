@@ -20,11 +20,11 @@ End Function
 Private Function M_STOK(ByVal ad As String) As Boolean
     M_STOK = (ad = "M_CDP_STOK" Or ad = "M_ÝLÇE_STOK" Or ad = "M_YÜKLENÝCÝ_STOK")
     ' Yatirim birimi stok sayfalari ayni tasarim ve filtre sistemini kullanir.
-    If Left$(ad, 2) = "Y_" And Right$(ad, 5) = "_STOK" Then M_STOK = True
+    If (Left$(ad, 2) = "Y_" Or Left$(ad, 2) = "I_") And Right$(ad, 5) = "_STOK" Then M_STOK = True
 End Function
 
 Private Function M_ARAMA(ByVal ad As String) As Boolean
-    M_ARAMA = (ad = "M_MALZEME_ARA" Or ad = "Y_MALZEME_ARA")
+    M_ARAMA = (ad = "M_MALZEME_ARA" Or ad = "Y_MALZEME_ARA" Or ad = "I_MALZEME_ARA")
 End Function
 
 ' Rapor sayfasinin kaynak stok sayfasi (musteri ve yatirim).
@@ -34,7 +34,7 @@ Private Function M_RAPOR_KAYNAK(ByVal ad As String) As Worksheet
         Case "M_ÝLÇE_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
         Case "M_YÜKLENÝCÝ_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
         Case Else
-            If Left$(ad, 2) = "Y_" And Right$(ad, 6) = "_RAPOR" Then _
+            If (Left$(ad, 2) = "Y_" Or Left$(ad, 2) = "I_") And Right$(ad, 6) = "_RAPOR" Then _
                 Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets(Left$(ad, Len(ad) - 6) & "_STOK")
     End Select
 End Function
@@ -882,12 +882,16 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim ws As Worksheet, kaynak As Worksheet, ad As Variant, veri As Variant, buffer() As Variant, sonuc() As Variant
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
-    Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean
+    Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean, ilc As Boolean
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = AKSORA_ARAMA_SAYFASI()
     yat = (ws.Name = "Y_MALZEME_ARA")
-    If yat Then
+    ilc = (ws.Name = "I_MALZEME_ARA")
+    If ilc Then
+        sayfalar = Array("I_CDP_ÝLÇELER_STOK")
+        etiketler = Array("ÝLÇE")
+    ElseIf yat Then
         sayfalar = Array("Y_CDP_YATIRIM_STOK", "Y_EPP_YATIRIM_STOK", "Y_CDP_YÜKLENÝCÝ_STOK", "Y_EPP_YÜKLENÝCÝ_STOK")
         etiketler = Array("CDP YATIRIM", "EPP YATIRIM", "CDP YÜKLENÝCÝ", "EPP YÜKLENÝCÝ")
     Else
@@ -899,7 +903,9 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     application.EnableEvents = False: application.ScreenUpdating = False
     ReDim buffer(1 To 14, 1 To 500)
     ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
-    If yat Then
+    If ilc Then
+        ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2)))
+    ElseIf yat Then
         ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_CDP_YATIRIM_STOK").Range("BX19").Value2)))
     Else
         ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
@@ -915,7 +921,13 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
             son = AKSORA_M_SON(kaynak)
             If son >= 7 Then veri = kaynak.Range("A7:N" & son).Value2
         Else
-            If yat Then Set kaynak = AKSORA_YATIRIM_ARSIV_SAYFA(kod, i) Else Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
+            If ilc Then
+                Set kaynak = AKSORA_ILCE_ARSIV_SAYFA(kod)
+            ElseIf yat Then
+                Set kaynak = AKSORA_YATIRIM_ARSIV_SAYFA(kod, i)
+            Else
+                Set kaynak = AKSORA_MUSTERI_ARSIV_SAYFA(kod, i)
+            End If
             If Not kaynak Is Nothing Then
                 veri = AKSORA_PAKET_OKU(kaynak)
             End If
@@ -927,6 +939,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
                     If n > UBound(buffer, 2) Then ReDim Preserve buffer(1 To 14, 1 To UBound(buffer, 2) + 500)
                     For c = 1 To 11: buffer(c, n) = veri(r, c): Next c
                     buffer(12, n) = etiketler(i - 1)
+                    If ilc Then buffer(12, n) = IIf(Left$(CStr(veri(r, 1)), 2) = "70", "EPP ÝLÇE", "CDP ÝLÇE")
                     buffer(14, n) = veri(r, 14)
                     Select Case kod
                         Case "GIRESUN": buffer(13, n) = "GÝRESUN"
@@ -971,7 +984,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
     ' Secili il dugmesi korunur: sonuc o ile gore listelenir.
     AKSORA_MUSTERI_ARAMA_FILTRE CStr(ws.Range("BX21").Value2)
-    If n = 0 Then MsgBox IIf(yat, "Yatýrým", "Müþteri") & " stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
+    If n = 0 Then MsgBox IIf(ilc, "Ýlçe", IIf(yat, "Yatýrým", "Müþteri")) & " stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
 Cikis:
     On Error Resume Next
     If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
@@ -2278,7 +2291,7 @@ Public Sub AKSORA_MUSTERI_DAGILIM_SEC()
     If korumali Then ws.Unprotect ""
     ws.Range("BX30").Value2 = Trim$(t)
     M_DEPO_DAGILIM ws
-    If Left$(ws.Name, 2) = "Y_" Then AKSORA_YATIRIM_DM_DUZEN ws
+    If Left$(ws.Name, 2) = "Y_" Or Left$(ws.Name, 2) = "I_" Then AKSORA_YATIRIM_DM_DUZEN ws
     M_LEJANT_KARE ws
 Cikis:
     On Error Resume Next

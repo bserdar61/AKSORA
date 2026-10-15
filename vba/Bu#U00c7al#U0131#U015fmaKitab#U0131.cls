@@ -168,9 +168,9 @@ End Sub
 'Yatirim teminat / hakedis girisleri aninda kaydedilir.
 Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
     If AKSORA_V13_ACILIS Then Exit Sub
-    If Left$(Sh.Name, 2) <> "Y_" Then Exit Sub
+    If Left$(Sh.Name, 2) <> "Y_" And Left$(Sh.Name, 2) <> "I_" Then Exit Sub
     On Error Resume Next
-    AKSORA_YATIRIM_DEGISIM Sh, Target
+    If Left$(Sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM Sh, Target Else AKSORA_YATIRIM_DEGISIM Sh, Target
 End Sub
 
 ' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
@@ -309,7 +309,7 @@ End Sub
 
 Private Sub Workbook_SheetCalculate(ByVal sh As Object)
     If Not TypeOf sh Is Worksheet Then Exit Sub
-    If sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" Then Exit Sub
+    If sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" And sh.Name <> "I_MALZEME_ARA" Then Exit Sub
     If Not application.EnableEvents Then Exit Sub
     On Error GoTo Hata
     AKSORA_MUSTERI_ARAMA_KPI_HESAPLA sh

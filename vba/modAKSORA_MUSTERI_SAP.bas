@@ -2624,7 +2624,7 @@ Public Sub AKSORA_ARSIV_BAKIM()
                 sonuc = PK_DONUSTUR(ws)
                 If Len(sonuc) > 0 Then AKSORA_SAP_TESHIS_YAZ "Kayýt bakýmý | " & ad & " | " & sonuc
             End If
-        ElseIf Left$(ad, 2) = "Y_" And Right$(ad, 5) = "_STOK" Then
+        ElseIf (Left$(ad, 2) = "Y_" Or Left$(ad, 2) = "I_") And Right$(ad, 5) = "_STOK" Then
             If ws.UsedRange.Row + ws.UsedRange.Rows.Count > AKSORA_M_SON(ws) + 300 Then
                 On Error Resume Next
                 ws.Unprotect ""

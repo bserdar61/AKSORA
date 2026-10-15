@@ -878,7 +878,7 @@ End Sub
 ' Arama sayfasi: etkin sayfa yatirim aramasiysa o, degilse musteri aramasi.
 Public Function AKSORA_ARAMA_SAYFASI() As Worksheet
     On Error Resume Next
-    If ActiveSheet.Name = "Y_MALZEME_ARA" Then Set AKSORA_ARAMA_SAYFASI = ActiveSheet
+    If ActiveSheet.Name = "Y_MALZEME_ARA" Or ActiveSheet.Name = "I_MALZEME_ARA" Then Set AKSORA_ARAMA_SAYFASI = ActiveSheet
     On Error GoTo 0
     If AKSORA_ARAMA_SAYFASI Is Nothing Then Set AKSORA_ARAMA_SAYFASI = ThisWorkbook.Worksheets("M_MALZEME_ARA")
 End Function
@@ -1248,7 +1248,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_KPI_HESAPLA(ByVal ws As Worksheet)
     Static mesgul As Boolean
     Dim ev As Boolean, korumali As Boolean, son As Long, adet As Long
     Dim hataNo As Long, hataMetni As String
-    If mesgul Or (ws.Name <> "M_MALZEME_ARA" And ws.Name <> "Y_MALZEME_ARA") Then Exit Sub
+    If mesgul Or (ws.Name <> "M_MALZEME_ARA" And ws.Name <> "Y_MALZEME_ARA" And ws.Name <> "I_MALZEME_ARA") Then Exit Sub
     mesgul = True: ev = application.EnableEvents
     On Error GoTo Hata
     application.EnableEvents = False
