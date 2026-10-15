@@ -2200,6 +2200,18 @@ Private Sub Y_KOLONLAR(ByVal ws As Worksheet, ByVal gen As Variant)
     Next k
 End Sub
 
+'' Kosullu bicim formulleri Excel dilinde istenir (Turkce Excel'de VE/N...): gecici hucreyle cevrilir.
+Private Function Y_YEREL(ByVal ws As Worksheet, ByVal formul As String) As String
+    Dim c As Range
+    Set c = ws.Range("BZ40")
+    On Error Resume Next
+    c.Formula = formul
+    Y_YEREL = c.FormulaLocal
+    c.ClearContents
+    On Error GoTo 0
+    If Len(Y_YEREL) = 0 Then Y_YEREL = formul
+End Function
+
 Private Sub Y_SAYFA_SIFIRLA(ByVal ws As Worksheet)
     Dim s As Shape, ad As String, sil As Collection, sv As Variant
     Set sil = New Collection
@@ -2713,7 +2725,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ws.Range(ws.Cells(YH_KALEM_ILK, 11), ws.Cells(son + 1, 11)).HorizontalAlignment = xlCenter
     ' Kumulatif kontrol: sozlesme miktari asilirsa satir uyarisi
     Set rr = ws.Range(ws.Cells(YH_KALEM_ILK, 8), ws.Cells(son, 11))
-    With rr.FormatConditions.Add(Type:=xlExpression, Formula1:="=AND(N($E" & YH_KALEM_ILK & ")>0,N($H" & YH_KALEM_ILK & ")>$E" & YH_KALEM_ILK & ")")
+    With rr.FormatConditions.Add(Type:=xlExpression, Formula1:=Y_YEREL(ws, "=AND(N($E" & YH_KALEM_ILK & ")>0,N($H" & YH_KALEM_ILK & ")>$E" & YH_KALEM_ILK & ")"))
         .Interior.Color = RGB(254, 226, 226): .Font.Color = RGB(185, 28, 28): .Font.bold = True
     End With
     ws.Cells(son + 1, 1).Value2 = "TOPLAM"
@@ -2937,6 +2949,9 @@ End Sub
 
 ' Giris ve guncelleme sonrasi: hata olsa bile birim acilir, hata durum seridine yazilir.
 Private Sub Y_ALT_SAYFALAR(ByVal il As String)
+    Dim da As Boolean
+    da = application.DisplayAlerts
+    application.DisplayAlerts = False
     On Error Resume Next
     Y_TEMINAT_KUR il
     If Err.Number <> 0 Then Y_SERIT "Teminat sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
@@ -2948,4 +2963,5 @@ Private Sub Y_ALT_SAYFALAR(ByVal il As String)
     End With
     If Err.Number <> 0 Then Y_SERIT "Hakediþ sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
     On Error GoTo 0
+    application.DisplayAlerts = da
 End Sub
