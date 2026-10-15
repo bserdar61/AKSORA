@@ -2550,6 +2550,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
             ws.Cells(r, 9).Formula = "=F" & r & "-J" & r
             ws.Cells(r, 10).Formula = "=IF(N(E" & r & ")=0,0,F" & r & "*IF(G" & r & "=""Sahada"",1,IF(G" & r & "=""Kýsmi"",MIN(N(H" & r & "),E" & r & ")/E" & r & ",0)))"
             ws.Cells(r, 11).Formula = "=IF(OR(G" & r & "=""Depoda"",N(M" & r & ")=0),"""",TODAY()-INT(M" & r & "))"
+            ws.Cells(r, 14).Formula = "=C" & r & "&"" ""&D" & r
             Y_MIKTAR_BICIM ws.Cells(r, 5), CStr(satirlar(sira(r - a3 + 1))(3))
         Next r
     Else
@@ -2639,7 +2640,21 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
         .Font.Color = RGB(185, 28, 28): .Font.bold = True
     End With
     ' Filtre ve depo secimi
-    If nL > 0 Then ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(b3, 11)).AutoFilter
+    If nL > 0 Then ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(b3, 14)).AutoFilter
+    ' Malzeme arama: kod veya tanimin bir bolumu yazilinca liste aninda suzulur.
+    With ws.Cells(a3 - 2, 3)
+        .Value2 = "Malzeme ara:": .HorizontalAlignment = xlRight: .VerticalAlignment = xlCenter
+        .Font.bold = True: .Font.Color = RGB(28, 54, 83): .Font.Name = "Aptos": .Font.Size = 10
+    End With
+    With ws.Cells(a3 - 2, 4)
+        .ClearContents: .Locked = False: .NumberFormat = "@"
+        .Interior.Color = RGB(255, 255, 255): .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
+        .VerticalAlignment = xlCenter: .IndentLevel = 1
+        With .Borders
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(35, 119, 204)
+        End With
+    End With
+    ws.Range("BX29").Value2 = ws.Cells(a3 - 2, 4).Address(False, False)
     ws.Cells(a3 - 2, 7).Value2 = "Depo:"
     ws.Cells(a3 - 2, 7).HorizontalAlignment = xlRight: ws.Cells(a3 - 2, 7).Font.bold = True: ws.Cells(a3 - 2, 7).Font.Color = RGB(28, 54, 83)
     Set liste = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a3 - 2, 8).Left + 4, ws.Cells(a3 - 2, 8).Top + 5, _
@@ -2703,7 +2718,7 @@ Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
     t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     ws.Unprotect ""
-    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 11)).AutoFilter
+    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 14)).AutoFilter
     If s.ControlFormat.Value = 1 Then
         ws.AutoFilter.Range.AutoFilter Field:=1
     Else
@@ -3224,6 +3239,23 @@ Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
     application.EnableEvents = False
     il = UCase$(Trim$(CStr(sh.Range("BX22").Value2)))
     If Len(il) = 0 Then GoTo Cikis
+    ' Malzeme arama hucresi
+    If Len(CStr(sh.Range("BX29").Value2)) > 0 Then
+        If Not Intersect(hedef, sh.Range(CStr(sh.Range("BX29").Value2))) Is Nothing Then
+            t = Trim$(CStr(sh.Range(CStr(sh.Range("BX29").Value2)).Value2))
+            sh.Unprotect ""
+            If Y_ARALIK(sh, "BX27", a, b) Then
+                If Not sh.AutoFilterMode Then sh.Range(sh.Cells(a - 1, 1), sh.Cells(b, 14)).AutoFilter
+                If Len(t) = 0 Then
+                    sh.AutoFilter.Range.AutoFilter Field:=14
+                Else
+                    sh.AutoFilter.Range.AutoFilter Field:=14, Criteria1:="=*" & t & "*"
+                End If
+            End If
+            sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+            GoTo Cikis
+        End If
+    End If
     If Y_ARALIK(sh, "BX23", a, b) Then
         Set alan = Intersect(hedef, sh.Range(sh.Cells(a, 4), sh.Cells(b, 4)))
         If Not alan Is Nothing Then
