@@ -61,6 +61,7 @@ Public Sub AKSORA_EKRAN_SIGDIR(ByVal ws As Worksheet)
         Case Else: Exit Sub
     End Select
     mSonHata = vbNullString
+    AKSORA_CIKTI_DUGME ws
     On Error GoTo Hata
     Set wn = ActiveWindow
     If wn Is Nothing Then Exit Sub

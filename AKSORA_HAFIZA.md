@@ -184,6 +184,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   SAYILAN | FARK (geniş, elle yazılır). HURDA ve CIKMA/BDSZ partiler alınmaz; YENI ve boş parti alınır. Ekrandaki (depo/filtre)
   satırlar. Renksiz, gri başlık, tüm kenarlıklar, A4 yatay, tek sayfa genişliği, başlık satırı her sayfada.
   PrintPreview KULLANMA: gizli şeritte (UYGULAMA_MODU) Excel donar. Gizli geçici kitap -> PDF (TEMP) -> OpenAfterPublish.
+- ÇIKTI AL tüm sayfalarda (16.10): AKSORA_CIKTI_DUGME (btnCiktiAl; sayfa açılışında BIRIM_OLAY/EKRAN_SIGDIR'dan, ANA PANEL ve
+  yanındaki düğmelerin solunda; karşılaştırmada ANA PANEL altında; malzeme stokta btnStokCikti). AKSORA_CIKTI_AL türe göre:
+  1 stok (malzeme/M_/Y_/I_) -> sayım listesi (M_ seri no varsa "Seri numarası" sütunu), 2 arama/karşılaştırma -> ekrandaki tablo,
+  3 rapor/İSG/teminat/hakediş -> sayfanın kendisi (düğmeler PrintObject=False). Panellerde yok.
+  Sayım ve karşılaştırmada her sayfa altında kaşe/imza kutuları: sol "İLGİLİ DEPO SORUMLUSU/LARI", sağ "SAYIM YAPAN SORUMLU/LAR"
+  (karşılaştırmada "KONTROL EDEN"); kutu basılı ~4 cm; manuel sayfa sonları, zoom hesaplı. Alt bilgi: sol küçük Çıktı, sağ küçük Sayfa.
+  BlackAndWhite KULLANMA (gri başlık beyaz basılır).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
