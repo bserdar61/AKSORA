@@ -179,6 +179,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   AKSORA_ANA_PANEL_DURUM_RENK_YENILE "1 GÜN ÖNCE" yazmaz; CANLI iken B6 şeridi ezilmez.
 - I_STOK_KARŞILAŞTIRMA tablo IK_V4 (I_KARS_SUTUN): DURUM | ÜY | DEPO | İLÇE | MALZEME | AÇIKLAMA | DEĞERLEME | ESKİ/YENİ MİKTAR | FARK |
   ESKİ/YENİ DEĞER | DEĞER FARKI | DEMONTAJ KONTROLÜ. BİRİM sütunu yok: birim miktar biçiminde ("12 ADT"). Filtre alanları 1 ve 14 aynı.
+- Malzeme stok sayfaları ÇIKTI AL (btnStokCikti, T_StokYap; AKSORA_STOK_CIKTI, modAKSORA_TASARIM): kullanıcının SAP sayım listesi
+  standardı: Üretim yeri | Depo yeri tanımı | Malzeme | Malzeme kısa metni | Parti | Tahditsiz klnb. (miktar+birim tek sütun) |
+  SAYILAN | FARK (geniş, elle yazılır). HURDA ve CIKMA/BDSZ partiler alınmaz; YENI ve boş parti alınır. Ekrandaki (depo/filtre)
+  satırlar. Renksiz, gri başlık, tüm kenarlıklar, A4 yatay, tek sayfa genişliği, başlık satırı her sayfada, önizleme ile açılır.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
