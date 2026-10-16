@@ -197,6 +197,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Çok satırlı/büyük punto alt bilgi denemesi orta/sağ bölümü hiç basmadı; kullanma. Kaynak resim docs/cikti/.
 - Y_/I_ rapor üst halka lejantında yüzdeler (HALKA_PAY_n) PAY başlığından kayıyordu: Y_PAY_HIZALA (DM_DUZEN başında)
   ve Y_DM_KONTROL (sayfa açılışı) PAY_n'yi PAY_BASLIK sol/genişlik/sağa hizaya getirir.
+- Çıktı başlığı "Depo:" = çıktıya giren depoların TANIMLARI (virgülle; sayfadaki tüm depolar ise TÜMÜ). H2 hücresine bakma
+  (filtreyle seçilen depoyu göstermiyordu).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

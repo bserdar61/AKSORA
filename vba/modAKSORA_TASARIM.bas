@@ -1547,7 +1547,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
     Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
     Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
-    Dim adet() As Double, x As Long
+    Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant
     If T_Stok(ws) Then
         cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
     Else
@@ -1591,6 +1591,26 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         Next ar
     End If
     If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler çýktýya alýnmaz)."
+    ' Baslikta depo: ciktiya giren depolarin tanimlari; sayfadaki tum depolar ise TUMU.
+    Set tum = CreateObject("Scripting.Dictionary"): tum.CompareMode = vbTextCompare
+    Set sec = CreateObject("Scripting.Dictionary"): sec.CompareMode = vbTextCompare
+    For i = 1 To UBound(kaynak, 1)
+        If Len(T_CiktiMetin(kaynak(i, cM))) > 0 Then
+            If Not T_CiktiDisi(T_CiktiMetin(kaynak(i, cP))) Then tum(T_CiktiMetin(kaynak(i, 2))) = True
+        End If
+    Next i
+    For i = 1 To n
+        If Not sec.Exists(veri(i, 8)) Then sec(veri(i, 8)) = veri(i, 2)
+    Next i
+    If sec.Count >= tum.Count Then
+        depo = "TÜMÜ"
+    Else
+        depo = vbNullString
+        For Each kk In sec.keys
+            depo = depo & IIf(Len(depo) > 0, ", ", "") & IIf(Len(CStr(sec(kk))) > 0, CStr(sec(kk)), CStr(kk))
+        Next kk
+        If Len(depo) > 110 Then depo = Left$(depo, 107) & "..."
+    End If
     ' Seri numarali stoklarda (sayac vb.) seri numarasi sutunu eklenir.
     k = IIf(seriVar, 10, 9)
     ReDim cikis(1 To n, 1 To k)
@@ -1602,7 +1622,6 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         cikis(i, x) = veri(i, 5)
         cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
     Next i
-    depo = Trim$(CStr(ws.Range("H2").Value2)): If Len(depo) = 0 Then depo = "TÜMÜ"
     ust = Replace(ws.Name, "_", " ") & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
     tarih = ws.Range("C2").Value
     If Not IsError(tarih) Then
