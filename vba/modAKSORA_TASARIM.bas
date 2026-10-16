@@ -1546,7 +1546,8 @@ End Sub
 Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
     Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
-    Dim parti As String, mk As Variant, miktar As String, seriVar As Boolean, depo As String, ust As String, tarih As Variant
+    Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
+    Dim toplam As Object, adet() As Double, x As Long
     If T_Stok(ws) Then
         cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
     Else
@@ -1558,9 +1559,11 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         Set gor = ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)).SpecialCells(xlCellTypeVisible)
         On Error GoTo 0
     End If
+    Set toplam = CreateObject("Scripting.Dictionary"): toplam.CompareMode = vbTextCompare
     If Not gor Is Nothing Then
         kaynak = ws.Range(ws.Cells(7, 1), ws.Cells(son, 12)).Value2
-        ReDim veri(1 To son - 6, 1 To 7)
+        ' 1 UY, 2 depo yeri tanimi, 3 malzeme, 4 tanim, 5 parti, 6 birim, 7 seri, 8 depo kodu
+        ReDim veri(1 To son - 6, 1 To 8): ReDim adet(1 To son - 6)
         For Each ar In gor.Areas
             For r = ar.Row To ar.Row + ar.Rows.Count - 1
                 i = r - 6
@@ -1573,17 +1576,14 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
                         veri(n, 3) = T_CiktiMetin(kaynak(i, cM))
                         veri(n, 4) = T_CiktiMetin(kaynak(i, cT))
                         veri(n, 5) = parti
-                        mk = kaynak(i, cQ): miktar = vbNullString
+                        veri(n, 6) = T_CiktiMetin(kaynak(i, cB))
+                        veri(n, 8) = T_CiktiMetin(kaynak(i, 2))
+                        mk = kaynak(i, cQ)
                         If Not IsError(mk) Then
-                            If IsNumeric(mk) And Len(CStr(mk)) > 0 Then
-                                If CDbl(mk) = Int(CDbl(mk)) Then
-                                    miktar = AKSORA_SAYI_METNI(CDbl(mk), "#,##0")
-                                Else
-                                    miktar = AKSORA_SAYI_METNI(CDbl(mk), "#,##0.###")
-                                End If
-                            End If
+                            If IsNumeric(mk) And Len(CStr(mk)) > 0 Then adet(n) = CDbl(mk)
                         End If
-                        veri(n, 6) = Trim$(miktar & " " & T_CiktiMetin(kaynak(i, cB)))
+                        ' TOTAL: ayni malzeme kodunun ciktidaki tum satirlarinin toplami
+                        toplam(veri(n, 3)) = toplam(veri(n, 3)) + adet(n)
                         If cS > 0 Then
                             veri(n, 7) = T_CiktiMetin(kaynak(i, cS))
                             If Len(veri(n, 7)) > 0 Then seriVar = True
@@ -1595,15 +1595,16 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler çýktýya alýnmaz)."
     ' Seri numarali stoklarda (sayac vb.) seri numarasi sutunu eklenir.
-    k = IIf(seriVar, 9, 8)
+    k = IIf(seriVar, 11, 10)
     ReDim cikis(1 To n, 1 To k)
     For i = 1 To n
-        For j = 1 To 4: cikis(i, j) = veri(i, j): Next j
-        If seriVar Then
-            cikis(i, 5) = veri(i, 7): cikis(i, 6) = veri(i, 5): cikis(i, 7) = veri(i, 6)
-        Else
-            cikis(i, 5) = veri(i, 5): cikis(i, 6) = veri(i, 6)
-        End If
+        cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
+        cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+        x = 6
+        If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
+        cikis(i, x) = veri(i, 5)
+        cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
+        cikis(i, x + 2) = T_CiktiMiktar(CDbl(toplam(veri(i, 3))), CStr(veri(i, 6)))
     Next i
     depo = Trim$(CStr(ws.Range("H2").Value2)): If Len(depo) = 0 Then depo = "TÜMÜ"
     ust = Replace(ws.Name, "_", " ") & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
@@ -1612,17 +1613,26 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         If IsDate(tarih) Then ust = ust & "  |  Stok tarihi: " & Format$(CDate(tarih), "dd.mm.yyyy hh:nn")
     End If
     If seriVar Then
-        T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
-            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 14.66, 11, 40.55, 16, 7.5, 13.5, 26, 24), _
-            Array("@", "@", "@", "@", "@", "@", "@", "@", "@"), _
-            Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust
+        T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
+            "Tahditsiz klnb.", "TOTAL", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 13.5, 22, 20), _
+            Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
+            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlCenter, xlRight, xlRight, xlLeft, xlLeft), 24, True, ust
     Else
-        T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
-            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 14.66, 11, 40.55, 7.5, 13.5, 31.66, 29.44), _
-            Array("@", "@", "@", "@", "@", "@", "@", "@"), _
-            Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust
+        T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
+            "Tahditsiz klnb.", "TOTAL", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 7.5, 13.5, 13.5, 25, 24), _
+            Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
+            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlLeft, xlLeft), 24, True, ust
     End If
 End Sub
+
+Private Function T_CiktiMiktar(ByVal x As Double, ByVal birim As String) As String
+    If x = Int(x) Then
+        T_CiktiMiktar = AKSORA_SAYI_METNI(x, "#,##0")
+    Else
+        T_CiktiMiktar = AKSORA_SAYI_METNI(x, "#,##0.###")
+    End If
+    T_CiktiMiktar = Trim$(T_CiktiMiktar & " " & birim)
+End Function
 
 ' Arama ve karsilastirma: ekrandaki tablo (filtreli satirlar) aynen, renksiz.
 Private Sub T_CiktiListe(ByVal ws As Worksheet)
@@ -1727,27 +1737,53 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
 End Sub
 
 ' Ortak sayfa duzeni: A4 yatay, dar kenar, altta kucuk "Cikti" ve "Sayfa".
-' Ortak sayfa duzeni (ilk tasarim): A4 yatay, dar kenar, ust ortada baslik, tek satir alt bilgi.
-' imza = True: sol "Cikti" + "Ilgili Depo Sorumlusu/lari", orta "Kontrol Eden Sorumlu/lar", sag sayfa numarasi.
+' Ortak sayfa duzeni (ilk tasarim): A4 yatay, dar kenar, ust ortada baslik.
+' imza = True: alt bilgi kase/imza alani (kullanicinin cizimi): kucuk yazilar, dikey cizgilerle uc bolum:
+'   [Cikti] | ILGILI DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR | [Sayfa]
+' Cizgiler esit genislikli yazi tipinde (Consolas) kutu cizgisi karakteriyle; her bolum 5 satir, alta hizali.
+' Alt bilgi bolumu en fazla 255 karakter alir.
 Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean)
+    Dim cz As String, sol As String, orta As String, sag As String, i As Long, bos As String
     On Error Resume Next
     ps.PaperSize = xlPaperA4
     ps.Orientation = xlLandscape
     ps.LeftMargin = application.CentimetersToPoints(1): ps.RightMargin = application.CentimetersToPoints(1)
-    ps.TopMargin = application.CentimetersToPoints(1.6): ps.BottomMargin = application.CentimetersToPoints(1.4)
-    ps.HeaderMargin = application.CentimetersToPoints(0.6): ps.FooterMargin = application.CentimetersToPoints(0.6)
+    ps.TopMargin = application.CentimetersToPoints(1.6)
+    ps.HeaderMargin = application.CentimetersToPoints(0.6)
     ps.CenterHorizontally = True
     ps.CenterHeader = "&""Aptos""&10&B" & Replace(ust, "&", "&&")
     ps.LeftHeader = vbNullString: ps.RightHeader = vbNullString
     If imza Then
-        ps.LeftFooter = "&""Aptos""&8Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn") & _
-            "          Ýlgili Depo Sorumlusu/larý: ...................."
-        ps.CenterFooter = "&""Aptos""&8          Kontrol Eden Sorumlu/lar: ...................."
+        cz = "&18" & ChrW(9474)
+        bos = String$(24, " ")
+        ' Sol: cizgi; ilk satirda etiket, son satirda cikti tarihi (cizginin solunda).
+        sol = "&""Consolas""&7" & bos & cz & "&""Aptos""&8&B          ÝLGÝLÝ DEPO SORUMLUSU/LARI&B"
+        sol = sol & vbLf & "&""Consolas""&7" & bos & cz
+        For i = 1 To 2
+            sol = sol & vbLf & "&7" & bos & cz
+        Next i
+        sol = sol & vbLf & "&7" & Left$("Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn") & bos, 24) & cz
+        ' Orta: sayfa ortasinda cizgi; sagda etiket (iki yan esit genislik, cizgi tam ortada kalir).
+        orta = "&""Consolas""&8" & String$(56, " ") & cz & "&8&B" & String$(30, " ") & "KONTROL EDEN SORUMLU/LAR  &B"
+        For i = 1 To 4
+            orta = orta & vbLf & cz
+        Next i
+        ' Sag: cizgi ve sayfa numarasi.
+        sag = "&""Consolas""" & cz & "&7" & String$(14, " ")
+        For i = 1 To 3
+            sag = sag & vbLf & cz & "&7" & String$(14, " ")
+        Next i
+        sag = sag & vbLf & cz & "&7 Sayfa &P / &N"
+        ps.LeftFooter = sol: ps.CenterFooter = orta: ps.RightFooter = sag
+        ps.FooterMargin = application.CentimetersToPoints(0.4)
+        ps.BottomMargin = application.CentimetersToPoints(4.4)
     Else
         ps.LeftFooter = "&""Aptos""&8Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
         ps.CenterFooter = vbNullString
+        ps.RightFooter = "&""Aptos""&8Sayfa &P / &N"
+        ps.FooterMargin = application.CentimetersToPoints(0.6)
+        ps.BottomMargin = application.CentimetersToPoints(1.4)
     End If
-    ps.RightFooter = "&""Aptos""&8Sayfa &P / &N"
 End Sub
 
 ' Gecici (gorunmez) kitapta tablo kurulur ve PDF olarak acilir. Tum sutunlar tek sayfa genisliginde.

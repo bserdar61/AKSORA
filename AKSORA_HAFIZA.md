@@ -188,9 +188,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   yanındaki düğmelerin solunda; karşılaştırmada ANA PANEL altında; malzeme stokta btnStokCikti). AKSORA_CIKTI_AL türe göre:
   1 stok (malzeme/M_/Y_/I_) -> sayım listesi (M_ seri no varsa "Seri numarası" sütunu), 2 arama/karşılaştırma -> ekrandaki tablo,
   3 rapor/İSG/teminat/hakediş -> sayfanın kendisi (düğmeler PrintObject=False). Panellerde yok.
-  ONAYLI DÜZEN = ilk tasarım (imza kutusu YOK, büyük alt boşluk YOK; FitToPagesWide=1, BlackAndWhite=True, alt 1,4 cm).
-  Alt bilgi tek satır 8pt: sol "Çıktı: tarih   İlgili Depo Sorumlusu/ları: ......", orta "Kontrol Eden Sorumlu/lar: ......",
-  sağ "Sayfa &P / &N". Kullanıcı bu ekran görüntüsündeki düzeni onayladı; değiştirme.
+  ONAYLI DÜZEN = ilk tasarım (imza kutusu satır arası YOK; FitToPagesWide=1, BlackAndWhite=True, satır 24).
+  Sayım sütunları: Üretim yeri | Depo (kod) | Depo yeri tanımı | Malzeme | Malzeme kısa metni | [Seri no] | Parti |
+  Tahditsiz klnb. | TOTAL (aynı malzeme kodunun çıktıdaki tüm satırlarının toplamı + birim) | SAYILAN | FARK.
+  Alt bilgi (kullanıcı çizimi): küçük yazılar, Consolas kutu çizgisi (ChrW 9474, 18pt) ile 3 dikey çizgi, 5 satır:
+  [Çıktı] | İLGİLİ DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR | [Sayfa]; alt kenar 4,4 cm. Bölüm ≤255 karakter.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
