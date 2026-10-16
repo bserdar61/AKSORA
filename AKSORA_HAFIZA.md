@@ -177,6 +177,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Malzeme ANA PANEL güncellenirken kart: "Güncelleniyor..." RGB(29,78,216), LED (59,130,246)+glow (müşteri ile aynı).
   AKSORA_PANEL_GUNCELLENEN listesi + AKSORA_PANEL_KART_CANLI(kod); PANEL_KART_GUNCELLE, AKSORA_DURUM_RENK_GUVENLI,
   AKSORA_ANA_PANEL_DURUM_RENK_YENILE "1 GÜN ÖNCE" yazmaz; CANLI iken B6 şeridi ezilmez.
+- I_STOK_KARŞILAŞTIRMA tablo IK_V4 (I_KARS_SUTUN): DURUM | ÜY | DEPO | İLÇE | MALZEME | AÇIKLAMA | DEĞERLEME | ESKİ/YENİ MİKTAR | FARK |
+  ESKİ/YENİ DEĞER | DEĞER FARKI | DEMONTAJ KONTROLÜ. BİRİM sütunu yok: birim miktar biçiminde ("12 ADT"). Filtre alanları 1 ve 14 aynı.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

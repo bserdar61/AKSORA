@@ -4380,6 +4380,29 @@ Private Sub I_KARS_DUZEN(ByVal ws As Worksheet)
     ws.Range("BX25").Value2 = "IK_V3"
 End Sub
 
+'' Tablo surum 4: DEPO'nun yaninda ILCE sutunu; BIRIM sutunu kalkar (birim miktarlarin yaninda yazilir).
+Private Sub I_KARS_SUTUN(ByVal ws As Worksheet)
+    Dim gen As Variant, i As Long, s As Shape, adlar As Variant, w As Double
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    gen = Array(16.8, 7.8, 8.8, 15.8, 12.8, 42.8, 12.8, 13.8, 13.8, 11.8, 15.8, 15.8, 15.8, 32.8)
+    For i = 0 To 13
+        ws.Columns(i + 1).ColumnWidth = gen(i)
+    Next i
+    ws.Range("A15:N15").Value2 = Array("DURUM", "ÜY", "DEPO", "ÝLÇE", "MALZEME", "MALZEME AÇIKLAMASI", "DEÐERLEME", _
+        "ESKÝ MÝKTAR", "YENÝ MÝKTAR", "FARK", "ESKÝ DEÐER", "YENÝ DEÐER", "DEÐER FARKI", "DEMONTAJ KONTROLÜ")
+    ws.Range("A15:N15").HorizontalAlignment = xlCenter
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    w = (ws.Range("A1:N1").Width - 5 * 2) / 6
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = i * (w + 2): s.Width = w
+    Next i
+    Set s = Y_SEKIL(ws, "btnAnaPanelDon")
+    If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = ws.Columns("O").Left + 12
+    ws.Range("BX25").Value2 = "IK_V4"
+End Sub
+
 ' Ilce secimi: tek acilir liste (ilce sayisi arttikca sayfa asagi uzamaz).
 Private Sub I_KARS_SECICI(ByVal ws As Worksheet, ByVal depolar As Object, ByVal sec As String)
     Dim i As Long, s As Shape, k As Variant, n As Long, secIx As Long, a As Shape
@@ -4432,11 +4455,13 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Dim mEski As Double, mYeni As Double, vEski As Double, vYeni As Double, tE As Double, tY As Double
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
     Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
+    Dim birimler() As String
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
-    If CStr(ws.Range("BX25").Value2) <> "IK_V2" And CStr(ws.Range("BX25").Value2) <> "IK_V3" Then I_KARS_HAZIRLA ws
-    If CStr(ws.Range("BX25").Value2) <> "IK_V3" Then I_KARS_DUZEN ws
+    If Left$(CStr(ws.Range("BX25").Value2), 3) <> "IK_" Or CStr(ws.Range("BX25").Value2) = "IK_V1" Then I_KARS_HAZIRLA ws
+    If CStr(ws.Range("BX25").Value2) = "IK_V2" Then I_KARS_DUZEN ws
+    If CStr(ws.Range("BX25").Value2) = "IK_V3" Then I_KARS_SUTUN ws
     If CStr(ws.Range("BX22").Value2) <> il Then sifirla = True: ws.Range("BX30").ClearContents
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
@@ -4521,7 +4546,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Next k
     n = 0
     If anahtar.Count > 0 Then
-        ReDim blok(1 To anahtar.Count, 1 To 14): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
+        ReDim blok(1 To anahtar.Count, 1 To 15): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
     End If
     For Each k In anahtar.keys
         mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
@@ -4554,12 +4579,14 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 End If
             End If
             n = n + 1
-            blok(n, 1) = durum: blok(n, 2) = p(1): blok(n, 3) = p(0): blok(n, 4) = p(2)
-            blok(n, 5) = t(1): blok(n, 6) = p(3)
-            blok(n, 7) = mEski: blok(n, 8) = mYeni: blok(n, 9) = mYeni - mEski
-            blok(n, 10) = t(2)
+            ' Sutunlar: durum, UY, depo, ilce, malzeme, tanim, degerleme, eski/yeni/fark miktar (birimiyle),
+            ' eski/yeni/fark deger, demontaj kontrolu. Birim ayri sutun yerine miktarlarin yaninda yazilir.
+            blok(n, 1) = durum: blok(n, 2) = p(1): blok(n, 3) = p(0)
+            blok(n, 4) = I_DEPO_KISA(CStr(depolar(p(0)))): blok(n, 5) = p(2)
+            blok(n, 6) = t(1): blok(n, 7) = p(3)
+            blok(n, 8) = mEski: blok(n, 9) = mYeni: blok(n, 10) = mYeni - mEski
             blok(n, 11) = Round(vEski, 2): blok(n, 12) = Round(vYeni, 2): blok(n, 13) = Round(vYeni - vEski, 2)
-            blok(n, 14) = kontrol
+            blok(n, 14) = kontrol: blok(n, 15) = CStr(t(2))
             anah(n) = CStr(sira) & Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
             idx(n) = n
         End If
@@ -4569,11 +4596,12 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     ws.Range("A16:N" & son + 1).Clear
     If n > 0 Then
         Y_SIRALA anah, idx, 1, n
-        ReDim sonuc(1 To n, 1 To 14)
+        ReDim sonuc(1 To n, 1 To 14): ReDim birimler(1 To n)
         For i = 1 To n
             For j = 1 To 14: sonuc(i, j) = blok(idx(i), j): Next j
+            birimler(i) = CStr(blok(idx(i), 15))
         Next i
-        ws.Range("B16:F" & n + 15).NumberFormat = "@"
+        ws.Range("B16:G" & n + 15).NumberFormat = "@"
         ws.Range("A16").Resize(n, 14).Value2 = sonuc
         With ws.Range("A16:N" & n + 15)
             .Interior.Color = RGB(255, 255, 255)
@@ -4581,16 +4609,16 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
             .VerticalAlignment = xlCenter
             .Font.Name = "Aptos": .Font.Size = 10
         End With
-        ws.Range("A16:D" & n + 15).HorizontalAlignment = xlCenter
-        ws.Range("F16:F" & n + 15).HorizontalAlignment = xlCenter
-        ws.Range("J16:J" & n + 15).HorizontalAlignment = xlCenter
-        ws.Range("G16:I" & n + 15).HorizontalAlignment = xlRight
+        ws.Range("A16:E" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("D16:D" & n + 15).HorizontalAlignment = xlLeft: ws.Range("D16:D" & n + 15).IndentLevel = 1
+        ws.Range("G16:G" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("H16:J" & n + 15).HorizontalAlignment = xlRight
         ws.Range("K16:M" & n + 15).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
         ws.Range("A16:A" & n + 15).Font.bold = True
         ws.Range("N16:N" & n + 15).HorizontalAlignment = xlCenter
         For r = 16 To n + 15
-            For j = 7 To 9
-                Y_MIKTAR_BICIM ws.Cells(r, j)
+            For j = 8 To 10
+                Y_MIKTAR_BICIM ws.Cells(r, j), birimler(r - 15)
             Next j
             Select Case CStr(ws.Cells(r, 1).Value2)
                 Case "AZALDI": ws.Cells(r, 1).Font.Color = RGB(192, 0, 0)
