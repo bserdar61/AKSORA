@@ -1494,6 +1494,8 @@ Public Sub AKSORA_STOK_CIKTI()
     ev = application.EnableEvents: sc = application.ScreenUpdating
     application.ScreenUpdating = False: application.EnableEvents = False
     Set wb = Workbooks.Add(xlWBATWorksheet)
+    ' Gecici kitap ekrana gelmez (AKSORA penceresi yerinde kalir).
+    wb.Windows(1).Visible = False
     Set c = wb.Worksheets(1)
     c.Name = "SAYIM"
     c.Cells.Font.Name = "Aptos": c.Cells.Font.Size = 10: c.Cells.Font.Color = RGB(0, 0, 0)
@@ -1522,7 +1524,6 @@ Public Sub AKSORA_STOK_CIKTI()
     For Each mk In Array(9.89, 14.66, 11, 40.55, 7.5, 13.5, 31.66, 29.44)
         i = i + 1: c.Columns(i).ColumnWidth = mk
     Next mk
-    ActiveWindow.DisplayGridlines = False
     On Error Resume Next
     application.PrintCommunication = False
     With c.PageSetup
@@ -1543,11 +1544,14 @@ Public Sub AKSORA_STOK_CIKTI()
     End With
     application.PrintCommunication = True
     On Error GoTo Hata
-    application.ScreenUpdating = True
-    c.PrintPreview
+    ' Excel baski onizlemesi gizli seritle donar; cikti PDF olarak acilir, yazdirma oradan yapilir.
+    depo = Environ$("TEMP")
+    If Len(depo) = 0 Then depo = AKSORA_KAYIT_KLASORU()
+    depo = depo & application.PathSeparator & "AKSORA_SAYIM_" & Replace(Replace(ws.Name, " ", "_"), "Ý", "I") & "_" & Format$(Now, "yyyymmdd_hhnnss") & ".pdf"
+    c.ExportAsFixedFormat Type:=xlTypePDF, Filename:=depo, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=False, IgnorePrintAreas:=False, OpenAfterPublish:=True
     wb.Close SaveChanges:=False
     Set wb = Nothing
-    ws.Activate
     application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:

@@ -182,7 +182,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Malzeme stok sayfaları ÇIKTI AL (btnStokCikti, T_StokYap; AKSORA_STOK_CIKTI, modAKSORA_TASARIM): kullanıcının SAP sayım listesi
   standardı: Üretim yeri | Depo yeri tanımı | Malzeme | Malzeme kısa metni | Parti | Tahditsiz klnb. (miktar+birim tek sütun) |
   SAYILAN | FARK (geniş, elle yazılır). HURDA ve CIKMA/BDSZ partiler alınmaz; YENI ve boş parti alınır. Ekrandaki (depo/filtre)
-  satırlar. Renksiz, gri başlık, tüm kenarlıklar, A4 yatay, tek sayfa genişliği, başlık satırı her sayfada, önizleme ile açılır.
+  satırlar. Renksiz, gri başlık, tüm kenarlıklar, A4 yatay, tek sayfa genişliği, başlık satırı her sayfada.
+  PrintPreview KULLANMA: gizli şeritte (UYGULAMA_MODU) Excel donar. Gizli geçici kitap -> PDF (TEMP) -> OpenAfterPublish.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
