@@ -1727,28 +1727,41 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
 End Sub
 
 ' Ortak sayfa duzeni: A4 yatay, dar kenar, altta kucuk "Cikti" ve "Sayfa".
-Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean)
+' Ortak sayfa duzeni: A4 yatay, dar kenar, ust ortada baslik.
+' imza = True: alt bilgide "Ilgili Depo Sorumlusu/lari" ve sag etiket; altlarinda kase-imza icin genis bos alan.
+' Cikti tarihi (sol) ve sayfa numarasi (sag) kucuk, en altta.
+Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean, Optional ByVal sagEtiket As String = "")
+    Dim bosluk As String, i As Long
     On Error Resume Next
     ps.PaperSize = xlPaperA4
     ps.Orientation = xlLandscape
     ps.LeftMargin = application.CentimetersToPoints(1): ps.RightMargin = application.CentimetersToPoints(1)
-    ps.TopMargin = application.CentimetersToPoints(1.6): ps.BottomMargin = application.CentimetersToPoints(1.2)
+    ps.TopMargin = application.CentimetersToPoints(1.6)
     ps.HeaderMargin = application.CentimetersToPoints(0.6): ps.FooterMargin = application.CentimetersToPoints(0.5)
     ps.CenterHorizontally = True
     ps.CenterHeader = "&""Aptos""&10&B" & Replace(ust, "&", "&&")
     ps.LeftHeader = vbNullString: ps.RightHeader = vbNullString
     ps.LeftFooter = "&""Aptos""&7Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
-    ps.CenterFooter = vbNullString
     ps.RightFooter = "&""Aptos""&7Sayfa &P / &N"
+    If imza Then
+        ' Etiketler arasi bosluk buyuk puntolu bosluklarla (alt bilgi 255 karakter sinirli);
+        ' etiketlerin altinda ~3,5 cm bos alan: her iki tarafa yan yana 3 kase + imza sigar.
+        If Len(sagEtiket) = 0 Then sagEtiket = "Sayým Yapan Sorumlu/lar:"
+        bosluk = String$(46, " ")
+        ps.CenterFooter = "&""Aptos""&9&BÝlgili Depo Sorumlusu/larý:&B&28" & bosluk & "&9&B" & sagEtiket & "&B" & _
+            vbLf & "&28 " & vbLf & "&28 " & vbLf & "&28 "
+        ps.BottomMargin = application.CentimetersToPoints(5.4)
+    Else
+        ps.CenterFooter = vbNullString
+        ps.BottomMargin = application.CentimetersToPoints(1.2)
+    End If
 End Sub
 
-' Gecici (gorunmez) kitapta tablo kurulur ve PDF olarak acilir.
-' imza = True: her sayfanin altinda "Ilgili Depo Sorumlusu/lari" ve "Sayim Yapan Sorumlu/lar" kase-imza kutulari.
+' Gecici (gorunmez) kitapta tablo kurulur ve PDF olarak acilir. Tum sutunlar tek sayfa genisliginde.
 Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, _
     ByVal gen As Variant, ByVal fmt As Variant, ByVal hiz As Variant, ByVal satirH As Double, _
     ByVal imza As Boolean, ByVal ust As String)
-    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, p As Long, sayfaSon As Long, rpp As Long
-    Dim bit As Long, m As Long, z As Long, tw As Double, yari As Double, kutuH As Double, sagEtiket As String
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, sagEtiket As String
     Dim dosya As String, alan As Range, no As Long, metin As String
     k = UBound(bas) - LBound(bas) + 1
     Set wb = Workbooks.Add(xlWBATWorksheet)
@@ -1778,62 +1791,15 @@ Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef ver
     End With
     c.Rows(1).RowHeight = 30
     c.Range(c.Cells(2, 1), c.Cells(n + 1, 1)).EntireRow.RowHeight = satirH
-    For j = 1 To k
-        If hiz(LBound(hiz) + j - 1) = xlLeft Then c.Range(c.Cells(2, j), c.Cells(n + 1, j)).IndentLevel = 0
-    Next j
-    ' Olcek: tum sutunlar A4 yatay tek sayfa genisligine (~27,7 cm).
-    tw = c.Range(c.Cells(1, 1), c.Cells(1, k)).Width
-    z = Int(application.CentimetersToPoints(27.6) / tw * 100)
-    If z > 100 Then z = 100
-    If z < 10 Then z = 10
-    If imza Then
-        ' Sayfa basina satir: kalan yukseklik (18,9 cm) - baslik - imza bolumu.
-        ' Kase/imza kutusu basilida ~4 cm: yan yana 3 kase + imza her iki tarafta rahat sigar.
-        kutuH = application.Min(409, application.CentimetersToPoints(4) * 100 / z)
-        rpp = Int((application.CentimetersToPoints(18.9) * 100 / z - 30 - 20 - kutuH - 24) / satirH)
-        If rpp < 3 Then rpp = 3
-        sayfaSon = Int((n - 1) / rpp)
-        ' Kutularin bolundugu sutun: genisligin yarisi.
-        yari = tw / 2: m = 1
-        For j = 1 To k - 1
-            If c.Range(c.Cells(1, 1), c.Cells(1, j)).Width <= yari Then m = j
-        Next j
-        sagEtiket = "SAYIM YAPAN SORUMLU/LAR  (Ad Soyad - Kaþe - Ýmza)"
-        If InStr(AKFIX_NORMAL(kaynakAd), "KARSILASTIRMA") > 0 Then sagEtiket = "KONTROL EDEN SORUMLU/LAR  (Ad Soyad - Kaþe - Ýmza)"
-        For p = sayfaSon To 0 Step -1
-            bit = 1 + (p + 1) * rpp
-            If bit > n + 1 Then bit = n + 1
-            c.Rows(bit + 1 & ":" & bit + 2).Insert
-            With c.Range(c.Cells(bit + 1, 1), c.Cells(bit + 2, k))
-                .Borders.LineStyle = xlNone: .Interior.Pattern = xlNone: .NumberFormat = "@"
-            End With
-            c.Rows(bit + 1).RowHeight = 20: c.Rows(bit + 2).RowHeight = kutuH
-            T_CiktiKutu c.Range(c.Cells(bit + 1, 1), c.Cells(bit + 1, m)), "ÝLGÝLÝ DEPO SORUMLUSU/LARI  (Ad Soyad - Kaþe - Ýmza)", True
-            T_CiktiKutu c.Range(c.Cells(bit + 1, m + 1), c.Cells(bit + 1, k)), sagEtiket, True
-            T_CiktiKutu c.Range(c.Cells(bit + 2, 1), c.Cells(bit + 2, m)), vbNullString, False
-            T_CiktiKutu c.Range(c.Cells(bit + 2, m + 1), c.Cells(bit + 2, k)), vbNullString, False
-        Next p
-        Set alan = c.Range(c.Cells(1, 1), c.Cells(n + 1 + 2 * (sayfaSon + 1), k))
-    End If
+    If InStr(AKFIX_NORMAL(kaynakAd), "KARSILASTIRMA") > 0 Then sagEtiket = "Kontrol Eden Sorumlu/lar:"
     application.PrintCommunication = False
     With c.PageSetup
         .PrintArea = alan.Address
         .PrintTitleRows = "$1:$1"
-        If imza Then
-            .Zoom = z
-        Else
-            .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
-        End If
+        .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
     End With
-    T_CiktiSayfa c.PageSetup, ust, imza
+    T_CiktiSayfa c.PageSetup, ust, imza, sagEtiket
     application.PrintCommunication = True
-    If imza Then
-        On Error Resume Next
-        For p = 0 To sayfaSon - 1
-            c.HPageBreaks.Add Before:=c.Rows(2 + (p + 1) * (rpp + 2))
-        Next p
-        On Error GoTo Hata
-    End If
     dosya = T_CiktiDosya(kaynakAd)
     c.ExportAsFixedFormat Type:=xlTypePDF, Filename:=dosya, Quality:=xlQualityStandard, _
         IncludeDocProperties:=False, IgnorePrintAreas:=False, OpenAfterPublish:=True
@@ -1846,20 +1812,6 @@ Hata:
     wb.Close SaveChanges:=False
     On Error GoTo 0
     Err.Raise no, , metin
-End Sub
-
-Private Sub T_CiktiKutu(ByVal r As Range, ByVal metin As String, ByVal baslik As Boolean)
-    r.Merge
-    With r
-        .Borders(xlEdgeLeft).LineStyle = xlContinuous: .Borders(xlEdgeRight).LineStyle = xlContinuous
-        .Borders(xlEdgeTop).LineStyle = xlContinuous: .Borders(xlEdgeBottom).LineStyle = xlContinuous
-        .Borders.Color = RGB(0, 0, 0)
-        If baslik Then
-            .Value2 = metin: .Font.bold = True: .Font.Size = 9
-            .Interior.Color = RGB(217, 217, 217)
-            .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-        End If
-    End With
 End Sub
 
 Private Function T_CiktiDosya(ByVal ad As String) As String
