@@ -2006,6 +2006,7 @@ Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
     Dim bas As Long, bit As Long, ust As Double, s As Shape, z As Shape, hz As Shape, co As ChartObject
     Dim x2 As Double, zw As Double, zh As Double, gs As Double, lx As Double, lw As Double, adim As Double
     Dim m As Long, i As Long, y As Double, t As String
+    Y_PAY_HIZALA r
     bas = Val(CStr(r.Range("BX31").Value2)): bit = Val(CStr(r.Range("BX32").Value2))
     If bas < 9 Or bit < bas Then Exit Sub
     Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")
@@ -2067,10 +2068,43 @@ Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
     Next s
 End Sub
 
+'' Ust halka lejanti: yuzdeler (PAY_n) her zaman PAY basliginin altinda, ayni genislik ve hizada.
+Private Sub Y_PAY_HIZALA(ByVal r As Worksheet)
+    Dim b As Shape, s As Shape, i As Long
+    Set b = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_BASLIK")
+    If b Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To 20
+        Set s = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_" & i)
+        If Not s Is Nothing Then
+            s.Left = b.Left: s.Width = b.Width
+            s.TextFrame2.MarginLeft = b.TextFrame2.MarginLeft: s.TextFrame2.MarginRight = b.TextFrame2.MarginRight
+            s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignRight
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Function Y_PAY_KAYIK(ByVal r As Worksheet) As Boolean
+    Dim b As Shape, s As Shape
+    Set b = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_BASLIK")
+    Set s = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_1")
+    If b Is Nothing Or s Is Nothing Then Exit Function
+    Y_PAY_KAYIK = (Abs(s.Left - b.Left) > 1 Or Abs(s.Width - b.Width) > 1)
+End Function
+
 ' Sayfa acilirken bolum kaymissa (eski dosya ya da Excel'in yeniden konumlamasi) sessizce toparlanir.
 Private Sub Y_DM_KONTROL(ByVal r As Worksheet)
     Dim bas As Long, z As Shape, co As ChartObject, ust As Double, korumali As Boolean
     If Right$(r.Name, 6) <> "_RAPOR" Then Exit Sub
+    If Y_PAY_KAYIK(r) Then
+        On Error Resume Next
+        korumali = r.ProtectContents Or r.ProtectDrawingObjects
+        If korumali Then r.Unprotect ""
+        Y_PAY_HIZALA r
+        If korumali Then Y_KORU r
+        On Error GoTo 0
+    End If
     bas = Val(CStr(r.Range("BX31").Value2))
     If bas < 9 Then Exit Sub
     Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")

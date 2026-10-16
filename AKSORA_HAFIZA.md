@@ -191,10 +191,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ONAYLI DÜZEN = ilk tasarım (imza kutusu satır arası YOK; FitToPagesWide=1, BlackAndWhite=True, satır 24).
   Sayım sütunları: Üretim yeri | Depo (kod) | Depo yeri tanımı | Malzeme | Malzeme kısa metni | [Seri no] | Parti |
   Tahditsiz klnb. | SAYILAN | FARK. TOTAL İPTAL (kullanıcı istemedi). Sıra: malzeme kısa metni A-Z, malzeme, depo.
-  Alt bilgi: orta = imza bandı RESMİ (&G; kodda base64 PNG -> TEMP\AKSORA_IMZA_BANDI_V2.png, 27,7x1,3 cm, şeffaf zemin, etiket 6pt, kullanıcı ONAYLADI; dikey çizgiler
+  Alt bilgi: orta = imza bandı RESMİ (&G; kodda base64 PNG -> TEMP\AKSORA_IMZA_BANDI_V3.png, 27,7x1,3 cm, şeffaf zemin, etiket 4,5pt (6pt bile büyük bulundu); dikey çizgiler
   3,2/13,85/25,6 cm, etiketler İLGİLİ DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR), sol 7pt Çıktı, sağ 7pt Sayfa.
   Alt kenar 1,65 cm (ilk tasarım 1,4) -> sayfa sayısı ~aynı (kullanıcı 19 sayfa ister; 4,4 cm alt kenar 35 sayfa yaptı!).
   Çok satırlı/büyük punto alt bilgi denemesi orta/sağ bölümü hiç basmadı; kullanma. Kaynak resim docs/cikti/.
+- Y_/I_ rapor üst halka lejantında yüzdeler (HALKA_PAY_n) PAY başlığından kayıyordu: Y_PAY_HIZALA (DM_DUZEN başında)
+  ve Y_DM_KONTROL (sayfa açılışı) PAY_n'yi PAY_BASLIK sol/genişlik/sağa hizaya getirir.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
