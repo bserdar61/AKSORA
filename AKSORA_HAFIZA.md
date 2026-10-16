@@ -190,9 +190,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   3 rapor/İSG/teminat/hakediş -> sayfanın kendisi (düğmeler PrintObject=False). Panellerde yok.
   ONAYLI DÜZEN = ilk tasarım (imza kutusu satır arası YOK; FitToPagesWide=1, BlackAndWhite=True, satır 24).
   Sayım sütunları: Üretim yeri | Depo (kod) | Depo yeri tanımı | Malzeme | Malzeme kısa metni | [Seri no] | Parti |
-  Tahditsiz klnb. | TOTAL (aynı malzeme kodunun çıktıdaki tüm satırlarının toplamı + birim) | SAYILAN | FARK.
-  Alt bilgi (kullanıcı çizimi): küçük yazılar, Consolas kutu çizgisi (ChrW 9474, 18pt) ile 3 dikey çizgi, 5 satır:
-  [Çıktı] | İLGİLİ DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR | [Sayfa]; alt kenar 4,4 cm. Bölüm ≤255 karakter.
+  Tahditsiz klnb. | SAYILAN | FARK. TOTAL İPTAL (kullanıcı istemedi). Sıra: malzeme kısa metni A-Z, malzeme, depo.
+  Alt bilgi: orta = imza bandı RESMİ (&G; kodda base64 PNG -> TEMP\AKSORA_IMZA_BANDI_V1.png, 27,7x1,3 cm; dikey çizgiler
+  3,2/13,85/25,6 cm, etiketler İLGİLİ DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR), sol 7pt Çıktı, sağ 7pt Sayfa.
+  Alt kenar 1,65 cm (ilk tasarım 1,4) -> sayfa sayısı ~aynı (kullanıcı 19 sayfa ister; 4,4 cm alt kenar 35 sayfa yaptı!).
+  Çok satırlı/büyük punto alt bilgi denemesi orta/sağ bölümü hiç basmadı; kullanma. Kaynak resim docs/cikti/.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

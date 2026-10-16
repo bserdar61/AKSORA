@@ -1547,7 +1547,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
     Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
     Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
-    Dim toplam As Object, adet() As Double, x As Long
+    Dim adet() As Double, x As Long
     If T_Stok(ws) Then
         cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
     Else
@@ -1559,7 +1559,6 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         Set gor = ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)).SpecialCells(xlCellTypeVisible)
         On Error GoTo 0
     End If
-    Set toplam = CreateObject("Scripting.Dictionary"): toplam.CompareMode = vbTextCompare
     If Not gor Is Nothing Then
         kaynak = ws.Range(ws.Cells(7, 1), ws.Cells(son, 12)).Value2
         ' 1 UY, 2 depo yeri tanimi, 3 malzeme, 4 tanim, 5 parti, 6 birim, 7 seri, 8 depo kodu
@@ -1582,8 +1581,6 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
                         If Not IsError(mk) Then
                             If IsNumeric(mk) And Len(CStr(mk)) > 0 Then adet(n) = CDbl(mk)
                         End If
-                        ' TOTAL: ayni malzeme kodunun ciktidaki tum satirlarinin toplami
-                        toplam(veri(n, 3)) = toplam(veri(n, 3)) + adet(n)
                         If cS > 0 Then
                             veri(n, 7) = T_CiktiMetin(kaynak(i, cS))
                             If Len(veri(n, 7)) > 0 Then seriVar = True
@@ -1595,7 +1592,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler çýktýya alýnmaz)."
     ' Seri numarali stoklarda (sayac vb.) seri numarasi sutunu eklenir.
-    k = IIf(seriVar, 11, 10)
+    k = IIf(seriVar, 10, 9)
     ReDim cikis(1 To n, 1 To k)
     For i = 1 To n
         cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
@@ -1604,7 +1601,6 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
         cikis(i, x) = veri(i, 5)
         cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
-        cikis(i, x + 2) = T_CiktiMiktar(CDbl(toplam(veri(i, 3))), CStr(veri(i, 6)))
     Next i
     depo = Trim$(CStr(ws.Range("H2").Value2)): If Len(depo) = 0 Then depo = "TÜMÜ"
     ust = Replace(ws.Name, "_", " ") & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
@@ -1614,14 +1610,14 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     If seriVar Then
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
-            "Tahditsiz klnb.", "TOTAL", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 13.5, 22, 20), _
-            Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
-            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlCenter, xlRight, xlRight, xlLeft, xlLeft), 24, True, ust
+            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 22, 20), _
+            Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
+            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust, Array(5, 4, 2)
     Else
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
-            "Tahditsiz klnb.", "TOTAL", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 7.5, 13.5, 13.5, 25, 24), _
-            Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
-            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlLeft, xlLeft), 24, True, ust
+            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 7.5, 13.5, 28, 26), _
+            Array("@", "@", "@", "@", "@", "@", "@", "@", "@"), _
+            Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust, Array(5, 4, 2)
     End If
 End Sub
 
@@ -1738,12 +1734,11 @@ End Sub
 
 ' Ortak sayfa duzeni: A4 yatay, dar kenar, altta kucuk "Cikti" ve "Sayfa".
 ' Ortak sayfa duzeni (ilk tasarim): A4 yatay, dar kenar, ust ortada baslik.
-' imza = True: alt bilgi kase/imza alani (kullanicinin cizimi): kucuk yazilar, dikey cizgilerle uc bolum:
-'   [Cikti] | ILGILI DEPO SORUMLUSU/LARI | KONTROL EDEN SORUMLU/LAR | [Sayfa]
-' Cizgiler esit genislikli yazi tipinde (Consolas) kutu cizgisi karakteriyle; her bolum 5 satir, alta hizali.
-' Alt bilgi bolumu en fazla 255 karakter alir.
+' imza = True: alt bilgide kase/imza bandi (kullanicinin cizimi) resim olarak: dikey cizgiler arasinda
+' "ILGILI DEPO SORUMLUSU/LARI" ve "KONTROL EDEN SORUMLU/LAR"; solda kucuk Cikti, sagda kucuk Sayfa.
+' Alt kenar ilk tasarima yakin tutulur (sayfa basina satir sayisi azalmaz).
 Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean)
-    Dim cz As String, sol As String, orta As String, sag As String, i As Long, bos As String
+    Dim resim As String
     On Error Resume Next
     ps.PaperSize = xlPaperA4
     ps.Orientation = xlLandscape
@@ -1753,44 +1748,67 @@ Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza 
     ps.CenterHorizontally = True
     ps.CenterHeader = "&""Aptos""&10&B" & Replace(ust, "&", "&&")
     ps.LeftHeader = vbNullString: ps.RightHeader = vbNullString
+    ps.LeftFooter = "&""Aptos""&7Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    ps.RightFooter = "&""Aptos""&7Sayfa &P / &N"
+    ps.CenterFooter = vbNullString
+    ps.FooterMargin = application.CentimetersToPoints(0.6)
+    ps.BottomMargin = application.CentimetersToPoints(1.4)
     If imza Then
-        cz = "&18" & ChrW(9474)
-        bos = String$(24, " ")
-        ' Sol: cizgi; ilk satirda etiket, son satirda cikti tarihi (cizginin solunda).
-        sol = "&""Consolas""&7" & bos & cz & "&""Aptos""&8&B          ÝLGÝLÝ DEPO SORUMLUSU/LARI&B"
-        sol = sol & vbLf & "&""Consolas""&7" & bos & cz
-        For i = 1 To 2
-            sol = sol & vbLf & "&7" & bos & cz
-        Next i
-        sol = sol & vbLf & "&7" & Left$("Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn") & bos, 24) & cz
-        ' Orta: sayfa ortasinda cizgi; sagda etiket (iki yan esit genislik, cizgi tam ortada kalir).
-        orta = "&""Consolas""&8" & String$(56, " ") & cz & "&8&B" & String$(30, " ") & "KONTROL EDEN SORUMLU/LAR  &B"
-        For i = 1 To 4
-            orta = orta & vbLf & cz
-        Next i
-        ' Sag: cizgi ve sayfa numarasi.
-        sag = "&""Consolas""" & cz & "&7" & String$(14, " ")
-        For i = 1 To 3
-            sag = sag & vbLf & cz & "&7" & String$(14, " ")
-        Next i
-        sag = sag & vbLf & cz & "&7 Sayfa &P / &N"
-        ps.LeftFooter = sol: ps.CenterFooter = orta: ps.RightFooter = sag
-        ps.FooterMargin = application.CentimetersToPoints(0.4)
-        ps.BottomMargin = application.CentimetersToPoints(4.4)
-    Else
-        ps.LeftFooter = "&""Aptos""&8Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
-        ps.CenterFooter = vbNullString
-        ps.RightFooter = "&""Aptos""&8Sayfa &P / &N"
-        ps.FooterMargin = application.CentimetersToPoints(0.6)
-        ps.BottomMargin = application.CentimetersToPoints(1.4)
+        application.PrintCommunication = True
+        resim = T_CiktiImzaResmi()
+        If Len(resim) > 0 Then
+            ps.CenterFooterPicture.Filename = resim
+            ps.CenterFooterPicture.LockAspectRatio = msoFalse
+            ps.CenterFooterPicture.Width = application.CentimetersToPoints(27.7)
+            ps.CenterFooterPicture.Height = application.CentimetersToPoints(1.3)
+            ps.CenterFooter = "&G"
+            ps.FooterMargin = application.CentimetersToPoints(0.25)
+            ps.BottomMargin = application.CentimetersToPoints(1.65)
+        End If
     End If
 End Sub
+
+' Kase/imza bandi (siyah-beyaz PNG, 27,7 x 1,3 cm, 300 dpi) kodun icinde; gecici klasore bir kez yazilir.
+Private Function T_CiktiImzaResmi() As String
+    Dim s As String, yol As String, b() As Byte, d As Object, e As Object, f As Integer
+    On Error GoTo Yok
+    yol = Environ$("TEMP")
+    If Len(yol) = 0 Then yol = AKSORA_KAYIT_KLASORU()
+    yol = yol & application.PathSeparator & "AKSORA_IMZA_BANDI_V1.png"
+    If Len(Dir$(yol)) > 0 Then T_CiktiImzaResmi = yol: Exit Function
+    s = s & "iVBORw0KGgoAAAANSUhEUgAADMgAAACaAQAAAADOf6gIAAAACXBIWXMAAC4jAAAuIwF4pT92AAAGL0lEQVR42u2cv47bxhaHv+ES1hTGmqWLIJ43uClTBNYE90X8CEmXwsmOfI1b5w2yj5A3CLVVSr/BpQIXKakgBWWQnBT8I0q7MZCbiDCT"
+    s = s & "39eQu0tBZ+abOXNmtJCJ/CG+/YIPl7cfsRzi5/l7/54gPkxkRmaEzMiMkBmZETIjZEZmhMzIjJAZMbeZt93ll+Ot0JyRGSEzMvPX0X/GeH28FZozMvM+7hoHG7eLGXewsWyNNykHC9HAJuyN34e7QxbTfYjZwe9t4/bhlx3sXGOyxs3QBTsS"
+    s = s & "DHu/25pkZwKbcPCwM25j2Zq1bRyYwNYfjDv4XWNJDj5mB998GThYTLrQORPDWDAfAGj48R28wzXhFt6cPPzmAFD2P/06z+iMyQFP0f1w24Tbk3hroOHb6N/Azyevq/trs1Az7yb3HoCQR6igpoQKoGr7B/KToNp5zLRpNXiBsh4HxhAv1NB2"
+    s = s & "EQP1+O9G4ey6MDPV5L5rfx4InZTqOPDO21iUEOcxU9uScvBRVZOIi354VFB3eu61rh7H0+LMlOsh8KuyNDFflf+7KnKKlvJ5zU3XN72fuCqPAnmWz2OmyoqXFbDetnRRAcSiixegvKF61rIOAG17OuZW5UKzWeE/HW4fVwC2ffy0wJi82H5z"
+    s = s & "ngnsNUAK5BW4ecyUbvufuu9nQ7H95iTeCBCK8sUPx+xG/yyULdilVs0hPX2zlCwFcOaspUNruwk2X31a+IQwptVJVMkxw2aEh8fJxeb15c2Ye7f1vUZ9XIVZWvsweQiT1T4/i9dOl0iAJ3X/aHnRqC5v5m5y/7K7uKQkBhKenT/c1ckWCPVs"
+    s = s & "ZjakPB9X92lULwdVHkMWHui7Ii7XzOnWwYxp4/XkEofhd9xapgF2c+62u3eO46JhfBdvOhle3eWraUZwUPmFmmnO3qNyAK4J3XgFyMyQPt5Oauedn8dMtw7G3+uPArLoAbahm9HhJMEdsr/DnDk2JOsT+lMAXgzVQtv9jUgLj+aMq+/fTx7q"
+    s = s & "IdtbeAzA9xOjOQET/h5m+rXWTtZU7BCGH9O29bPFU79/J19COl3tUzPtv+xSUc1sxsTQd8Gqb2x5UhB9OvRPSzw/H7jc6QwP1WAx7+I1wFWoJnvL4uTQIr/QUcUMZq7OiuCrac35sgJIhy3PKgwZP3M8m+nc7GZSLlflg8dL3aLfnQ4kyaS+"
+    s = s & "Ti2rfKHZ7Pnk/jWwqinaDK5p2d3bUH4xlEk7N9u+xoeau74OeEQ7KQlfD1luRaQMZwuKBQ72gaVpIWbivdt0ut7Uv5v7w1wnmq4b9F2SmpbAcbIMuWPeO21csdgTzcnKOjSsrKGASA6B/I7EAlTVGijL8dzKzVSVFS2h7wnTRTWN13eZNxTg"
+    s = s & "KXb9J2VV5cNk7izRjLs97vC7NiS//uz4qcWtX0Fri76Fpi7JyqQqjgdXYRYztlx/PZ7t1W796ixe2Eey288hpmU+CXay41memV2a7TzsE6DJsmg8mMZ5Yppldyl4dmBK2GSNY+/CwQPm6brMyeaZM2nlXtvhUC9kdylbC8b18TogsXaXgGMf"
+    s = s & "oIKtbRywuX5Slyz10+bpXHfDVAiAs1iI6diyQMAYTA3gLXOVAEmdkQ0TtLWTiN24Bc26MF+NHRa6ki5LuNDR5uXNPJq8R9/T3gD4lAxcMvaEN5AQEi6bwO9vslp7XNK6qE7jZQgzM8fyxYyvuUwfppdvd/hhuF3110+u4TMToNjDJsTx16b4"
+    s = s & "Fy++63c7xRXFPJ/S3PzX5Pt+dYtXFIeTeC18TE6IQJ7fTNoANVSnH6j/hZvyP/b8HN9usn/yf75w3m83af79p5LtEr/dxLAM/GVXvw+wxdfLEHMV/nFmhMzIjJAZmREyIzNCZoTMyIyQGZkRMiNkRmaEzMiMkBkhMzIjZEZmhMzIjJAZITMy"
+    s = s & "I2RGZoTMCJmRGSEzMiNkRsiMzAiZkRkhMzIjZEbIjMwImZEZITNCZmRGyIzMCJkRMiMzQmZkRsiMkBmZETIjM0JmZEbIjJAZmREyIzNCZoTMyIyQGZkRMiNkRmaEzMiMkBmZETIjZEZmhMzIjJAZITMyI2RGZoTMCJmRGSEzMiNkRmaEzAiZ"
+    s = s & "kRkhMzIjZEbIjMwImZEZITPilN8A+QvaeZaomQAAAAAASUVORK5CYII="
+    Set d = CreateObject("MSXML2.DOMDocument")
+    Set e = d.createElement("b")
+    e.DataType = "bin.base64": e.Text = s
+    b = e.nodeTypedValue
+    f = FreeFile
+    Open yol For Binary Access Write As #f
+    Put #f, 1, b
+    Close #f
+    T_CiktiImzaResmi = yol
+    Exit Function
+Yok:
+    On Error Resume Next
+    Close #f
+End Function
 
 ' Gecici (gorunmez) kitapta tablo kurulur ve PDF olarak acilir. Tum sutunlar tek sayfa genisliginde.
 Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, _
     ByVal gen As Variant, ByVal fmt As Variant, ByVal hiz As Variant, ByVal satirH As Double, _
-    ByVal imza As Boolean, ByVal ust As String)
-    Dim wb As Workbook, c As Worksheet, k As Long, j As Long
+    ByVal imza As Boolean, ByVal ust As String, Optional ByVal sira As Variant)
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range
     Dim dosya As String, alan As Range, no As Long, metin As String
     k = UBound(bas) - LBound(bas) + 1
     Set wb = Workbooks.Add(xlWBATWorksheet)
@@ -1808,6 +1826,12 @@ Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef ver
         c.Cells(1, j).Value2 = bas(LBound(bas) + j - 1)
     Next j
     c.Range("A2").Resize(n, k).Value2 = veri
+    ' Sayim listesi malzeme adina gore A-Z (sonra malzeme kodu, depo).
+    If Not IsMissing(sira) And n > 1 Then
+        Set r = c.Range(c.Cells(2, 1), c.Cells(n + 1, k))
+        r.Sort Key1:=r.Columns(sira(0)), Order1:=xlAscending, Key2:=r.Columns(sira(1)), Order2:=xlAscending, _
+            Key3:=r.Columns(sira(2)), Order3:=xlAscending, Header:=xlNo, MatchCase:=False, Orientation:=xlTopToBottom
+    End If
     Set alan = c.Range(c.Cells(1, 1), c.Cells(n + 1, k))
     With alan
         .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
