@@ -1406,8 +1406,10 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, sessiz As Boolean, korumali As Boolean
     Dim bilgi As String, sonuc As String, hataMetni As String, sure As Double, adet As Long
     If AKSORA_V11_MESGUL Or AKSORA_MUSTERI_TOPLU_AKTIF Then Exit Sub
-    If MsgBox("Tanýmlý illerin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) müþteri stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
-        vbYesNo + vbQuestion, "AKSORA | Müþteri Birimi") <> vbYes Then Exit Sub
+    If Not AKSORA_ADMIN_TOPLU Then
+        If MsgBox("Tanýmlý illerin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) müþteri stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
+            vbYesNo + vbQuestion, "AKSORA | Müþteri Birimi") <> vbYes Then Exit Sub
+    End If
     ev = application.EnableEvents: sc = application.ScreenUpdating
     hesap = application.Calculation: sessiz = ANA_SESSIZ_MOD
     Set onceki = ActiveSheet
@@ -1466,6 +1468,7 @@ Bitir:
     Else
         mTopluMesaj = sonuc: mTopluIkon = vbInformation
     End If
+    If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MÜÞTERÝ:" & vbCrLf & mTopluMesaj & vbCrLf: Exit Sub
     application.OnTime Now + TimeSerial(0, 0, 1), "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_TOPLU_MESAJ"
     Exit Sub
 Hata:

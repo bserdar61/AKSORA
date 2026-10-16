@@ -424,9 +424,11 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     Dim adres As String, satir As Long, sutun As Long, basladi As Boolean
     Dim toplamBas As Double, arayuzBas As Double
     If AKSORA_V11_MESGUL Then Exit Sub
-    If MsgBox("Beþ ilin stoklarý SAP'den sýrayla alýnacak." & vbCrLf & _
-              "Baþarýsýz ilin önceki kayýtlarý korunur. Devam edilsin mi?", _
-              vbYesNo + vbQuestion, "AKSORA | Bütün Ýller") <> vbYes Then Exit Sub
+    If Not AKSORA_ADMIN_TOPLU Then
+        If MsgBox("Beþ ilin stoklarý SAP'den sýrayla alýnacak." & vbCrLf & _
+                  "Baþarýsýz ilin önceki kayýtlarý korunur. Devam edilsin mi?", _
+                  vbYesNo + vbQuestion, "AKSORA | Bütün Ýller") <> vbYes Then Exit Sub
+    End If
     ev = application.EnableEvents: sc = application.ScreenUpdating
     hesap = application.Calculation: sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
@@ -527,6 +529,7 @@ Temizle:
     On Error GoTo 0
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
         "   (il baþýna ortalama " & AKSORA_SAYI_METNI(AK14_GECEN_SURE(toplamBas) / 5, "0.0") & " sn)"
+    If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MALZEME:" & vbCrLf & sonuc & IIf(Len(Hata) > 0, vbCrLf & Hata, "") & vbCrLf: Exit Sub
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
     Else

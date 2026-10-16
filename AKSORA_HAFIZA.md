@@ -200,5 +200,17 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Çıktı başlığı "Depo:" = çıktıya giren depoların TANIMLARI (virgülle; sayfadaki tüm depolar ise TÜMÜ). H2 hücresine bakma
   (filtreyle seçilen depoyu göstermiyordu).
 
+## ADMİN | Yönetim Merkezi (16.10.2026)
+- Hub (BIRIM SECIM, BX2 sürüm 11): sağ altta "ADMİN GİRİŞİ" -> AKSORA_ADMIN_GIRIS, şifre adminbs1284 (InputBox; VBA'da maskeli kutu yok).
+- Sayfa "ADMIN PANEL" (ilk girişte kurulur, BIRIM_DIGERLERINI_GIZLE listesinde). Kod modAKSORA_BIRIM sonunda (ADM_*).
+  İçerik: başlık + düğmeler (TÜM BİRİMLERİ GÜNCELLE / RAPORU YENİLE / ÇIKTI AL / BİRİM SEÇİMİNE DÖN), otomatik yönetici özeti,
+  sağlık skoru (100 - 12*kritik - 4*uyarı), 4 birim kartı (il, güncellik, değer, satır/depo, birime özel risk),
+  arama (C20, Enter veya ARA; tüm birimlerin ekrandaki stok sayfalarında kod/ad/seri; birim+depo+malzeme gruplu ilk 20),
+  uyarılar (güncellik, eksi stok, müşteri fiyatsız, malzeme HURDA, İSG zimmet/sarf, demontaj eksik, teminat aşım/dikkat/45 gün,
+  karşılaştırma sıfırlanan), İSG ve demontaj tabloları, en değerli 10 depo (veri çubuklu).
+- Tek tuş: AKSORA_ADMIN_TOPLU=True iken 4 birimin bütün iller makroları onay/özet MsgBox göstermez, sonuç AKSORA_ADMIN_SONUC'a yazılır.
+- I_İSG notu (Y_BOLUM notSutun=9) tablonun son sütununa yaslı.
+- Baz: kullanıcının 16.10 öğlen dosyası (up18), bx/xl = u18/xl, frmSplash VB_Base u18'den.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

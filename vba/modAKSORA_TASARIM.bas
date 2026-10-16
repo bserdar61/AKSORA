@@ -1515,6 +1515,18 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
 Son:
 End Sub
 
+' Disaridan (yonetim merkezi vb.) sayfa gorunumu ciktisi.
+Public Sub AKSORA_CIKTI_SAYFA(ByVal ws As Worksheet)
+    On Error GoTo Hata
+    application.ScreenUpdating = False
+    T_CiktiGorunum ws
+    application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    application.ScreenUpdating = True
+    MsgBox "Çýktý hazýrlanamadý." & vbCrLf & vbCrLf & Err.Description, vbExclamation, "AKSORA"
+End Sub
+
 Public Sub AKSORA_STOK_CIKTI()
     AKSORA_CIKTI_AL
 End Sub
