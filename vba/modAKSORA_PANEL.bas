@@ -910,6 +910,8 @@ ByVal SAPKontrol As Boolean)
         PANEL_SAP_DURUM_YAZ wsPanel, kod
     End If
 
+    If AKSORA_PANEL_KART_CANLI(kod) Then AKSORA_PANEL_KART_GUNCELLENIYOR wsPanel, kod
+
     Exit Sub
 
 VERI_YOK:
@@ -1096,6 +1098,8 @@ ByVal ws As Worksheet)
         "   |   Ýlçe " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("ÝLÇE_STOK", "C3"), 0) & " satýr" & _
         "   |   Yüklenici " & PANEL_SAYI_TR(PANEL_SAYFADAN_LONG("YÜKLENÝCÝ_STOK", "C3"), 0) & " satýr" & _
         "   |   Toplam stok deðeri " & PANEL_SAYI_TR(toplamDeger, 2) & " TL"
+    ' Guncelleme surerken serit canli mesaji gosterir; ozet bitince yazilir.
+    If AKSORA_PANEL_CANLI Then Exit Sub
     With ws.Range("B6")
         If TumGuncel Then
             .Value = ozet
@@ -1521,6 +1525,8 @@ Public Sub AKSORA_DURUM_RENK_GUVENLI()
 
         End If
 
+        If AKSORA_PANEL_KART_CANLI(CStr(kodlar(i))) Then AKSORA_PANEL_KART_GUNCELLENIYOR ws, CStr(kodlar(i))
+
     Next i
 
 
@@ -1546,13 +1552,13 @@ Public Sub AKSORA_DURUM_RENK_GUVENLI()
     End Select
 
 
-    With ws.Range("B6:AB6")
-
-        .Interior.Color = bantRenk
-        .Font.Color = bantYazi
-        .Font.bold = True
-
-    End With
+    If Not AKSORA_PANEL_CANLI Then
+        With ws.Range("B6:AB6")
+            .Interior.Color = bantRenk
+            .Font.Color = bantYazi
+            .Font.bold = True
+        End With
+    End If
 
 
     '======================================================

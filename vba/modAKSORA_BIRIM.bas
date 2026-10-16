@@ -1410,6 +1410,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_GORUNUM(ByVal ws As Worksheet)
     Dim s As Shape, gen As Double, alt As Double, z As Double
     If Not (ActiveSheet Is ws) Then Exit Sub
+    Y_DM_KONTROL ws
     For Each s In ws.Shapes
         If s.Visible = msoTrue Then
             gen = application.Max(gen, s.Left + s.Width)
@@ -1998,34 +1999,92 @@ Private Sub Y_SEKME_SIRASI(Optional ByVal ilce As Boolean)
     Next i
 End Sub
 
-' Rapor alt bolumu: depo secim listesi baslik satirinda tablo basligina binmez.
+' Depo bazinda dagilim bolumu: tum sekiller satir konumundan yeniden hesaplanir.
 Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
-    Dim bas As Long, ust As Double, eskiH As Double, fark As Double, s As Shape, t As String
-    bas = Val(CStr(r.Range("BX31").Value2))
-    If bas < 9 Then Exit Sub
-    ust = r.Rows(bas).Top: eskiH = r.Rows(bas).Height
-    ' Form listesi dusuk yakinlastirmada en az ~22 piksel cizilir; satir bu payi tasir,
-    ' liste satirin ustune yaslanir ve tablo basligina asla inmez.
-    If eskiH < 56 Then
-        fark = 56 - eskiH
-        For Each s In r.Shapes
-            If Left$(s.Name, 12) = "AKSORA_RP_DM" And s.Top >= ust + eskiH - 1 Then s.Top = s.Top + fark
-        Next s
-        r.Rows(bas).RowHeight = 56
+    Dim bas As Long, bit As Long, ust As Double, s As Shape, z As Shape, hz As Shape, co As ChartObject
+    Dim x2 As Double, zw As Double, zh As Double, gs As Double, lx As Double, lw As Double, adim As Double
+    Dim m As Long, i As Long, y As Double, t As String
+    bas = Val(CStr(r.Range("BX31").Value2)): bit = Val(CStr(r.Range("BX32").Value2))
+    If bas < 9 Or bit < bas Then Exit Sub
+    Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")
+    If z Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set co = r.ChartObjects("AKSORA_RP_DM_GRAFIK")
+    On Error GoTo 0
+    If co Is Nothing Then Exit Sub
+    ' Form listesi dusuk yakinlastirmada en az ~22 piksel cizilir; baslik satiri bu payi tasir.
+    If r.Rows(bas).Height < 55 Then r.Rows(bas).RowHeight = 56
+    ust = r.Rows(bas).Top
+    Set hz = Y_SEKIL(r, "AKSORA_RP_HALKA_ZEMIN")
+    If hz Is Nothing Then
+        x2 = z.Left: zw = z.Width
+    Else
+        x2 = hz.Left: zw = hz.Width
     End If
+    zh = application.Max(366, r.Rows(bit).Top + r.Rows(bit).Height - ust)
+    z.Left = x2: z.Top = ust: z.Width = zw: z.Height = zh
+    gs = application.Min(zh - 96, zw * 0.42)
+    If gs < 120 Then gs = 120
+    co.Left = x2 + zw * 0.04: co.Top = ust + 76: co.Width = gs: co.Height = gs
+    Do While Not Y_SEKIL(r, "AKSORA_RP_DM_HALKA_AD_" & (m + 1)) Is Nothing
+        m = m + 1
+    Loop
+    If m < 1 Then m = 1
+    lx = co.Left + gs + zw * 0.05: lw = x2 + zw - 14 - lx
+    adim = application.Min(24, (gs - 20) / m)
     For Each s In r.Shapes
         t = s.Name
-        If t = "AKSORA_RP_DM_BASLIK" Or t = "AKSORA_RP_DM_SECIM_ETIKET" Then
-            s.Top = ust + 2: s.Height = 24
-            On Error Resume Next
-            s.TextFrame2.VerticalAnchor = msoAnchorMiddle
-            On Error GoTo 0
-        ElseIf t = "AKSORA_RP_DM_LISTE" Then
-            s.Top = ust + 4: s.Height = 18
-        ElseIf t = "AKSORA_RP_DM_ZEMIN" Then
-            If s.Top < ust + 1 And s.Top > ust - 1 Then s.Height = s.Height + fark
+        If Left$(t, 12) = "AKSORA_RP_DM" Then
+            Select Case True
+                Case t = "AKSORA_RP_DM_BASLIK" Or t = "AKSORA_RP_DM_SECIM_ETIKET"
+                    s.Top = ust + 2: s.Height = 24
+                    On Error Resume Next
+                    s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+                    On Error GoTo 0
+                Case t = "AKSORA_RP_DM_LISTE"
+                    s.Top = ust + 4: s.Height = 18
+                Case t = "AKSORA_RP_DM_GRAFIK_BASLIK"
+                    s.Left = x2 + 12: s.Top = ust + 10: s.Width = zw - 24
+                Case t = "AKSORA_RP_DM_MERKEZ"
+                    s.Left = co.Left + gs * 0.2: s.Top = co.Top + gs * 0.36: s.Width = gs * 0.6: s.Height = gs * 0.28
+                Case t = "AKSORA_RP_DM_LISTE_BASLIK"
+                    s.Left = lx + 16: s.Top = co.Top - 4: s.Width = lw - 80
+                Case t = "AKSORA_RP_DM_PAY_BASLIK"
+                    s.Left = lx + lw - 60: s.Top = co.Top - 4: s.Width = 60
+                Case Left$(t, 24) = "AKSORA_RP_DM_HALKA_RENK_"
+                    i = Val(Mid$(t, 25)): y = co.Top + 20 + (i - 1) * adim
+                    s.Left = lx: s.Top = y + 4: s.Width = 10: s.Height = 10
+                Case Left$(t, 22) = "AKSORA_RP_DM_HALKA_AD_"
+                    i = Val(Mid$(t, 23)): y = co.Top + 20 + (i - 1) * adim
+                    s.Left = lx + 16: s.Top = y: s.Width = lw - 80: s.Height = 18
+                Case Left$(t, 23) = "AKSORA_RP_DM_HALKA_PAY_"
+                    i = Val(Mid$(t, 24)): y = co.Top + 20 + (i - 1) * adim
+                    s.Left = lx + lw - 60: s.Top = y: s.Width = 60: s.Height = 18
+            End Select
         End If
     Next s
+End Sub
+
+' Sayfa acilirken bolum kaymissa (eski dosya ya da Excel'in yeniden konumlamasi) sessizce toparlanir.
+Private Sub Y_DM_KONTROL(ByVal r As Worksheet)
+    Dim bas As Long, z As Shape, co As ChartObject, ust As Double, korumali As Boolean
+    If Right$(r.Name, 6) <> "_RAPOR" Then Exit Sub
+    bas = Val(CStr(r.Range("BX31").Value2))
+    If bas < 9 Then Exit Sub
+    Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")
+    If z Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set co = r.ChartObjects("AKSORA_RP_DM_GRAFIK")
+    On Error GoTo 0
+    If co Is Nothing Then Exit Sub
+    ust = r.Rows(bas).Top
+    If Abs(z.Top - ust) < 1 And Abs(co.Top - ust - 76) < 1 And r.Rows(bas).Height >= 55 Then Exit Sub
+    On Error Resume Next
+    korumali = r.ProtectContents Or r.ProtectDrawingObjects
+    If korumali Then r.Unprotect ""
+    AKSORA_YATIRIM_DM_DUZEN r
+    If korumali Then Y_KORU r
+    On Error GoTo 0
 End Sub
 
 Private Sub Y_PANEL_YENILE()

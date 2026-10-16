@@ -149,7 +149,12 @@ def trim_rows(x, keep_min=60):
 report = []
 for name, p in sheets:
     x = files[p].decode('utf8')
-    if name.startswith('_MA_') or name.startswith('_YA_'):
+    m1 = re.search(r'<c r="C1"([^>]*?)(?:/>|>(.*?)</c>)', x, re.S)
+    v1 = cell_value(m1.group(1), m1.group(2)) if m1 else None
+    paketli = bool(v1) and str(v1[1]).startswith('PAKET')
+    if (name.startswith('_MA_') or name.startswith('_YA_')) and paketli:
+        report.append('%s: zaten paketli, dokunulmadi' % name)
+    elif name.startswith('_MA_') or name.startswith('_YA_'):
         nx, data, blocks = pack_sheet(x)
         # verification: unpacked rows equal packed lines
         back = unpack(blocks) if blocks else []
@@ -158,7 +163,7 @@ for name, p in sheets:
             assert '\t'.join(a) == b
         files[p] = nx.encode('utf8')
         report.append('%s: %d satir, %d blok, %d KB -> %d KB' % (name, len(data), len(blocks), len(x) // 1024, len(nx) // 1024))
-    elif name.startswith('Y_') and name.endswith('_STOK'):
+    elif (name.startswith('Y_') or name.startswith('I_')) and name.endswith('_STOK'):
         nx, keep, rem = trim_rows(x)
         files[p] = nx.encode('utf8')
         report.append('%s: %d satir silindi (son %d), %d KB -> %d KB' % (name, rem, keep, len(x) // 1024, len(nx) // 1024))

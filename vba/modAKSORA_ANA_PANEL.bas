@@ -5,6 +5,7 @@ Option Explicit
 ' SAP, stok, rapor ve mevcut buton OnAction baglantilarina dokunmaz.
 Private Const p As String = "AKSORA15_"
 Public AKSORA_PANEL_CANLI As Boolean
+Public AKSORA_PANEL_GUNCELLENEN As String
 
 Public Sub AKSORA_ANA_PANEL_UYGULA()
     Dim ws As Worksheet, s As Shape, r As Range
@@ -417,6 +418,7 @@ Public Sub AKSORA_ANA_PANEL_DURUM_RENK_YENILE()
                 .line.Visible = msoFalse
             End With
         End If
+        If AKSORA_PANEL_KART_CANLI(CStr(kodlar(i))) Then AKSORA_PANEL_KART_GUNCELLENIYOR ws, CStr(kodlar(i))
         On Error GoTo Cikis
     Next i
     If enKotu = 0 Then
@@ -583,18 +585,45 @@ Public Sub AKSORA_PANEL_GUNCELLENIYOR(ByVal gruplar As String)
             Case "ILCE": k = "L"
             Case Else: k = "Q"
         End Select
-        ws.Range(CStr(g) & "_DURUM").Cells(1, 1).Value = "GÜNCELLENÝYOR"
-        Set s = Nothing: Set s = ws.Shapes(p & "KART_LED_" & k)
-        If Not s Is Nothing Then
-            s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = RGB(59, 130, 246)
-        End If
-        Set s = Nothing: Set s = ws.Shapes(p & "KART_DEGER_" & k & "0")
-        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(29, 78, 216)
+        AKSORA_PANEL_KART_GUNCELLENIYOR ws, CStr(g)
     Next g
+    AKSORA_PANEL_GUNCELLENEN = UCase$(gruplar)
     AKSORA_PANEL_CANLI = True
     AKSORA_PANEL_SERIT "Güncelleniyor  •  SAP baðlantýsý hazýrlanýyor...", True
     On Error GoTo 0
 End Sub
+
+' Guncelleme surerken karttaki durum (musteri paneliyle ayni): mavi LED, "Güncelleniyor...".
+Public Sub AKSORA_PANEL_KART_GUNCELLENIYOR(ByVal ws As Worksheet, ByVal kod As String)
+    Dim k As String, s As Shape
+    Select Case UCase$(kod)
+        Case "CDP": k = "B"
+        Case "EPP": k = "G"
+        Case "ILCE": k = "L"
+        Case Else: k = "Q"
+    End Select
+    On Error Resume Next
+    With ws.Range(UCase$(kod) & "_DURUM").Cells(1, 1)
+        .Value = "Güncelleniyor...": .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    Set s = ws.Shapes(p & "KART_DEGER_" & k & "0")
+    If Not s Is Nothing Then
+        s.TextFrame2.TextRange.Text = "Güncelleniyor..."
+        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(29, 78, 216)
+    End If
+    Set s = Nothing: Set s = ws.Shapes(p & "KART_LED_" & k)
+    If Not s Is Nothing Then
+        s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = RGB(59, 130, 246): s.Fill.Transparency = 0
+        s.Glow.Color.RGB = RGB(59, 130, 246): s.Glow.Radius = 4: s.Glow.Transparency = 0.5
+    End If
+    On Error GoTo 0
+End Sub
+
+' Panel yenilemeleri guncellenen kartin durumunu ezmesin.
+Public Function AKSORA_PANEL_KART_CANLI(ByVal kod As String) As Boolean
+    If Not AKSORA_PANEL_CANLI Then Exit Function
+    AKSORA_PANEL_KART_CANLI = (InStr("," & AKSORA_PANEL_GUNCELLENEN & ",", "," & UCase$(kod) & ",") > 0)
+End Function
 
 ' Durum seridine anlik mesaj yazar (panel aciksa ekranda hemen gorunur).
 Public Sub AKSORA_PANEL_SERIT(ByVal metin As String, Optional ByVal calisiyor As Boolean = False)

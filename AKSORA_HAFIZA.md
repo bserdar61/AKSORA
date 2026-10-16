@@ -168,5 +168,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - final/duzen/AKSORA_KLASOR_DUZENLE.vbs: kullanıcının klasörünü bu düzene getirir (silmez; eski dosyalar _SILINEBILIR'e).
   Gereksiz: AKSORA.vbs, KUR.vbs, AKSORA_MASAUSTU.ico, AKSORA_PANEL_BANNER.png, AKSORA_PANEL_BANNER_<5 il>.png.
 
+## 16.10.2026 düzeltmeleri (kullanıcının yüklediği dosya yeni baz)
+- Baz: kullanıcının 16.10 AKSORA.xlsm'i (Sayfa85-93 eklendi). optimize_base: hub PNG'ler JPEG, Y_/I_ *_STOK fazla satırları;
+  ZATEN PAKETLİ (_MA_/_YA_ C1="PAKET…") arşivlere dokunmaz (aksi halde boşaltıyordu!). 18,4 MB -> 13,2 MB.
+- Y_/I_ RAPOR "DEPO BAZINDA MALZEME DAĞILIMI" kayması: AKSORA_YATIRIM_DM_DUZEN artık tüm DM şekillerini satırdan
+  (BX31 baş, BX32 son, HALKA_ZEMIN sol/genişlik) yeniden hesaplar: zemin=baş satır üstü, halka=+76, lejant adımı min(24,(gs-20)/m).
+  Y_DM_KONTROL (AKSORA_YATIRIM_GORUNUM içinde) sayfa açılınca kayma varsa sessizce toparlar.
+- Malzeme ANA PANEL güncellenirken kart: "Güncelleniyor..." RGB(29,78,216), LED (59,130,246)+glow (müşteri ile aynı).
+  AKSORA_PANEL_GUNCELLENEN listesi + AKSORA_PANEL_KART_CANLI(kod); PANEL_KART_GUNCELLE, AKSORA_DURUM_RENK_GUVENLI,
+  AKSORA_ANA_PANEL_DURUM_RENK_YENILE "1 GÜN ÖNCE" yazmaz; CANLI iken B6 şeridi ezilmez.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
