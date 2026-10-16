@@ -188,10 +188,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   yanındaki düğmelerin solunda; karşılaştırmada ANA PANEL altında; malzeme stokta btnStokCikti). AKSORA_CIKTI_AL türe göre:
   1 stok (malzeme/M_/Y_/I_) -> sayım listesi (M_ seri no varsa "Seri numarası" sütunu), 2 arama/karşılaştırma -> ekrandaki tablo,
   3 rapor/İSG/teminat/hakediş -> sayfanın kendisi (düğmeler PrintObject=False). Panellerde yok.
-  Kullanıcı imza KUTULARINI (satır arası, manuel sayfa sonu) BEĞENMEDİ -> ilk düzen: FitToPagesWide=1, satırlar kesintisiz.
-  Kaşe/imza yalnız ALT BİLGİDE: sol küçük "Çıktı", orta "İlgili Depo Sorumlusu/ları:" ... "Sayım Yapan Sorumlu/lar:"
-  (karşılaştırmada "Kontrol Eden"), altında 3 boş 28pt satır (~3,5 cm kaşe alanı), sağ küçük "Sayfa"; BottomMargin 5,4 cm.
-  BlackAndWhite KULLANMA (gri başlık beyaz basılır).
+  ONAYLI DÜZEN = ilk tasarım (imza kutusu YOK, büyük alt boşluk YOK; FitToPagesWide=1, BlackAndWhite=True, alt 1,4 cm).
+  Alt bilgi tek satır 8pt: sol "Çıktı: tarih   İlgili Depo Sorumlusu/ları: ......", orta "Kontrol Eden Sorumlu/lar: ......",
+  sağ "Sayfa &P / &N". Kullanıcı bu ekran görüntüsündeki düzeni onayladı; değiştirme.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

@@ -1727,41 +1727,34 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
 End Sub
 
 ' Ortak sayfa duzeni: A4 yatay, dar kenar, altta kucuk "Cikti" ve "Sayfa".
-' Ortak sayfa duzeni: A4 yatay, dar kenar, ust ortada baslik.
-' imza = True: alt bilgide "Ilgili Depo Sorumlusu/lari" ve sag etiket; altlarinda kase-imza icin genis bos alan.
-' Cikti tarihi (sol) ve sayfa numarasi (sag) kucuk, en altta.
-Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean, Optional ByVal sagEtiket As String = "")
-    Dim bosluk As String, i As Long
+' Ortak sayfa duzeni (ilk tasarim): A4 yatay, dar kenar, ust ortada baslik, tek satir alt bilgi.
+' imza = True: sol "Cikti" + "Ilgili Depo Sorumlusu/lari", orta "Kontrol Eden Sorumlu/lar", sag sayfa numarasi.
+Private Sub T_CiktiSayfa(ByVal ps As PageSetup, ByVal ust As String, ByVal imza As Boolean)
     On Error Resume Next
     ps.PaperSize = xlPaperA4
     ps.Orientation = xlLandscape
     ps.LeftMargin = application.CentimetersToPoints(1): ps.RightMargin = application.CentimetersToPoints(1)
-    ps.TopMargin = application.CentimetersToPoints(1.6)
-    ps.HeaderMargin = application.CentimetersToPoints(0.6): ps.FooterMargin = application.CentimetersToPoints(0.5)
+    ps.TopMargin = application.CentimetersToPoints(1.6): ps.BottomMargin = application.CentimetersToPoints(1.4)
+    ps.HeaderMargin = application.CentimetersToPoints(0.6): ps.FooterMargin = application.CentimetersToPoints(0.6)
     ps.CenterHorizontally = True
     ps.CenterHeader = "&""Aptos""&10&B" & Replace(ust, "&", "&&")
     ps.LeftHeader = vbNullString: ps.RightHeader = vbNullString
-    ps.LeftFooter = "&""Aptos""&7Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
-    ps.RightFooter = "&""Aptos""&7Sayfa &P / &N"
     If imza Then
-        ' Etiketler arasi bosluk buyuk puntolu bosluklarla (alt bilgi 255 karakter sinirli);
-        ' etiketlerin altinda ~3,5 cm bos alan: her iki tarafa yan yana 3 kase + imza sigar.
-        If Len(sagEtiket) = 0 Then sagEtiket = "Sayým Yapan Sorumlu/lar:"
-        bosluk = String$(46, " ")
-        ps.CenterFooter = "&""Aptos""&9&BÝlgili Depo Sorumlusu/larý:&B&28" & bosluk & "&9&B" & sagEtiket & "&B" & _
-            vbLf & "&28 " & vbLf & "&28 " & vbLf & "&28 "
-        ps.BottomMargin = application.CentimetersToPoints(5.4)
+        ps.LeftFooter = "&""Aptos""&8Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn") & _
+            "          Ýlgili Depo Sorumlusu/larý: ...................."
+        ps.CenterFooter = "&""Aptos""&8          Kontrol Eden Sorumlu/lar: ...................."
     Else
+        ps.LeftFooter = "&""Aptos""&8Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
         ps.CenterFooter = vbNullString
-        ps.BottomMargin = application.CentimetersToPoints(1.2)
     End If
+    ps.RightFooter = "&""Aptos""&8Sayfa &P / &N"
 End Sub
 
 ' Gecici (gorunmez) kitapta tablo kurulur ve PDF olarak acilir. Tum sutunlar tek sayfa genisliginde.
 Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, _
     ByVal gen As Variant, ByVal fmt As Variant, ByVal hiz As Variant, ByVal satirH As Double, _
     ByVal imza As Boolean, ByVal ust As String)
-    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, sagEtiket As String
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long
     Dim dosya As String, alan As Range, no As Long, metin As String
     k = UBound(bas) - LBound(bas) + 1
     Set wb = Workbooks.Add(xlWBATWorksheet)
@@ -1791,14 +1784,14 @@ Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef ver
     End With
     c.Rows(1).RowHeight = 30
     c.Range(c.Cells(2, 1), c.Cells(n + 1, 1)).EntireRow.RowHeight = satirH
-    If InStr(AKFIX_NORMAL(kaynakAd), "KARSILASTIRMA") > 0 Then sagEtiket = "Kontrol Eden Sorumlu/lar:"
     application.PrintCommunication = False
     With c.PageSetup
         .PrintArea = alan.Address
         .PrintTitleRows = "$1:$1"
         .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+        .BlackAndWhite = True
     End With
-    T_CiktiSayfa c.PageSetup, ust, imza, sagEtiket
+    T_CiktiSayfa c.PageSetup, ust, imza
     application.PrintCommunication = True
     dosya = T_CiktiDosya(kaynakAd)
     c.ExportAsFixedFormat Type:=xlTypePDF, Filename:=dosya, Quality:=xlQualityStandard, _
