@@ -290,6 +290,20 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   başka birimler gezilince canlı sayfa imzası değişip önbellek bozuluyor, okuma uzuyor ve çok sayıda DoEvents ile kart
   basılıyordu. Excel yeni şekli tek DoEvents ile basmayabiliyor. AKSORA_BEKLE_ILERLE ilk ve son (%85+) boyamada
   0,3 sn DoEvents döngüsüyle bekler (Interactive=False, yeniden girişi engeller).
+- Yeni temel (19.10, a292e461): kullanıcının dosyası; VBA aynı (yalnız VBE harf düzeltmeleri), frmSplash VB_Base yeni GUID
+  ({E102BC2F...}{EC4A7D4A...}) raw/frmSplash.txt'e alındı; bx/xl = u20/xl; base = optimize_base --img.
+- Demontaj kontrol dışı mal grupları: M03550000 sayaç, M03250000 modem, M03550100 aparat/mühür (+ İSG). I_DEM_DISI(mal, isgL)
+  günlük kontrol (I_KARS_KUR, gri metin), admin (ADM_DEMONTAJ, önbellek DEM4) ve aylık defterde kullanılır.
+  Malzeme haritası _I_MALZEME (A mal, B mal grubu, C tanım, D birim); I_MAL_HARITA ilk açılışta _IA_ paketlerinden doldurur,
+  her ilçe güncellemesinde I_MAL_DIZI ile güncellenir.
+- Aylık demontaj defteri _ID_<IL> (I_DEFTER_GUNCELLE / I_DEFTER_GUN / I_DEFTER_OKU): her sütun bir gün; satır 1 gün, satır 2
+  kaynak imza "eski|yeni", altı "depo TAB ÜY TAB mal TAB kullanılan TAB girilen TAB kullanılan TL". 400 gün tutulur.
+  İmza değişen / yeni gün çiftleri yeniden hesaplanır (geçmiş 20 gün olduğu için ilk açılışta geriye doğru doldurur).
+  Aylık eksik = Σkullanılan − Σgirilen (depo|ÜY|mal, ay içi geç girişler dahil). Uyum % = değer ağırlıklı.
+- İlçe sayfası I_AYLIK_DEMONTAJ (I_ADLAR'a eklendi, M_CDP_RAPOR kopyası): KPI 4 kart, 12 ay düğmesi (AKSORA_ILCE_AY_SEC,
+  BX30=yyyymm), AYLIK GİDİŞAT, İLÇE BAZINDA (A-Z), MALZEME BAZINDA, İLÇE × MALZEME DETAYI (AutoFilter). Uyum veri çubuğu.
+- Admin: ADM_AYLIK_CIZ (DEMONTAJ GİRİŞİ YAPILMAYAN listesinden sonra): il/ilçe tablosu + önceki ay, 6 aylık gidişat,
+  en çok eksik 10 ve en çok kullanılan 10 malzeme. Y_SAYFA_SIFIRLA artık ADMY_ bekleme kartını silmiyor.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
