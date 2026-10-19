@@ -463,6 +463,17 @@ End Sub
 ' ANA GIRIS
 '==========================================================
 Public Sub AKSORA_V8_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME STOK BÝRÝMÝ", "Ýl stoklarý ve ekranlar hazýrlanýyor...")
+    On Error GoTo Son
+    V8_GIRIS_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub V8_GIRIS_ASIL()
 
     Static mesgul As Boolean
 

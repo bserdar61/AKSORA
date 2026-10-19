@@ -256,6 +256,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   görünen alanına ADMY_* şekilleri (perde + kart + durum + çubuk, zoom'a göre ölçekli). ADM_ILERLE ScreenUpdating=True+DoEvents ile
   ilerletir (okuma %5-65, demontaj %66-82); %88'de ScreenUpdating=False, ekran kartta donarken rapor çizilir.
   ADM_YUKLEME_KAPAT kalan ADMY_ şekillerini siler ve korumayı geri koyar. Interactive=False, mAdmMesgul yeniden girişi engeller.
+- Genel bekleme kartı (19.10): AKSORA_BEKLE_AC(başlık, mesaj, y0) / AKSORA_BEKLE_ILERLE / AKSORA_BEKLE_KAPAT (modAKSORA_BIRIM).
+  Kart çizildikten sonra RedrawWindow(Application.hWnd, RDW_INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW) ile hemen basılır
+  (önbellekli ikinci admin girişinde kart görünmüyordu). Koruma ayarları saklanıp UserInterfaceOnly ile geri konur.
+  Sarmalanan girişler (asıl kod *_ASIL): AKSORA_V8_GIRIS, AKSORA_MUSTERI/YATIRIM/ILCE_GIRIS, AKSORA_BIRIM_MALZEME/YATIRIM/
+  MUSTERI/ILCE, AKSORA_ILCE_KARS_LISTE/SEC/YENILE. Toplu güncelleme / açılış / V11_MESGUL sırasında kart açılmaz.
+- İlçe STOK KARŞILAŞTIRMA listesi: önce İLÇE A-Z, sonra durum (demontaj eksikleri önce) ve değer farkı.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

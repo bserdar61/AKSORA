@@ -36,6 +36,7 @@ Private Declare PtrSafe Function ADMW_MapWindowPoints Lib "user32" Alias "MapWin
 Private Declare PtrSafe Function ADMW_SetWindowPos Lib "user32" Alias "SetWindowPos" (ByVal hWnd As LongPtr, ByVal hWndInsertAfter As LongPtr, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
 Private Declare PtrSafe Function ADMW_InvalidateRect Lib "user32" Alias "InvalidateRect" (ByVal hWnd As LongPtr, ByVal lpRect As LongPtr, ByVal bErase As Long) As Long
 Private Declare PtrSafe Function ADMW_SetFocus Lib "user32" Alias "SetFocus" (ByVal hWnd As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_RedrawWindow Lib "user32" Alias "RedrawWindow" (ByVal hWnd As LongPtr, ByVal lprcUpdate As LongPtr, ByVal hrgnUpdate As LongPtr, ByVal fuRedraw As Long) As Long
 Private mAdmZaman As LongPtr
 Private mAdmKutu As LongPtr
 Private mAdmGoster As Boolean
@@ -43,6 +44,7 @@ Private mAdmYukleme As Boolean
 Private mAdmMesgul As Boolean
 Private mAdmYukWs As Worksheet
 Private mAdmYukBar As Double
+Private mAdmYukSon As Double
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -293,6 +295,17 @@ Private Function BIRIM_YENI_SAYFA(ByVal ad As String) As Boolean
 End Function
 
 Public Sub AKSORA_BIRIM_MALZEME()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME STOK BÝRÝMÝ", "Birim açýlýyor...")
+    On Error GoTo Son
+    BIRIM_MALZEME_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_MALZEME_ASIL()
     Dim ev As Boolean, sc As Boolean, no As Long, metin As String
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
     ev = application.EnableEvents: sc = application.ScreenUpdating
@@ -318,6 +331,17 @@ Hata:
 End Sub
 
 Public Sub AKSORA_BIRIM_YATIRIM()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM BÝRÝMÝ", "Birim açýlýyor...")
+    On Error GoTo Son
+    BIRIM_YATIRIM_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_YATIRIM_ASIL()
     On Error GoTo Hata
     YATIRIM_KAPAK_AC
     Exit Sub
@@ -325,6 +349,17 @@ Hata:
     AKSORA_HATA_GOSTER "Yatýrým birimi", Err.Number, Err.Description
 End Sub
 Public Sub AKSORA_BIRIM_MUSTERI()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MÜÞTERÝ BÝRÝMÝ", "Birim açýlýyor...")
+    On Error GoTo Son
+    BIRIM_MUSTERI_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_MUSTERI_ASIL()
     On Error GoTo Hata
     MUSTERI_KAPAK_AC
     Exit Sub
@@ -501,6 +536,17 @@ Private Sub MUSTERI_SECIM_CIZ(ByVal ws As Worksheet)
 End Sub
 
 Public Sub AKSORA_MUSTERI_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MÜÞTERÝ BÝRÝMÝ", "Ýl stoklarý ve ekranlar hazýrlanýyor...")
+    On Error GoTo Son
+    MUSTERI_GIRIS_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub MUSTERI_GIRIS_ASIL()
     Dim ws As Worksheet, kilit As Boolean
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(MUK)
@@ -695,6 +741,17 @@ Private Sub YATIRIM_SECIM_CIZ(ByVal ws As Worksheet, Optional ByVal ilce As Bool
 End Sub
 
 Public Sub AKSORA_YATIRIM_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM BÝRÝMÝ", "Ýl stoklarý ve ekranlar hazýrlanýyor...")
+    On Error GoTo Son
+    YATIRIM_GIRIS_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub YATIRIM_GIRIS_ASIL()
     Dim ws As Worksheet
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(YAK)
@@ -3606,6 +3663,17 @@ Public Function AKSORA_ILCE_SAYFA(ByVal sh As Object) As Boolean
 End Function
 
 Public Sub AKSORA_BIRIM_ILCE()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  ÝLÇE YÖNETÝM BÝRÝMÝ", "Birim açýlýyor...")
+    On Error GoTo Son
+    BIRIM_ILCE_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_ILCE_ASIL()
     On Error GoTo Hata
     YATIRIM_KAPAK_AC True
     Exit Sub
@@ -3614,6 +3682,17 @@ Hata:
 End Sub
 
 Public Sub AKSORA_ILCE_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  ÝLÇE YÖNETÝM BÝRÝMÝ", "Ýl stoklarý ve ekranlar hazýrlanýyor...")
+    On Error GoTo Son
+    ILCE_GIRIS_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_GIRIS_ASIL()
     Dim ws As Worksheet
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(ILCE_KAPAK)
@@ -4521,6 +4600,17 @@ Private Sub I_KARS_SECICI(ByVal ws As Worksheet, ByVal depolar As Object, ByVal 
 End Sub
 
 Public Sub AKSORA_ILCE_KARS_LISTE()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARÞILAÞTIRMA", "Karþýlaþtýrma hazýrlanýyor...")
+    On Error GoTo Son
+    ILCE_KARS_LISTE_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_LISTE_ASIL()
     Dim ws As Worksheet, s As Shape, k As String, ev As Boolean
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
@@ -4682,7 +4772,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
             blok(n, 8) = mEski: blok(n, 9) = mYeni: blok(n, 10) = mYeni - mEski
             blok(n, 11) = Round(vEski, 2): blok(n, 12) = Round(vYeni, 2): blok(n, 13) = Round(vYeni - vEski, 2)
             blok(n, 14) = kontrol: blok(n, 15) = CStr(t(2))
-            anah(n) = CStr(sira) & Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
+            anah(n) = Left$(UCase$(CStr(blok(n, 4))) & Space$(40), 40) & CStr(sira) & Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
             idx(n) = n
         End If
     Next k
@@ -4838,6 +4928,17 @@ Private Function I_DEPO_KISA(ByVal ad As String) As String
 End Function
 
 Public Sub AKSORA_ILCE_KARS_SEC()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARÞILAÞTIRMA", "Karþýlaþtýrma hazýrlanýyor...")
+    On Error GoTo Son
+    ILCE_KARS_SEC_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_SEC_ASIL()
     Dim ws As Worksheet, ev As Boolean, k As String
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
@@ -4856,6 +4957,17 @@ Hata:
 End Sub
 
 Public Sub AKSORA_ILCE_KARS_YENILE()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARÞILAÞTIRMA", "Karþýlaþtýrma hazýrlanýyor...")
+    On Error GoTo Son
+    ILCE_KARS_YENILE_ASIL
+Son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_YENILE_ASIL()
     Dim ws As Worksheet, ev As Boolean
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
@@ -5249,7 +5361,7 @@ Private Sub ADM_AC()
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
-    ADM_YUKLEME_AC
+    AKSORA_BEKLE_AC "AKSORA  |  YÖNETÝM MERKEZÝ", "Yönetim merkezi hazýrlanýyor...", 0.03
     application.Interactive = False
     application.Cursor = xlWait
     mYonlendirme = True
@@ -5260,7 +5372,7 @@ Private Sub ADM_AC()
     BIRIM_DIGERLERINI_GIZLE ADM
     ADM_GORUNUM ws
 Cikis:
-    ADM_YUKLEME_KAPAT
+    AKSORA_BEKLE_KAPAT
     application.Interactive = True
     mAdmMesgul = False
     mYonlendirme = False
@@ -5274,18 +5386,23 @@ Hata:
     Resume Cikis
 End Sub
 
-'Bekleme ekrani: AKSORA'nin acik oldugu sayfanin ortasina cizilen kart (ayri pencere degil).
-' Okuma sirasinda ekran acik kalir ve kart ilerler; rapor cizilirken ekran kartta donar.
-Private Sub ADM_YUKLEME_AC()
-    Dim ws As Worksheet, vr As Range, f As Double, x As Double, y As Double, w As Double, h As Double, s As Shape
-    mAdmYukleme = False: Set mAdmYukWs = Nothing
+'---------- bekleme karti (tum uzun gecisler) ----------
+' AKSORA'nin acik oldugu sayfanin gorunen alaninin ortasina cizilen kart (ayri pencere degil).
+' Kart cizilip ekrana basildiktan sonra islem calisir; ekran donsa da kart gorunur kalir.
+Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4) As Boolean
+    Dim ws As Worksheet, vr As Range, f As Double, x As Double, y As Double, w As Double, h As Double, s As Shape, ayar As Variant
+    If mAdmYukleme Then Exit Function
+    If AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_V11_MESGUL Then Exit Function
     On Error GoTo Son
-    If TypeName(ActiveSheet) <> "Worksheet" Then Exit Sub
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
+    If TypeName(ActiveSheet) <> "Worksheet" Then Exit Function
+    If ActiveWindow.WindowState = xlMinimized Then Exit Function
     Set ws = ActiveSheet
     Set vr = ActiveWindow.VisibleRange
     f = 100 / ActiveWindow.Zoom
-    If ws.Name = ADM Then ws.Unprotect "" Else ws.Unprotect pw
-    ADM_YUKLEME_SIL ws
+    application.ScreenUpdating = False
+    If Not BEKLE_SERBEST(ws, ayar) Then application.ScreenUpdating = True: Exit Function
+    BEKLE_SIL ws
     Set mAdmYukWs = ws
     Set s = ws.Shapes.AddShape(msoShapeRectangle, vr.Left, vr.Top, vr.Width, vr.Height)
     s.Name = "ADMY_PERDE": s.Fill.ForeColor.RGB = RGB(236, 248, 254): s.Fill.Transparency = 0.2: s.line.Visible = msoFalse
@@ -5295,20 +5412,90 @@ Private Sub ADM_YUKLEME_AC()
     s.Name = "ADMY_KART": s.Adjustments.Item(1) = 0.08
     s.Fill.ForeColor.RGB = vbWhite: s.line.ForeColor.RGB = RGB(20, 103, 173): s.line.Weight = 1.25
     s.Shadow.Visible = msoTrue: s.Shadow.Blur = 12: s.Shadow.OffsetX = 0: s.Shadow.OffsetY = 3: s.Shadow.Transparency = 0.7
-    ADM_YUKLEME_METIN ws, "ADMY_BASLIK", "AKSORA  |  YÖNETÝM MERKEZÝ", x, y + 20 * f, w, 26 * f, 16 * f, RGB(12, 45, 79), True
-    ADM_YUKLEME_METIN ws, "ADMY_DURUM", "Hazýrlanýyor...", x, y + 62 * f, w, 20 * f, 10.5 * f, RGB(20, 103, 173), False
+    BEKLE_METIN ws, "ADMY_BASLIK", baslik, x, y + 20 * f, w, 26 * f, 16 * f, RGB(12, 45, 79), True
+    BEKLE_METIN ws, "ADMY_DURUM", mesaj, x, y + 62 * f, w, 20 * f, 10.5 * f, RGB(20, 103, 173), False
     Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + 36 * f, y + 98 * f, w - 72 * f, 8 * f)
     s.Name = "ADMY_BAR0": s.Fill.ForeColor.RGB = RGB(224, 232, 240): s.line.Visible = msoFalse
     Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + 36 * f, y + 98 * f, 1, 8 * f)
     s.Name = "ADMY_BAR": s.Fill.ForeColor.RGB = RGB(0, 125, 110): s.line.Visible = msoFalse
-    ADM_YUKLEME_METIN ws, "ADMY_NOT", "Birim kayýtlarý okunuyor, lütfen bekleyin", x, y + 116 * f, w, 16 * f, 8.5 * f, RGB(100, 116, 139), False
+    BEKLE_METIN ws, "ADMY_NOT", "Lütfen bekleyin, AKSORA verileri hazýrlýyor", x, y + 116 * f, w, 16 * f, 8.5 * f, RGB(100, 116, 139), False
     mAdmYukBar = w - 72 * f
-    mAdmYukleme = True
-    ADM_ILERLE 0.03, "Yönetim merkezi hazýrlanýyor..."
+    BEKLE_KORU ws, ayar
+    mAdmYukleme = True: mAdmYukSon = 0
+    AKSORA_BEKLE_AC = True
+    AKSORA_BEKLE_ILERLE y0, mesaj
+    Exit Function
 Son:
+    On Error Resume Next
+    If Not ws Is Nothing Then BEKLE_SIL ws: BEKLE_KORU ws, ayar
+    Set mAdmYukWs = Nothing
+    application.ScreenUpdating = True
+    On Error GoTo 0
+End Function
+
+' Karti ilerletir ve ekrana basar (cok sik cagrilirsa en fazla ~4 kez/sn cizer).
+Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
+    Dim iv As Boolean
+    If Not mAdmYukleme Then Exit Sub
+    On Error Resume Next
+    If y > 1 Then y = 1
+    mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
+    mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
+    application.ScreenUpdating = True
+    If mAdmYukSon = 0 Or y >= 0.85 Or Abs(Timer - mAdmYukSon) > 0.25 Then
+        ADMW_RedrawWindow application.hWnd, 0, 0, &H185
+        iv = application.Interactive
+        application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+        mAdmYukSon = Timer
+    End If
+    On Error GoTo 0
 End Sub
 
-Private Sub ADM_YUKLEME_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
+Public Sub AKSORA_BEKLE_KAPAT()
+    Dim ws As Worksheet, i As Long, bul As Boolean, ayar As Variant, sc As Boolean
+    On Error Resume Next
+    Set ws = mAdmYukWs
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
+    If ws Is Nothing Then Exit Sub
+    For i = 1 To ws.Shapes.Count
+        If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then bul = True: Exit For
+    Next i
+    If Not bul Then Exit Sub
+    sc = application.ScreenUpdating
+    application.ScreenUpdating = False
+    If BEKLE_SERBEST(ws, ayar) Then
+        BEKLE_SIL ws
+        BEKLE_KORU ws, ayar
+    End If
+    application.ScreenUpdating = sc
+    On Error GoTo 0
+End Sub
+
+' Koruma ayarlarini saklayip korumayi gecici kaldirir (korumasizsa ayar bos kalir).
+Private Function BEKLE_SERBEST(ByVal ws As Worksheet, ByRef ayar As Variant) As Boolean
+    ayar = Empty
+    If Not (ws.ProtectContents Or ws.ProtectDrawingObjects Or ws.ProtectScenarios) Then BEKLE_SERBEST = True: Exit Function
+    With ws.Protection
+        ayar = Array(ws.ProtectContents, ws.ProtectDrawingObjects, ws.ProtectScenarios, .AllowFiltering, .AllowSorting, _
+            .AllowFormattingCells, .AllowFormattingColumns, .AllowFormattingRows)
+    End With
+    On Error Resume Next
+    ws.Unprotect pw
+    BEKLE_SERBEST = (Err.Number = 0)
+    On Error GoTo 0
+End Function
+
+Private Sub BEKLE_KORU(ByVal ws As Worksheet, ByVal ayar As Variant)
+    If Not IsArray(ayar) Then Exit Sub
+    On Error Resume Next
+    ws.Protect Password:=pw, Contents:=ayar(0), DrawingObjects:=ayar(1), Scenarios:=ayar(2), UserInterfaceOnly:=True, _
+        AllowFiltering:=ayar(3), AllowSorting:=ayar(4), AllowFormattingCells:=ayar(5), AllowFormattingColumns:=ayar(6), AllowFormattingRows:=ayar(7)
+    On Error GoTo 0
+End Sub
+
+Private Sub BEKLE_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
     ByVal w As Double, ByVal h As Double, ByVal boyut As Double, ByVal renk As Long, ByVal kalin As Boolean)
     Dim s As Shape
     Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
@@ -5323,44 +5510,15 @@ Private Sub ADM_YUKLEME_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal m
     End With
 End Sub
 
-Private Sub ADM_ILERLE(ByVal y As Double, ByVal mesaj As String)
-    If Not mAdmYukleme Then Exit Sub
-    On Error Resume Next
-    If y > 1 Then y = 1
-    mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
-    mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
-    application.ScreenUpdating = True
-    DoEvents
-    On Error GoTo 0
-End Sub
-
-Private Sub ADM_YUKLEME_SIL(ByVal ws As Worksheet)
+Private Sub BEKLE_SIL(ByVal ws As Worksheet)
     Dim i As Long
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then ws.Shapes(i).Delete
     Next i
 End Sub
 
-Private Sub ADM_YUKLEME_KAPAT()
-    Dim ws As Worksheet, i As Long, bul As Boolean
-    On Error Resume Next
-    Set ws = mAdmYukWs
-    mAdmYukleme = False: Set mAdmYukWs = Nothing
-    If ws Is Nothing Then Exit Sub
-    For i = 1 To ws.Shapes.Count
-        If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then bul = True: Exit For
-    Next i
-    If Not bul Then Exit Sub
-    If ws.Name = ADM Then
-        ws.Unprotect ""
-        ADM_YUKLEME_SIL ws
-        ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
-    Else
-        ws.Unprotect pw
-        ADM_YUKLEME_SIL ws
-        ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
-    End If
-    On Error GoTo 0
+Private Sub ADM_ILERLE(ByVal y As Double, ByVal mesaj As String)
+    AKSORA_BEKLE_ILERLE y, mesaj
 End Sub
 
 Public Sub AKSORA_ADMIN_YENILE()
