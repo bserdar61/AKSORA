@@ -41,6 +41,8 @@ Private mAdmKutu As LongPtr
 Private mAdmGoster As Boolean
 Private mAdmYukleme As Boolean
 Private mAdmMesgul As Boolean
+Private mAdmYukWs As Worksheet
+Private mAdmYukBar As Double
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -5257,7 +5259,6 @@ Private Sub ADM_AC()
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ADM
     ADM_GORUNUM ws
-    ADM_ILERLE 1, "Yönetim merkezi hazýr"
 Cikis:
     ADM_YUKLEME_KAPAT
     application.Interactive = True
@@ -5273,31 +5274,92 @@ Hata:
     Resume Cikis
 End Sub
 
-'Bekleme ekrani: AKSORA acilis penceresi (frmSplash) ilerleme cubuguyla gosterilir.
+'Bekleme ekrani: AKSORA'nin acik oldugu sayfanin ortasina cizilen kart (ayri pencere degil).
+' Okuma sirasinda ekran acik kalir ve kart ilerler; rapor cizilirken ekran kartta donar.
 Private Sub ADM_YUKLEME_AC()
-    On Error Resume Next
-    mAdmYukleme = False
-    Load frmSplash
-    If Err.Number <> 0 Then Exit Sub
-    frmSplash.Show vbModeless
-    frmSplash.SplashBaslat
-    frmSplash.lblAltBaslik.Caption = "AKSORA Yönetim Merkezi"
-    mAdmYukleme = (Err.Number = 0)
-    On Error GoTo 0
+    Dim ws As Worksheet, vr As Range, f As Double, x As Double, y As Double, w As Double, h As Double, s As Shape
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
+    On Error GoTo Son
+    If TypeName(ActiveSheet) <> "Worksheet" Then Exit Sub
+    Set ws = ActiveSheet
+    Set vr = ActiveWindow.VisibleRange
+    f = 100 / ActiveWindow.Zoom
+    If ws.Name = ADM Then ws.Unprotect "" Else ws.Unprotect pw
+    ADM_YUKLEME_SIL ws
+    Set mAdmYukWs = ws
+    Set s = ws.Shapes.AddShape(msoShapeRectangle, vr.Left, vr.Top, vr.Width, vr.Height)
+    s.Name = "ADMY_PERDE": s.Fill.ForeColor.RGB = RGB(236, 248, 254): s.Fill.Transparency = 0.2: s.line.Visible = msoFalse
+    w = 400 * f: h = 150 * f
+    x = vr.Left + (vr.Width - w) / 2: y = vr.Top + (vr.Height - h) / 2
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    s.Name = "ADMY_KART": s.Adjustments.Item(1) = 0.08
+    s.Fill.ForeColor.RGB = vbWhite: s.line.ForeColor.RGB = RGB(20, 103, 173): s.line.Weight = 1.25
+    s.Shadow.Visible = msoTrue: s.Shadow.Blur = 12: s.Shadow.OffsetX = 0: s.Shadow.OffsetY = 3: s.Shadow.Transparency = 0.7
+    ADM_YUKLEME_METIN ws, "ADMY_BASLIK", "AKSORA  |  YÖNETÝM MERKEZÝ", x, y + 20 * f, w, 26 * f, 16 * f, RGB(12, 45, 79), True
+    ADM_YUKLEME_METIN ws, "ADMY_DURUM", "Hazýrlanýyor...", x, y + 62 * f, w, 20 * f, 10.5 * f, RGB(20, 103, 173), False
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + 36 * f, y + 98 * f, w - 72 * f, 8 * f)
+    s.Name = "ADMY_BAR0": s.Fill.ForeColor.RGB = RGB(224, 232, 240): s.line.Visible = msoFalse
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + 36 * f, y + 98 * f, 1, 8 * f)
+    s.Name = "ADMY_BAR": s.Fill.ForeColor.RGB = RGB(0, 125, 110): s.line.Visible = msoFalse
+    ADM_YUKLEME_METIN ws, "ADMY_NOT", "Birim kayýtlarý okunuyor, lütfen bekleyin", x, y + 116 * f, w, 16 * f, 8.5 * f, RGB(100, 116, 139), False
+    mAdmYukBar = w - 72 * f
+    mAdmYukleme = True
     ADM_ILERLE 0.03, "Yönetim merkezi hazýrlanýyor..."
+Son:
+End Sub
+
+Private Sub ADM_YUKLEME_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal boyut As Double, ByVal renk As Long, ByVal kalin As Boolean)
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    s.Name = ad: s.Fill.Visible = msoFalse: s.line.Visible = msoFalse
+    With s.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .WordWrap = msoFalse: .AutoSize = msoAutoSizeNone
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = boyut: .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        .TextRange.Font.Fill.ForeColor.RGB = renk
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+    End With
 End Sub
 
 Private Sub ADM_ILERLE(ByVal y As Double, ByVal mesaj As String)
     If Not mAdmYukleme Then Exit Sub
     On Error Resume Next
-    frmSplash.SplashIlerle y, mesaj
+    If y > 1 Then y = 1
+    mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
+    mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
+    application.ScreenUpdating = True
+    DoEvents
     On Error GoTo 0
 End Sub
 
+Private Sub ADM_YUKLEME_SIL(ByVal ws As Worksheet)
+    Dim i As Long
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then ws.Shapes(i).Delete
+    Next i
+End Sub
+
 Private Sub ADM_YUKLEME_KAPAT()
+    Dim ws As Worksheet, i As Long, bul As Boolean
     On Error Resume Next
-    If mAdmYukleme Then Unload frmSplash
-    mAdmYukleme = False
+    Set ws = mAdmYukWs
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
+    If ws Is Nothing Then Exit Sub
+    For i = 1 To ws.Shapes.Count
+        If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then bul = True: Exit For
+    Next i
+    If Not bul Then Exit Sub
+    If ws.Name = ADM Then
+        ws.Unprotect ""
+        ADM_YUKLEME_SIL ws
+        ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Else
+        ws.Unprotect pw
+        ADM_YUKLEME_SIL ws
+        ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    End If
     On Error GoTo 0
 End Sub
 
@@ -5935,6 +5997,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     If Len(oncelik) > 0 Then ozet = ozet & vbLf & "Öncelikli aksiyonlar:" & oncelik Else ozet = ozet & " Kritik veya dikkat gerektiren konu yok."
     '================== CIZIM ==================
     ADM_ILERLE 0.88, "Rapor hazýrlanýyor..."
+    application.ScreenUpdating = False
     ws.Unprotect ""
     ws.AutoFilterMode = False
     For i = ws.Shapes.Count To 1 Step -1

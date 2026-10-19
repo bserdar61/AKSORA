@@ -252,9 +252,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   "Şifreyi göster" onay kutusu artık şifre kutusunun İÇİNDE (CreateWindowExW "Button" BS_AUTOCHECKBOX, kutu
   edit yüksekliği kadar uzatılır; zamanlayıcı 40ms BM_GETCHECK okur, değişince EM_SETPASSWORDCHAR 0/'*').
   Her girişte gizli başlar. Hub'daki göster düğmesi kaldırıldı (hub sürümü 13). Declare'ler yalnızca VBA7.
-- Admin bekleme ekranı (19.10): ADM_AC açılış penceresini (frmSplash, modeless) "AKSORA Yönetim Merkezi" alt başlığıyla
-  gösterir; ADM_KUR içinde ADM_ILERLE ile birim/il okuma (%5-65), demontaj (%66-82), çizim (%88). Interactive=False,
-  mAdmMesgul yeniden girişi engeller (il düğmeleri). Hata MsgBox'ı pencere kapandıktan sonra.
+- Admin bekleme ekranı (19.10): ayrı pencere (frmSplash) kullanıcıda başka monitörde açıldı, istenmedi. Şimdi aktif sayfanın
+  görünen alanına ADMY_* şekilleri (perde + kart + durum + çubuk, zoom'a göre ölçekli). ADM_ILERLE ScreenUpdating=True+DoEvents ile
+  ilerletir (okuma %5-65, demontaj %66-82); %88'de ScreenUpdating=False, ekran kartta donarken rapor çizilir.
+  ADM_YUKLEME_KAPAT kalan ADMY_ şekillerini siler ve korumayı geri koyar. Interactive=False, mAdmMesgul yeniden girişi engeller.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
