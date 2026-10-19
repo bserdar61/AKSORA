@@ -4512,8 +4512,9 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Dim mEski As Double, mYeni As Double, vEski As Double, vYeni As Double, tE As Double, tY As Double
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
     Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
-    Dim birimler() As String
+    Dim birimler() As String, isgL As Object
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set isgL = I_ISG_LISTE()
     il = UCase$(Trim$(il))
     ws.Unprotect ""
     If Left$(CStr(ws.Range("BX25").Value2), 3) <> "IK_" Or CStr(ws.Range("BX25").Value2) = "IK_V1" Then I_KARS_HAZIRLA ws
@@ -4621,7 +4622,10 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 End If
             Else
                 durum = "AZALDI": nAz = nAz + 1: sira = 3
-                If Not demontaj Then
+                ' ISG malzemelerinin demontaj girisi olmaz (zimmet / manuel sarf).
+                If isgL.Exists(Trim$(p(2))) Then
+                    kontrol = "ÝSG malzemesi (demontaj gerekmez)"
+                ElseIf Not demontaj Then
                     g = grup(p(0) & "|" & p(1) & "|" & p(2))
                     If g(1) <= 0.0005 Then
                         kontrol = "DEMONTAJ GÝRÝÞÝ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni) & " " & CStr(t(2))
@@ -4691,6 +4695,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 ws.Cells(r, 14).Font.Color = RGB(21, 128, 61)
             ElseIf kontrol = "Demontaj giriþi" Then
                 ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
+            ElseIf Left$(kontrol, 3) = "ÝSG" Then
+                ws.Cells(r, 14).Font.Color = RGB(100, 116, 139): ws.Cells(r, 14).Font.Italic = True
             End If
         Next r
         ws.Range("A15:N" & n + 15).AutoFilter
@@ -5501,7 +5507,7 @@ End Sub
 Private Function ADM_DEMONTAJ(ByVal il As String) As Variant
     Dim tarihler As Collection, eskiT As String, yeniT As String, i As Long, dE As Object, dY As Object, anahtar As Object
     Dim grup As Object, k As Variant, p() As String, t As Variant, g As Variant, depolar As Object, eksik As Collection
-    Dim mEs As Double, mYe As Double, gk As String, ad As String, imza As String, o As Variant, bf As Double, vEs As Double
+    Dim mEs As Double, mYe As Double, gk As String, ad As String, imza As String, o As Variant, bf As Double, vEs As Double, isgL As Object
     If mAdmOnbellek Is Nothing Then Set mAdmOnbellek = CreateObject("Scripting.Dictionary")
     Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
     Set eksik = New Collection
@@ -5513,14 +5519,20 @@ Private Function ADM_DEMONTAJ(ByVal il As String) As Variant
         Next i
     End If
     If Len(eskiT) = 0 Then ADM_DEMONTAJ = Array(eskiT, yeniT, depolar, eksik): Exit Function
-    imza = "DEM2|" & il & "|" & eskiT & "|" & yeniT
+    imza = "DEM3|" & il & "|" & eskiT & "|" & yeniT
     If mAdmOnbellek.Exists(imza) Then ADM_DEMONTAJ = mAdmOnbellek(imza): Exit Function
     application.StatusBar = "AKSORA Yönetim Merkezi  •  " & Y_IL_ADI(il) & " demontaj kontrolü..."
     Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
-    For Each k In dE.keys: anahtar(k) = True: Next k
-    For Each k In dY.keys: anahtar(k) = True: Next k
+    ' ISG malzemeleri demontaj kontrolune girmez (zimmet / manuel sarf ile cikar).
+    Set isgL = I_ISG_LISTE()
+    For Each k In dE.keys
+        If Not isgL.Exists(ADM_KOD3(k)) Then anahtar(k) = True
+    Next k
+    For Each k In dY.keys
+        If Not isgL.Exists(ADM_KOD3(k)) Then anahtar(k) = True
+    Next k
     For Each k In anahtar.keys
         mEs = 0: mYe = 0
         If dE.Exists(k) Then mEs = dE(k)(3)
@@ -5836,7 +5848,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ws.Rows(ADM_ARA_SATIR & ":" & ADM_ARA_SATIR + ADM_ARA_N + 1).Hidden = True
     r = ADM_ARA_SATIR + ADM_ARA_N + 3
     '--- demontaj kontrolu
-    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "DEMONTAJ KONTROLÜ   •   " & ilMetin & "  (azalan malzeme - ÇIKMA/BDSZ giriþi, son güncelleme ile önceki gün)"
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "DEMONTAJ KONTROLÜ   •   " & ilMetin & "  (azalan malzeme - ÇIKMA/BDSZ giriþi; ÝSG malzemeleri hariç)"
     r = r + 1: satirNo = r
     If Len(secIl) = 0 Then
         ADM_BASLIKLAR ws, r, 2, Array("Ýl", "Karþýlaþtýrýlan günler", "", "", "Azalan kalem", "Giriþi yapýlan", "Giriþi YOK kalem", "Eksik adet", "Eksik deðer", "Durum", "", "")
@@ -6019,6 +6031,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
     ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
     ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).ShrinkToFit = True
     ws.Range(ADM_ADRES(satirNo + 1, 8, r, 8)).NumberFormat = "0.0%"
     ws.Range(ADM_ADRES(satirNo + 1, 9, r, 12)).NumberFormat = "#,##0"
     ws.Range(ADM_ADRES(satirNo + 1, 2, r, 13)).HorizontalAlignment = xlCenter
@@ -6231,6 +6244,13 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     application.StatusBar = False
 End Sub
 
+' Gecmis anahtarindan (depo|UY|malzeme|degerleme) malzeme kodu.
+Private Function ADM_KOD3(ByVal k As Variant) As String
+    Dim p() As String
+    p = Split(CStr(k), "|")
+    If UBound(p) >= 2 Then ADM_KOD3 = Trim$(p(2))
+End Function
+
 ' Miktar bicimi: binlik ".", kusurat yalniz varsa "," (tam sayida sonda virgul kalmaz).
 Private Sub ADM_MIKTAR(ByVal alan As Range)
     Dim c As Range
@@ -6307,6 +6327,7 @@ Public Sub AKSORA_ADMIN_ARA()
                         For w = 0 To UBound(kelime)
                             If InStr(1, alanMetin, kelime(w), vbTextCompare) = 0 Then uy = False: Exit For
                         Next w
+                        If Val(parca(6)) = 0 Then uy = False: seriEsles = False
                         If seriEsles Or uy Then
                             k = il & "|" & parca(0) & "|" & parca(1) & "|" & parca(3) & IIf(seriEsles, "|" & parca(9), "")
                             If Not grup.Exists(k) Then
@@ -6402,6 +6423,9 @@ Public Sub AKSORA_ADMIN_ARA()
     ws.Range(ADM_ADRES(satir1, 9, r, 9)).NumberFormat = "#,##0"
     ADM_MIKTAR ws.Range(ADM_ADRES(satir1, 10, r, 10))
     ws.Range(ADM_ADRES(satir1, 12, r, 12)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(satir1, 2, r, 2)).ShrinkToFit = True
+    ws.Range(ADM_ADRES(satir1, 5, r, 5)).ShrinkToFit = True
+    ws.Range(ADM_ADRES(satir1, 12, r, 12)).ShrinkToFit = True
     ' depo turune gore renk (siralama tur bazinda oldugundan bloklar ardisik)
     ilkS = satir1
     For i = 1 To m

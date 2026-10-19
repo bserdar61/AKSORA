@@ -240,5 +240,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   başlıkta AutoFilter (koruma AllowFiltering, EnableSelection serbest); en fazla 398 satır (ADM_ARA_N 400 gizli yedek satır).
 - Demontaj: eksik değer (eski değer/miktar birim fiyatı x eksik), "en çok" sıralı, eksik listesi en yüksek değerli 25.
 
+- DEMONTAJ KONTROLÜNDE İSG MALZEMELERİ HARİÇ (I_ISG_LISTE): hem admin ADM_DEMONTAJ hem İlçe STOK/DEMONTAJ ekranı (I_KARS_KUR:
+  "İSG malzemesi (demontaj gerekmez)", gri, sayılmaz). Admin aramada miktarı 0 olan satırlar gösterilmez; büyük tutarlar ShrinkToFit.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
