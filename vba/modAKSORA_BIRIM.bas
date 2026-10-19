@@ -219,7 +219,7 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
     If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
     Set ws = BIRIM_SAYFA(HUB)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 13 Then BIRIM_CIZ ws, ""
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 14 Then BIRIM_CIZ ws, ""
     ws.Visible = xlSheetVisible
     ws.Move Before:=ThisWorkbook.Worksheets(1)
     ws.Select Replace:=True
@@ -782,7 +782,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     Set ws = BIRIM_SAYFA(ad)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 13 Then BIRIM_CIZ ws, baslik
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 14 Then BIRIM_CIZ ws, baslik
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ad
@@ -922,7 +922,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Loop
     ws.Rows("1:44").RowHeight = 15
     ws.Range("BX1").Value2 = tag
-    ws.Range("BX2").Value2 = 13
+    ws.Range("BX2").Value2 = 14
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
@@ -965,7 +965,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
         BIRIM_KART ws, "YAT", 34 + (kw + 18), "02", "Yatýrým Birimi", _
             "", "Hakediþ" & vbLf & "Teminat takibi" & vbLf & _
             "Yüklenici stok takibi" & vbLf & "Yatýrým depo takibi", _
-            "Ýþlemlere geç", "AKSORA_BIRIM_YATIRIM", RGB(20, 103, 173), False, kw
+            "Ýþlemlere geç", "AKSORA_BIRIM_YATIRIM", RGB(20, 103, 173), True, kw
         BIRIM_KART ws, "MUS", 34 + 2 * (kw + 18), "03", "Müþteri Birimi", _
             "", "Seri numaralý malzeme takibi" & vbLf & "Ýlçe stok kontrolleri" & vbLf & _
             "Yüklenici stok kontrolleri" & vbLf & "Müþteri depo takibi", _
@@ -973,7 +973,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
         BIRIM_KART ws, "ILC", 34 + 3 * (kw + 18), "04", "Ýlçe Yönetim Birimi", _
             "", "Ýlçe depo stoklarý" & vbLf & "Ýlçeler arasý malzeme arama" & vbLf & _
             "Demontaj malzeme kontrolü" & vbLf & "ÝSG zimmet kontrolü", _
-            "Ýþlemlere geç", "AKSORA_BIRIM_ILCE", RGB(79, 70, 160), False, kw
+            "Ýþlemlere geç", "AKSORA_BIRIM_ILCE", RGB(79, 70, 160), True, kw
         BIRIM_TEXT ws, "SECIM_NOT", "Ýhtiyacýnýz olan iþlem alanýna tek seçimle ulaþýn.", 35, 565, 700, 24, 10, RGB(87, 121, 142), False
         ' Yonetici girisi (sifreli yonetim merkezi)
         BIRIM_BUTON ws, "ADMIN", "ADMÝN GÝRÝÞÝ  " & ChrW(8250), cw - 34 - 210, 557, 210, 38, RGB(12, 45, 79), "AKSORA_ADMIN_GIRIS"
