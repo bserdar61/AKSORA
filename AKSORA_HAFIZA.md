@@ -310,6 +310,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Debug > Compile ile buldu). qE/qY/qV yapıldı. Her yeni kodda ayrılmış kelime taraması (Me, To, Is, In, On, Or, Mod, Do,
   Name, Line, Input, Error, Date, Type...) ve modül düzeyi ad çakışması taraması yapılmalı. Kilitli projede Excel satır
   göstermez; kullanıcıdan Alt+F11 > Debug > Compile VBAProject ekran görüntüsü istenir.
+- Kritik demontaj (19.10): I_KATEGORI(mal) → KABLO (mal grubu M0316…), DİREK (M0308…), PANO (M0327…), HÜCRE (M0314…),
+  TRAFO (M0340…, akım/gerilim trafoları dahil); mal grubu yoksa tanım başı (KABLO/DIREK/PANO/HUCRE/TRAFO). Diğerleri (sigorta,
+  ampul vb.) "DİĞER", ikinci planda/gri. I_AY_HESAP top/depo dizileri 12 alan (8-11 kritik TL/eksik TL/kalem/eksik kalem),
+  I_UYUM_K kritik uyum, I_KAT_OZET kategori tablosu, I_OZET_DURUM (KRİTİK EKSİK / DİĞER EKSİK / TAMAM).
+  Uygulanan yerler: AYLIK DEMONTAJ sayfası (KPI'lar kritik, KRİTİK MALZEMELER tablosu, sıralama kritik önce, Kategori sütunu)
+  ve admin (il/ilçe tablosu kritik, KRİTİK MALZEMELER, gidişat kritik, ilk 15 kritik eksik/kullanılan, günlük eksik listesi
+  kritik önce + durumda kategori). Kullanıcı isteğiyle günlük STOK/DEMONTAJ KONTROLÜ sayfasına dokunulmadı.
+  Kontrol betikleri: fx/checks.py (ad çakışması + ayrılmış kelime), fx/checks2.py <yordamlar> (tanımsız ad), fx/checks3.py (blok).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
