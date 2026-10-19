@@ -18,6 +18,13 @@ Private Const ADM_ARA_HUCRE As String = "C7"
 Private Const ADM_IL_HUCRE As String = "C4"
 Private mAdmOnbellek As Object
 Private mAdmOturum As Boolean
+Private Const ADM_KUTU_BASLIK As String = "AKSORA - YONETICI GIRISI"
+Private Declare PtrSafe Function ADMW_SetTimer Lib "user32" Alias "SetTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr, ByVal uElapse As Long, ByVal lpTimerFunc As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_KillTimer Lib "user32" Alias "KillTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr) As Long
+Private Declare PtrSafe Function ADMW_FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As LongPtr
+Private Declare PtrSafe Function ADMW_FindWindowEx Lib "user32" Alias "FindWindowExA" (ByVal hWnd1 As LongPtr, ByVal hWnd2 As LongPtr, ByVal lpsz1 As String, ByVal lpsz2 As String) As LongPtr
+Private Declare PtrSafe Function ADMW_SendMessage Lib "user32" Alias "SendMessageA" (ByVal hWnd As LongPtr, ByVal wMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
+Private mAdmZaman As LongPtr
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -192,7 +199,7 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
     If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
     Set ws = BIRIM_SAYFA(HUB)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 11 Then BIRIM_CIZ ws, ""
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 12 Then BIRIM_CIZ ws, ""
     ws.Visible = xlSheetVisible
     ws.Move Before:=ThisWorkbook.Worksheets(1)
     ws.Select Replace:=True
@@ -700,7 +707,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     Set ws = BIRIM_SAYFA(ad)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 11 Then BIRIM_CIZ ws, baslik
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 12 Then BIRIM_CIZ ws, baslik
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ad
@@ -840,7 +847,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Loop
     ws.Rows("1:44").RowHeight = 15
     ws.Range("BX1").Value2 = tag
-    ws.Range("BX2").Value2 = 11
+    ws.Range("BX2").Value2 = 12
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
@@ -895,6 +902,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
         BIRIM_TEXT ws, "SECIM_NOT", "Ýhtiyacýnýz olan iþlem alanýna tek seçimle ulaþýn.", 35, 565, 700, 24, 10, RGB(87, 121, 142), False
         ' Yonetici girisi (sifreli yonetim merkezi)
         BIRIM_BUTON ws, "ADMIN", "ADMÝN GÝRÝÞÝ  " & ChrW(8250), cw - 34 - 210, 557, 210, 38, RGB(12, 45, 79), "AKSORA_ADMIN_GIRIS"
+        BIRIM_BUTON ws, "ADMIN_GOSTER", ADM_GOSTER_METNI(), cw - 34 - 210 - 180, 557, 170, 38, RGB(100, 116, 139), "AKSORA_ADMIN_SIFRE_GOSTER"
     Else
         BIRIM_TEXT ws, "PANEL_EYEBROW", "BÝRÝM ÇALIÞMA ALANI", 35, 157, 900, 24, 11, RGB(0, 126, 113), True
         BIRIM_TEXT ws, "PANEL_BASLIK", panel, 35, 196, 1000, 52, 32, RGB(12, 45, 79), True
@@ -5150,150 +5158,12 @@ End Sub
 ' diger iller birimlerin il kayitlarindan (_AKLIVE_, _YA_, _MA_, _IA_) okunur. Okunan veri imza (tarih+satir)
 ' degismedikce bellekte tutulur. Birimler arasi ayni depo (il+UY+depo) tekil toplamda bir kez sayilir.
 
-' Yonetici girisi: birim secim ekraninda sifre paneli. Sifre kutusu yildizli; "Sifreyi goster" secenegi
-' kullanicinin tercihi olarak saklanir (_AKSORA_ADMIN_SIFRE_GOSTER). ActiveX kutu kurulamazsa klasik kutu acilir.
+' Yonetici girisi: sifre kutusu (Windows): yazilan sifre yildizla gizlenir. "Sifreyi goster" tercihi
+' birim secim ekranindaki secenekle degisir ve saklanir (_AKSORA_ADMIN_SIFRE_GOSTER).
 Public Sub AKSORA_ADMIN_GIRIS()
-    Dim ws As Worksheet
-    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
-    Set ws = ActiveSheet
-    If Not ADM_PANEL_KUR(ws) Then ADM_GIRIS_KLASIK
-End Sub
-
-Private Function ADM_PANEL_KUR(ByVal ws As Worksheet) As Boolean
-    Dim vr As Range, cx As Double, cy As Double, x As Double, y As Double, s As Shape, o As OLEObject, goster As Boolean
-    On Error GoTo Yok
-    ADM_PANEL_KAPAT ws
-    ws.Unprotect pw
-    Set vr = ActiveWindow.VisibleRange
-    cx = vr.Left + vr.Width / 2: cy = vr.Top + vr.Height / 2
-    x = cx - 220: y = cy - 130
-    Set s = ws.Shapes.AddShape(msoShapeRectangle, vr.Left, vr.Top, vr.Width, vr.Height)
-    s.Name = "ADMG_PERDE": s.Fill.ForeColor.RGB = RGB(12, 45, 79): s.Fill.Transparency = 0.35: s.line.Visible = msoFalse
-    s.OnAction = BIRIM_MAKRO("AKSORA_ADMIN_SIFRE_IPTAL")
-    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, 440, 260)
-    s.Name = "ADMG_KART": s.Adjustments.Item(1) = 0.06
-    s.Fill.ForeColor.RGB = vbWhite: s.line.ForeColor.RGB = RGB(34, 185, 191): s.line.Weight = 1.5
-    Set s = ws.Shapes.AddShape(msoShapeRectangle, x, y, 440, 54)
-    s.Name = "ADMG_BAS": s.Fill.ForeColor.RGB = RGB(12, 45, 79): s.line.Visible = msoFalse
-    ADM_PANEL_YAZI ws, "ADMG_BASLIK", "AKSORA  |  YÖNETÝM MERKEZÝ", x + 22, y + 8, 400, 38, 16, vbWhite, True
-    ADM_PANEL_YAZI ws, "ADMG_ALT", "Yönetici þifresini girin", x + 30, y + 70, 380, 22, 11, RGB(71, 85, 105), False
-    Set o = ws.OLEObjects.Add(ClassType:="Forms.TextBox.1", Left:=x + 30, Top:=y + 98, Width:=380, Height:=34)
-    o.Name = "ADMG_SIFRE": o.Placement = xlFreeFloating
-    goster = (ADM_AD_OKU("_AKSORA_ADMIN_SIFRE_GOSTER") = "1")
-    With o.Object
-        .Text = vbNullString
-        .PasswordChar = IIf(goster, vbNullString, "*")
-        .Font.Name = "Aptos": .Font.Size = 16
-        .BorderStyle = 1: .BorderColor = RGB(20, 103, 173)
-        .SpecialEffect = 0
-    End With
-    ADM_PANEL_DUGME ws, "ADMG_GOSTER", IIf(goster, ChrW(9745), ChrW(9744)) & "  Þifreyi göster", x + 30, y + 142, 170, 24, vbWhite, RGB(12, 45, 79), "AKSORA_ADMIN_SIFRE_GOSTER", 10, False
-    ADM_PANEL_YAZI ws, "ADMG_HATA", "", x + 30, y + 168, 380, 22, 10, RGB(185, 28, 28), True
-    ADM_PANEL_DUGME ws, "ADMG_TAMAM", "GÝRÝÞ", x + 230, y + 200, 180, 40, RGB(0, 125, 110), vbWhite, "AKSORA_ADMIN_SIFRE_ONAY", 12, True
-    ADM_PANEL_DUGME ws, "ADMG_IPTAL", "VAZGEÇ", x + 30, y + 200, 180, 40, RGB(226, 232, 240), RGB(30, 41, 59), "AKSORA_ADMIN_SIFRE_IPTAL", 12, True
-    ws.EnableSelection = xlNoRestrictions
-    ws.Protect Password:=pw, DrawingObjects:=False, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
-    On Error Resume Next
-    o.Activate
-    On Error GoTo 0
-    ADM_PANEL_KUR = True
-    Exit Function
-Yok:
-    On Error Resume Next
-    ADM_PANEL_KAPAT ws
-End Function
-
-Private Sub ADM_PANEL_YAZI(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
-    ByVal w As Double, ByVal h As Double, ByVal boyut As Single, ByVal renk As Long, ByVal kalin As Boolean)
-    Dim s As Shape
-    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
-    s.Name = ad: s.Fill.Visible = msoFalse: s.line.Visible = msoFalse
-    With s.TextFrame2
-        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
-        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
-        .TextRange.Text = metin
-        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = boyut
-        .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
-        .TextRange.Font.Fill.ForeColor.RGB = renk
-    End With
-End Sub
-
-Private Sub ADM_PANEL_DUGME(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
-    ByVal w As Double, ByVal h As Double, ByVal dolgu As Long, ByVal yazi As Long, ByVal makro As String, ByVal boyut As Single, ByVal ortali As Boolean)
-    Dim s As Shape
-    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
-    With s
-        .Name = ad: .Adjustments.Item(1) = 0.2
-        .Fill.ForeColor.RGB = dolgu: .line.Visible = IIf(dolgu = vbWhite, msoFalse, msoTrue): .line.ForeColor.RGB = RGB(203, 213, 225)
-        .OnAction = BIRIM_MAKRO(makro)
-        With .TextFrame2
-            .MarginLeft = 4: .MarginRight = 4: .MarginTop = 0: .MarginBottom = 0
-            .VerticalAnchor = msoAnchorMiddle
-            .TextRange.Text = metin
-            .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = boyut: .TextRange.Font.bold = msoTrue
-            .TextRange.Font.Fill.ForeColor.RGB = yazi
-            .TextRange.ParagraphFormat.Alignment = IIf(ortali, msoAlignCenter, msoAlignLeft)
-        End With
-    End With
-End Sub
-
-Private Sub ADM_PANEL_KAPAT(ByVal ws As Worksheet)
-    Dim i As Long
-    On Error Resume Next
-    ws.Unprotect pw
-    For i = ws.OLEObjects.Count To 1 Step -1
-        If Left$(ws.OLEObjects(i).Name, 5) = "ADMG_" Then ws.OLEObjects(i).Delete
-    Next i
-    For i = ws.Shapes.Count To 1 Step -1
-        If Left$(ws.Shapes(i).Name, 5) = "ADMG_" Then ws.Shapes(i).Delete
-    Next i
-    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
-    ws.EnableSelection = xlNoSelection
-    On Error GoTo 0
-End Sub
-
-Public Sub AKSORA_ADMIN_SIFRE_GOSTER()
-    Dim ws As Worksheet, goster As Boolean
-    On Error Resume Next
-    Set ws = ActiveSheet
-    goster = Not (ADM_AD_OKU("_AKSORA_ADMIN_SIFRE_GOSTER") = "1")
-    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_SIFRE_GOSTER", RefersTo:="=""" & IIf(goster, "1", "0") & """", Visible:=False
-    ws.OLEObjects("ADMG_SIFRE").Object.PasswordChar = IIf(goster, vbNullString, "*")
-    ws.Shapes("ADMG_GOSTER").TextFrame2.TextRange.Text = IIf(goster, ChrW(9745), ChrW(9744)) & "  Þifreyi göster"
-    ws.OLEObjects("ADMG_SIFRE").Activate
-    On Error GoTo 0
-End Sub
-
-Public Sub AKSORA_ADMIN_SIFRE_IPTAL()
-    ADM_PANEL_KAPAT ActiveSheet
-End Sub
-
-Public Sub AKSORA_ADMIN_SIFRE_ONAY()
-    Dim ws As Worksheet, s As String
-    Set ws = ActiveSheet
-    On Error Resume Next
-    s = CStr(ws.OLEObjects("ADMG_SIFRE").Object.Text)
-    On Error GoTo 0
-    If Len(s) = 0 Then Exit Sub
-    If s <> ADM_SIFRE Then
-        ADM_LOG_YAZ "HATALI"
-        On Error Resume Next
-        ws.OLEObjects("ADMG_SIFRE").Object.Text = vbNullString
-        ws.Shapes("ADMG_HATA").TextFrame2.TextRange.Text = "Þifre hatalý. Deneme kayýt altýna alýndý."
-        ws.OLEObjects("ADMG_SIFRE").Activate
-        On Error GoTo 0
-        Exit Sub
-    End If
-    ADM_PANEL_KAPAT ws
-    ADM_LOG_YAZ "GÝRÝÞ"
-    mAdmOturum = True
-    ADM_AC
-End Sub
-
-' ActiveX kutu kullanilamazsa (guvenlik ayari) klasik giris kutusu.
-Private Sub ADM_GIRIS_KLASIK()
     Dim s As String
-    s = InputBox("AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:", "AKSORA | ADMÝN GÝRÝÞÝ")
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    s = ADM_SIFRE_SOR()
     If Len(s) = 0 Then Exit Sub
     If s <> ADM_SIFRE Then
         ADM_LOG_YAZ "HATALI"
@@ -5305,6 +5175,51 @@ Private Sub ADM_GIRIS_KLASIK()
     mAdmOturum = True
     ADM_AC
 End Sub
+
+Private Function ADM_SIFRE_GIZLI() As Boolean
+    ADM_SIFRE_GIZLI = (ADM_AD_OKU("_AKSORA_ADMIN_SIFRE_GOSTER") <> "1")
+End Function
+
+' Kutu acildiktan hemen sonra zamanlayici sifre alanini yildizli yapar.
+Private Function ADM_SIFRE_SOR() As String
+    On Error Resume Next
+    mAdmZaman = 0
+    If ADM_SIFRE_GIZLI() Then mAdmZaman = ADMW_SetTimer(0, 0, 30, AddressOf ADM_MASKE_ZAMAN)
+    On Error GoTo 0
+    ADM_SIFRE_SOR = InputBox("AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:", ADM_KUTU_BASLIK)
+    On Error Resume Next
+    If mAdmZaman <> 0 Then ADMW_KillTimer 0, mAdmZaman: mAdmZaman = 0
+    On Error GoTo 0
+End Function
+
+Public Sub ADM_MASKE_ZAMAN(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal idEvent As LongPtr, ByVal dwTime As Long)
+    Dim dlg As LongPtr, ed As LongPtr
+    On Error Resume Next
+    dlg = ADMW_FindWindow(vbNullString, ADM_KUTU_BASLIK)
+    If dlg <> 0 Then
+        ed = ADMW_FindWindowEx(dlg, 0, "Edit", vbNullString)
+        If ed <> 0 Then ADMW_SendMessage ed, &HCC, 42, 0
+        ADMW_KillTimer 0, mAdmZaman: mAdmZaman = 0
+    End If
+End Sub
+
+' Birim secim ekranindaki "Sifreyi goster" secenegi.
+Public Sub AKSORA_ADMIN_SIFRE_GOSTER()
+    Dim ws As Worksheet, goster As Boolean
+    On Error Resume Next
+    goster = ADM_SIFRE_GIZLI()
+    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_SIFRE_GOSTER", RefersTo:="=""" & IIf(goster, "1", "0") & """", Visible:=False
+    Set ws = ActiveSheet
+    ws.Unprotect pw
+    ws.Shapes("BIRIM_ADMIN_GOSTER").TextFrame2.TextRange.Text = ADM_GOSTER_METNI()
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+    On Error GoTo 0
+End Sub
+
+Private Function ADM_GOSTER_METNI() As String
+    ADM_GOSTER_METNI = IIf(ADM_SIFRE_GIZLI(), ChrW(9744), ChrW(9745)) & "  Þifreyi göster"
+End Function
 
 Private Sub ADM_AC()
     Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String

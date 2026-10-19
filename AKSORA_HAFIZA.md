@@ -247,9 +247,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Giriş kaydı _AKSORA_ADMIN_LOG (son 15: tarih|kullanıcı|GİRİŞ/HATALI); hatalı denemeler uyarıda, son 5 giriş sayfa altında.
   Demontaj listesinde EKSİK GİRİŞ turuncu, GİRİŞ YOK kırmızı.
 
-- Admin şifre paneli (19.10): hub üzerinde ADMG_* şekilleri + ActiveX TextBox "ADMG_SIFRE" (PasswordChar "*"),
-  "Şifreyi göster" seçeneği tercih olarak _AKSORA_ADMIN_SIFRE_GOSTER'de saklanır; GİRİŞ/VAZGEÇ (perdeye tıklamak da kapatır).
-  ActiveX kurulamazsa klasik InputBox. Enter tuşu çalışmaz (sayfa modülü yok), GİRİŞ düğmesine basılır.
+- Admin şifre kutusu (19.10, düzeltme): ActiveX panel kullanıcıda çalışmadı, kaldırıldı. Şimdi InputBox
+  (başlık "AKSORA - YONETICI GIRISI") + SetTimer/AddressOf ADM_MASKE_ZAMAN: kutu açılınca Edit'e EM_SETPASSWORDCHAR '*'.
+  Hub'da ADMİN GİRİŞİ yanında "☐/☑ Şifreyi göster" düğmesi (BIRIM_ADMIN_GOSTER, AKSORA_ADMIN_SIFRE_GOSTER);
+  tercih _AKSORA_ADMIN_SIFRE_GOSTER adında ("1" = göster). Hub sürümü 12. Declare'ler yalnızca VBA7 (Office 2010+).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
