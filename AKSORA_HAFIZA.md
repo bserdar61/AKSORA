@@ -283,6 +283,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   artık `If mAdmYukleme Then AKSORA_BEKLE_KAPAT` ile temizleyip devam ediyor; Son: da mAdmYukleme=False.
   (2) AKSORA_BEKLE_ILERLE'deki DoEvents, EnableEvents=False'a rağmen il butonunu re-entrant tetikliyordu →
   DoEvents kaldırıldı, sadece RedrawWindow (RDW_UPDATENOW|ALLCHILDREN|ERASE|INVALIDATE) ile anında boyanıyor.
+- Admin bekleme kartı (19.10, 3. düzeltme): DoEvents kaldırınca hiç boyamadı → DoEvents asıl boyayıcıymış, geri alındı.
+  AKSORA_BEKLE_ILERLE paint anında Interactive'i geçici True yapar (ADM dışı birimlerde zaten True). ADM_AC'den
+  application.Interactive=False/True kaldırıldı (birim ekranlarıyla aynı davranış); kart boyamasını bastırıyordu.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

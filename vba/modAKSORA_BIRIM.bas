@@ -5362,7 +5362,6 @@ Private Sub ADM_AC()
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
     AKSORA_BEKLE_AC "AKSORA  |  YÖNETÝM MERKEZÝ", "Yönetim merkezi hazýrlanýyor...", 0.03
-    application.Interactive = False
     application.Cursor = xlWait
     mYonlendirme = True
     Set ws = ADM_SAYFA()
@@ -5373,7 +5372,6 @@ Private Sub ADM_AC()
     ADM_GORUNUM ws
 Cikis:
     AKSORA_BEKLE_KAPAT
-    application.Interactive = True
     mAdmMesgul = False
     mYonlendirme = False
     application.StatusBar = False
@@ -5442,9 +5440,14 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
     If y > 1 Then y = 1
     mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
     mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
-    application.ScreenUpdating = True
     If mAdmYukSon = 0 Or y >= 0.85 Or Abs(Timer - mAdmYukSon) > 0.2 Then
+        Dim iv As Boolean
+        iv = application.Interactive
+        application.ScreenUpdating = True
+        application.Interactive = True
         ADMW_RedrawWindow application.hWnd, 0, 0, &H185
+        DoEvents
+        application.Interactive = iv
         mAdmYukSon = Timer
     End If
     On Error GoTo 0
