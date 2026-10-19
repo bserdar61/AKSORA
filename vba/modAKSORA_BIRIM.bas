@@ -4628,7 +4628,7 @@ End Sub
 Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Long, ByVal imza As String, _
     ByVal dE As Object, ByVal dY As Object, ByVal isgL As Object)
     Dim anahtar As Object, grup As Object, k As Variant, x As Variant, p() As String, gk As String
-    Dim mE As Double, mY As Double, vE As Double, t As Variant, g As Variant
+    Dim qE As Double, qY As Double, qV As Double, t As Variant, g As Variant
     Dim satir As String, tampon As String, j As Long, sonR As Long
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
@@ -4638,21 +4638,21 @@ Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Lo
         Next k
     Next x
     For Each k In anahtar.keys
-        mE = 0: mY = 0: vE = 0
-        If dE.Exists(k) Then t = dE(k): mE = t(3): vE = t(4)
-        If dY.Exists(k) Then t = dY(k): mY = t(3)
+        qE = 0: qY = 0: qV = 0
+        If dE.Exists(k) Then t = dE(k): qE = t(3): qV = t(4)
+        If dY.Exists(k) Then t = dY(k): qY = t(3)
         p = Split(CStr(k), "|")
-        If UBound(p) >= 3 And Abs(mY - mE) > 0.0005 Then
+        If UBound(p) >= 3 And Abs(qY - qE) > 0.0005 Then
             I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
             If Len(I_DEM_DISI(p(2), isgL)) = 0 Then
                 gk = p(0) & "|" & p(1) & "|" & p(2)
                 If Not grup.Exists(gk) Then grup(gk) = Array(0#, 0#, 0#)
                 g = grup(gk)
                 If I_DEMONTAJ_MI(p(3)) Then
-                    If mY > mE Then g(1) = g(1) + (mY - mE)
-                ElseIf mY < mE Then
-                    g(0) = g(0) + (mE - mY)
-                    If mE > 0 Then g(2) = g(2) + (mE - mY) * vE / mE
+                    If qY > qE Then g(1) = g(1) + (qY - qE)
+                ElseIf qY < qE Then
+                    g(0) = g(0) + (qE - qY)
+                    If qE > 0 Then g(2) = g(2) + (qE - qY) * qV / qE
                 End If
                 grup(gk) = g
             End If

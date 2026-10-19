@@ -306,6 +306,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   en çok eksik 10 ve en çok kullanılan 10 malzeme. Y_SAYFA_SIFIRLA artık ADMY_ bekleme kartını silmiyor.
 - DERS (19.10): Sabit I_DEFTER_GUN ile Sub I_DEFTER_GUN aynı adı taşıdığı için modAKSORA_BIRIM derlenmedi ("Compile error in
   hidden module"). Sabit I_DEFTER_SURE yapıldı. Yeni kodda modül düzeyi adlarla (sabit/değişken/yordam) çakışma taranmalı.
+- DERS 2 (19.10): I_DEFTER_GUN içindeki yerel `mE` VBA'da `Me` anahtar kelimesi sayılıyor → "Syntax error" (kullanıcı
+  Debug > Compile ile buldu). qE/qY/qV yapıldı. Her yeni kodda ayrılmış kelime taraması (Me, To, Is, In, On, Or, Mod, Do,
+  Name, Line, Input, Error, Date, Type...) ve modül düzeyi ad çakışması taraması yapılmalı. Kilitli projede Excel satır
+  göstermez; kullanıcıdan Alt+F11 > Debug > Compile VBAProject ekran görüntüsü istenir.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
