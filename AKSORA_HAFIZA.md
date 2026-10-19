@@ -223,5 +223,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   en değerli 10 depo (tekil), en değerli 10 malzeme (tekil depolardan).
 - Baz: kullanıcının 19.10 dosyası (up19).
 
+### ADMİN v3 (19.10.2026)
+- İl seçimi açılır liste DEĞİL: satır 4'te il düğmeleri (ADM_IL_n, AlternativeText = il kodu, AKSORA_ADMIN_IL_SEC). (Doğrulama listesi
+  ilk değişiklikten sonra kayboluyordu.)
+- Sıra: arama en üstte (C7, sonuç 8-39, 30 grup; çok kelime = hepsi; il dağılımı; TEMİZLE; arama BX4'te saklanır, il değişince tekrar),
+  sonra DEMONTAJ KONTROLÜ (ADM_DEMONTAJ: her il _IH_ geçmişinden, son güncelleme vs önceki günün son kaydı, I_KARS_KUR kuralı;
+  TÜMÜ'de il satırları, il seçiliyken ilçe deposu satırları + girişi yapılmayan ilk 15 malzeme), özet+skor, birim kartları,
+  il karşılaştırması (her zaman 5 il), uyarılar (İSG/demontaj il başına TEK uyarı), İSG tablosu + en çok zimmet bekleyen 5 depo,
+  en değerli 10 depo/malzeme.
+- Skor: kategori başına bir kez (kritik -15, uyarı -6).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
