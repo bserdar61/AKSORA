@@ -5441,12 +5441,19 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
     mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
     mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
     If mAdmYukSon = 0 Or y >= 0.85 Or Abs(Timer - mAdmYukSon) > 0.2 Then
-        Dim iv As Boolean
+        Dim iv As Boolean, bas As Double, sure As Double
+        ' Excel yeni cizilen karti tek DoEvents ile her zaman basmaz (ozellikle veri onbellekteyken
+        ' islem hizli bittiginde). Ilk ve son boyamada kisa bir sure ekrana basmasi beklenir.
+        sure = IIf(mAdmYukSon = 0 Or y >= 0.85, 0.3, 0)
         iv = application.Interactive
         application.ScreenUpdating = True
-        application.Interactive = True
+        application.Interactive = False
         ADMW_RedrawWindow application.hWnd, 0, 0, &H185
         DoEvents
+        bas = Timer
+        Do While sure > 0 And Timer - bas < sure And Timer >= bas
+            DoEvents
+        Loop
         application.Interactive = iv
         mAdmYukSon = Timer
     End If

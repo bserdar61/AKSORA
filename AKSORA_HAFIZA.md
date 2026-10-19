@@ -286,6 +286,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Admin bekleme kartı (19.10, 3. düzeltme): DoEvents kaldırınca hiç boyamadı → DoEvents asıl boyayıcıymış, geri alındı.
   AKSORA_BEKLE_ILERLE paint anında Interactive'i geçici True yapar (ADM dışı birimlerde zaten True). ADM_AC'den
   application.Interactive=False/True kaldırıldı (birim ekranlarıyla aynı davranış); kart boyamasını bastırıyordu.
+- Admin bekleme kartı (19.10, 4. düzeltme, kök neden): Kart, veri önbellekteyken (ikinci giriş / il değişimi) çıkmıyordu;
+  başka birimler gezilince canlı sayfa imzası değişip önbellek bozuluyor, okuma uzuyor ve çok sayıda DoEvents ile kart
+  basılıyordu. Excel yeni şekli tek DoEvents ile basmayabiliyor. AKSORA_BEKLE_ILERLE ilk ve son (%85+) boyamada
+  0,3 sn DoEvents döngüsüyle bekler (Interactive=False, yeniden girişi engeller).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
