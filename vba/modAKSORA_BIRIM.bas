@@ -39,6 +39,8 @@ Private Declare PtrSafe Function ADMW_SetFocus Lib "user32" Alias "SetFocus" (By
 Private mAdmZaman As LongPtr
 Private mAdmKutu As LongPtr
 Private mAdmGoster As Boolean
+Private mAdmYukleme As Boolean
+Private mAdmMesgul As Boolean
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -5240,9 +5242,13 @@ End Sub
 
 Private Sub ADM_AC()
     Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String
+    If mAdmMesgul Then Exit Sub
+    mAdmMesgul = True
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
+    ADM_YUKLEME_AC
+    application.Interactive = False
     application.Cursor = xlWait
     mYonlendirme = True
     Set ws = ADM_SAYFA()
@@ -5251,7 +5257,11 @@ Private Sub ADM_AC()
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ADM
     ADM_GORUNUM ws
+    ADM_ILERLE 1, "Yönetim merkezi hazýr"
 Cikis:
+    ADM_YUKLEME_KAPAT
+    application.Interactive = True
+    mAdmMesgul = False
     mYonlendirme = False
     application.StatusBar = False
     application.Cursor = xlDefault
@@ -5261,6 +5271,34 @@ Cikis:
 Hata:
     no = Err.Number: metin = Err.Description
     Resume Cikis
+End Sub
+
+'Bekleme ekrani: AKSORA acilis penceresi (frmSplash) ilerleme cubuguyla gosterilir.
+Private Sub ADM_YUKLEME_AC()
+    On Error Resume Next
+    mAdmYukleme = False
+    Load frmSplash
+    If Err.Number <> 0 Then Exit Sub
+    frmSplash.Show vbModeless
+    frmSplash.SplashBaslat
+    frmSplash.lblAltBaslik.Caption = "AKSORA Yönetim Merkezi"
+    mAdmYukleme = (Err.Number = 0)
+    On Error GoTo 0
+    ADM_ILERLE 0.03, "Yönetim merkezi hazýrlanýyor..."
+End Sub
+
+Private Sub ADM_ILERLE(ByVal y As Double, ByVal mesaj As String)
+    If Not mAdmYukleme Then Exit Sub
+    On Error Resume Next
+    frmSplash.SplashIlerle y, mesaj
+    On Error GoTo 0
+End Sub
+
+Private Sub ADM_YUKLEME_KAPAT()
+    On Error Resume Next
+    If mAdmYukleme Then Unload frmSplash
+    mAdmYukleme = False
+    On Error GoTo 0
 End Sub
 
 Public Sub AKSORA_ADMIN_YENILE()
@@ -5535,6 +5573,7 @@ End Function
 '---------- il secim dugmeleri ----------
 Public Sub AKSORA_ADMIN_IL_SEC()
     Dim ws As Worksheet, il As String
+    If mAdmMesgul Then Exit Sub
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(ADM)
     il = ws.Shapes(CStr(application.Caller)).AlternativeText
@@ -5696,6 +5735,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
         For p = 0 To 4
             il = CStr(iller(p))
             secili = (Len(secIl) = 0 Or il = secIl)
+            ADM_ILERLE 0.05 + 0.6 * (u * 5 + p) / 20, ad(u) & "  •  " & Y_IL_ADI(il) & " okunuyor..."
             veri = ADM_VERI(u, il)
             ilTarih(p, u) = veri(0)
             If veri(2) > 0 Then
@@ -5756,6 +5796,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     '--- demontaj (her il, ilce gecmisinden)
     For p = 0 To 4
         il = CStr(iller(p))
+        ADM_ILERLE 0.66 + 0.04 * p, Y_IL_ADI(il) & "  •  demontaj kontrolü..."
         dem = ADM_DEMONTAJ(il)
         ilDemT(p) = IIf(Len(dem(0)) > 0, Left$(dem(0), 16) & "  >  " & Left$(dem(1), 16), "")
         For Each k In dem(2).keys
@@ -5893,6 +5934,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     Next j
     If Len(oncelik) > 0 Then ozet = ozet & vbLf & "Öncelikli aksiyonlar:" & oncelik Else ozet = ozet & " Kritik veya dikkat gerektiren konu yok."
     '================== CIZIM ==================
+    ADM_ILERLE 0.88, "Rapor hazýrlanýyor..."
     ws.Unprotect ""
     ws.AutoFilterMode = False
     For i = ws.Shapes.Count To 1 Step -1
