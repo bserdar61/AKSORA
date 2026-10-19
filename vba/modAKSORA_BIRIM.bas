@@ -17,6 +17,7 @@ Private Const ADM_ARA_SATIR As Long = 8
 Private Const ADM_ARA_HUCRE As String = "C7"
 Private Const ADM_IL_HUCRE As String = "C4"
 Private mAdmOnbellek As Object
+Private mAdmOturum As Boolean
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -214,7 +215,15 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
     If mYonlendirme Then AKSORA_BIRIM_OLAY = True: Exit Function
     If Not TypeOf sh Is Worksheet Then Exit Function
     If AKSORA_MUSTERI_GECIS_KORU(sh) Then AKSORA_BIRIM_OLAY = True: Exit Function
-    If sh.Name = ADM Then ADM_GORUNUM sh: AKSORA_BIRIM_OLAY = True: Exit Function
+    If sh.Name = ADM Then
+        ' Sifre girilmeden (sekme / Ctrl+PgDn ile) yonetim merkezine gecilemez.
+        If Not mAdmOturum Then
+            AKSORA_BIRIM_OLAY = True
+            AKSORA_BIRIM_ANA_MENU
+            Exit Function
+        End If
+        ADM_GORUNUM sh: AKSORA_BIRIM_OLAY = True: Exit Function
+    End If
     On Error Resume Next
     application.MoveAfterReturn = (sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" And sh.Name <> "I_MALZEME_ARA")
     On Error GoTo 0
@@ -5147,9 +5156,13 @@ Public Sub AKSORA_ADMIN_GIRIS()
     s = InputBox("AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:", "AKSORA | ADMÝN GÝRÝÞÝ")
     If Len(s) = 0 Then Exit Sub
     If s <> ADM_SIFRE Then
-        MsgBox "Þifre hatalý." & vbCrLf & "Yönetim merkezine yalnýzca yetkili kullanýcýlar girebilir.", vbCritical, "AKSORA | ADMÝN"
+        ADM_LOG_YAZ "HATALI"
+        MsgBox "Þifre hatalý." & vbCrLf & "Yönetim merkezine yalnýzca yetkili kullanýcýlar girebilir." & vbCrLf & _
+            "Deneme kayýt altýna alýndý.", vbCritical, "AKSORA | ADMÝN"
         Exit Sub
     End If
+    ADM_LOG_YAZ "GÝRÝÞ"
+    mAdmOturum = True
     ADM_AC
 End Sub
 
@@ -5183,6 +5196,7 @@ Public Sub AKSORA_ADMIN_YENILE()
 End Sub
 
 Public Sub AKSORA_ADMIN_CIKIS()
+    mAdmOturum = False
     AKSORA_BIRIM_ANA_MENU
 End Sub
 
@@ -5759,6 +5773,17 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
             ADM_SAYI(sh.Range("A10").Value2) & " azalan, " & ADM_SAYI(sh.Range("D10").Value2) & " artan kalem).", "Malzeme | Karþýlaþtýrma", "Karþýlaþtýrma"
     End If
     If Len(ADM_AD_OKU("_AKSORA_ADMIN_SON_TOPLU")) > 0 Then ADM_UYAR uy, 3, "Son tek tuþ güncelleme: " & ADM_AD_OKU("_AKSORA_ADMIN_SON_TOPLU"), "Yönetim", "Yönetim"
+    ' Son basarili giristen once yapilan hatali sifre denemeleri
+    parca = Split(ADM_AD_OKU("_AKSORA_ADMIN_LOG"), ";")
+    n = 0
+    For i = 1 To UBound(parca)
+        If Right$(parca(i), 6) = "HATALI" Then
+            n = n + 1
+        ElseIf Right$(parca(i), 5) = "GÝRÝÞ" Then
+            Exit For
+        End If
+    Next i
+    If n > 0 Then ADM_UYAR uy, 2, "Güvenlik: bu giriþten önce " & n & " hatalý yönetici þifresi denemesi yapýldý (" & Split(parca(1), "|")(0) & ", " & Split(parca(1), "|")(1) & ").", "Yönetim | Güvenlik", "Güvenlik"
     '--- skor: her kategori bir kez (kritik -15, uyari -6)
     Set kategori = CreateObject("Scripting.Dictionary")
     For Each kx In uy
@@ -5932,7 +5957,12 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
             ADM_MIKTAR ws.Cells(r, 8)
             ws.Cells(r, 9).Value2 = sira(i)(6)
             ws.Cells(r, 10).Value2 = sira(i)(8): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
-            ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), CStr(sira(i)(7)), RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+            If sira(i)(7) = "EKSÝK GÝRÝÞ" Then
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), CStr(sira(i)(7)), RGB(254, 243, 199), RGB(180, 83, 9), 8, True, xlCenter
+                ws.Cells(r, 8).Font.Color = RGB(180, 83, 9)
+            Else
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), CStr(sira(i)(7)), RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+            End If
             ws.Range(ADM_ADRES(r, 2, r, 6)).HorizontalAlignment = xlCenter: ws.Cells(r, 4).HorizontalAlignment = xlLeft
             ws.Range(ADM_ADRES(r, 8, r, 9)).HorizontalAlignment = xlCenter
         Next i
@@ -6230,6 +6260,15 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Bu sayfa yalnýzca yöneticiler içindir. Birim kartlarý birimin kendi görünümüdür; tekil deðerde birimler arasý ortak depolar bir kez sayýlýr. " & _
         "Demontaj kontrolü ilçe biriminin günlük kayýtlarýndan hesaplanýr. Tam güncel rapor için TÜM BÝRÝMLERÝ GÜNCELLE kullanýn.", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
     ws.Range(ADM_ADRES(r, 2, r, 2)).Font.Italic = True
+    parca = Split(ADM_AD_OKU("_AKSORA_ADMIN_LOG"), ";")
+    If UBound(parca) >= 0 Then
+        t = vbNullString
+        For i = 0 To application.Min(4, UBound(parca))
+            t = t & IIf(i > 0, "    •    ", "") & Replace(parca(i), "|", "  ")
+        Next i
+        r = r + 1
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Son yönetici giriþleri:  " & t, RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    End If
     ws.Range("BX2").Value2 = r
     On Error Resume Next
     For Each s In ws.Shapes
@@ -6242,6 +6281,24 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ' Onceki arama yeni secimle tekrar calistirilir.
     If Len(aramaMetni) > 0 Then AKSORA_ADMIN_ARA
     application.StatusBar = False
+End Sub
+
+' Yonetici giris kaydi (son 15): "tarih|kullanici|GIRIS/HATALI" ; ile ayrik, gizli ad _AKSORA_ADMIN_LOG.
+Private Sub ADM_LOG_YAZ(ByVal sonuc As String)
+    Dim eski As String, yeni As String, p() As String, i As Long, kullanici As String
+    On Error Resume Next
+    kullanici = Environ$("USERNAME")
+    If Len(kullanici) = 0 Then kullanici = application.UserName
+    eski = ADM_AD_OKU("_AKSORA_ADMIN_LOG")
+    yeni = Format$(Now, "dd.mm.yyyy hh:nn") & "|" & Replace(Replace(kullanici, "|", " "), ";", " ") & "|" & sonuc
+    If Len(eski) > 0 Then
+        p = Split(eski, ";")
+        For i = 0 To application.Min(13, UBound(p))
+            yeni = yeni & ";" & p(i)
+        Next i
+    End If
+    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_LOG", RefersTo:="=""" & Replace(yeni, """", "'") & """", Visible:=False
+    On Error GoTo 0
 End Sub
 
 ' Gecmis anahtarindan (depo|UY|malzeme|degerleme) malzeme kodu.

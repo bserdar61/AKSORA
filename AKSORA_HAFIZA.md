@@ -243,5 +243,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - DEMONTAJ KONTROLÜNDE İSG MALZEMELERİ HARİÇ (I_ISG_LISTE): hem admin ADM_DEMONTAJ hem İlçe STOK/DEMONTAJ ekranı (I_KARS_KUR:
   "İSG malzemesi (demontaj gerekmez)", gri, sayılmaz). Admin aramada miktarı 0 olan satırlar gösterilmez; büyük tutarlar ShrinkToFit.
 
+- Admin güvenlik (19.10): mAdmOturum (şifreyle True, ÇIKIŞ'ta False); şifresiz sekme/Ctrl+PgDn geçişi BIRIM_OLAY'da hub'a döner.
+  Giriş kaydı _AKSORA_ADMIN_LOG (son 15: tarih|kullanıcı|GİRİŞ/HATALI); hatalı denemeler uyarıda, son 5 giriş sayfa altında.
+  Demontaj listesinde EKSİK GİRİŞ turuncu, GİRİŞ YOK kırmızı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
