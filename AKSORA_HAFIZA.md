@@ -247,5 +247,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Giriş kaydı _AKSORA_ADMIN_LOG (son 15: tarih|kullanıcı|GİRİŞ/HATALI); hatalı denemeler uyarıda, son 5 giriş sayfa altında.
   Demontaj listesinde EKSİK GİRİŞ turuncu, GİRİŞ YOK kırmızı.
 
+- Admin şifre paneli (19.10): hub üzerinde ADMG_* şekilleri + ActiveX TextBox "ADMG_SIFRE" (PasswordChar "*"),
+  "Şifreyi göster" seçeneği tercih olarak _AKSORA_ADMIN_SIFRE_GOSTER'de saklanır; GİRİŞ/VAZGEÇ (perdeye tıklamak da kapatır).
+  ActiveX kurulamazsa klasik InputBox. Enter tuşu çalışmaz (sayfa modülü yok), GİRİŞ düğmesine basılır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
