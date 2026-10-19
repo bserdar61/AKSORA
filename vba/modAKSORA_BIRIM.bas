@@ -5391,8 +5391,10 @@ End Sub
 ' Kart cizilip ekrana basildiktan sonra islem calisir; ekran donsa da kart gorunur kalir.
 Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4) As Boolean
     Dim ws As Worksheet, vr As Range, f As Double, x As Double, y As Double, w As Double, h As Double, s As Shape, ayar As Variant
-    If mAdmYukleme Then Exit Function
     If AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_V11_MESGUL Then Exit Function
+    ' Onceki karttan kalan takili durumu temizle (ikinci giris/il degisimi icin)
+    If mAdmYukleme Then AKSORA_BEKLE_KAPAT
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
     On Error GoTo Son
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
     If TypeName(ActiveSheet) <> "Worksheet" Then Exit Function
@@ -5428,26 +5430,21 @@ Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, O
 Son:
     On Error Resume Next
     If Not ws Is Nothing Then BEKLE_SIL ws: BEKLE_KORU ws, ayar
-    Set mAdmYukWs = Nothing
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
     application.ScreenUpdating = True
     On Error GoTo 0
 End Function
 
 ' Karti ilerletir ve ekrana basar (cok sik cagrilirsa en fazla ~4 kez/sn cizer).
 Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
-    Dim iv As Boolean
     If Not mAdmYukleme Then Exit Sub
     On Error Resume Next
     If y > 1 Then y = 1
     mAdmYukWs.Shapes("ADMY_DURUM").TextFrame2.TextRange.Text = mesaj
     mAdmYukWs.Shapes("ADMY_BAR").Width = application.Max(1, mAdmYukBar * y)
     application.ScreenUpdating = True
-    If mAdmYukSon = 0 Or y >= 0.85 Or Abs(Timer - mAdmYukSon) > 0.25 Then
+    If mAdmYukSon = 0 Or y >= 0.85 Or Abs(Timer - mAdmYukSon) > 0.2 Then
         ADMW_RedrawWindow application.hWnd, 0, 0, &H185
-        iv = application.Interactive
-        application.Interactive = False
-        DoEvents
-        application.Interactive = iv
         mAdmYukSon = Timer
     End If
     On Error GoTo 0

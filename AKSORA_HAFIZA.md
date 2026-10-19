@@ -278,6 +278,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   bölümündeki şekil silme döngüsüydü (tüm şekilleri siliyordu, ADMY_ kartı dahil). Artık ADMY_ şekilleri atlanıyor;
   kart donma (ScreenUpdating=False ile rapor çizimi) boyunca ekranda kalır, en sonda AKSORA_BEKLE_KAPAT kaldırır.
   İlerleme çizim öncesi %90 "Rapor çiziliyor...".
+- Admin bekleme kartı (19.10, 2. düzeltme): ikinci giriş/il değişiminde kart gelmeme sorunu. İki neden:
+  (1) AKSORA_BEKLE_AC başındaki `If mAdmYukleme Then Exit Function` takılı durumda kartı engelliyordu →
+  artık `If mAdmYukleme Then AKSORA_BEKLE_KAPAT` ile temizleyip devam ediyor; Son: da mAdmYukleme=False.
+  (2) AKSORA_BEKLE_ILERLE'deki DoEvents, EnableEvents=False'a rağmen il butonunu re-entrant tetikliyordu →
+  DoEvents kaldırıldı, sadece RedrawWindow (RDW_UPDATENOW|ALLCHILDREN|ERASE|INVALIDATE) ile anında boyanıyor.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
