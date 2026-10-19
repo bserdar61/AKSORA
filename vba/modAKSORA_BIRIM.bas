@@ -19,12 +19,26 @@ Private Const ADM_IL_HUCRE As String = "C4"
 Private mAdmOnbellek As Object
 Private mAdmOturum As Boolean
 Private Const ADM_KUTU_BASLIK As String = "AKSORA - YONETICI GIRISI"
+Private Type ADMW_RECT
+    Left As Long
+    Top As Long
+    Right As Long
+    Bottom As Long
+End Type
 Private Declare PtrSafe Function ADMW_SetTimer Lib "user32" Alias "SetTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr, ByVal uElapse As Long, ByVal lpTimerFunc As LongPtr) As LongPtr
 Private Declare PtrSafe Function ADMW_KillTimer Lib "user32" Alias "KillTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr) As Long
 Private Declare PtrSafe Function ADMW_FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As LongPtr
 Private Declare PtrSafe Function ADMW_FindWindowEx Lib "user32" Alias "FindWindowExA" (ByVal hWnd1 As LongPtr, ByVal hWnd2 As LongPtr, ByVal lpsz1 As String, ByVal lpsz2 As String) As LongPtr
 Private Declare PtrSafe Function ADMW_SendMessage Lib "user32" Alias "SendMessageA" (ByVal hWnd As LongPtr, ByVal wMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_CreateWindowEx Lib "user32" Alias "CreateWindowExW" (ByVal dwExStyle As Long, ByVal lpClassName As LongPtr, ByVal lpWindowName As LongPtr, ByVal dwStyle As Long, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hWndParent As LongPtr, ByVal hMenu As LongPtr, ByVal hInstance As LongPtr, ByVal lpParam As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_GetWindowRect Lib "user32" Alias "GetWindowRect" (ByVal hWnd As LongPtr, lpRect As ADMW_RECT) As Long
+Private Declare PtrSafe Function ADMW_MapWindowPoints Lib "user32" Alias "MapWindowPoints" (ByVal hWndFrom As LongPtr, ByVal hWndTo As LongPtr, lpPoints As ADMW_RECT, ByVal cPoints As Long) As Long
+Private Declare PtrSafe Function ADMW_SetWindowPos Lib "user32" Alias "SetWindowPos" (ByVal hWnd As LongPtr, ByVal hWndInsertAfter As LongPtr, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
+Private Declare PtrSafe Function ADMW_InvalidateRect Lib "user32" Alias "InvalidateRect" (ByVal hWnd As LongPtr, ByVal lpRect As LongPtr, ByVal bErase As Long) As Long
+Private Declare PtrSafe Function ADMW_SetFocus Lib "user32" Alias "SetFocus" (ByVal hWnd As LongPtr) As LongPtr
 Private mAdmZaman As LongPtr
+Private mAdmKutu As LongPtr
+Private mAdmGoster As Boolean
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -199,7 +213,7 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
     If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
     Set ws = BIRIM_SAYFA(HUB)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 12 Then BIRIM_CIZ ws, ""
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 13 Then BIRIM_CIZ ws, ""
     ws.Visible = xlSheetVisible
     ws.Move Before:=ThisWorkbook.Worksheets(1)
     ws.Select Replace:=True
@@ -707,7 +721,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     application.EnableEvents = False: application.ScreenUpdating = False
     mYonlendirme = True
     Set ws = BIRIM_SAYFA(ad)
-    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 12 Then BIRIM_CIZ ws, baslik
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 13 Then BIRIM_CIZ ws, baslik
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True
     BIRIM_DIGERLERINI_GIZLE ad
@@ -847,7 +861,7 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
     Loop
     ws.Rows("1:44").RowHeight = 15
     ws.Range("BX1").Value2 = tag
-    ws.Range("BX2").Value2 = 12
+    ws.Range("BX2").Value2 = 13
     ws.Columns("BX").Hidden = True
     ws.ScrollArea = "A1:BH44"
     ws.Tab.Color = RGB(12, 45, 79)
@@ -902,7 +916,6 @@ Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
         BIRIM_TEXT ws, "SECIM_NOT", "Ýhtiyacýnýz olan iþlem alanýna tek seçimle ulaþýn.", 35, 565, 700, 24, 10, RGB(87, 121, 142), False
         ' Yonetici girisi (sifreli yonetim merkezi)
         BIRIM_BUTON ws, "ADMIN", "ADMÝN GÝRÝÞÝ  " & ChrW(8250), cw - 34 - 210, 557, 210, 38, RGB(12, 45, 79), "AKSORA_ADMIN_GIRIS"
-        BIRIM_BUTON ws, "ADMIN_GOSTER", ADM_GOSTER_METNI(), cw - 34 - 210 - 180, 557, 170, 38, RGB(100, 116, 139), "AKSORA_ADMIN_SIFRE_GOSTER"
     Else
         BIRIM_TEXT ws, "PANEL_EYEBROW", "BÝRÝM ÇALIÞMA ALANI", 35, 157, 900, 24, 11, RGB(0, 126, 113), True
         BIRIM_TEXT ws, "PANEL_BASLIK", panel, 35, 196, 1000, 52, 32, RGB(12, 45, 79), True
@@ -5158,8 +5171,7 @@ End Sub
 ' diger iller birimlerin il kayitlarindan (_AKLIVE_, _YA_, _MA_, _IA_) okunur. Okunan veri imza (tarih+satir)
 ' degismedikce bellekte tutulur. Birimler arasi ayni depo (il+UY+depo) tekil toplamda bir kez sayilir.
 
-' Yonetici girisi: sifre kutusu (Windows): yazilan sifre yildizla gizlenir. "Sifreyi goster" tercihi
-' birim secim ekranindaki secenekle degisir ve saklanir (_AKSORA_ADMIN_SIFRE_GOSTER).
+' Yonetici girisi: sifre kutusu (Windows), yazilan sifre yildizla gizlenir.
 Public Sub AKSORA_ADMIN_GIRIS()
     Dim s As String
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
@@ -5176,50 +5188,55 @@ Public Sub AKSORA_ADMIN_GIRIS()
     ADM_AC
 End Sub
 
-Private Function ADM_SIFRE_GIZLI() As Boolean
-    ADM_SIFRE_GIZLI = (ADM_AD_OKU("_AKSORA_ADMIN_SIFRE_GOSTER") <> "1")
-End Function
-
-' Kutu acildiktan hemen sonra zamanlayici sifre alanini yildizli yapar.
+' Sifre kutusu: InputBox acilinca zamanlayici yazilani yildizli yapar ve
+' kutunun altina "Sifreyi goster" secenegini ekler. Her giriste gizli baslar.
 Private Function ADM_SIFRE_SOR() As String
     On Error Resume Next
-    mAdmZaman = 0
-    If ADM_SIFRE_GIZLI() Then mAdmZaman = ADMW_SetTimer(0, 0, 30, AddressOf ADM_MASKE_ZAMAN)
+    mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
+    mAdmZaman = ADMW_SetTimer(0, 0, 40, AddressOf ADM_MASKE_ZAMAN)
     On Error GoTo 0
     ADM_SIFRE_SOR = InputBox("AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:", ADM_KUTU_BASLIK)
     On Error Resume Next
-    If mAdmZaman <> 0 Then ADMW_KillTimer 0, mAdmZaman: mAdmZaman = 0
+    If mAdmZaman <> 0 Then ADMW_KillTimer 0, mAdmZaman
+    mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
     On Error GoTo 0
 End Function
 
 Public Sub ADM_MASKE_ZAMAN(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal idEvent As LongPtr, ByVal dwTime As Long)
-    Dim dlg As LongPtr, ed As LongPtr
+    Dim dlg As LongPtr, ed As LongPtr, goster As Boolean
     On Error Resume Next
     dlg = ADMW_FindWindow(vbNullString, ADM_KUTU_BASLIK)
-    If dlg <> 0 Then
-        ed = ADMW_FindWindowEx(dlg, 0, "Edit", vbNullString)
-        If ed <> 0 Then ADMW_SendMessage ed, &HCC, 42, 0
-        ADMW_KillTimer 0, mAdmZaman: mAdmZaman = 0
+    If dlg = 0 Then Exit Sub
+    ed = ADMW_FindWindowEx(dlg, 0, "Edit", vbNullString)
+    If ed = 0 Then Exit Sub
+    If mAdmKutu = 0 Then
+        ADMW_SendMessage ed, &HCC, 42, 0
+        ADM_KUTU_EKLE dlg, ed
+        Exit Sub
+    End If
+    goster = (ADMW_SendMessage(mAdmKutu, &HF0, 0, 0) = 1)
+    If goster <> mAdmGoster Then
+        mAdmGoster = goster
+        ADMW_SendMessage ed, &HCC, IIf(goster, 0, 42), 0
+        ADMW_InvalidateRect ed, 0, 1
+        ADMW_SetFocus ed
     End If
 End Sub
 
-' Birim secim ekranindaki "Sifreyi goster" secenegi.
-Public Sub AKSORA_ADMIN_SIFRE_GOSTER()
-    Dim ws As Worksheet, goster As Boolean
-    On Error Resume Next
-    goster = ADM_SIFRE_GIZLI()
-    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_SIFRE_GOSTER", RefersTo:="=""" & IIf(goster, "1", "0") & """", Visible:=False
-    Set ws = ActiveSheet
-    ws.Unprotect pw
-    ws.Shapes("BIRIM_ADMIN_GOSTER").TextFrame2.TextRange.Text = ADM_GOSTER_METNI()
-    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
-    ws.EnableSelection = xlNoSelection
-    On Error GoTo 0
+Private Sub ADM_KUTU_EKLE(ByVal dlg As LongPtr, ByVal ed As LongPtr)
+    Dim rd As ADMW_RECT, re As ADMW_RECT, h As Long, metin As String, sinif As String
+    ADMW_GetWindowRect dlg, rd
+    ADMW_GetWindowRect ed, re
+    ADMW_MapWindowPoints 0, dlg, re, 2
+    h = re.Bottom - re.Top
+    If h < 16 Then h = 16
+    ADMW_SetWindowPos dlg, 0, 0, 0, rd.Right - rd.Left, rd.Bottom - rd.Top + h + 10, &H16
+    sinif = "Button"
+    metin = ChrW(350) & "ifreyi g" & ChrW(246) & "ster"
+    mAdmKutu = ADMW_CreateWindowEx(0, StrPtr(sinif), StrPtr(metin), &H50010003, re.Left, re.Bottom + 6, re.Right - re.Left, h, dlg, 4001, 0, 0)
+    If mAdmKutu = 0 Then mAdmKutu = -1: Exit Sub
+    ADMW_SendMessage mAdmKutu, &H30, ADMW_SendMessage(ed, &H31, 0, 0), 1
 End Sub
-
-Private Function ADM_GOSTER_METNI() As String
-    ADM_GOSTER_METNI = IIf(ADM_SIFRE_GIZLI(), ChrW(9744), ChrW(9745)) & "  Þifreyi göster"
-End Function
 
 Private Sub ADM_AC()
     Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String

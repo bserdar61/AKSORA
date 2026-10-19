@@ -249,8 +249,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - Admin şifre kutusu (19.10, düzeltme): ActiveX panel kullanıcıda çalışmadı, kaldırıldı. Şimdi InputBox
   (başlık "AKSORA - YONETICI GIRISI") + SetTimer/AddressOf ADM_MASKE_ZAMAN: kutu açılınca Edit'e EM_SETPASSWORDCHAR '*'.
-  Hub'da ADMİN GİRİŞİ yanında "☐/☑ Şifreyi göster" düğmesi (BIRIM_ADMIN_GOSTER, AKSORA_ADMIN_SIFRE_GOSTER);
-  tercih _AKSORA_ADMIN_SIFRE_GOSTER adında ("1" = göster). Hub sürümü 12. Declare'ler yalnızca VBA7 (Office 2010+).
+  "Şifreyi göster" onay kutusu artık şifre kutusunun İÇİNDE (CreateWindowExW "Button" BS_AUTOCHECKBOX, kutu
+  edit yüksekliği kadar uzatılır; zamanlayıcı 40ms BM_GETCHECK okur, değişince EM_SETPASSWORDCHAR 0/'*').
+  Her girişte gizli başlar. Hub'daki göster düğmesi kaldırıldı (hub sürümü 13). Declare'ler yalnızca VBA7.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
