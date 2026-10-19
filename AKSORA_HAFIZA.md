@@ -233,5 +233,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   en değerli 10 depo/malzeme.
 - Skor: kategori başına bir kez (kritik -15, uyarı -6).
 
+### ADMİN v4 (19.10.2026)
+- Sayılar: miktar hücreleri ADM_MIKTAR (AKSORA_V13_MIKTAR_BICIMI; tam sayıda sonda virgül yok). "#,##0.###" hücre biçimi KULLANMA.
+- Arama: birimler arası aynı il+ÜY+depo+malzeme TEK satır ("MALZEME + YATIRIM", miktar bir kez); sıralama ANA DEPO (D, mavi) ->
+  İLÇE (K, mor) -> YÜKLENİCİ (diğer, sarı), her grupta miktar büyükten; "Depo türü" sütunu; birleşik hücre yok (G sütunu 30 geniş);
+  başlıkta AutoFilter (koruma AllowFiltering, EnableSelection serbest); en fazla 398 satır (ADM_ARA_N 400 gizli yedek satır).
+- Demontaj: eksik değer (eski değer/miktar birim fiyatı x eksik), "en çok" sıralı, eksik listesi en yüksek değerli 25.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
