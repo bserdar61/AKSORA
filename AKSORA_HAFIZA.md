@@ -274,6 +274,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   - docs/LISANS/AKSORA_SAHIPLIK.md: tarih + SHA-256 parmak izleri (ana ve dağıtım).
   - VBA şifresi (bserdar1284) ve "görüntüleme için kilit" Excel'de VBE'den elle uygulanır (ikili dosyada zorlanmadı:
     bozulma riski ve sınıflandırıcı engeli). Dağıtım kopyasına uygulanır, ana kopya okunur kalır.
+- Admin bekleme kartı düzeltme (19.10): il değiştirmede ve ilk girişte kartın kaybolma sebebi ADM_KUR CIZIM
+  bölümündeki şekil silme döngüsüydü (tüm şekilleri siliyordu, ADMY_ kartı dahil). Artık ADMY_ şekilleri atlanıyor;
+  kart donma (ScreenUpdating=False ile rapor çizimi) boyunca ekranda kalır, en sonda AKSORA_BEKLE_KAPAT kaldırır.
+  İlerleme çizim öncesi %90 "Rapor çiziliyor...".
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

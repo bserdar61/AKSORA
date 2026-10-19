@@ -6154,12 +6154,13 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     Next j
     If Len(oncelik) > 0 Then ozet = ozet & vbLf & "Öncelikli aksiyonlar:" & oncelik Else ozet = ozet & " Kritik veya dikkat gerektiren konu yok."
     '================== CIZIM ==================
-    ADM_ILERLE 0.88, "Rapor hazýrlanýyor..."
+    ADM_ILERLE 0.9, "Rapor çiziliyor..."
     application.ScreenUpdating = False
     ws.Unprotect ""
     ws.AutoFilterMode = False
+    ' Bekleme karti (ADMY_) silinmez; donma boyunca ekranda kalir, en sonda AKSORA_BEKLE_KAPAT kaldirir.
     For i = ws.Shapes.Count To 1 Step -1
-        ws.Shapes(i).Delete
+        If Left$(ws.Shapes(i).Name, 5) <> "ADMY_" Then ws.Shapes(i).Delete
     Next i
     ws.Cells.Clear
     ws.Cells.Validation.Delete
