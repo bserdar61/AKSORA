@@ -318,6 +318,16 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ve admin (il/ilçe tablosu kritik, KRİTİK MALZEMELER, gidişat kritik, ilk 15 kritik eksik/kullanılan, günlük eksik listesi
   kritik önce + durumda kategori). Kullanıcı isteğiyle günlük STOK/DEMONTAJ KONTROLÜ sayfasına dokunulmadı.
   Kontrol betikleri: fx/checks.py (ad çakışması + ayrılmış kelime), fx/checks2.py <yordamlar> (tanımsız ad), fx/checks3.py (blok).
+- Aylık demontaj sadeleştirme (19.10): Kullanıcı "çok gereksiz bilgi" dedi. AYLIK DEMONTAJ (ilçe) artık yalnız kritik:
+  KPI (kritik uyum %, kritik fire TL, ★ EN İYİ İLÇE, ▼ EN KÖTÜ İLÇE), ay düğmeleri, KRİTİK MALZEMELER (kategori: kullanılan /
+  girilen / eksik(fire) m-adet, oran, fire TL, fireli ilçe), İLÇE KARNESİ (sıra: kritik uyum desc, eşitlikte fire asc; kablo m,
+  direk/pano/hücre/trafo adet eksik, değerlendirme ÇOK İYİ/İYİ/ORTA/ZAYIF + EN İYİ/EN KÖTÜ), KRİTİK FİRE LİSTESİ (filtreli).
+  Admin ADM_AYLIK_CIZ: il özeti (TÜMÜ), KRİTİK MALZEMELER, İLÇE KARNESİ (TÜMÜ ve >15 ilçe: en iyi 5 + en kötü 10).
+  Gidişat, ilk-15 listeleri, malzeme/detay tabloları kaldırıldı (ADM_AY_SATIR / ADM_MAL_SIRA artık kullanılmıyor).
+  Görsel: I_UYUM_CUBUK = trafik ışığı ikonu (70/90) + yeşil veri çubuğu; I_FIRE_ISI = beyaz→kırmızı renk skalası; kategori renkleri.
+- Kaydetme yavaşlığı (19.10 analiz): dosya açık hali 94 MB XML; sharedStrings 28 MB (çoğu _MA_<IL>_CDP müşteri arşivleri
+  ~19 MB: sayaç seri numaralı satırlar), M_CDP_STOK 18 MB (472 bin hücre). "Önceki satırla aynı alan = ~" kodlaması arşivleri
+  ~4 kat küçültür (Trabzon 5,8 MB → 1,4 MB). Öneri: PAKET2 (geri uyumlu okuyucu) — kullanıcı onayı bekleniyor.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
