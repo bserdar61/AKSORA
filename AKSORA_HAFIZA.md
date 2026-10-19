@@ -264,6 +264,16 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - İlçe STOK KARŞILAŞTIRMA listesi: önce İLÇE A-Z, sonra durum (demontaj eksikleri önce) ve değer farkı.
 - Hub (19.10): Yatırım ve İlçe Yönetim kartları AKTİF rozetli (hub sürümü 14). Paylaşım notu: SAP düzeni "PANEL"
   kullanıcıya özelse başka kullanıcıda yoktur; global "/PANEL" olarak kaydedilmeli (Müşteri zaten "/PANEL" ister).
+- Güvenlik/sahiplik (19.10):
+  - İmza + kendini onaran bekçi (modAKSORA_KORUMA): AKSORA_SAHIBI="Burhan SERDAR" sabiti; AKSORA_IMZA_DOGRULA
+    açılışta (Workbook_Open, AKSORA_HAFIF_KORUMALARI_YENILE sonrası) çağrılır; gizli adlar _AKSORA_SAHIP/_AKSORA_IMZA,
+    kitap Yazar/Şirket, KAPAK ZZ2000 (beyaz) yeniden yazılır → silinirse sahip adına döner.
+  - İki çıktı: final/AKSORA.xlsm (ana, okunur kaynak) ve final/AKSORA_DAGITIM.xlsm (paylaşım). Dağıtım kopyası
+    fx/strip.py ile tam satır + tırnaksız satır sonu açıklamaları ve boş satırlar silinmiş rawdist/'ten derlenir
+    (1467 açıklama satırı → 0). Excel kaynağı yeniden derler (build_bin _VBA_PROJECT stub + offset sıfır).
+  - docs/LISANS/AKSORA_SAHIPLIK.md: tarih + SHA-256 parmak izleri (ana ve dağıtım).
+  - VBA şifresi (bserdar1284) ve "görüntüleme için kilit" Excel'de VBE'den elle uygulanır (ikili dosyada zorlanmadı:
+    bozulma riski ve sınıflandırıcı engeli). Dağıtım kopyasına uygulanır, ana kopya okunur kalır.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

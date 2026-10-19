@@ -1,6 +1,47 @@
 Attribute VB_Name = "modAKSORA_KORUMA"
 Option Explicit
 
+' Sahiplik imzasi: gorunur ve gizli imzalar her acilista koddan yeniden yazilir;
+' silinir/degistirilirse sahip adina geri doner (kendini onarir).
+Public Const AKSORA_SAHIBI As String = "Burhan SERDAR"
+Public Const AKSORA_SIRKET As String = "Coruh EDAS"
+
+Public Sub AKSORA_IMZA_DOGRULA()
+    Dim ad As String, ws As Worksheet
+    On Error Resume Next
+    ad = AKSORA_SAHIBI
+    If IMZA_AD_OKU("_AKSORA_SAHIP") <> ad Then IMZA_AD_YAZ "_AKSORA_SAHIP", ad
+    IMZA_AD_YAZ "_AKSORA_IMZA", ChrW(169) & " " & ad & " - AKSORA"
+    ThisWorkbook.BuiltinDocumentProperties("Author") = ad
+    ThisWorkbook.BuiltinDocumentProperties("Company") = AKSORA_SIRKET
+    Set ws = Nothing: Set ws = ThisWorkbook.Worksheets("KAPAK")
+    If Not ws Is Nothing Then
+        ws.Range("ZZ2000").Value2 = ChrW(169) & " " & ad & "  -  AKSORA"
+        ws.Range("ZZ2000").Font.Color = RGB(255, 255, 255)
+    End If
+    On Error GoTo 0
+End Sub
+
+Public Function AKSORA_IMZA_METNI() As String
+    AKSORA_IMZA_METNI = ChrW(169) & " " & AKSORA_SAHIBI
+End Function
+
+Private Function IMZA_AD_OKU(ByVal ad As String) As String
+    Dim r As String
+    On Error Resume Next
+    r = ThisWorkbook.names(ad).RefersTo
+    If Left$(r, 2) = "=" & Chr$(34) Then r = Mid$(r, 3, Len(r) - 3)
+    IMZA_AD_OKU = r
+    On Error GoTo 0
+End Function
+
+Private Sub IMZA_AD_YAZ(ByVal ad As String, ByVal deger As String)
+    On Error Resume Next
+    ThisWorkbook.names.Add Name:=ad, RefersTo:="=" & Chr$(34) & Replace(deger, Chr$(34), Chr$(34) & Chr$(34)) & Chr$(34), Visible:=False
+    On Error GoTo 0
+End Sub
+
+
 ' Sadece belirtilen sayfalardaki resimleri kilitler.
 ' Sayfa korumasi, resimlerin elle tasinmasini engeller.
 ' NOT: Koruma altinda sekil/grafik ekleyen makrolar ek uyarlama isteyebilir.
