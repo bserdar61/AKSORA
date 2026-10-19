@@ -212,5 +212,16 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - I_İSG notu (Y_BOLUM notSutun=9) tablonun son sütununa yaslı.
 - Baz: kullanıcının 16.10 öğlen dosyası (up18), bx/xl = u18/xl, frmSplash VB_Base u18'den.
 
+### ADMİN v2 (19.10.2026)
+- İl filtresi C4 (TÜMÜ + 5 il; liste BX10:BX15; seçim BX3; SheetChange -> AKSORA_ADMIN_DEGISIM). Arama kutusu C30, sonuç 31-52.
+- Veri: ADM_VERI(u, il) — birimin ekrandaki ili (stok sayfası A5) canlı sayfadan, diğer iller kayıtlardan:
+  malzeme _AKLIVE_<IL>_{CDP,EPP,ILC,YUK} (stok düzeni, tarih A3), yatırım _YA_<IL>_1..4, müşteri _MA_<IL>_{CDP,ILCE,YUK},
+  ilçe _IA_<IL> (PAKET, tarih A1). mAdmOnbellek: imza (tarih+satır) değişmedikçe bellekte; satırlar tab-ayrık metin.
+- Tekil değer: il+ÜY+depo birden çok birimde ise bir kez (en yüksek değerli kaynak). Birim kartları birimin kendi görünümü.
+- Bölümler: özet, skor (100-10*kritik-3*uyarı), birim kartları, İL KARŞILAŞTIRMASI matrisi, arama, uyarılar,
+  İSG (TÜMÜ'de il bazında, il seçiliyken ilçe bazında; _IA_ + I_ISG_LISTE ile hesaplanır), demontaj (karşılaştırma ekranındaki il),
+  en değerli 10 depo (tekil), en değerli 10 malzeme (tekil depolardan).
+- Baz: kullanıcının 19.10 dosyası (up19).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
