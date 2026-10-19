@@ -54,7 +54,7 @@ Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
 Private Const I_ETIKET As String = "AKSORA_ILCE_V1"
 Private Const I_GECMIS_GUN As Long = 20
 Private Const I_TF As String = "dd.mm.yyyy hh:nn:ss"
-Private Const I_DEFTER_GUN As Long = 400
+Private Const I_DEFTER_SURE As Long = 400
 Private mIMal As Object
 Private mIMalKirli As Boolean
 Private mIDefter As Object
@@ -4608,8 +4608,8 @@ Private Sub I_DEFTER_GUNCELLE(ByVal il As String)
             onceT = yeniT: Set dOnce = dY
         End If
     Next i
-    ' En fazla I_DEFTER_GUN gun tutulur.
-    sinir = CLng(Int(CDbl(Date))) - I_DEFTER_GUN
+    ' En fazla I_DEFTER_SURE gun tutulur.
+    sinir = CLng(Int(CDbl(Date))) - I_DEFTER_SURE
     For c = I_GECMIS_SON(ws) To 1 Step -1
         x = ws.Cells(1, c).Value
         If IsDate(x) Then
@@ -4902,7 +4902,7 @@ End Sub
 
 ' I_AYLIK_DEMONTAJ: KPI, ay secimi, aylik gidisat, ilce, malzeme ve ilce x malzeme detayi.
 Private Sub I_AYLIK_KUR(ByVal il As String)
-    Dim ws As Worksheet, w As Double, cw As Double, s As Shape, aylar As Object, liste As Variant, secAy As Long
+    Dim ws As Worksheet, w As Double, sw As Double, s As Shape, aylar As Object, liste As Variant, secAy As Long
     Dim h As Variant, o As Variant, top As Variant, dD As Object, dM As Object, dX As Object, depolar As Object, dl As Object
     Dim k As Variant, t As Variant, mb As Variant, p() As String, r As Long, a1 As Long, i As Long, j As Long, n As Long
     Dim y As Double, bw As Double, kw As Double, anah() As String, idx() As Long, kod() As String, sonuc() As Variant
@@ -4917,9 +4917,9 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
     I_BAGLA ws
     Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
     If s Is Nothing Then w = 1544 Else w = s.Width
-    cw = (w - 630) / 8
-    If cw < 70 Then cw = 70
-    Y_KOLONLAR ws, Array(90, 170, 90, 280, cw, cw, cw, cw, cw, cw, cw, cw)
+    sw = (w - 630) / 8
+    If sw < 70 Then sw = 70
+    Y_KOLONLAR ws, Array(90, 170, 90, 280, sw, sw, sw, sw, sw, sw, sw, sw)
     Set aylar = I_DEFTER_OKU(il)
     Set depolar = I_DEPOLAR(il)
     liste = I_AY_LISTE(aylar)
