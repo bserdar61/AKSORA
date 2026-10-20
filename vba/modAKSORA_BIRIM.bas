@@ -8356,6 +8356,7 @@ Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
     Dim sure As Double, u As String, k As Variant, y As Double, s As String, sn As Long
     If Not mAdmTopluKart Or Not mAdmYukleme Then Exit Sub
     If Len(metin) = 0 And Abs(Timer - mAdmTopluSon) < 1 Then Exit Sub
+    If Len(metin) > 0 And metin = mAdmTopluMetin And Abs(Timer - mAdmTopluSon) < 0.5 Then Exit Sub
     On Error Resume Next
     If Len(metin) > 0 Then
         mAdmTopluMetin = metin
@@ -8385,8 +8386,10 @@ End Sub
 ' Excel penceresi cizimi durdurulur (birim sayfalari arkada degisir, ekranda yonetim merkezi kalir); kart ayri pencere oldugundan cizilir.
 Private Sub ADM_EKRAN_KILIT(ByVal kilit As Boolean)
     On Error Resume Next
+    ' Pencere kilidi kullanilmaz (ekran griye donup SAP/Excel uyarilarini gizleyebiliyordu);
+    ' ekranin yonetim merkezinde kalmasini birimlerdeki AKSORA_ADMIN_TOPLU korumalari saglar.
     If kilit Then
-        If mAdmTopluKart Then ADMW_LockWindowUpdate application.hWnd: mAdmKilit = True
+        ' (kilit acilmaz; yalniz eski surumden kalan kilit kaldirilir)
     ElseIf mAdmKilit Then
         ADMW_LockWindowUpdate 0
         mAdmKilit = False

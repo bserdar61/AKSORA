@@ -888,6 +888,7 @@ Public Sub AKSORA_GUNCELLEME_SURELERI()
 End Sub
 
 Public Sub AKSORA_TOPLU_SURE_TIK(Optional ByVal zorla As Boolean = False)
+    AKSORA_ADMIN_DURUM vbNullString
     Dim saniye As Long, gecen As Double, s As Shape
     If AKSORA_MUSTERI_TOPLU_AKTIF Then
         AKSORA_MUSTERI_TOPLU_TIK zorla

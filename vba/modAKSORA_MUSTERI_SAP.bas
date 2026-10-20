@@ -50,6 +50,7 @@ End Function
 Private Sub MS_Durum(ByVal metin As String)
     mDurum = metin
     application.StatusBar = "AKSORA | Müþteri | " & metin
+    AKSORA_ADMIN_DURUM MS_IlKod() & "  •  " & metin
     If Abs(Timer - mSeritZaman) >= 1 Then
         mSeritZaman = Timer
         AKSORA_MUSTERI_SERIT "Güncelleniyor  •  " & IIf(AKSORA_MUSTERI_TOPLU_AKTIF, MS_IlKod() & "  •  ", "") & metin, 1
@@ -62,6 +63,12 @@ Private Sub MS_Bekle(ByVal ses As Object)
     bas = Timer
     Do While ses.Busy
         If MS_Gecen(bas) > 900 Then Err.Raise vbObjectError + 1900, , "SAP 15 dakika içinde yanýt vermedi."
+        ' Uzun beklemede kart: SAP'de onay bekleyen bir pencere olabilecegi yazilir.
+        If MS_Gecen(bas) > 45 Then
+            AKSORA_ADMIN_DURUM "SAP yanýtý bekleniyor (" & CLng(MS_Gecen(bas)) & " sn) - SAP'de açýk bir uyarý varsa onaylayýn"
+        Else
+            AKSORA_ADMIN_DURUM vbNullString
+        End If
         DoEvents: MS_Sleep 50
     Loop
     If ses.FindById("wnd[0]/sbar").MessageType = "E" Then _
