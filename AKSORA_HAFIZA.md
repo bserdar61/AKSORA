@@ -364,5 +364,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## DERS: XML satır sonu normalleştirmesi (20.10.2026)
 - Excel kayıtlı metinlerde CRLF var; XML okuyucu CRLF ve tek CR'yi LF okur. optimize_base bunu yapmadığı için PAKET2 satırlarının sonunda CR kaldı; blok sonundaki tek CR Excel'de fazladan satır oldu → Rize arşivi "satır sayısı tutmuyor" ile yüklenemedi (Giresun'dan sonra takılma). Düzeltme: `xmlnorm` (optimize_base + verify_p2), VBA okuyucu boş satırı atlar, müşteri il geçişi hataları teşhise yazılır.
 
+## Doğrulandı (20.10.2026 13:53)
+- Tüm birimler 4 dk 10 sn (önce 7 dk 10 sn): Malzeme 44 sn (CDP 18,1 + EPP 10,8 tek sorgu), Yatırım il başına 0,3–1,1 sn, İlçe 0,6–1,1 sn (ortak veri), Müşteri il başına 26–51 sn (toplam ~3 dk 6 sn; en büyük kalem).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
