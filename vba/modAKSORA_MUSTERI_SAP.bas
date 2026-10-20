@@ -51,6 +51,8 @@ Private Sub MS_Durum(ByVal metin As String)
     mDurum = metin
     application.StatusBar = "AKSORA | Müþteri | " & metin
     AKSORA_ADMIN_DURUM MS_IlKod() & "  •  " & metin
+    ' Teshis dosyasina adim ve saat (takilma olursa hangi adimda oldugu gorulur).
+    AKSORA_SAP_TESHIS_YAZ "Müþteri " & MS_IlKod() & " | " & metin
     If Abs(Timer - mSeritZaman) >= 1 Then
         mSeritZaman = Timer
         AKSORA_MUSTERI_SERIT "Güncelleniyor  •  " & IIf(AKSORA_MUSTERI_TOPLU_AKTIF, MS_IlKod() & "  •  ", "") & metin, 1
@@ -1723,6 +1725,7 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
     mFiyatTur = True
     MS_Durum "Deðerler uygulanýyor..."
     eksik = MS_FiyatUygula(bir, d, Format$(tarih, "dd.mm.yyyy"))
+    MS_Durum "Sayfalara ayrýlýyor..."
     yeni(1) = MS_Ayir(bir, 1): yeni(2) = MS_Ayir(bir, 2): yeni(3) = MS_Ayir(bir, 3)
     For i = 1 To 3
         sonEski(i) = application.Max(7, AKSORA_M_SON(sayfa(i)))
@@ -1732,8 +1735,12 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
     Next i
     application.ScreenUpdating = False
     yazildi = True
-    For i = 1 To 3: MS_Yaz sayfa(i), yeni(i): Next i
+    For i = 1 To 3
+        MS_Durum "Sayfaya yazýlýyor: " & sayfa(i).Name & "..."
+        MS_Yaz sayfa(i), yeni(i)
+    Next i
     yazildi = False
+    MS_Durum "Ýl kaydý yazýlýyor ve doðrulanýyor..."
     AKSORA_MUSTERI_ARSIV_KAYDET MS_IlKod()
     MS_Teshis "Tamamlandý | CDP " & adet(1) & " | Ýlçe " & adet(2) & " | Yüklenici " & adet(3) & " | " & _
         AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.0") & " sn"
@@ -2587,6 +2594,7 @@ Private Function PK_DOGRU(ByVal ar As Worksheet, ByVal veri As Variant) As Boole
     If UBound(v, 1) <> UBound(veri, 1) - LBound(veri, 1) + 1 Then Exit Function
     sutun = application.Min(14, UBound(veri, 2) - LBound(veri, 2) + 1)
     For r = 1 To UBound(v, 1)
+        If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
         i = LBound(veri, 1) + r - 1
         For c = 1 To sutun
             If PK_ALAN(v(r, c)) <> PK_ALAN(veri(i, LBound(veri, 2) + c - 1)) Then Exit Function
@@ -2613,6 +2621,7 @@ Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As
     ReDim blok(1 To 16)
     ReDim parca(0 To 255)
     For r = LBound(veri, 1) To UBound(veri, 1)
+        If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
         For c = 0 To sutun - 1
             t = PK_ALAN(veri(r, LBound(veri, 2) + c))
             If ikinci And r > LBound(veri, 1) And Len(t) > 0 And t = onceki(c) Then alan(c) = "=" Else alan(c) = t
