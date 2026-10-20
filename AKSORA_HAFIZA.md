@@ -329,5 +329,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ~19 MB: sayaç seri numaralı satırlar), M_CDP_STOK 18 MB (472 bin hücre). "Önceki satırla aynı alan = ~" kodlaması arşivleri
   ~4 kat küçültür (Trabzon 5,8 MB → 1,4 MB). Öneri: PAKET2 (geri uyumlu okuyucu) — kullanıcı onayı bekleniyor.
 
+## Genel denetim (20.10.2026) — tüm birimler
+- **Yükleme kartı**: frmSplash başlıksız kart, AKSORA penceresinin ortasında (GetWindowRect + SetWindowPos). Uzun döngülerde `AKSORA_BEKLE_NABIZ` (0,5 sn'de bir DoEvents, Interactive=False). Admin çizim aşamasına ara ilerlemeler eklendi. Kart Alt+F4 ile kapanmaz (QueryClose). Kart yüklenirken görsel hatası MsgBox çıkarmaz (`AKSORA_BEKLE_KIPI`).
+- **Admin**: ADM_AC sırasında hesaplama elle (sonda geri). Önceki aramanın yeniden çalışması ekranı yarıda açmıyor (ScreenUpdating/Cursor ADM_AC'ye bırakılır). Tek başına arama kartla açılır. C4/C7 olay kilidi hata olsa da açılır. Giriş günlüğü 255 karakter sınırına göre kesilir (önceden 7-8 kayıttan sonra hiç yazılmıyordu). Demontaj "EKSİK GİRİŞ" aynı grup için bir kez sayılır (önbellek anahtarı DEM5). Kritik kullanımı olmayan il "%100 TAMAM" yerine "– / KULLANIM YOK". En iyi/en kötü rozeti yalnız gerçek fark varsa.
+- **Defter**: `I_DEFTER_GUNCELLE` artık önbelleği silmiyor (imza zaten koruyor; il geçişleri hızlandı). Gün imzası en son yazılır.
+- **İlçe**: SAP'den ilçe deposu satırı gelmezse ve önceki kayıtta o tesis varsa boş sonuç kaydedilmez (yoksa tüm stok "kullanıldı" sayılırdı). Sayfalar elle hesap/olaylar kapalıyken kurulur. İSG anahtarı Y_KOD_NORM ile de aranır. Aylık sayfada tek/eşit ilçede "EN KÖTÜ" gösterilmez.
+- **Yatırım**: Hakediş tasarım kartı ve yazdırma alanı proje yüklenince tabloya göre yeniden konur (PDF kesik çıkmaz). Teminat "Sahada (gün)" kırmızısı yalnız sayı > 45. 0,75 gibi proje fiyatları okunur. Hata değeri olan teminat kaydı sayfayı kırmaz. Giriş kartında ara ilerlemeler; il seçilmemişse uyarı kart açılmadan.
+- **Müşteri** (davranış/tasarım aynı): il yükleme yarıda kalırsa önceki il geri yüklenir (sayfalar iki ile bölünmez). Dağılım seçiminde olay/ekran ayarı hatada kapalı kalmaz. Tüm iller güncellemesi SAP kapalıysa baştan uyarır; sonda girişi yapılmış il geri yüklenir.
+- **Malzeme**: CDP/EPP/sayfa güncellemesi SAP bağlantısı yoksa "tamamlandı" demez (C2 tarihi değişmediyse uyarı). Açılışta kapak tarihi hatası açılışı durdurmaz. İl geçişi arşiv kontrolü dizi ile (hücre hücre değil). Tüm stok güncelleme hata kodu kaybolmuyor.
+- **Bekleyen öneriler (uygulanmadı)**: Müşteri aramasında Türkçe i/İ katlama; Malzeme `AKSORA_CANLI_STOK_IL` önbelleği; tek sistem güncellemesinde 4 kez CalculateFull; Teminat kurulumu toplu formül; ay geçişinde boşluk günleri yeni aya yazılıyor (her ayın son günü güncelleme önerilir).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

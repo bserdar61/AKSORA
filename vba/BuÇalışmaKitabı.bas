@@ -57,7 +57,11 @@ Private Sub Workbook_Open()
 
     adim = "Kapak tarihi"
 
+    ' Tarih gosterilemese de acilis surer (birim menusu her zaman gelir).
+    On Error Resume Next
     AKSORA_V10_TARIH_GOSTER
+    Err.Clear
+    On Error GoTo Hata
 
     adim = "Uygulama görünümü"
 

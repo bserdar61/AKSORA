@@ -149,7 +149,10 @@ Public Function AKSORA_IL_SON_TARIH(ByVal il As String) As Date
     Dim tip As Variant, kaynak As Variant, i As Long, tarih As Date
     Dim ar As Worksheet, canli As String
     il = AKFIX_NORMAL(il)
+    ' Canli sayfalar okunamazsa (bos / karisik) tarih kayitlardan alinir; acilis durmaz.
+    On Error Resume Next
     canli = AKSORA_CANLI_STOK_IL()
+    On Error GoTo 0
     tip = Array("CDP", "EPP", "TUM", "ILC", "YUK")
     kaynak = Array("CDP_STOK", "EPP_STOK", "STOKLAR", "ÝLÇE_STOK", "YÜKLENÝCÝ_STOK")
     For i = 0 To 4

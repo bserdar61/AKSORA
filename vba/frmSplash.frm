@@ -93,6 +93,7 @@ End Sub
 
 Private Sub UserForm_Initialize()
 
+    On Error Resume Next
     Me.BackColor = RGB(255, 255, 255)
 
     Me.lblBaslik.ForeColor = RGB(31, 78, 121)
@@ -110,6 +111,11 @@ Private Sub UserForm_Initialize()
 AKSORA_SPLASH_GORSEL_UYGULA Me
     SplashOrtala
 
+End Sub
+
+' Kart Alt+F4 ile kapatilamaz; islem bitince kod kapatir.
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then Cancel = True
 End Sub
 
 Private Sub SplashOrtala()

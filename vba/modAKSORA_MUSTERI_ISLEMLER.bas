@@ -2302,12 +2302,12 @@ End Sub
 ' Rapor alt bolumundeki depo listesi: secilen deponun malzeme dagilimi gosterilir.
 Public Sub AKSORA_MUSTERI_DAGILIM_SEC()
     Dim ws As Worksheet, s As Shape, t As String, korumali As Boolean, ev As Boolean, sc As Boolean
+    ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = ActiveSheet
     Set s = ws.Shapes(CStr(application.Caller))
     t = CStr(s.ControlFormat.List(s.ControlFormat.Value))
     If InStr(t, "  -  ") > 0 Then t = Left$(t, InStr(t, "  -  ") - 1)
-    ev = application.EnableEvents: sc = application.ScreenUpdating
     application.EnableEvents = False: application.ScreenUpdating = False
     korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
     If korumali Then ws.Unprotect ""

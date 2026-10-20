@@ -2439,7 +2439,13 @@ Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
             Err.Raise vbObjectError + 1995, , mevcut & " stoklarý saklanamadý; il deðiþimi yapýlmadý."
         End If
         adim = il & " kaydý yükleme"
+        ' Yukleme yarida kalirsa sayfalar iki ile bolunmesin: az once saklanan il geri yuklenir.
+        On Error Resume Next
         AKSORA_MUSTERI_ARSIV_YUKLE il
+        hataNo = Err.Number: hataMetni = Err.Description
+        If hataNo <> 0 Then Err.Clear: AKSORA_MUSTERI_ARSIV_YUKLE mevcut
+        On Error GoTo Hata
+        If hataNo <> 0 Then Err.Raise vbObjectError + 1998, , hataMetni & " (" & mevcut & " stoklarý geri yüklendi.)"
     End If
     ' Uc sayfa da ayni ile ait olmali; degilse il secimi degistirilmez.
     adim = "il doðrulama"

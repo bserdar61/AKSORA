@@ -453,12 +453,16 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
         toplam = 0
 
 
+        Dim akv As Variant
+        ' Arsiv tek seferde okunur (hucre hucre okuma il gecisinde uzun donmaya yol aciyordu).
+        akv = ar.Range("A7:K" & Application.Max(7, son)).Value2
+
         For r = 7 To son
 
             If Len( _
                 Trim$( _
                     CStr( _
-                        ar.Cells(r, "G").Value2 _
+                        akv(r - 6, 7) _
                     ) _
                 ) _
             ) > 0 Then
@@ -470,7 +474,7 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
                 tesis = _
                     Trim$( _
                         CStr( _
-                            ar.Cells(r, "A").Value2 _
+                            akv(r - 6, 1) _
                         ) _
                     )
 
@@ -502,7 +506,7 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
 
 
                 If Not IsNumeric( _
-                    ar.Cells(r, "K").Value2 _
+                    akv(r - 6, 11) _
                 ) Then
 
                     GoTo BILGI_HATALI
@@ -513,7 +517,7 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
                 toplam = _
                     toplam + _
                     CDbl( _
-                        ar.Cells(r, "K").Value2 _
+                        akv(r - 6, 11) _
                     )
 
             End If

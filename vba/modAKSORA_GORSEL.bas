@@ -116,6 +116,8 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
     Exit Sub
 
 Hata:
+    ' Bekleme karti olarak acilirken gorsel hatasi sessiz gecilir (kart yine de gorunur).
+    If AKSORA_BEKLE_KIPI Then Exit Sub
     MsgBox "Yükleme ekraný: " & Err.Description, _
         vbExclamation, "AKSORA"
 

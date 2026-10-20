@@ -212,6 +212,7 @@ Cikis:
 End Sub
 
 Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
+    Dim no As Long, metin As String
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
@@ -220,16 +221,25 @@ Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
     AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
+    no = Err.Number: metin = Err.Description
     AKSORA_PANEL_CANLI = False
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
-    AKSORA_HATA_GOSTER "Tüm stok güncelleme", Err.Number, Err.Description
+    AKSORA_HATA_GOSTER "Tüm stok güncelleme", no, metin
 End Sub
 
+' Guncelleme oncesi/sonrasi stok tarihi (C2): degismediyse guncelleme yapilamamistir.
+Private Function PANEL_C2(ByVal ad As String) As String
+    On Error Resume Next
+    PANEL_C2 = CStr(ThisWorkbook.Worksheets(ad).Range("C2").Value2)
+    On Error GoTo 0
+End Function
+
 Public Sub PANEL_CDP_GUNCELLE()
-    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String, eski As String
     sessiz = ANA_SESSIZ_MOD
+    eski = PANEL_C2("CDP_STOK")
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP"
@@ -241,6 +251,11 @@ Public Sub PANEL_CDP_GUNCELLE()
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    If PANEL_C2("CDP_STOK") = eski Then
+        MsgBox "CDP stoklarý güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
+            "SAP GUI açýk ve doðru sisteme giriþ yapýlmýþ olmalý.", vbExclamation, "AKSORA"
+        Exit Sub
+    End If
     MsgBox "CDP stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
@@ -255,8 +270,9 @@ Hata:
 End Sub
 
 Public Sub PANEL_EPP_GUNCELLE()
-    Dim bas As Double, sessiz As Boolean, no As Long, metin As String
+    Dim bas As Double, sessiz As Boolean, no As Long, metin As String, eski As String
     sessiz = ANA_SESSIZ_MOD
+    eski = PANEL_C2("EPP_STOK")
     On Error GoTo Hata
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "EPP"
@@ -268,6 +284,11 @@ Public Sub PANEL_EPP_GUNCELLE()
     AKSORA_PANEL_SURE_KAYDET bas
     AKSORA_PANEL_CANLI = False
     AKSORA_ANA_PANEL_GOSTER
+    If PANEL_C2("EPP_STOK") = eski Then
+        MsgBox "EPP stoklarý güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
+            "SAP GUI açýk ve doðru sisteme giriþ yapýlmýþ olmalý.", vbExclamation, "AKSORA"
+        Exit Sub
+    End If
     MsgBox "EPP stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub
@@ -1859,10 +1880,11 @@ End Sub
 ' is bitince ayni stok sayfasina donulur ve tek ozet gosterilir.
 Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
     Dim ws As Worksheet, ad As String, bas As Double, sessiz As Boolean, no As Long, metin As String
-    Dim ev As Boolean, baslik As String
+    Dim ev As Boolean, baslik As String, eski As String
     If AKSORA_V11_MESGUL Then Exit Sub
     Set ws = ActiveSheet
     ad = AKFIX_NORMAL(ws.Name)
+    eski = PANEL_C2(ws.Name)
     sessiz = ANA_SESSIZ_MOD
     On Error GoTo Hata
     AKHZ_TEMIZLE
@@ -1888,6 +1910,11 @@ Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
     AKSORA_V13_GORUNUM ws
     application.ScreenUpdating = True
     On Error GoTo 0
+    If PANEL_C2(ws.Name) = eski Then
+        MsgBox baslik & " güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
+            "SAP GUI açýk ve doðru sisteme giriþ yapýlmýþ olmalý.", vbExclamation, "AKSORA"
+        Exit Sub
+    End If
     MsgBox baslik & " güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
     Exit Sub

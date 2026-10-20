@@ -1410,12 +1410,25 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
         If MsgBox("Tanýmlý illerin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) müþteri stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
             vbYesNo + vbQuestion, "AKSORA | Müþteri Birimi") <> vbYes Then Exit Sub
     End If
+    ' SAP kapaliysa iller tek tek arsivlenip yuklenmeden once haber verilir (uzun bekleme olmaz).
+    Set onceki = SAP_SESSION_AL("CDP", hataMetni)
+    If onceki Is Nothing Then
+        If AKSORA_ADMIN_TOPLU Then
+            AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MÜÞTERÝ: SAP baðlantýsý yok. " & hataMetni & vbCrLf
+        Else
+            MsgBox "SAP baðlantýsý bulunamadý; müþteri stoklarý güncellenmedi." & vbCrLf & hataMetni, vbExclamation, "AKSORA | Müþteri Birimi"
+        End If
+        Exit Sub
+    End If
+    hataMetni = vbNullString
     ev = application.EnableEvents: sc = application.ScreenUpdating
     hesap = application.Calculation: sessiz = ANA_SESSIZ_MOD
     Set onceki = ActiveSheet
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("M_MALZEME_ARA")
-    secim = ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2
+    ' Ekrandaki il (girisi yapilmis il) geri yuklenir; secim ekraninda tiklanip girilmeyen il degil.
+    secim = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
+    If Len(secim) = 0 Then secim = ThisWorkbook.Worksheets("MUSTERI IL SECIM").Range("AZ1").Value2
     korumali = ws.ProtectContents
     ws.Unprotect ""
     application.EnableEvents = False
