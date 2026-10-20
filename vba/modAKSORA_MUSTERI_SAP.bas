@@ -2577,50 +2577,38 @@ SonrakiBlok:
 End Function
 
 ' Veriyi kayda paketli yazar (A1/B1 cagiran tarafindan yazilir, burada korunur).
-' Kayit PAKET2 yazilir ve hemen geri okunup her alan karsilastirilir; tutmazsa PAKET1 yazilir.
-Public Sub AKSORA_PAKET_YAZ(ByVal ar As Worksheet, ByVal veri As Variant)
-    PK_YAZ ar, veri, True
-    If Not PK_DOGRU(ar, veri) Then
+' Kayit PAKET2 yazilir; yazilan hucreler geri okunup her satir acilarak PAKET1 satiriyla birebir
+' karsilastirilir (bellekte veri kopyalanmaz). Tutmazsa kayit PAKET1 yazilir.
+Public Sub AKSORA_PAKET_YAZ(ByVal ar As Worksheet, ByRef veri As Variant)
+    Dim buyuk As Boolean
+    If IsArray(veri) Then buyuk = (UBound(veri, 1) - LBound(veri, 1) + 1 > 3000)
+    If buyuk Then AKSORA_SAP_TESHIS_YAZ "Kayýt yazýlýyor | " & ar.Name & " | " & (UBound(veri, 1) - LBound(veri, 1) + 1) & " satýr"
+    If Not PK_YAZ(ar, veri, True) Then
         AKSORA_SAP_TESHIS_YAZ "PAKET2 doðrulanamadý | " & ar.Name & " | PAKET1 yazýldý"
         PK_YAZ ar, veri, False
     End If
+    If buyuk Then AKSORA_SAP_TESHIS_YAZ "Kayýt yazýldý | " & ar.Name & " | " & CStr(ar.Range("C1").Value2)
 End Sub
 
-Private Function PK_DOGRU(ByVal ar As Worksheet, ByVal veri As Variant) As Boolean
-    Dim v As Variant, r As Long, c As Long, sutun As Long, i As Long
-    On Error GoTo Yok
-    If Not IsArray(veri) Then PK_DOGRU = True: Exit Function
-    v = AKSORA_PAKET_OKU(ar)
-    If Not IsArray(v) Then Exit Function
-    If UBound(v, 1) <> UBound(veri, 1) - LBound(veri, 1) + 1 Then Exit Function
-    sutun = application.Min(14, UBound(veri, 2) - LBound(veri, 2) + 1)
-    For r = 1 To UBound(v, 1)
-        If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
-        i = LBound(veri, 1) + r - 1
-        For c = 1 To sutun
-            If PK_ALAN(v(r, c)) <> PK_ALAN(veri(i, LBound(veri, 2) + c - 1)) Then Exit Function
-        Next c
-    Next r
-    PK_DOGRU = True
-Yok:
-End Function
-
-Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As Boolean)
+Private Function PK_YAZ(ByVal ar As Worksheet, ByRef veri As Variant, ByVal ikinci As Boolean) As Boolean
     Dim n As Long, sutun As Long, r As Long, c As Long, alan() As String, blok() As String, onceki() As String, t As String
     Dim satir As String, uz As Long, nb As Long, parca() As String, np As Long, a1 As Variant, b1 As Variant
+    Dim tam() As String, k As Long, satirlar() As String, f() As String, ac() As String, okunan As String, j As Long
     a1 = ar.Range("A1").Value: b1 = ar.Range("B1").Value2
     ar.Cells.ClearContents
     ar.Range("A1").NumberFormat = "dd.mm.yyyy hh:mm:ss"
     ar.Range("A1").Value = a1: ar.Range("B1").Value2 = b1
     ar.Range("C1").Value2 = IIf(ikinci, "PAKET2", "PAKET1")
-    If IsEmpty(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
-    If Not IsArray(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
+    PK_YAZ = True
+    If IsEmpty(veri) Then ar.Range("D1").Value2 = 0: Exit Function
+    If Not IsArray(veri) Then ar.Range("D1").Value2 = 0: Exit Function
     n = UBound(veri, 1) - LBound(veri, 1) + 1
     sutun = UBound(veri, 2) - LBound(veri, 2) + 1
     ReDim alan(0 To sutun - 1)
     ReDim onceki(0 To sutun - 1)
     ReDim blok(1 To 16)
     ReDim parca(0 To 255)
+    If ikinci Then ReDim tam(1 To n)
     For r = LBound(veri, 1) To UBound(veri, 1)
         If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
         For c = 0 To sutun - 1
@@ -2629,6 +2617,7 @@ Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As
             If ikinci And c > 0 And r > LBound(veri, 1) And Len(t) > 0 And t = onceki(c) Then alan(c) = "=" Else alan(c) = t
             onceki(c) = t
         Next c
+        If ikinci Then tam(r - LBound(veri, 1) + 1) = Join(onceki, vbTab)
         satir = Join(alan, vbTab)
         If uz + Len(satir) + 1 > 30000 And np > 0 Then
             nb = nb + 1
@@ -2646,13 +2635,36 @@ Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As
         If nb > UBound(blok) Then ReDim Preserve blok(1 To UBound(blok) * 2)
         blok(nb) = Join(parca, vbLf)
     End If
+    Erase parca
     ar.Range("A2").Resize(nb, 1).NumberFormat = "@"
     For r = 1 To nb
-        If Left$(blok(r), 1) = "=" Then Err.Raise vbObjectError + 2204, "AKSORA_PAKET_YAZ", "Paket bloðu '=' ile baþlýyor."
+        If Left$(blok(r), 1) = "=" Then PK_YAZ = False: Exit Function
         ar.Cells(r + 1, 1).Value2 = blok(r)
     Next r
     ar.Range("D1").Value2 = n
-End Sub
+    If Not ikinci Then Exit Function
+    ' Dogrulama: hucreler geri okunur, "=" alanlar acilir, her satir PAKET1 karsiligiyla ayni olmali.
+    ReDim ac(0 To 63)
+    k = 0
+    For r = 1 To nb
+        okunan = CStr(ar.Cells(r + 1, 1).Value2)
+        If okunan <> blok(r) Then PK_YAZ = False: Exit Function
+        satirlar = Split(okunan, vbLf)
+        For c = 0 To UBound(satirlar)
+            k = k + 1
+            If (k And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+            If k > n Then PK_YAZ = False: Exit Function
+            f = Split(satirlar(c), vbTab)
+            For j = 0 To UBound(f)
+                If j > 63 Then Exit For
+                If f(j) = "=" Then f(j) = ac(j) Else ac(j) = f(j)
+            Next j
+            If Join(f, vbTab) <> tam(k) Then PK_YAZ = False: Exit Function
+        Next c
+    Next r
+    If k <> n Then PK_YAZ = False
+End Function
+
 
 
 
