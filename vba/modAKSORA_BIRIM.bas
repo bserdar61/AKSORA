@@ -8978,7 +8978,7 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal d As Obj
         a = Y_NORM(CStr(v(h, c)))
         If cT = 0 And (InStr(a, "KAYIT") > 0 Or InStr(a, "KYT") > 0 Or InStr(a, "POSTING") > 0) Then cT = c
         If cQ = 0 And (a = "MIKTAR" Or a = "QUANTITY") Then cQ = c
-        If cU = 0 And (InStr(a, "URETIM") > 0 Or a = "PLANT") Then cU = c
+        If cU = 0 And (InStr(a, "URETIM") > 0 Or a = "PLANT" Or a = "UY") Then cU = c
     Next c
     If cQ = 0 Then
         For c = 1 To UBound(v, 2)
@@ -9146,6 +9146,8 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
         ' Secim ekraninda kalindi: yalniz "kayit yok" bildirimi bos sonuc sayilir.
         t = ATIL_SBAR(ses)
         If ATIL_BOS_MESAJ(t) Then Exit Function
+        If InStr(Y_NORM(t), "DUZEN") > 0 Then Err.Raise vbObjectError + 2347, , _
+            "Bu sistemde MB51 için /ATIL düzeni yok (SAP: " & t & "). MB51'de listeyi açýp sütunlarý ayarlayýn ve /ATIL adýyla kaydedin."
         Err.Raise vbObjectError + 2347, , "MB51 sonuç vermedi: " & t
     End If
     v = AKSORA_ALV_METIN_AL(ses, alv, "ATIL_" & uy)
@@ -9165,9 +9167,9 @@ End Function
 
 Public Sub AKSORA_ATIL_SAP_OKU()
     Dim tum As Object, il As Variant, sis As Variant, ses As Object, msg As String, oturumlar As Object
-    Dim sonuc As Object, birlesim As Object, kalan As Object, bul As Object, s As Object, k As Variant
-    Dim uy As String, adim As String, eksik As String, atlanan As String, bugun As Date, mallar() As String
+    Dim sonuc As Object, adim As String, eksik As String, atlanan As String, bugun As Date
     Dim adet As Long, toplam As Long, no As Long, metin As String, ev As Boolean, sure As Double, ozet As String
+    Dim tamam As Object, hatalar As String
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR Then Exit Sub
     On Error GoTo Hata
     adim = "Stok verisi okunuyor"
@@ -9206,69 +9208,20 @@ Public Sub AKSORA_ATIL_SAP_OKU()
     bugun = Date
     Set sonuc = CreateObject("Scripting.Dictionary"): sonuc.CompareMode = vbTextCompare
     toplam = oturumlar.Count * 15
+    Set tamam = CreateObject("Scripting.Dictionary")
     For Each sis In oturumlar.keys
-        Set ses = oturumlar(sis)
-        ' Sistemin bes uretim yerindeki aday malzemelerin birlesimi (diger illerin talebi de buradan okunur).
-        Set birlesim = CreateObject("Scripting.Dictionary"): birlesim.CompareMode = vbTextCompare
-        For Each il In ADM_ILLER()
-            uy = AKSORA_IL_TESIS(CStr(il), CStr(sis))
-            Set s = tum(CStr(il))(0)
-            For Each k In s.keys
-                If Left$(CStr(k), Len(uy) + 1) = uy & "|" Then birlesim(Mid$(CStr(k), Len(uy) + 2)) = True
-            Next k
-        Next il
-        For Each il In ADM_ILLER()
-            uy = AKSORA_IL_TESIS(CStr(il), CStr(sis))
-            Set s = tum(CStr(il))(0)
-            ' 1) son 6 ay
-            If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
-            If birlesim.Count > 0 Then
-                adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 1/3: son 6 ay, " & birlesim.Count & " malzeme"
-                ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
-                mallar = ATIL_DIZI(birlesim)
-                Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -6, bugun), bugun, sis & " " & uy & " 1/3")
-                For Each k In bul.keys
-                    sonuc(uy & "|" & CStr(k)) = bul(k)
-                Next k
-            End If
-            adet = adet + 1
-            ' 2) 6 ayda sarfi olmayan adaylar: 24-6 ay once
-            Set kalan = CreateObject("Scripting.Dictionary"): kalan.CompareMode = vbTextCompare
-            For Each k In s.keys
-                If Left$(CStr(k), Len(uy) + 1) = uy & "|" And Not sonuc.Exists(CStr(k)) Then kalan(Mid$(CStr(k), Len(uy) + 2)) = True
-            Next k
-            If kalan.Count > 0 Then
-                If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
-                adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 2/3: 6-24 ay, " & kalan.Count & " malzeme"
-                ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
-                mallar = ATIL_DIZI(kalan)
-                Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -24, bugun), DateAdd("m", -6, bugun) - 1, sis & " " & uy & " 2/3")
-                For Each k In bul.keys
-                    sonuc(uy & "|" & CStr(k)) = Array(bul(k)(0), 0#)
-                Next k
-            End If
-            adet = adet + 1
-            ' 3) hala bulunmayanlar: 60-24 ay once (bulunmazsa 5 yildan eski)
-            Set kalan = CreateObject("Scripting.Dictionary"): kalan.CompareMode = vbTextCompare
-            For Each k In s.keys
-                If Left$(CStr(k), Len(uy) + 1) = uy & "|" And Not sonuc.Exists(CStr(k)) Then kalan(Mid$(CStr(k), Len(uy) + 2)) = True
-            Next k
-            If kalan.Count > 0 Then
-                If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
-                adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 3/3: 2-5 yýl, " & kalan.Count & " malzeme"
-                ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
-                mallar = ATIL_DIZI(kalan)
-                Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -60, bugun), DateAdd("m", -24, bugun) - 1, sis & " " & uy & " 3/3")
-                For Each k In bul.keys
-                    sonuc(uy & "|" & CStr(k)) = Array(bul(k)(0), 0#)
-                Next k
-            End If
-            adet = adet + 1
-        Next il
+        If AKSORA_ADMIN_IPTAL Then
+            hatalar = hatalar & vbCrLf & "• " & sis & ": baþlatýlmadý (durduruldu)"
+        Else
+            metin = ATIL_SISTEM_OKU(oturumlar(sis), CStr(sis), tum, sonuc, bugun, adet, toplam)
+            If Len(metin) = 0 Then tamam.Add CStr(sis), oturumlar(sis) Else hatalar = hatalar & vbCrLf & "• " & sis & ": " & metin
+            metin = vbNullString
+        End If
     Next sis
+    If tamam.Count = 0 Then adim = "SAP okumasý": Err.Raise vbObjectError + 2351, , Mid$(hatalar, 3)
     adim = "Kayýt yazýlýyor"
     ATIL_ADIM 0.96, "Kayýt yazýlýyor..."
-    ATIL_KAYDET sonuc, tum, oturumlar
+    ATIL_KAYDET sonuc, tum, tamam
     sure = ATIL_GECEN(mAtilBas)
     AKSORA_SAP_TESHIS_YAZ "Atýl stok SAP okumasý tamamlandý: " & AKSORA_SAYI_METNI(sure, "0") & " sn"
     adim = "Sayfa hazýrlanýyor"
@@ -9301,6 +9254,9 @@ Bitir:
     If no <> 0 Then
         MsgBox "Atýl stok SAP okumasý tamamlanamadý." & vbCrLf & vbCrLf & "Adým: " & adim & vbCrLf & "Hata: " & metin & vbCrLf & vbCrLf & _
             "Önceki atýl stok kaydý deðiþtirilmedi.", vbExclamation, "AKSORA | ATIL STOK"
+    ElseIf Len(hatalar) > 0 Then
+        MsgBox "Atýl stok SAP okumasý kýsmen tamamlandý." & vbCrLf & "Okunan ve kaydedilen: " & Join(tamam.keys, " + ") & vbCrLf & _
+            "Süre: " & AKSORA_SURE_METNI(sure) & vbCrLf & vbCrLf & "Okunamayan (eski kaydý korunur):" & hatalar & vbCrLf & vbCrLf & ozet, vbExclamation, "AKSORA | ATIL STOK"
     ElseIf adet > 0 Then
         MsgBox "Atýl stok SAP okumasý tamamlandý." & vbCrLf & "Süre: " & AKSORA_SURE_METNI(sure) & vbCrLf & vbCrLf & ozet, vbInformation, "AKSORA | ATIL STOK"
     End If
@@ -9913,3 +9869,71 @@ Private Sub ATIL_TABLO_BICIM(ByVal ws As Worksheet, ByVal a1 As Long, ByVal r As
     ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7)).NumberFormat = "#,##0.00 ""TL"""
     ATIL_DURUM_RENK ws.Range(ws.Cells(a1, 10), ws.Cells(r, 10))
 End Sub
+
+' Bir sistemin bes uretim yeri (3 adim). Basarida bos, hatada "adim | hata" doner (diger sistem etkilenmez).
+Private Function ATIL_SISTEM_OKU(ByVal ses As Object, ByVal sis As String, ByVal tum As Object, ByVal sonuc As Object, _
+    ByVal bugun As Date, ByRef adet As Long, ByVal toplam As Long) As String
+    Dim il As Variant, s As Object, k As Variant, uy As String, adim As String, birlesim As Object, kalan As Object, bul As Object
+    Dim mallar() As String
+    On Error GoTo Hata
+    ' Sistemin bes uretim yerindeki aday malzemelerin birlesimi (diger illerin talebi de buradan okunur).
+    Set birlesim = CreateObject("Scripting.Dictionary"): birlesim.CompareMode = vbTextCompare
+    For Each il In ADM_ILLER()
+        uy = AKSORA_IL_TESIS(CStr(il), CStr(sis))
+        Set s = tum(CStr(il))(0)
+        For Each k In s.keys
+            If Left$(CStr(k), Len(uy) + 1) = uy & "|" Then birlesim(Mid$(CStr(k), Len(uy) + 2)) = True
+        Next k
+    Next il
+    For Each il In ADM_ILLER()
+        uy = AKSORA_IL_TESIS(CStr(il), CStr(sis))
+        Set s = tum(CStr(il))(0)
+        ' 1) son 6 ay
+        If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
+        If birlesim.Count > 0 Then
+            adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 1/3: son 6 ay, " & birlesim.Count & " malzeme"
+            ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
+            mallar = ATIL_DIZI(birlesim)
+            Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -6, bugun), bugun, sis & " " & uy & " 1/3")
+            For Each k In bul.keys
+                sonuc(uy & "|" & CStr(k)) = bul(k)
+            Next k
+        End If
+        adet = adet + 1
+        ' 2) 6 ayda sarfi olmayan adaylar: 24-6 ay once
+        Set kalan = CreateObject("Scripting.Dictionary"): kalan.CompareMode = vbTextCompare
+        For Each k In s.keys
+            If Left$(CStr(k), Len(uy) + 1) = uy & "|" And Not sonuc.Exists(CStr(k)) Then kalan(Mid$(CStr(k), Len(uy) + 2)) = True
+        Next k
+        If kalan.Count > 0 Then
+            If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
+            adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 2/3: 6-24 ay, " & kalan.Count & " malzeme"
+            ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
+            mallar = ATIL_DIZI(kalan)
+            Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -24, bugun), DateAdd("m", -6, bugun) - 1, sis & " " & uy & " 2/3")
+            For Each k In bul.keys
+                sonuc(uy & "|" & CStr(k)) = Array(bul(k)(0), 0#)
+            Next k
+        End If
+        adet = adet + 1
+        ' 3) hala bulunmayanlar: 60-24 ay once (bulunmazsa 5 yildan eski)
+        Set kalan = CreateObject("Scripting.Dictionary"): kalan.CompareMode = vbTextCompare
+        For Each k In s.keys
+            If Left$(CStr(k), Len(uy) + 1) = uy & "|" And Not sonuc.Exists(CStr(k)) Then kalan(Mid$(CStr(k), Len(uy) + 2)) = True
+        Next k
+        If kalan.Count > 0 Then
+            If AKSORA_ADMIN_IPTAL Then Err.Raise vbObjectError + 2350, , "Kullanýcý durdurdu."
+            adim = sis & " " & uy & " (" & Y_IL_ADI(CStr(il)) & ") 3/3: 2-5 yýl, " & kalan.Count & " malzeme"
+            ATIL_ADIM 0.03 + 0.92 * adet / toplam, adim
+            mallar = ATIL_DIZI(kalan)
+            Set bul = ATIL_MB51(ses, uy, mallar, DateAdd("m", -60, bugun), DateAdd("m", -24, bugun) - 1, sis & " " & uy & " 3/3")
+            For Each k In bul.keys
+                sonuc(uy & "|" & CStr(k)) = Array(bul(k)(0), 0#)
+            Next k
+        End If
+        adet = adet + 1
+    Next il
+    Exit Function
+Hata:
+    ATIL_SISTEM_OKU = adim & " | " & Err.Description
+End Function

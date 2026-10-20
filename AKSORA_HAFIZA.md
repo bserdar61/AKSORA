@@ -376,6 +376,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Sayfa `ATIL_STOK` (M_CDP_RAPOR başlığından kurulur, BX1 `AKSORA_ATIL_V1`): 4 KPI (ATIL / 3 AY / 6 AY / transfer önerisi), il düğmeleri (TÜM İLLER + 5 il), kategori özeti (KABLO, DİREK, PANO, HÜCRE, TRAFO, DİĞER), İL KARNESİ (atıl oranı = atıl değer / kapsam stok değeri) ya da tek ilde DEPO KARNESİ, TRANSFER ÖNERİLERİ (aynı sistem, son 6 ayda en çok sarf eden il; en fazla 100), tüm riskli malzemeler (filtreli).
 - ANA PANEL'de "ATIL STOK" düğmesi (`goAtilStok`, goStokKarsilastir kopyası; 8 düğme B25:T26).
 - MB51 sonucu klasik liste gelir (ızgara yok): dışa aktarma menüden (Liste > Kaydet > Dosya > Sekmeli metin). Sütunlar başlıktan (kısaltmalar dahil), olmazsa içerikten bulunur (tarih: değerlerin %90'ı tarih; miktar: sayısal ve eksi işaretli). Başlık + 3 örnek satır ve seçilen sütunlar teşhise yazılır.
+- Sistemler ayrı okunur: biri hata verirse tamamlanan sistem kaydedilir, diğerinin eski kaydı korunur. `/ATIL` düzeni her SAP sisteminde (CDP ve EPP) ayrı kaydedilmeli; yoksa açık mesaj verilir. İlk CDP okuması (20.10.2026): 7154 son 6 ay 27.130 satır / 13 sn, 2-3. adımlar <1 sn.
 - Admin bölümü sonra eklenecek.
 
 ## Sıradaki işler
