@@ -367,5 +367,16 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## Doğrulandı (20.10.2026 13:53)
 - Tüm birimler 4 dk 10 sn (önce 7 dk 10 sn): Malzeme 44 sn (CDP 18,1 + EPP 10,8 tek sorgu), Yatırım il başına 0,3–1,1 sn, İlçe 0,6–1,1 sn (ortak veri), Müşteri il başına 26–51 sn (toplam ~3 dk 6 sn; en büyük kalem).
 
+## ATIL STOK (Malzeme birimi, 20.10.2026)
+- Kural: 24 ay sarf (MB51 hareket 201/221/241/261/281/291) görmeyen malzeme ATIL; 18–21 ay "6 AY KALDI", 21–24 ay "3 AY KALDI". Gün sayacı: atıla kalan gün / atıl gün sayısı (bugüne göre, SAP'siz).
+- Kapsam: illerin CDP+EPP **D001–D999 ve K001–K999** depoları, üretim yeri toplamı. HURDA ve ÇIKMA/BDSZ partiler, yüklenici (Z) depoları hariç. Stok kaynağı Malzeme birimi (canlı il: CDP_STOK/EPP_STOK/İLÇE_STOK; diğerleri `_AKLIVE_<il>_CDP/_EPP/_ILC`).
+- SAP okuma (`AKSORA_ATIL_SAP_OKU`, sayfadaki "SAP'DEN OKU (MB51)"): sistem başına 5 üretim yeri; malzeme listesi panodan (Win32 pano, "Panodan yükle" btn[24], ilk değer kontrolü), depo D/K aralığı, düzen `/ATIL`. Adımlar: 1) son 6 ay, sistemin tüm aday malzemeleri (diğer illerin talebi de buradan) 2) bulunamayan adaylar 24–6 ay 3) kalanlar 60–24 ay (yoksa "5 yıldan eski"). "Kayıt yok" yalnız SAP mesajı açıkça söylüyorsa boş sayılır; diğer her hata okumayı durdurur, eski kayıt korunur. Açık olmayan sistemin eski satırları korunur. DURDUR çalışır (`AKSORA_ATIL_CALISIYOR`).
+- Kayıt `_ATIL` (gizli): D1 CDP / E1 EPP okuma tarihi; satır: sistem, ÜY, malzeme, son sarf, son 6 ay sarf, kaynak (SAP/STOK), muhtemel sarf tarihi, SAP stoğu, son stok, son stok tarihi.
+- Stok karşılaştırma: yeni stok verisi gelen ilde ÜY toplamı önceki miktardan düşükse "DÜŞTÜ (muhtemel sarf)" → sayaç o stok tarihinden yeniden başlar (≈ işaretli). Malzeme "Bütün illeri güncelle" sonunda ve sayfa her açıldığında çalışır.
+- Sayfa `ATIL_STOK` (M_CDP_RAPOR başlığından kurulur, BX1 `AKSORA_ATIL_V1`): 4 KPI (ATIL / 3 AY / 6 AY / transfer önerisi), il düğmeleri (TÜM İLLER + 5 il), kategori özeti (KABLO, DİREK, PANO, HÜCRE, TRAFO, DİĞER), İL KARNESİ (atıl oranı = atıl değer / kapsam stok değeri) ya da tek ilde DEPO KARNESİ, TRANSFER ÖNERİLERİ (aynı sistem, son 6 ayda en çok sarf eden il; en fazla 100), tüm riskli malzemeler (filtreli).
+- ANA PANEL'de "ATIL STOK" düğmesi (`goAtilStok`, goStokKarsilastir kopyası; 8 düğme B25:T26).
+- Admin bölümü sonra eklenecek.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
+- ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.

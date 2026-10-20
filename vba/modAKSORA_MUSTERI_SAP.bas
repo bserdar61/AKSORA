@@ -128,6 +128,11 @@ Public Function AKSORA_ALV_METIN_AL(ByVal ses As Object, ByVal alv As Object, By
     AKSORA_ALV_METIN_AL = MS_AlvMetin(ses, alv, etiket)
 End Function
 
+' Diger birimlerin uzun SAP sorgularinda "OLE islemi bekleniyor" uyarisi kapatilir / geri acilir.
+Public Sub AKSORA_SAP_OLE_SESSIZ(ByVal kapat As Boolean)
+    If kapat Then MS_OleUyariKapat Else MS_OleUyariAc
+End Sub
+
 Public Sub AKSORA_SAP_TESHIS_YAZ(ByVal metin As String)
     MS_Teshis Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | " & metin
 End Sub

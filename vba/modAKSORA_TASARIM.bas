@@ -810,10 +810,23 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
             T_Yerlestir s, r.Left, r.Top + 1, r.Width, r.Height - 2
         End If
     Next i
+    ' ATIL STOK dugmesi: stok karsilastir dugmesinin kopyasi (yoksa bir kez olusturulur).
+    Set s = T_Sekil(ws, "goAtilStok")
+    If s Is Nothing Then
+        Set s = T_Sekil(ws, "goStokKarsilastir")
+        If Not s Is Nothing Then
+            Set s = s.Duplicate
+            s.Name = "goAtilStok"
+        End If
+    End If
+    If Not s Is Nothing Then
+        s.TextFrame2.TextRange.Text = "ATIL STOK"
+        s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_ATIL_AC"
+    End If
     Set r = ws.Range("B25:T26")
-    bw = (r.Width - 6 * 8) / 7
+    bw = (r.Width - 7 * 8) / 8
     i = 0
-    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir")
+    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok")
         Set s = T_Sekil(ws, CStr(ad))
         If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.Top + 1, bw, r.Height - 2
         i = i + 1

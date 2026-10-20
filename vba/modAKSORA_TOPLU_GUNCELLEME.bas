@@ -546,6 +546,8 @@ Temizle:
     On Error GoTo 0
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
         "   (il baþýna ortalama " & AKSORA_SAYI_METNI(AK14_GECEN_SURE(toplamBas) / 5, "0.0") & " sn)"
+    ' Atil stok kaydi yeni stoklarla karsilastirilir (dusum: muhtemel sarf). Kayit yoksa islem yapilmaz.
+    If basladi And Len(Hata) = 0 Then AKSORA_ATIL_STOK_KONTROL
     If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MALZEME:" & vbCrLf & sonuc & IIf(Len(Hata) > 0, vbCrLf & Hata, "") & vbCrLf: Exit Sub
     ' Hata yoksa Yatirim ve Ilce de ayni veriyle tamamlanir; veri yoksa / hata varsa ortak veri birakilir.
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & AK_ORTAK_ZINCIR()

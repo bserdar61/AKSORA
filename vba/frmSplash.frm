@@ -115,12 +115,16 @@ End Sub
 
 ' Tum birimler guncellemesinde DURDUR: calisan il bitince islem durur.
 Private Sub lblImza_Click()
-    If Not AKSORA_ADMIN_TOPLU Then Exit Sub
+    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
     If AKSORA_ADMIN_IPTAL Then Exit Sub
     AKSORA_ADMIN_IPTAL = True
     Me.lblImza.Caption = "DURDURULUYOR..."
     Me.lblImza.BackColor = RGB(148, 163, 184)
-    Me.lblDurum.Caption = "Durduruluyor: çalýþan il bitince iþlem duracak..."
+    If AKSORA_ATIL_CALISIYOR Then
+        Me.lblDurum.Caption = "Durduruluyor: çalýþan SAP sorgusu bitince duracak..."
+    Else
+        Me.lblDurum.Caption = "Durduruluyor: çalýþan il bitince iþlem duracak..."
+    End If
     Me.Repaint
 End Sub
 
