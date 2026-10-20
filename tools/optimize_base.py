@@ -114,6 +114,72 @@ def pack_sheet(x):
     return x, data, blocks
 
 
+def paket2_lines(lines):
+    """PAKET2: a field equal to the previous line's same field (non-empty) is written as '='."""
+    out, prev = [], None
+    for line in lines:
+        f = line.split('\t')
+        g = [('=' if prev is not None and i < len(prev) and x != '' and prev[i] == x else x) for i, x in enumerate(f)]
+        out.append('\t'.join(g)); prev = f
+    return out
+
+
+def paket2_decode(lines):
+    res, prev = [], [''] * 64
+    for line in lines:
+        f = line.split('\t')
+        for i, x in enumerate(f):
+            if x == '=':
+                f[i] = prev[i]
+            else:
+                prev[i] = x
+        res.append('\t'.join(f))
+    return res
+
+
+def paket2_sheet(x, name):
+    sd0 = x.index('<sheetData'); sd1 = x.index('</sheetData>') + len('</sheetData>')
+    body = x[sd0:sd1]
+    rows = re.findall(r'<row r="(\d+)"[^>]*?(?:/>|>(.*?)</row>)', body, re.S)
+    row1 = ''; d1 = None; blocks = []
+    for r, content in rows:
+        r = int(r)
+        cells = {m.group(1): m for m in CELL.finditer(content or '')}
+        if r == 1:
+            row1 = ''.join(m.group(0) for m in CELL.finditer(content or '') if m.group(1) in ('A', 'B'))
+            if 'D' in cells:
+                v = cell_value(cells['D'].group(3), cells['D'].group(4)); d1 = int(float(v[1]))
+            continue
+        if 'A' in cells:
+            v = cell_value(cells['A'].group(3), cells['A'].group(4))
+            if v and v[1] != '':
+                blocks.append(v[1])
+    lines = []
+    for b in blocks:
+        lines += b.split('\n')
+    assert d1 is not None and len(lines) == d1, (name, d1, len(lines))
+    new = paket2_lines(lines)
+    assert paket2_decode(new) == lines, name
+    nb, cur, ln = [], [], 0
+    for line in new:
+        if ln + len(line) + 1 > 30000 and cur:
+            nb.append('\n'.join(cur)); cur, ln = [], 0
+        cur.append(line); ln += len(line) + 1
+    if cur:
+        nb.append('\n'.join(cur))
+    back = []
+    for b in nb:
+        back += b.split('\n')
+    assert paket2_decode(back) == lines, name
+    out_rows = ['<row r="1">%s<c r="C1" t="inlineStr"><is><t>PAKET2</t></is></c><c r="D1"><v>%d</v></c></row>' % (row1, d1)]
+    for i, b in enumerate(nb):
+        r = i + 2
+        out_rows.append('<row r="%d"><c r="A%d" t="inlineStr"><is><t xml:space="preserve">%s</t></is></c></row>' % (r, r, esc(b)))
+    x2 = x[:sd0] + '<sheetData>' + ''.join(out_rows) + '</sheetData>' + x[sd1:]
+    x2 = re.sub(r'<dimension ref="[^"]*"/>', '<dimension ref="A1:D%d"/>' % (len(nb) + 1), x2)
+    return x2, sum(len(b) for b in blocks), sum(len(b) for b in nb)
+
+
 def unpack(blocks):
     rows = []
     for b in blocks:
@@ -152,7 +218,11 @@ for name, p in sheets:
     m1 = re.search(r'<c r="C1"([^>]*?)(?:/>|>(.*?)</c>)', x, re.S)
     v1 = cell_value(m1.group(1), m1.group(2)) if m1 else None
     paketli = bool(v1) and str(v1[1]).startswith('PAKET')
-    if (name.startswith('_MA_') or name.startswith('_YA_')) and paketli:
+    if (name.startswith('_MA_') or name.startswith('_YA_') or name.startswith('_IA_')) and paketli and v1[1] == 'PAKET1':
+        nx, c1, c2 = paket2_sheet(x, name)
+        files[p] = nx.encode('utf8')
+        report.append('%s: PAKET2 %d -> %d karakter' % (name, c1, c2))
+    elif (name.startswith('_MA_') or name.startswith('_YA_')) and paketli:
         report.append('%s: zaten paketli, dokunulmadi' % name)
     elif name.startswith('_MA_') or name.startswith('_YA_'):
         nx, data, blocks = pack_sheet(x)
@@ -167,6 +237,36 @@ for name, p in sheets:
         nx, keep, rem = trim_rows(x)
         files[p] = nx.encode('utf8')
         report.append('%s: %d satir silindi (son %d), %d KB -> %d KB' % (name, rem, keep, len(x) // 1024, len(nx) // 1024))
+
+# --- kullanilmayan paylasimli metinler atilir (dosya ilk halinde de kucuk olur)
+SCELL = re.compile(r'(<c r="[A-Z]+\d+"[^>]*? t="s"[^>]*>(?:<f>[^<]*</f>|<f [^>]*/>|<f [^>]*>[^<]*</f>)?<v>)(\d+)(</v>)')
+si_raw = [m.group(0) for m in re.finditer(r'<si>.*?</si>', sx, re.S)]
+assert len(si_raw) == len(sst)
+ws_paths = [p2 for p2 in files if p2.startswith('xl/worksheets/sheet') and p2.endswith('.xml')]
+used = set()
+for p2 in ws_paths:
+    for m in SCELL.finditer(files[p2].decode('utf8')):
+        used.add(int(m.group(2)))
+alls = set()
+for p2 in ws_paths:
+    alls.update(int(v) for v in re.findall(r' t="s"[^>]*><v>(\d+)</v>', files[p2].decode('utf8')))
+assert alls <= used, 'paylasimli metin deseni eksik'
+order = sorted(used)
+remap = {o: n for n, o in enumerate(order)}
+newsst = [sst[o] for o in order]
+for p2 in ws_paths:
+    x2 = files[p2].decode('utf8')
+    before = [sst[int(m.group(2))] for m in SCELL.finditer(x2)]
+    x3 = SCELL.sub(lambda m: m.group(1) + str(remap[int(m.group(2))]) + m.group(3), x2)
+    after = [newsst[int(m.group(2))] for m in SCELL.finditer(x3)]
+    assert before == after, p2
+    files[p2] = x3.encode('utf8')
+refs = sum(len(SCELL.findall(files[p2].decode('utf8'))) for p2 in ws_paths)
+head = re.match(r'(.*?<sst[^>]*>)', sx, re.S).group(1)
+head = re.sub(r'count="\d+"', 'count="%d"' % refs, head)
+head = re.sub(r'uniqueCount="\d+"', 'uniqueCount="%d"' % len(used), head)
+files['xl/sharedStrings.xml'] = (head + ''.join(si_raw[o] for o in order) + '</sst>').encode('utf8')
+report.append('paylasimli metin: %d -> %d' % (len(si_raw), len(used)))
 
 zo = zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED)
 for fn, data in files.items():

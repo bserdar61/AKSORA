@@ -14,6 +14,11 @@ Private Const miktar As String = "#,##0"
 Private mHzVeri(1 To 2) As Variant
 Private mHzHazir(1 To 2) As Boolean
 Private mHzIl(1 To 2) As String
+' Ortak MB52: Malzeme "5 il tek sorgu" okumasinin ham verisi (5 tesis, tum depolar, PANEL duzeni).
+' Yatirim ve Ilce birimleri ayni raporu il il cekiyordu; zincirde bu veri kullanilir (ek SAP sorgusu yok).
+Private mOrtakVeri(1 To 2) As Variant
+Private mOrtakZaman(1 To 2) As Date
+Public AKSORA_ORTAK_AKTIF As Boolean
 Private mHzZaman(1 To 2) As Double
 
 Public Sub AKSORA_V11_ESKI_KONTROL_SIL()
@@ -540,6 +545,9 @@ Temizle:
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
         "   (il baþýna ortalama " & AKSORA_SAYI_METNI(AK14_GECEN_SURE(toplamBas) / 5, "0.0") & " sn)"
     If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MALZEME:" & vbCrLf & sonuc & IIf(Len(Hata) > 0, vbCrLf & Hata, "") & vbCrLf: Exit Sub
+    ' Hata yoksa Yatirim ve Ilce de ayni veriyle tamamlanir; veri yoksa / hata varsa ortak veri birakilir.
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & AK_ORTAK_ZINCIR()
+    AKSORA_ORTAK_BIRAK
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
     Else
@@ -964,6 +972,7 @@ End Function
 Public Function AKHZ_ON_YUKLE() As String
     Dim i As Long, sistem As String, v As Variant, mesaj As String, sonuc As String, bas As Double
     AKHZ_TEMIZLE
+    mOrtakVeri(1) = Empty: mOrtakVeri(2) = Empty
     For i = 1 To 2
         sistem = IIf(i = 1, "CDP", "EPP")
         mesaj = vbNullString: bas = Timer
@@ -971,6 +980,7 @@ Public Function AKHZ_ON_YUKLE() As String
         v = AKHZ_SISTEM_OKU(sistem, mesaj)
         If IsArray(v) Then
             mHzVeri(i) = v: mHzHazir(i) = True: mHzIl(i) = "*"
+            mOrtakVeri(i) = v: mOrtakZaman(i) = Now
             sonuc = sonuc & sistem & ": 5 il tek sorguda alýndý (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(bas), "0.0") & " sn)" & vbCrLf
         Else
             sonuc = sonuc & sistem & ": hýzlý okuma yapýlamadý, il il okundu (" & mesaj & ")" & vbCrLf
@@ -1125,7 +1135,50 @@ End Function
 
 ' Yatirim birimi: ilin CDP/EPP MB52 listesi (PANEL duzeni, 12 sutun, tum depolar).
 Public Function AKSORA_YATIRIM_MB52(ByVal sistem As String, ByVal il As String, ByRef mesaj As String) As Variant
+    Dim i As Long
+    ' Zincirde (Malzeme tum iller okumasindan hemen sonra) ayni ham veri kullanilir; Y_DONUSTUR tesise gore suzer.
+    If AKSORA_ORTAK_AKTIF Then
+        i = IIf(UCase$(sistem) = "CDP", 1, 2)
+        If IsArray(mOrtakVeri(i)) Then
+            If Abs(Now - mOrtakZaman(i)) < TimeSerial(0, 30, 0) Then AKSORA_YATIRIM_MB52 = mOrtakVeri(i): Exit Function
+        End If
+    End If
     AKSORA_YATIRIM_MB52 = AKHZ_SISTEM_OKU(sistem, mesaj, AKSORA_IL_TESIS(il, sistem))
+End Function
+
+' Iki sistemin (CDP + EPP) ortak verisi hazir ve taze mi.
+Public Function AKSORA_ORTAK_HAZIR() As Boolean
+    Dim i As Long
+    For i = 1 To 2
+        If Not IsArray(mOrtakVeri(i)) Then Exit Function
+        If Abs(Now - mOrtakZaman(i)) >= TimeSerial(0, 30, 0) Then Exit Function
+    Next i
+    AKSORA_ORTAK_HAZIR = True
+End Function
+
+Public Sub AKSORA_ORTAK_BIRAK()
+    mOrtakVeri(1) = Empty: mOrtakVeri(2) = Empty
+    AKSORA_ORTAK_AKTIF = False
+End Sub
+
+' Malzeme tum iller guncellemesinden sonra: Yatirim ve Ilce birimleri ayni SAP verisinden tamamlanir.
+Private Function AK_ORTAK_ZINCIR() As String
+    Dim eski As String, ac As Boolean
+    On Error Resume Next
+    If Not AKSORA_ORTAK_HAZIR() Then Exit Function
+    eski = AKSORA_ADMIN_SONUC: AKSORA_ADMIN_SONUC = vbNullString
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM + ÝLÇE", "Ayný SAP verisinden Yatýrým birimi güncelleniyor...", 0.1)
+    AKSORA_ADMIN_TOPLU = True: AKSORA_ORTAK_AKTIF = True
+    AKSORA_YATIRIM_BUTUN_ILLER
+    AKSORA_BEKLE_ILERLE 0.55, "Ayný SAP verisinden Ýlçe birimi güncelleniyor..."
+    AKSORA_ILCE_BUTUN_ILLER
+    AKSORA_ADMIN_TOPLU = False
+    AKSORA_ORTAK_BIRAK
+    If ac Then AKSORA_BEKLE_KAPAT
+    AK_ORTAK_ZINCIR = vbCrLf & "Ayný SAP verisiyle (ek sorgu yapýlmadan):" & vbCrLf & AKSORA_ADMIN_SONUC
+    AKSORA_ADMIN_SONUC = eski
+    application.ScreenUpdating = True
+    On Error GoTo 0
 End Function
 
 Public Function AKSORA_YATIRIM_SAYI(ByVal v As Variant) As Double

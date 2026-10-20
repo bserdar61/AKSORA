@@ -350,5 +350,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Kart başlığı baştan "AKSORA" (sonradan Caption değiştirmek başlık çubuğunu geri getiriyordu).
 - DURDUR: kartta lblImza düğme olur (`AKSORA_BEKLE_AC(..., durdur:=True)`), tıklanınca `AKSORA_ADMIN_IPTAL`. Birim il döngüleri her il başında bakar; çalışan il biter, kalanlar ve kalan birimler atlanır.
 
+## Hız/boyut: ortak SAP verisi + PAKET2 (20.10.2026)
+- **Ortak MB52**: Yatırım ve İlçe, Malzeme ile birebir aynı MB52 PANEL raporunu il il çekiyordu (`AKSORA_YATIRIM_MB52` = `AKHZ_SISTEM_OKU` tek tesis). Malzeme "5 il tek sorgu" verisi `mOrtakVeri` olarak saklanır; `AKSORA_ORTAK_AKTIF` iken `AKSORA_YATIRIM_MB52` bu veriyi döndürür (Y_DONUSTUR tesise göre süzer). 30 dk tazelik, yeni okuma başında sıfırlanır.
+- Malzeme "Bütün illeri güncelle" hatasız biterse `AK_ORTAK_ZINCIR` Yatırım+İlçe'yi aynı veriyle tamamlar (kart, panel değiştirmez, özet Malzeme mesajına eklenir). Admin sırası: Malzeme → Yatırım → İlçe (ortak) → Müşteri.
+- **PAKET2**: alan önceki satırın aynı alanıyla aynıysa "=". Okuyucu PAKET1/PAKET2; yazıcı PAKET2 yazar, geri okuyup her alanı karşılaştırır, tutmazsa PAKET1. Açılış bakımı `_MA_/_YA_/_IA_` PAKET1'leri çevirir. Base'de 40 arşiv çevrildi (24 → 6,6 MB metin), `fx/verify_p2.py` ile birebir doğrulandı; kullanılmayan paylaşımlı metinler atıldı (optimize_base). Ham boyut 97 → 75 MB, dosya 19,1 → 15,8 MB.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

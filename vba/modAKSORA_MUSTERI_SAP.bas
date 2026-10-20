@@ -2502,8 +2502,11 @@ Private Function PK_DEGER(ByVal t As String) As Variant
     End Select
 End Function
 
+' PAKET2: PAKET1 ile ayni; bir alan bir onceki satirin ayni alaniyla ayniysa "=" yazilir (kayit ~4 kat kucuk).
 Public Function AKSORA_PAKET_MI(ByVal ar As Worksheet) As Boolean
-    AKSORA_PAKET_MI = (CStr(ar.Range("C1").Value2) = "PAKET1")
+    Dim t As String
+    t = CStr(ar.Range("C1").Value2)
+    AKSORA_PAKET_MI = (t = "PAKET1" Or t = "PAKET2")
 End Function
 
 ' Kayittaki satir sayisi (paketli veya eski bicim).
@@ -2519,7 +2522,7 @@ End Function
 ' Kayit verisi: n x 14 dizi (kayit bossa Empty).
 Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
     Dim n As Long, blok As Variant, satirlar() As String, alan() As String, sonuc() As Variant
-    Dim b As Long, r As Long, c As Long, k As Long, son As Long, sutun As Long
+    Dim b As Long, r As Long, c As Long, k As Long, son As Long, sutun As Long, p2 As Boolean, onceki() As String
     If ar Is Nothing Then Exit Function
     If Not AKSORA_PAKET_MI(ar) Then
         n = AKSORA_PAKET_ADET(ar)
@@ -2529,6 +2532,8 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
     n = AKSORA_PAKET_ADET(ar)
     If n < 1 Then Exit Function
     sutun = 14
+    p2 = (CStr(ar.Range("C1").Value2) = "PAKET2")
+    ReDim onceki(0 To 63)
     ReDim sonuc(1 To n, 1 To sutun)
     son = ar.Cells(ar.Rows.Count, 1).End(xlUp).Row
     If son < 2 Then Exit Function
@@ -2541,6 +2546,11 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
             k = k + 1
             If k > n Then Err.Raise vbObjectError + 2201, "AKSORA_PAKET_OKU", ar.Name & ": kayýt satýr sayýsý tutmuyor."
             alan = Split(satirlar(r), vbTab)
+            If p2 Then
+                For c = 0 To application.Min(UBound(alan), 63)
+                    If alan(c) = "=" Then alan(c) = onceki(c) Else onceki(c) = alan(c)
+                Next c
+            End If
             For c = 0 To application.Min(UBound(alan), sutun - 1)
                 sonuc(k, c + 1) = PK_DEGER(alan(c))
             Next c
@@ -2552,24 +2562,54 @@ SonrakiBlok:
 End Function
 
 ' Veriyi kayda paketli yazar (A1/B1 cagiran tarafindan yazilir, burada korunur).
+' Kayit PAKET2 yazilir ve hemen geri okunup her alan karsilastirilir; tutmazsa PAKET1 yazilir.
 Public Sub AKSORA_PAKET_YAZ(ByVal ar As Worksheet, ByVal veri As Variant)
-    Dim n As Long, sutun As Long, r As Long, c As Long, alan() As String, blok() As String
+    PK_YAZ ar, veri, True
+    If Not PK_DOGRU(ar, veri) Then
+        AKSORA_SAP_TESHIS_YAZ "PAKET2 doðrulanamadý | " & ar.Name & " | PAKET1 yazýldý"
+        PK_YAZ ar, veri, False
+    End If
+End Sub
+
+Private Function PK_DOGRU(ByVal ar As Worksheet, ByVal veri As Variant) As Boolean
+    Dim v As Variant, r As Long, c As Long, sutun As Long, i As Long
+    On Error GoTo Yok
+    If Not IsArray(veri) Then PK_DOGRU = True: Exit Function
+    v = AKSORA_PAKET_OKU(ar)
+    If Not IsArray(v) Then Exit Function
+    If UBound(v, 1) <> UBound(veri, 1) - LBound(veri, 1) + 1 Then Exit Function
+    sutun = application.Min(14, UBound(veri, 2) - LBound(veri, 2) + 1)
+    For r = 1 To UBound(v, 1)
+        i = LBound(veri, 1) + r - 1
+        For c = 1 To sutun
+            If PK_ALAN(v(r, c)) <> PK_ALAN(veri(i, LBound(veri, 2) + c - 1)) Then Exit Function
+        Next c
+    Next r
+    PK_DOGRU = True
+Yok:
+End Function
+
+Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As Boolean)
+    Dim n As Long, sutun As Long, r As Long, c As Long, alan() As String, blok() As String, onceki() As String, t As String
     Dim satir As String, uz As Long, nb As Long, parca() As String, np As Long, a1 As Variant, b1 As Variant
     a1 = ar.Range("A1").Value: b1 = ar.Range("B1").Value2
     ar.Cells.ClearContents
     ar.Range("A1").NumberFormat = "dd.mm.yyyy hh:mm:ss"
     ar.Range("A1").Value = a1: ar.Range("B1").Value2 = b1
-    ar.Range("C1").Value2 = "PAKET1"
+    ar.Range("C1").Value2 = IIf(ikinci, "PAKET2", "PAKET1")
     If IsEmpty(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
     If Not IsArray(veri) Then ar.Range("D1").Value2 = 0: Exit Sub
     n = UBound(veri, 1) - LBound(veri, 1) + 1
     sutun = UBound(veri, 2) - LBound(veri, 2) + 1
     ReDim alan(0 To sutun - 1)
+    ReDim onceki(0 To sutun - 1)
     ReDim blok(1 To 16)
     ReDim parca(0 To 255)
     For r = LBound(veri, 1) To UBound(veri, 1)
         For c = 0 To sutun - 1
-            alan(c) = PK_ALAN(veri(r, LBound(veri, 2) + c))
+            t = PK_ALAN(veri(r, LBound(veri, 2) + c))
+            If ikinci And r > LBound(veri, 1) And Len(t) > 0 And t = onceki(c) Then alan(c) = "=" Else alan(c) = t
+            onceki(c) = t
         Next c
         satir = Join(alan, vbTab)
         If uz + Len(satir) + 1 > 30000 And np > 0 Then
@@ -2625,8 +2665,8 @@ Public Sub AKSORA_ARSIV_BAKIM()
     application.EnableEvents = False
     For Each ws In ThisWorkbook.Worksheets
         ad = ws.Name
-        If Left$(ad, 4) = "_MA_" Or Left$(ad, 4) = "_YA_" Then
-            If Not AKSORA_PAKET_MI(ws) Then
+        If Left$(ad, 4) = "_MA_" Or Left$(ad, 4) = "_YA_" Or Left$(ad, 4) = "_IA_" Then
+            If CStr(ws.Range("C1").Value2) <> "PAKET2" Then
                 sonuc = PK_DONUSTUR(ws)
                 If Len(sonuc) > 0 Then AKSORA_SAP_TESHIS_YAZ "Kayýt bakýmý | " & ad & " | " & sonuc
             End If
