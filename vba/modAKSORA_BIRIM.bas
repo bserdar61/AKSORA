@@ -43,6 +43,7 @@ Private Declare PtrSafe Function ADMW_SetWindowLong Lib "user32" Alias "SetWindo
 Private Declare PtrSafe Function ADMW_GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As LongPtr, ByVal nIndex As Long) As LongPtr
 Private Declare PtrSafe Function ADMW_SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As LongPtr, ByVal nIndex As Long, ByVal dwNewLong As LongPtr) As LongPtr
 #End If
+Private Declare PtrSafe Function ADMW_LockWindowUpdate Lib "user32" Alias "LockWindowUpdate" (ByVal hWnd As LongPtr) As Long
 Private Declare PtrSafe Function ADMW_RedrawWindow Lib "user32" Alias "RedrawWindow" (ByVal hWnd As LongPtr, ByVal lprcUpdate As LongPtr, ByVal hrgnUpdate As LongPtr, ByVal fuRedraw As Long) As Long
 Private mAdmZaman As LongPtr
 Private mAdmKutu As LongPtr
@@ -53,6 +54,14 @@ Private mAdmYukWs As Worksheet
 Private mAdmYukBar As Double
 Private mAdmYukSon As Double
 Public AKSORA_BEKLE_KIPI As Boolean
+Private mAdmTopluKart As Boolean
+Private mAdmTopluBas As Double
+Private mAdmTopluSon As Double
+Private mAdmTopluSira As Long
+Private mAdmTopluAd As String
+Private mAdmTopluMetin As String
+Private mAdmTopluIl As Object
+Private mAdmKilit As Boolean
 Private Const ADM_ARA_N As Long = 400
 Public AKSORA_ADMIN_TOPLU As Boolean
 Public AKSORA_ADMIN_SONUC As String
@@ -1849,6 +1858,7 @@ End Sub
 '---------- Guncelleme ----------
 Private Sub Y_DURUM(ByVal metin As String)
     application.StatusBar = "AKSORA | Yatýrým | " & metin
+    AKSORA_ADMIN_DURUM metin
     If mYToplu Then Y_TOPLU_DURUM metin
     Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1
     DoEvents
@@ -1972,6 +1982,19 @@ Private Sub Y_OZET(ByVal sh As Worksheet, ByVal d As Object, ByRef satir As Long
             End If
         End If
     Next r
+End Sub
+
+' Kart durumu guncelleme gunune gore: ayni gun GUNCEL; gun degisince (23:59 sonrasi) kac gundur guncellenmedigi.
+Private Sub Y_KART_TARIH(ByVal ws As Worksheet, ByVal k As String, ByVal tarih As Date)
+    Dim gun As Long
+    gun = DateDiff("d", DateValue(tarih), Date)
+    If gun <= 0 Then
+        Y_KART_DURUM ws, k, "GÜNCEL", RGB(34, 197, 94), RGB(21, 128, 61)
+    ElseIf gun = 1 Then
+        Y_KART_DURUM ws, k, "1 gündür güncellenmedi", RGB(245, 158, 11), RGB(180, 83, 9)
+    Else
+        Y_KART_DURUM ws, k, gun & " gündür güncellenmedi", RGB(239, 68, 68), RGB(185, 28, 28)
+    End If
 End Sub
 
 Private Sub Y_KART_DURUM(ByVal ws As Worksheet, ByVal k As String, ByVal metin As String, ByVal renk As Long, ByVal koyu As Long)
@@ -2263,7 +2286,7 @@ Private Sub Y_PANEL_YENILE()
             Y_OZET ThisWorkbook.Worksheets(CStr(adlar(3))), d, satir, deger, tarih
         End If
         If tarih > 0 Then
-            Y_KART_DURUM ws, k, "GÜNCEL", RGB(34, 197, 94), RGB(21, 128, 61)
+            Y_KART_TARIH ws, k, tarih
         Else
             Y_KART_DURUM ws, k, "Veri bekleniyor", RGB(145, 162, 176), RGB(29, 78, 216)
         End If
@@ -4138,6 +4161,7 @@ End Function
 
 Private Sub I_DURUM(ByVal metin As String)
     application.StatusBar = "AKSORA | Ýlçe Yönetim | " & metin
+    AKSORA_ADMIN_DURUM metin
     If mYToplu Then Y_TOPLU_DURUM metin, "I_MALZEME_ARA"
     Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1, "I_ANA PANEL"
     DoEvents
@@ -4384,7 +4408,7 @@ Private Sub I_PANEL_YENILE()
             deger = I_SAYI(isg.Range("BZ22").Value2)
         End If
         If tarih > 0 Then
-            Y_KART_DURUM ws, k, "GÜNCEL", RGB(34, 197, 94), RGB(21, 128, 61)
+            Y_KART_TARIH ws, k, tarih
             Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "1"), Format$(tarih, "dd.mm.yyyy hh:nn")
             Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "2"), AKSORA_SAYI_METNI(satir, "#,##0")
             Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "3"), Y_TL(deger)
@@ -5968,6 +5992,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     For Each x In Array("B6", "I6")
         With ws.Range(CStr(x))
             .MergeArea.NumberFormat = "@"
+            ' Tarih secim kutulari koruma altinda da degistirilebilir.
+            .MergeArea.Locked = False
             .Validation.Delete
             If nT > 0 Then
                 .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="=$X$2:$X$" & (nT + 1)
@@ -6803,11 +6829,13 @@ Public Sub AKSORA_BEKLE_NABIZ()
     DoEvents
     application.Interactive = iv
     mAdmYukSon = Timer
+    AKSORA_ADMIN_DURUM vbNullString
     On Error GoTo 0
 End Sub
 
 Public Sub AKSORA_BEKLE_KAPAT()
     On Error Resume Next
+    ADM_EKRAN_KILIT False
     If mAdmYukleme Then Unload frmSplash
     mAdmYukleme = False: Set mAdmYukWs = Nothing
     On Error GoTo 0
@@ -8243,40 +8271,98 @@ End Sub
 
 '---------- tek tus: tum birimler ----------
 Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
-    Dim bas As Double, sure As Double, sonuc As String
+    Dim bas As Double, sure As Double, sonuc As String, ws As Worksheet, sh As Worksheet
     If AKSORA_V11_MESGUL Then Exit Sub
     If MsgBox("Tüm birimler (Malzeme, Müþteri, Yatýrým, Ýlçe) beþ il için SAP'den sýrayla güncellenecek." & vbCrLf & vbCrLf & _
-        "SAP oturumu açýk olmalýdýr; iþlem uzun sürebilir. Her birim güncellenirken kendi ana panelinde izlenir, " & _
-        "sonunda yönetim merkezine dönülür." & vbCrLf & vbCrLf & "Devam edilsin mi?", vbYesNo + vbQuestion, "AKSORA | TÜM BÝRÝMLERÝ GÜNCELLE") <> vbYes Then Exit Sub
-    AKSORA_ADMIN_TOPLU = True: AKSORA_ADMIN_SONUC = vbNullString
-    bas = Timer
-    ADM_BIRIM_CALISTIR "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE", "ANA PANEL"
-    ADM_BIRIM_CALISTIR "MÜÞTERÝ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE", "M_ANA PANEL"
-    ADM_BIRIM_CALISTIR "YATIRIM", "AKSORA_YATIRIM_BUTUN_ILLER", "Y_ANA PANEL"
-    ADM_BIRIM_CALISTIR "ÝLÇE", "AKSORA_ILCE_BUTUN_ILLER", "I_ANA PANEL"
+        "SAP oturumu açýk olmalýdýr; iþlem uzun sürebilir. Ýlerleme bu ekranda kartta izlenir (birim, il ve geçen süre); " & _
+        "sonunda yönetim merkezi yenilenir." & vbCrLf & vbCrLf & "Devam edilsin mi?", vbYesNo + vbQuestion, "AKSORA | TÜM BÝRÝMLERÝ GÜNCELLE") <> vbYes Then Exit Sub
+    AKSORA_ADMIN_SONUC = vbNullString
+    bas = Timer: mAdmTopluBas = bas: mAdmTopluSon = 0
+    ' Kart birimler calismadan once acilir; ekran yonetim merkezinde sabit kalir (birim panellerine gidilmez).
+    mAdmTopluKart = AKSORA_BEKLE_AC("AKSORA  |  TÜM BÝRÝMLER GÜNCELLENÝYOR", "SAP baðlantýsý hazýrlanýyor...", 0.01)
+    AKSORA_ADMIN_TOPLU = True
+    ADM_EKRAN_KILIT True
+    ADM_BIRIM_CALISTIR 0, "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE"
+    ADM_BIRIM_CALISTIR 1, "MÜÞTERÝ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
+    ADM_BIRIM_CALISTIR 2, "YATIRIM", "AKSORA_YATIRIM_BUTUN_ILLER"
+    ADM_BIRIM_CALISTIR 3, "ÝLÇE", "AKSORA_ILCE_BUTUN_ILLER"
+    On Error Resume Next
     AKSORA_ADMIN_TOPLU = False
+    ADM_EKRAN_KILIT False
+    If mAdmTopluKart Then AKSORA_BEKLE_KAPAT
+    mAdmTopluKart = False
     sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
     sonuc = Format$(Now, "dd.mm.yyyy hh:nn") & "  •  süre " & AKSORA_SURE_METNI(sure)
-    On Error Resume Next
     ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_SON_TOPLU", RefersTo:="=""" & Replace(sonuc, """", """""") & """", Visible:=False
+    ' Birimlerin actigi paneller gizlenir; yalniz yonetim merkezi gorunur.
+    application.ScreenUpdating = False
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    For Each sh In ThisWorkbook.Worksheets
+        If sh.Name <> ws.Name And sh.Visible = xlSheetVisible Then sh.Visible = xlSheetVeryHidden
+    Next sh
     On Error GoTo 0
     ADM_AC
     MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbInformation, "AKSORA | TÜM BÝRÝMLER"
 End Sub
 
-Private Sub ADM_BIRIM_CALISTIR(ByVal ad As String, ByVal makro As String, ByVal panel As String)
-    Dim ws As Worksheet
+Private Sub ADM_BIRIM_CALISTIR(ByVal sira As Long, ByVal ad As String, ByVal makro As String)
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets(panel)
-    If Not ws Is Nothing Then
-        ws.Visible = xlSheetVisible
-        ws.Activate
-    End If
+    mAdmTopluSira = sira: mAdmTopluAd = ad
+    Set mAdmTopluIl = CreateObject("Scripting.Dictionary")
+    AKSORA_ADMIN_DURUM "güncelleme baþlýyor..."
     Err.Clear
     application.Run "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & makro
     If Err.Number <> 0 Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & ad & ": HATA - " & Err.Description & vbCrLf
     Err.Clear
+    ' Birim calisirken ekran kilidi baska pencereye gecmis olabilir; yeniden uygulanir.
+    ADM_EKRAN_KILIT True
+    AKSORA_ADMIN_DURUM "tamamlandý."
     DoEvents
+    On Error GoTo 0
+End Sub
+
+' Tum birimler guncellenirken kart: birim, il ve son islem; cubuk birim (4) ve il (5) ilerledikce dolar.
+' Birimlerin durum yazan yordamlari (CORE_DURUM, Y_DURUM, I_DURUM, musteri / malzeme toplu durum) burayi cagirir.
+Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
+    Dim sure As Double, u As String, k As Variant, y As Double, s As String, sn As Long
+    If Not mAdmTopluKart Or Not mAdmYukleme Then Exit Sub
+    If Len(metin) = 0 And Abs(Timer - mAdmTopluSon) < 1 Then Exit Sub
+    On Error Resume Next
+    If Len(metin) > 0 Then
+        mAdmTopluMetin = metin
+        u = Y_NORM(metin)
+        If Not mAdmTopluIl Is Nothing Then
+            For Each k In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+                If InStr(u, CStr(k)) > 0 Then mAdmTopluIl(CStr(k)) = True
+            Next k
+        End If
+    End If
+    mAdmTopluSon = Timer
+    sure = Timer - mAdmTopluBas: If sure < 0 Then sure = sure + 86400#
+    sn = CLng(Fix(sure))
+    If mAdmTopluIl Is Nothing Then y = 0 Else y = mAdmTopluIl.Count / 5
+    If metin = "tamamlandý." Then y = 1
+    y = (mAdmTopluSira + 0.05 + 0.9 * y) / 4
+    s = mAdmTopluAd & "  •  " & mAdmTopluMetin
+    If Len(s) > 72 Then s = Left$(s, 69) & "..."
+    frmSplash.lblDurum.Caption = s
+    frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * application.Min(1, y))
+    frmSplash.lblAltBaslik.Caption = "Birim " & (mAdmTopluSira + 1) & " / 4   •   Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
+    frmSplash.Repaint
+    On Error GoTo 0
+End Sub
+
+' Excel penceresi cizimi durdurulur (birim sayfalari arkada degisir, ekranda yonetim merkezi kalir); kart ayri pencere oldugundan cizilir.
+Private Sub ADM_EKRAN_KILIT(ByVal kilit As Boolean)
+    On Error Resume Next
+    If kilit Then
+        If mAdmTopluKart Then ADMW_LockWindowUpdate application.hWnd: mAdmKilit = True
+    ElseIf mAdmKilit Then
+        ADMW_LockWindowUpdate 0
+        mAdmKilit = False
+    End If
     On Error GoTo 0
 End Sub
 

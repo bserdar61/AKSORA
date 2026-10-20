@@ -339,5 +339,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - **Malzeme**: CDP/EPP/sayfa güncellemesi SAP bağlantısı yoksa "tamamlandı" demez (C2 tarihi değişmediyse uyarı). Açılışta kapak tarihi hatası açılışı durdurmaz. İl geçişi arşiv kontrolü dizi ile (hücre hücre değil). Tüm stok güncelleme hata kodu kaybolmuyor.
 - **Bekleyen öneriler (uygulanmadı)**: Müşteri aramasında Türkçe i/İ katlama; Malzeme `AKSORA_CANLI_STOK_IL` önbelleği; tek sistem güncellemesinde 4 kez CalculateFull; Teminat kurulumu toplu formül; ay geçişinde boşluk günleri yeni aya yazılıyor (her ayın son günü güncelleme önerilir).
 
+## Tüm birimleri güncelle kartı + panel durumu (20.10.2026)
+- Admin TÜM BİRİMLERİ GÜNCELLE artık birim panellerine gitmez: kart açılır, Excel penceresi `LockWindowUpdate` ile çizilmez (ekranda yönetim merkezi kalır), sonda kilit açılır, birim panelleri gizlenir, ADM_AC.
+- Kart: birim (1/4), il sayısı (durum metinlerinde geçen il adları) ile dolar; son işlem ve geçen süre. Durum kaynakları: CORE_DURUM, AK11_DURUM, AKSORA_MUSTERI_TOPLU_DURUM, Y_DURUM, I_DURUM, NABIZ → `AKSORA_ADMIN_DURUM`.
+- Yatırım/İlçe ana panel kartları: aynı gün GÜNCEL, gün değişince "1 gündür / N gündür güncellenmedi" (`Y_KART_TARIH`). Malzeme/Müşteri zaten tarih bazlıydı.
+- İlçe STOK/DEMONTAJ: B6/I6 tarih kutuları kilitsiz (koruma uyarısı veriyordu); sayfa bir sonraki kurulumda düzelir.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

@@ -1378,6 +1378,7 @@ End Sub
 
 Public Sub AKSORA_MUSTERI_TOPLU_DURUM(ByVal metin As String)
     mMusteriTopluMetin = metin
+    AKSORA_ADMIN_DURUM metin
     AKSORA_MUSTERI_TOPLU_TIK True
     If AKSORA_MUSTERI_TOPLU_AKTIF Then AKSORA_MUSTERI_SERIT "Güncelleniyor  •  Bütün iller  •  " & metin, 1
     application.StatusBar = "AKSORA | " & metin

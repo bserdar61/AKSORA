@@ -308,6 +308,7 @@ Private Sub AK11_DURUM(ByVal metin As String)
     End If
     Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
     mTopluDurumMetni = metin
+    AKSORA_ADMIN_DURUM metin
     If AKSORA_PANEL_CANLI Then AKSORA_PANEL_SERIT "Güncelleniyor  •  Bütün iller  •  " & metin
     If mTopluSaatAktif Then
         AKSORA_TOPLU_SURE_TIK True

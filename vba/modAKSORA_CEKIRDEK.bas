@@ -186,6 +186,7 @@ Public Sub CORE_DURUM(ByVal mesaj As String)
 Static sonYazim As Double
 On Error Resume Next
 application.StatusBar = mesaj
+AKSORA_ADMIN_DURUM mesaj
 ' Panelden baslatilan guncellemede anlik durum seritte de gorunur.
 If AKSORA_PANEL_CANLI Then
     If Abs(Timer - sonYazim) >= 0.5 Then
