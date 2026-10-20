@@ -479,6 +479,8 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
                   "Devam edilsin mi?", vbYesNo + vbExclamation, "AKSORA | Bütün Ýller") <> vbYes Then
             sonuc = "Güncelleme iptal edildi. Stoklar deðiþtirilmedi." & vbCrLf & vbCrLf & _
                 "Teþhis dosyasý: " & AKSORA_KAYIT_KLASORU() & "\AKSORA_SAP_TESHIS.txt"
+            ' Yonetim merkezinden calisirken "Hayir" tum birimleri durdurur.
+            If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_IPTAL = True
             GoTo Temizle
         End If
     End If

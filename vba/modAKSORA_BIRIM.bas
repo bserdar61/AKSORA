@@ -8291,6 +8291,16 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     If MsgBox("Tüm birimler (Malzeme, Müþteri, Yatýrým, Ýlçe) beþ il için SAP'den sýrayla güncellenecek." & vbCrLf & vbCrLf & _
         "SAP oturumu açýk olmalýdýr; iþlem uzun sürebilir. Ýlerleme bu ekranda kartta izlenir (birim, il ve geçen süre); " & _
         "sonunda yönetim merkezi yenilenir." & vbCrLf & vbCrLf & "Devam edilsin mi?", vbYesNo + vbQuestion, "AKSORA | TÜM BÝRÝMLERÝ GÜNCELLE") <> vbYes Then Exit Sub
+    ' SAP'ye giris yapilmamissa hic baslanmaz (birimler tek tek hata verip uzamasin).
+    Dim sapMesaj As String, sapYok As String
+    If SAP_SESSION_AL("CDP", sapMesaj) Is Nothing Then sapYok = sapYok & vbCrLf & "CDP: " & sapMesaj
+    sapMesaj = vbNullString
+    If SAP_SESSION_AL("EPP", sapMesaj) Is Nothing Then sapYok = sapYok & vbCrLf & "EPP: " & sapMesaj
+    If Len(sapYok) > 0 Then
+        MsgBox "SAP baðlantýsý bulunamadý; güncelleme baþlatýlmadý." & vbCrLf & sapYok & vbCrLf & vbCrLf & _
+            "SAP'de CDP ve EPP sistemlerine giriþ yapýp tekrar deneyin.", vbExclamation, "AKSORA | TÜM BÝRÝMLERÝ GÜNCELLE"
+        Exit Sub
+    End If
     AKSORA_ADMIN_SONUC = vbNullString
     bas = Timer: mAdmTopluBas = bas: mAdmTopluSon = 0
     ' Kart birimler calismadan once acilir; ekran yonetim merkezinde sabit kalir (birim panellerine gidilmez).
