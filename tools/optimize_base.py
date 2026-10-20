@@ -119,7 +119,7 @@ def paket2_lines(lines):
     out, prev = [], None
     for line in lines:
         f = line.split('\t')
-        g = [('=' if prev is not None and i < len(prev) and x != '' and prev[i] == x else x) for i, x in enumerate(f)]
+        g = [('=' if i > 0 and prev is not None and i < len(prev) and x != '' and prev[i] == x else x) for i, x in enumerate(f)]
         out.append('\t'.join(g)); prev = f
     return out
 

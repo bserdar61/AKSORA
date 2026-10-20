@@ -355,5 +355,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Malzeme "Bütün illeri güncelle" hatasız biterse `AK_ORTAK_ZINCIR` Yatırım+İlçe'yi aynı veriyle tamamlar (kart, panel değiştirmez, özet Malzeme mesajına eklenir). Admin sırası: Malzeme → Yatırım → İlçe (ortak) → Müşteri.
 - **PAKET2**: alan önceki satırın aynı alanıyla aynıysa "=". Okuyucu PAKET1/PAKET2; yazıcı PAKET2 yazar, geri okuyup her alanı karşılaştırır, tutmazsa PAKET1. Açılış bakımı `_MA_/_YA_/_IA_` PAKET1'leri çevirir. Base'de 40 arşiv çevrildi (24 → 6,6 MB metin), `fx/verify_p2.py` ile birebir doğrulandı; kullanılmayan paylaşımlı metinler atıldı (optimize_base). Ham boyut 97 → 75 MB, dosya 19,1 → 15,8 MB.
 
+## DERS: PAKET2 satırı "=" ile başlamamalı (20.10.2026)
+- Müşteri arşivi yazılırken takıldı: blok hücresi "=" ile başlayınca Excel değeri formül olarak almaya çalışıyor. Kural: ilk alan (sütun 1) hiç "=" yapılmaz; yazıcı "=" ile başlayan bloğu reddeder. optimize_base aynı kural. Paket okuma döngüsüne NABIZ eklendi. Müşteri adımları teşhis dosyasına saatli yazılıyor.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

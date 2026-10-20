@@ -2558,6 +2558,7 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
         satirlar = Split(CStr(blok), vbLf)
         For r = 0 To UBound(satirlar)
             k = k + 1
+            If (k And 2047) = 0 Then AKSORA_BEKLE_NABIZ
             If k > n Then Err.Raise vbObjectError + 2201, "AKSORA_PAKET_OKU", ar.Name & ": kayýt satýr sayýsý tutmuyor."
             alan = Split(satirlar(r), vbTab)
             If p2 Then
@@ -2624,7 +2625,8 @@ Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As
         If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
         For c = 0 To sutun - 1
             t = PK_ALAN(veri(r, LBound(veri, 2) + c))
-            If ikinci And r > LBound(veri, 1) And Len(t) > 0 And t = onceki(c) Then alan(c) = "=" Else alan(c) = t
+            ' Ilk alan hep acik yazilir: satir (ve hucre) "=" ile baslarsa Excel formul sanir.
+            If ikinci And c > 0 And r > LBound(veri, 1) And Len(t) > 0 And t = onceki(c) Then alan(c) = "=" Else alan(c) = t
             onceki(c) = t
         Next c
         satir = Join(alan, vbTab)
@@ -2646,6 +2648,7 @@ Private Sub PK_YAZ(ByVal ar As Worksheet, ByVal veri As Variant, ByVal ikinci As
     End If
     ar.Range("A2").Resize(nb, 1).NumberFormat = "@"
     For r = 1 To nb
+        If Left$(blok(r), 1) = "=" Then Err.Raise vbObjectError + 2204, "AKSORA_PAKET_YAZ", "Paket bloðu '=' ile baþlýyor."
         ar.Cells(r + 1, 1).Value2 = blok(r)
     Next r
     ar.Range("D1").Value2 = n
