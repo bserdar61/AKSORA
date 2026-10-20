@@ -377,6 +377,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - ANA PANEL'de "ATIL STOK" düğmesi (`goAtilStok`, goStokKarsilastir kopyası; 8 düğme B25:T26).
 - MB51 sonucu klasik liste gelir (ızgara yok): dışa aktarma menüden (Liste > Kaydet > Dosya > Sekmeli metin). Sütunlar başlıktan (kısaltmalar dahil), olmazsa içerikten bulunur (tarih: değerlerin %90'ı tarih; miktar: sayısal ve eksi işaretli). Başlık + 3 örnek satır ve seçilen sütunlar teşhise yazılır.
 - Sistemler ayrı okunur: biri hata verirse tamamlanan sistem kaydedilir, diğerinin eski kaydı korunur. `/ATIL` düzeni her SAP sisteminde (CDP ve EPP) ayrı kaydedilmeli; yoksa açık mesaj verilir. İlk CDP okuması (20.10.2026): 7154 son 6 ay 27.130 satır / 13 sn, 2-3. adımlar <1 sn.
+- İlk tam okuma (CDP+EPP, 20.10.2026): 8 dk 26 sn. ATIL 2.435 kalem / 637,6 mn TL; 3 AY 103 kalem / 2,73 mn TL; 6 AY 63 kalem / 3,53 mn TL; transfer önerisi 691 kalem.
 - Admin bölümü sonra eklenecek.
 
 ## Sıradaki işler
