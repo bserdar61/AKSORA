@@ -378,6 +378,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - MB51 sonucu klasik liste gelir (ızgara yok): dışa aktarma menüden (Liste > Kaydet > Dosya > Sekmeli metin). Sütunlar başlıktan (kısaltmalar dahil), olmazsa içerikten bulunur (tarih: değerlerin %90'ı tarih; miktar: sayısal ve eksi işaretli). Başlık + 3 örnek satır ve seçilen sütunlar teşhise yazılır.
 - Sistemler ayrı okunur: biri hata verirse tamamlanan sistem kaydedilir, diğerinin eski kaydı korunur. `/ATIL` düzeni her SAP sisteminde (CDP ve EPP) ayrı kaydedilmeli; yoksa açık mesaj verilir. İlk CDP okuması (20.10.2026): 7154 son 6 ay 27.130 satır / 13 sn, 2-3. adımlar <1 sn.
 - İlk tam okuma (CDP+EPP, 20.10.2026): 8 dk 26 sn. ATIL 2.435 kalem / 637,6 mn TL; 3 AY 103 kalem / 2,73 mn TL; 6 AY 63 kalem / 3,53 mn TL; transfer önerisi 691 kalem.
+- Sayfa 3 sekmeli (BX21): ÖZET (kategori + karne), TRANSFER ÖNERİLERİ, ATIL LİSTESİ; tek bölüm gösterilir, sekmede filtre. Transfer: alacak il = son 6 ayda kullanan iller içinde eksiği (6 aylık kullanım − stoğu) en büyük olan; YÜKSEK = stoğu 6 aylık kullanımından az, gönderilecek = min(eldeki, eksik); DÜŞÜK = stoğu yetiyor, gönderilecek = min(eldeki, 6 aylık kullanım). Sütunlar: Nereden, Sistem, Malzeme, Tanım, Depo, Eldeki miktar, Değer, Durum, Nereye, Gönderilecek, Öncelik, Neden (tek cümle).
 - Admin bölümü sonra eklenecek.
 
 ## Sıradaki işler
