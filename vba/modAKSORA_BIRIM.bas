@@ -54,6 +54,7 @@ Private mAdmYukWs As Worksheet
 Private mAdmYukBar As Double
 Private mAdmYukSon As Double
 Public AKSORA_BEKLE_KIPI As Boolean
+Public AKSORA_ADMIN_IPTAL As Boolean
 Private mAdmTopluKart As Boolean
 Private mAdmTopluBas As Double
 Private mAdmTopluSon As Double
@@ -2087,6 +2088,7 @@ End Sub
 ' Guncelleme bitince ana panel ekrana getirilir.
 Private Sub Y_PANEL_GOSTER(Optional ByVal ad As String = "Y_ANA PANEL")
     Dim ws As Worksheet, ev As Boolean
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(ad)
     If ws Is Nothing Then Exit Sub
@@ -2108,6 +2110,8 @@ End Sub
 
 Private Sub Y_SAYFA_SEC(ByVal ws As Worksheet)
     Dim ev As Boolean, sc As Boolean
+    ' Yonetim merkezinden tum birimler guncellenirken ekran yonetim merkezinde kalir.
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
     On Error Resume Next
     If ws Is Nothing Then Exit Sub
     If ActiveSheet Is ws Then Exit Sub
@@ -2387,6 +2391,7 @@ Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
     application.ScreenUpdating = True
     On Error GoTo Hata
     For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandý." & vbCrLf: Exit For
         bilgi = vbNullString
         adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
         Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor..."
@@ -4303,6 +4308,7 @@ Public Sub AKSORA_ILCE_BUTUN_ILLER()
     application.ScreenUpdating = True
     On Error GoTo Hata
     For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandý." & vbCrLf: Exit For
         bilgi = vbNullString
         adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
         Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor...", "I_MALZEME_ARA"
@@ -6711,7 +6717,8 @@ End Sub
 '---------- bekleme karti (tum uzun gecisler) ----------
 ' AKSORA penceresinin tam ortasinda, basliksiz kucuk kart (frmSplash kart olarak yeniden bicimlenir).
 ' Kart kendi penceresinde cizildigi icin Excel ekrani donsa da hemen gorunur; AKSORA hangi ekrandaysa orada acilir.
-Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4) As Boolean
+Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4, _
+    Optional ByVal durdur As Boolean = False) As Boolean
     If AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_V11_MESGUL Then Exit Function
     If mAdmYukleme Then AKSORA_BEKLE_KAPAT
     mAdmYukleme = False
@@ -6721,7 +6728,7 @@ Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, O
     AKSORA_BEKLE_KIPI = True
     Load frmSplash
     AKSORA_BEKLE_KIPI = False
-    BEKLE_KART_BICIM baslik
+    BEKLE_KART_BICIM baslik, durdur
     frmSplash.Show vbModeless
     BEKLE_KART_KONUM
     mAdmYukleme = True: mAdmYukSon = 0
@@ -6736,20 +6743,29 @@ Son:
     On Error GoTo 0
 End Function
 
-Private Sub BEKLE_KART_BICIM(ByVal baslik As String)
+Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Boolean = False)
     Dim w As Single
     On Error Resume Next
     With frmSplash
-        .Caption = "AKSORA_BEKLE_KARTI"
+        .Caption = "AKSORA"
         .StartUpPosition = 0
-        .Width = 420: .Height = 150
+        .Width = 420: .Height = IIf(durdur, 186, 150)
         .Left = application.Left + (application.Width - .Width) / 2
         .Top = application.Top + (application.Height - .Height) / 2
         .BackColor = RGB(255, 255, 255)
         .BorderStyle = fmBorderStyleSingle: .BorderColor = RGB(20, 103, 173)
         w = .InsideWidth
         .imgLogo.Visible = False
-        .lblImza.Visible = False
+        .lblImza.Visible = durdur
+        If durdur Then
+            ' DURDUR: frmSplash lblImza_Click ile AKSORA_ADMIN_IPTAL acilir.
+            With .lblImza
+                .Caption = "DURDUR": .Left = (w - 130) / 2: .Top = 134: .Width = 130: .Height = 26
+                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+                .ForeColor = vbWhite: .BackColor = RGB(220, 38, 38): .BackStyle = fmBackStyleOpaque
+                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
+            End With
+        End If
         With .lblBaslik
             .Caption = baslik: .Left = 0: .Top = 20: .Width = w: .Height = 26
             .Font.Name = "Segoe UI": .Font.Size = 15: .Font.bold = True: .Font.Italic = False
@@ -6780,9 +6796,9 @@ End Sub
 Private Sub BEKLE_KART_KONUM()
     Dim h As LongPtr, st As LongPtr, rx As ADMW_RECT, rf As ADMW_RECT, x As Long, y As Long
     On Error Resume Next
-    h = ADMW_FindWindow("ThunderDFrame", "AKSORA_BEKLE_KARTI")
-    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA_BEKLE_KARTI")
-    If h = 0 Then frmSplash.Caption = "AKSORA": Exit Sub
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    If h = 0 Then Exit Sub
     st = ADMW_GetWindowLong(h, -16)
     st = st And Not &HC40000
     ADMW_SetWindowLong h, -16, st
@@ -6792,7 +6808,6 @@ Private Sub BEKLE_KART_KONUM()
     x = (rx.Left + rx.Right) \ 2 - (rf.Right - rf.Left) \ 2
     y = (rx.Top + rx.Bottom) \ 2 - (rf.Bottom - rf.Top) \ 2
     ADMW_SetWindowPos h, 0, x, y, 0, 0, &H15
-    frmSplash.Caption = "AKSORA"
     frmSplash.Repaint
     On Error GoTo 0
 End Sub
@@ -8279,7 +8294,8 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     AKSORA_ADMIN_SONUC = vbNullString
     bas = Timer: mAdmTopluBas = bas: mAdmTopluSon = 0
     ' Kart birimler calismadan once acilir; ekran yonetim merkezinde sabit kalir (birim panellerine gidilmez).
-    mAdmTopluKart = AKSORA_BEKLE_AC("AKSORA  |  TÜM BÝRÝMLER GÜNCELLENÝYOR", "SAP baðlantýsý hazýrlanýyor...", 0.01)
+    AKSORA_ADMIN_IPTAL = False
+    mAdmTopluKart = AKSORA_BEKLE_AC("AKSORA  |  TÜM BÝRÝMLER GÜNCELLENÝYOR", "SAP baðlantýsý hazýrlanýyor...", 0.01, True)
     AKSORA_ADMIN_TOPLU = True
     ADM_EKRAN_KILIT True
     ADM_BIRIM_CALISTIR 0, "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE"
@@ -8304,11 +8320,17 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     Next sh
     On Error GoTo 0
     ADM_AC
-    MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbInformation, "AKSORA | TÜM BÝRÝMLER"
+    If AKSORA_ADMIN_IPTAL Then
+        AKSORA_ADMIN_IPTAL = False
+        MsgBox "Güncelleme durduruldu (" & sonuc & ")." & vbCrLf & "Çalýþan il tamamlandý, kalanlar atlandý." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbExclamation, "AKSORA | TÜM BÝRÝMLER"
+    Else
+        MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbInformation, "AKSORA | TÜM BÝRÝMLER"
+    End If
 End Sub
 
 Private Sub ADM_BIRIM_CALISTIR(ByVal sira As Long, ByVal ad As String, ByVal makro As String)
     On Error Resume Next
+    If AKSORA_ADMIN_IPTAL Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & ad & ": durduruldu (çalýþtýrýlmadý)." & vbCrLf: Exit Sub
     mAdmTopluSira = sira: mAdmTopluAd = ad
     Set mAdmTopluIl = CreateObject("Scripting.Dictionary")
     AKSORA_ADMIN_DURUM "güncelleme baþlýyor..."
@@ -8346,6 +8368,7 @@ Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
     If metin = "tamamlandý." Then y = 1
     y = (mAdmTopluSira + 0.05 + 0.9 * y) / 4
     s = mAdmTopluAd & "  •  " & mAdmTopluMetin
+    If AKSORA_ADMIN_IPTAL Then s = "Durduruluyor: çalýþan il bitince iþlem duracak..."
     If Len(s) > 72 Then s = Left$(s, 69) & "..."
     frmSplash.lblDurum.Caption = s
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * application.Min(1, y))

@@ -712,6 +712,8 @@ Public Sub AKSORA_ANA_PANEL_GOSTER()
     ev = application.EnableEvents
     application.ScreenUpdating = False
     PANEL_YENILE
+    ' Yonetim merkezinden tum birimler guncellenirken panel yalniz yenilenir, ekrana getirilmez.
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
     application.EnableEvents = False
     ws.Visible = xlSheetVisible
     ws.Select Replace:=True

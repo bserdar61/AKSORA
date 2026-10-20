@@ -1443,6 +1443,7 @@ Public Sub AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE()
     application.ScreenUpdating = True
     AKSORA_MUSTERI_TOPLU_DURUM "Güncelleme hazýrlanýyor..."
     For Each il In AKSORA_MUSTERI_ILLER()
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandý." & vbCrLf: Exit For
         ' Her il kendi kaydina yuklenip musteri motoruyla (IQ09 + MB52) guncellenir.
         AKSORA_MUSTERI_IL_DEGIS CStr(il)
         bilgi = ""

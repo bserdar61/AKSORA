@@ -345,5 +345,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Yatırım/İlçe ana panel kartları: aynı gün GÜNCEL, gün değişince "1 gündür / N gündür güncellenmedi" (`Y_KART_TARIH`). Malzeme/Müşteri zaten tarih bazlıydı.
 - İlçe STOK/DEMONTAJ: B6/I6 tarih kutuları kilitsiz (koruma uyarısı veriyordu); sayfa bir sonraki kurulumda düzelir.
 
+## Tüm birimler: ekran sabit + DURDUR (20.10.2026)
+- LockWindowUpdate yetmedi (Müşteri M_PencereKilit 0 ile kilidi açıyor). Çözüm: `AKSORA_ADMIN_TOPLU` iken birimler panel seçmez: Y_SAYFA_SEC, Y_PANEL_GOSTER, AKSORA_ANA_PANEL_GOSTER (yalnız yeniler), AKSORA_MUSTERI_PANEL_ON/GOSTER (yalnız yeniler), Malzeme toplu başı/sonu ANA PANEL seçimi.
+- Kart başlığı baştan "AKSORA" (sonradan Caption değiştirmek başlık çubuğunu geri getiriyordu).
+- DURDUR: kartta lblImza düğme olur (`AKSORA_BEKLE_AC(..., durdur:=True)`), tıklanınca `AKSORA_ADMIN_IPTAL`. Birim il döngüleri her il başında bakar; çalışan il biter, kalanlar ve kalan birimler atlanır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

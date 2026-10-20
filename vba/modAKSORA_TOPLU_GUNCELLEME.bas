@@ -454,11 +454,14 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     ThisWorkbook.Worksheets("MALZEME_ARA").Visible = xlSheetVisible
     ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_GUNCELLE").Fill.ForeColor.RGB = RGB(125, 140, 135)
     ' Bütün iller guncellemesi ana panelden izlenir (serit + kartlar, musteri paneli temasi).
-    With ThisWorkbook.Worksheets("ANA PANEL")
-        .Visible = xlSheetVisible
-        .Activate
-    End With
-    AKSORA_V13_GORUNUM ThisWorkbook.Worksheets("ANA PANEL")
+    ' Yonetim merkezinden calisirken ana panele gecilmez.
+    If Not AKSORA_ADMIN_TOPLU Then
+        With ThisWorkbook.Worksheets("ANA PANEL")
+            .Visible = xlSheetVisible
+            .Activate
+        End With
+        AKSORA_V13_GORUNUM ThisWorkbook.Worksheets("ANA PANEL")
+    End If
     AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
     application.ScreenUpdating = True
     basladi = True
@@ -475,6 +478,7 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
         End If
     End If
     For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandý." & vbCrLf: Exit For
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = CStr(il)
         bilgi = ""
         basarili = AK11_IL_GUNCELLE(CStr(il), bilgi)
@@ -509,10 +513,12 @@ Temizle:
         ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
         AKSORA_V12_BUTON_RENK
         ' Islem bitince dugmeye basilan ilin ana paneli acilir.
-        Set sayfa = ThisWorkbook.Worksheets("ANA PANEL")
-        sayfa.Visible = xlSheetVisible
-        sayfa.Select Replace:=True
-        AKSORA_V13_GORUNUM sayfa
+        If Not AKSORA_ADMIN_TOPLU Then
+            Set sayfa = ThisWorkbook.Worksheets("ANA PANEL")
+            sayfa.Visible = xlSheetVisible
+            sayfa.Select Replace:=True
+            AKSORA_V13_GORUNUM sayfa
+        End If
     End If
     application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = sc

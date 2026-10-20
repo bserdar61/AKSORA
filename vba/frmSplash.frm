@@ -113,6 +113,17 @@ AKSORA_SPLASH_GORSEL_UYGULA Me
 
 End Sub
 
+' Tum birimler guncellemesinde DURDUR: calisan il bitince islem durur.
+Private Sub lblImza_Click()
+    If Not AKSORA_ADMIN_TOPLU Then Exit Sub
+    If AKSORA_ADMIN_IPTAL Then Exit Sub
+    AKSORA_ADMIN_IPTAL = True
+    Me.lblImza.Caption = "DURDURULUYOR..."
+    Me.lblImza.BackColor = RGB(148, 163, 184)
+    Me.lblDurum.Caption = "Durduruluyor: çalýþan il bitince iþlem duracak..."
+    Me.Repaint
+End Sub
+
 ' Kart Alt+F4 ile kapatilamaz; islem bitince kod kapatir.
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     If CloseMode = vbFormControlMenu Then Cancel = True

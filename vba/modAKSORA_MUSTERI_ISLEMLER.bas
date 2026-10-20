@@ -262,6 +262,7 @@ Public Sub AKSORA_MUSTERI_PANEL_ON()
     On Error Resume Next
     Set hedef = ThisWorkbook.Worksheets("M_ANA PANEL")
     If hedef Is Nothing Then Exit Sub
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
     If Not (ActiveSheet Is hedef) Then
         ev = application.EnableEvents
         application.ScreenUpdating = False: application.EnableEvents = False
@@ -283,6 +284,7 @@ Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
     On Error Resume Next
     Set hedef = ThisWorkbook.Worksheets("M_ANA PANEL")
     If hedef Is Nothing Then Exit Sub
+    If AKSORA_ADMIN_TOPLU Then AKSORA_MUSTERI_PANEL_YENILE: Exit Sub
     ev = application.EnableEvents
     kilit = (M_PencereKilit(application.hwnd) <> 0)
     application.ScreenUpdating = False
