@@ -381,6 +381,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Sayfa 3 sekmeli (BX21): ÖZET (kategori + karne), TRANSFER ÖNERİLERİ, ATIL LİSTESİ; tek bölüm gösterilir, sekmede filtre. Transfer: alacak il = son 6 ayda kullanan iller içinde eksiği (6 aylık kullanım − stoğu) en büyük olan; YÜKSEK = stoğu 6 aylık kullanımından az, gönderilecek = min(eldeki, eksik); DÜŞÜK = stoğu yetiyor, gönderilecek = min(eldeki, 6 aylık kullanım). Sütunlar: Nereden, Sistem, Malzeme, Tanım, Depo, Eldeki miktar, Değer, Durum, Nereye, Gönderilecek, Öncelik, Neden (tek cümle).
 - Admin bölümü sonra eklenecek.
 
+## Kullanıcı dosyası 20.10.2026 (317c039b, yeni baz `up23`)
+- Kod bizim son sürümle aynı (yalnız VBE büyük/küçük harf), yeni Sayfa95 = ATIL_STOK (kodsuz), frmSplash VB_Base değişti → sonraki derlemede raw'a up23'ten alınır.
+- 19,0 MB: Müşteri ekran ili Trabzon (M_CDP_STOK 38.246 satır), Excel görselleri sıkıştırmadan saklıyor, VBA derleme önbelleği. Sonraki derlemede optimize_base ile küçülür.
+- Müşteri il başına 25–55 sn; en büyük kalem IQ09 (Trabzon 14 sn sorgu + 19 sn liste).
+- ATIL ilk sonuç şüpheli: il atıl oranı %72–81, stoktaki kalemlerin %45'i "5 yıldır sarf yok" (2.252). Muhtemel neden: sarf yalnız D/K depolarından sayılıyor; yatırım ambarından yükleniciye (Z) giden ve orada sarf edilen malzeme hiç sarf görmemiş sayılıyor (ör. Artvin EPP D002 Yatırım Ambarı %100 atıl). Ayrıca yeni girip henüz sarf edilmemiş malzeme "5+ yıl" görünür; iptal hareketleri (202/262…) düşülmüyor. Karar kullanıcıda (doğruluk testi).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
