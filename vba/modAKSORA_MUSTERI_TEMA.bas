@@ -1488,5 +1488,6 @@ Bitir:
     Exit Sub
 Hata:
     hataMetni = Err.Description
+    AKSORA_SAP_TESHIS_YAZ "Müþteri bütün iller durdu | " & hataMetni
     Resume Bitir
 End Sub

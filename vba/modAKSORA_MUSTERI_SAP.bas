@@ -2483,6 +2483,7 @@ Public Sub AKSORA_MUSTERI_IL_DEGIS(ByVal il As String)
 Hata:
     hataNo = Err.Number: hataMetni = Err.Description
     mIlKod = vbNullString
+    AKSORA_SAP_TESHIS_YAZ "Müþteri il geçiþi hatasý | " & mevcut & " > " & il & " | " & adim & " | " & hataMetni
     On Error GoTo 0
     Err.Raise vbObjectError + 1997, "AKSORA_MUSTERI_IL_DEGIS", "Ýl geçiþi " & mevcut & " > " & il & " | adým: " & adim & _
         vbCrLf & "Hata " & CStr(hataNo) & ": " & hataMetni
@@ -2557,6 +2558,8 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
         If Len(CStr(blok)) = 0 Then GoTo SonrakiBlok
         satirlar = Split(CStr(blok), vbLf)
         For r = 0 To UBound(satirlar)
+            ' Bos satir veri degildir (her kayit satirinda 14 alan vardir); blok sonundaki fazla satir sonu atlanir.
+            If Len(satirlar(r)) = 0 Then GoTo SonrakiSatir
             k = k + 1
             If (k And 2047) = 0 Then AKSORA_BEKLE_NABIZ
             If k > n Then Err.Raise vbObjectError + 2201, "AKSORA_PAKET_OKU", ar.Name & ": kayýt satýr sayýsý tutmuyor."
@@ -2569,6 +2572,7 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
             For c = 0 To application.Min(UBound(alan), sutun - 1)
                 sonuc(k, c + 1) = PK_DEGER(alan(c))
             Next c
+SonrakiSatir:
         Next r
 SonrakiBlok:
     Next b

@@ -361,5 +361,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## DERS: büyük arşivde doğrulama veriyi kopyalamamalı (20.10.2026)
 - Müşteri CDP arşivi (17–37 bin satır) yazılırken Excel donuyordu; ilk doğrulama (PK_DOGRU) veriyi tam dizi olarak geri okuyup birkaç kez kopyalıyordu (ByVal + OKU sonucu). Yeni PK_YAZ: ByRef, yazılan hücreleri geri okuyup satır satır metin karşılaştırır. Canlı çalıştırmada her arşiv <1 sn, doğrulama hatası 0. Akış: Malzeme+Yatırım+İlçe ~35 sn, Müşteri il başına 28–47 sn.
 
+## DERS: XML satır sonu normalleştirmesi (20.10.2026)
+- Excel kayıtlı metinlerde CRLF var; XML okuyucu CRLF ve tek CR'yi LF okur. optimize_base bunu yapmadığı için PAKET2 satırlarının sonunda CR kaldı; blok sonundaki tek CR Excel'de fazladan satır oldu → Rize arşivi "satır sayısı tutmuyor" ile yüklenemedi (Giresun'dan sonra takılma). Düzeltme: `xmlnorm` (optimize_base + verify_p2), VBA okuyucu boş satırı atlar, müşteri il geçişi hataları teşhise yazılır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

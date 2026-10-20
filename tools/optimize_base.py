@@ -2,6 +2,13 @@
 on Y_*_STOK sheets. Usage: optimize_base.py in.xlsm out.xlsm"""
 import sys, re, zipfile, html
 
+
+def xmlnorm(s):
+    # XML ayristirici (Excel) metindeki CRLF ve tek CR'yi LF okur; ayni sekilde normallestirilir.
+    return s.replace('\r\n', '\n').replace('\r', '\n')
+
+
+
 src, out = sys.argv[1:3]
 zi = zipfile.ZipFile(src)
 files = {i.filename: zi.read(i.filename) for i in zi.infolist()}
@@ -24,7 +31,7 @@ sst = []
 sx = files['xl/sharedStrings.xml'].decode('utf8')
 for si in re.finditer(r'<si>(.*?)</si>', sx, re.S):
     parts = re.findall(r'<t(?: [^>]*)?>(.*?)</t>', si.group(1), re.S)
-    sst.append(html.unescape(''.join(parts)))
+    sst.append(xmlnorm(html.unescape(''.join(parts))))
 
 
 def col_idx(ref):
@@ -45,7 +52,7 @@ def cell_value(attrs, body):
     t = t.group(1) if t else 'n'
     if t == 'inlineStr':
         parts = re.findall(r'<t(?: [^>]*)?>(.*?)</t>', body, re.S)
-        return ('s', html.unescape(''.join(parts)))
+        return ('s', xmlnorm(html.unescape(''.join(parts))))
     v = re.search(r'<v>(.*?)</v>', body, re.S)
     if not v:
         return None
@@ -53,7 +60,7 @@ def cell_value(attrs, body):
     if t == 's':
         return ('s', sst[int(v)])
     if t in ('str',):
-        return ('s', html.unescape(v))
+        return ('s', xmlnorm(html.unescape(v)))
     if t == 'b':
         return ('b', v)
     if t == 'e':
