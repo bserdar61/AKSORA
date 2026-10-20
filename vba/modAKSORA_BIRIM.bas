@@ -8956,7 +8956,7 @@ End Function
 Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal d As Object, ByVal etiket As String)
     Dim r As Long, c As Long, h As Long, cM As Long, cT As Long, cQ As Long, cU As Long, a As String
     Dim mal As String, tar As Date, sonMal As String, sonTar As Date, sonUy As String, uyx As String, q As Double, o As Variant
-    Dim ham As String, atla As Long, okunan As Long
+    Dim ham As String, atla As Long, okunan As Long, son As Long, n As Long, dolu As Long, eksi As Long, enIyi As Long, t As String, x As Double
     For r = 1 To application.Min(UBound(v, 1), 40)
         For c = 1 To UBound(v, 2)
             If Y_NORM(CStr(v(r, c))) = "MALZEME" Or Y_NORM(CStr(v(r, c))) = "MATERIAL" Then h = r: cM = c: Exit For
@@ -8964,19 +8964,67 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal d As Obj
         If h > 0 Then Exit For
     Next r
     If h = 0 Then Err.Raise vbObjectError + 2340, , "MB51 listesinde 'Malzeme' sütunu bulunamadý (/ATIL düzenini kontrol edin)."
+    ' Baslik ve ilk satirlar teshise yazilir (liste bicimi degisirse gorulur).
+    a = vbNullString
+    For c = 1 To UBound(v, 2): a = a & " | " & CStr(v(h, c)): Next c
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | baþlýk (satýr " & h & ")" & a
+    For r = h + 1 To application.Min(UBound(v, 1), h + 3)
+        t = vbNullString
+        For c = 1 To UBound(v, 2): t = t & " | " & CStr(v(r, c)): Next c
+        AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | örnek" & t
+    Next r
+    ' Sutunlar once basliktan (liste kisaltmalari dahil) bulunur.
     For c = 1 To UBound(v, 2)
         a = Y_NORM(CStr(v(h, c)))
-        If cT = 0 And (InStr(a, "KAYIT TAR") > 0 Or InStr(a, "POSTING DATE") > 0) Then cT = c
+        If cT = 0 And (InStr(a, "KAYIT") > 0 Or InStr(a, "KYT") > 0 Or InStr(a, "POSTING") > 0) Then cT = c
         If cQ = 0 And (a = "MIKTAR" Or a = "QUANTITY") Then cQ = c
-        If cU = 0 And (InStr(a, "URETIM YERI") > 0 Or a = "PLANT") Then cU = c
+        If cU = 0 And (InStr(a, "URETIM") > 0 Or a = "PLANT") Then cU = c
     Next c
     If cQ = 0 Then
         For c = 1 To UBound(v, 2)
             a = Y_NORM(CStr(v(h, c)))
-            If InStr(a, "MIKTAR") > 0 Or InStr(a, "QUANTITY") > 0 Then cQ = c: Exit For
+            If c <> cM And c <> cT And (InStr(a, "MIK") > 0 Or InStr(a, "MKT") > 0 Or InStr(a, "QUANT") > 0) Then cQ = c: Exit For
         Next c
     End If
-    If cT = 0 Then Err.Raise vbObjectError + 2341, , "MB51 listesinde 'Kayýt tarihi' sütunu bulunamadý (/ATIL düzenini kontrol edin)."
+    ' Baslikla bulunamazsa icerikten: tarih sutunu (degerlerin %90'i tarih), miktar sutunu (sayisal, eksi isaretli sarf).
+    son = application.Min(UBound(v, 1), h + 300)
+    If cT = 0 Then
+        enIyi = 0
+        For c = 1 To UBound(v, 2)
+            If c <> cM Then
+                n = 0: dolu = 0
+                For r = h + 1 To son
+                    t = Trim$(CStr(v(r, c)))
+                    If Len(t) > 0 Then
+                        dolu = dolu + 1
+                        If ATIL_TARIH(t) > 0 Then n = n + 1
+                    End If
+                Next r
+                If n > enIyi And n * 10 >= dolu * 9 Then enIyi = n: cT = c
+            End If
+        Next c
+    End If
+    If cQ = 0 Then
+        enIyi = 0
+        For c = 1 To UBound(v, 2)
+            If c <> cM And c <> cT And c <> cU Then
+                n = 0: dolu = 0: eksi = 0
+                For r = h + 1 To son
+                    t = Trim$(CStr(v(r, c)))
+                    If Len(t) > 0 Then
+                        dolu = dolu + 1
+                        If ATIL_SAYI_DENE(t, x) Then
+                            n = n + 1
+                            If x < 0 Then eksi = eksi + 1
+                        End If
+                    End If
+                Next r
+                If eksi > enIyi And n * 10 >= dolu * 9 Then enIyi = eksi: cQ = c
+            End If
+        Next c
+    End If
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | sütunlar: malzeme " & cM & ", tarih " & cT & ", miktar " & cQ & ", üretim yeri " & cU
+    If cT = 0 Then Err.Raise vbObjectError + 2341, , "MB51 listesinde kayýt tarihi sütunu bulunamadý. Baþlýk:" & Left$(a, 200)
     For r = h + 1 To UBound(v, 1)
         If (r And 4095) = 0 Then AKSORA_BEKLE_NABIZ: ATIL_SURE_YAZ
         ham = Trim$(CStr(v(r, cM)))
