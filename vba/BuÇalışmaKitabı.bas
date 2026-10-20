@@ -15,6 +15,8 @@ Private Sub Workbook_Open()
     Dim Hata As String
 
     bas = Timer
+    ' Onceki oturum yarida kaldiysa Excel girisi acik gelir.
+    application.Interactive = True
 
     On Error GoTo Hata
 

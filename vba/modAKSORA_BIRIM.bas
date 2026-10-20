@@ -6707,6 +6707,7 @@ Cikis:
     application.Cursor = xlDefault
     If application.Calculation <> hesap Then application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = True
+    application.Interactive = True
     If no <> 0 Then MsgBox "Yönetim merkezi açýlamadý." & vbCrLf & vbCrLf & metin, vbExclamation, "AKSORA | ADMÝN"
     Exit Sub
 Hata:
@@ -8308,6 +8309,8 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     mAdmTopluKart = AKSORA_BEKLE_AC("AKSORA  |  TÜM BÝRÝMLER GÜNCELLENÝYOR", "SAP baðlantýsý hazýrlanýyor...", 0.01, True)
     AKSORA_ADMIN_TOPLU = True
     ADM_EKRAN_KILIT True
+    ' Calisirken Excel'e tiklama / yazma / baska dosyaya gecme engellenir (kart ve SAP pencereleri etkilenmez).
+    application.Interactive = False
     ' Yatirim ve Ilce, Malzemenin ayni SAP okumasini kullanir (hazirsa); Musteri ayri rapor (IQ09) oldugundan sonda.
     ADM_BIRIM_CALISTIR 0, "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE"
     AKSORA_ORTAK_AKTIF = AKSORA_ORTAK_HAZIR()
@@ -8317,6 +8320,7 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     AKSORA_ORTAK_BIRAK
     ADM_BIRIM_CALISTIR 3, "MÜÞTERÝ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
     On Error Resume Next
+    application.Interactive = True
     AKSORA_ORTAK_BIRAK
     AKSORA_ADMIN_TOPLU = False
     ADM_EKRAN_KILIT False
