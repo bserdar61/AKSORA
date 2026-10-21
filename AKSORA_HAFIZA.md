@@ -439,6 +439,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Sonraki stok verilerinde artış stok tarihiyle yeni giriş katmanı; okumadan sonra stoğa giren kalem tamamı yeni giriş.
 - Liste/transfer/PDF: Riskli miktar ve Riskli değer (18 aydan eski kısım). "Muhtemel sarf" yerine "Stoğu düşen".
 
+## SAP malzeme hafızası (MAT) düzeltmesi — 2026-10-21
+- Sorun: ATIL MB51'de MATNR'ye yapıştırılan listenin ilk değeri SAP hafızasına (MAT) yazıldı; sonraki MB52 stok okumaları tek malzemeyle çalıştı (Artvin CDP 3, EPP 1 satır), ilçe adımında PANEL düzeni seçilemedi.
+- Çözüm: AKSORA_SAP_MALZEME_TEMIZLE (TOPLU_GUNCELLEME, Public) her StartTransaction "MB52" sonrasında MATNR-LOW/HIGH temizler (9 yer). ATIL bitişinde MB51 açılıp MATNR boşaltılır, Enter.
+- EPP MB51 "Herhangi bir düzenek bulunamadı": /ATIL yoksa varsayılan düzenle bir kez yeniden denenir (teşhise yazılır).
+- ATIL transfer tablosu ve PDF'de Depo sütunu tüm depoları miktarıyla gösterir ("D001 (3), K002 (5)"); uzun listede satır yüksekliği açılır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2: kullanıcı SAP'DEN OKU ile yeniden okuyacak; teşhisten İTü/DpYr sütunları ve sorgu süreleri kontrol edilecek.

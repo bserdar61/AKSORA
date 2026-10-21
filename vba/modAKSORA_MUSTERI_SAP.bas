@@ -1092,6 +1092,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     Dim sonuc() As Variant, adlar As Variant, konum As Variant
     MS_Teshis "---- " & Format$(Now, "dd.mm.yyyy hh:nn:ss") & " | MB52 baþlýyor"
     ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = MS_Tesis()
     On Error Resume Next
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString

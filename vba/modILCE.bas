@@ -1279,6 +1279,7 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
     Set ses = SAP_SESSION_AL("CDP", Hata)
     If ses Is Nothing Then Err.Raise vbObjectError + 870, , "SAP oturumu bulunamadi: " & Hata
     ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = "K001"
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "K999"
@@ -1491,6 +1492,7 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
     Set ses = SAP_SESSION_AL("EPP", Hata)
     If ses Is Nothing Then Err.Raise vbObjectError + 870, , "SAP oturumu bulunamadi: " & Hata
     ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = "K001"
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "K999"

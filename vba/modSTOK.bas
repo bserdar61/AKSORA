@@ -65,6 +65,7 @@ Public Function STOK_EXPORT_AL( _
 
     CORE_DURUM SistemAdi & " üzerinde MB52 açýlýyor..."
     SAPSession.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE SAPSession
 
     CORE_DURUM SistemAdi & " MB52 kriterleri hazýrlanýyor..."
     SAPSession.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = UretimYeri
@@ -215,6 +216,7 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
 
     CORE_DURUM SistemAdi & " üzerinde MB52 açýlýyor..."
     SAPSession.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE SAPSession
 
     SAPSession.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = UretimYeri
     SAPSession.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString

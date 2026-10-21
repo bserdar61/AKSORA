@@ -927,6 +927,15 @@ End Function
 ' yuklenici ayrimi bellekte depo koduna gore yapilir. Herhangi bir adim
 ' basarisizsa o sistem icin eski il il okuma yontemi kullanilir.
 '==========================================================
+' MB52/MB51 secim ekrani: SAP hafizasindan (MAT parametresi) gelen malzeme filtresi temizlenir.
+' Atil okumasinda yapistirilan malzeme listesi sonraki stok sorgularini tek malzemeye daraltmasin.
+Public Sub AKSORA_SAP_MALZEME_TEMIZLE(ByVal ses As Object)
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/ctxtMATNR-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtMATNR-HIGH").Text = vbNullString
+    Err.Clear
+End Sub
+
 Public Function AKHZ_TAMAM() As Boolean
     AKHZ_TAMAM = mHzHazir(1) And mHzHazir(2)
 End Function
@@ -1056,6 +1065,7 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, 
     Set ses = SAP_SESSION_AL(sistem, h)
     If ses Is Nothing Then mesaj = "SAP oturumu bulunamadý " & h: Exit Function
     ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
     AKHZ_BEKLE 0.3
     If Len(tekTesis) > 0 Then
         ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = tekTesis

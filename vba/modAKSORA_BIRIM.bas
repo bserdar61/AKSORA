@@ -9339,7 +9339,7 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal sat As C
         If cT = 0 And (InStr(a, "KAYIT") > 0 Or InStr(a, "KYT") > 0 Or InStr(a, "POSTING") > 0) Then cT = c
         If cQ = 0 And (a = "MIKTAR" Or a = "QUANTITY") Then cQ = c
         If cU = 0 And (InStr(a, "URETIM") > 0 Or a = "PLANT" Or a = "UY") Then cU = c
-        If cI = 0 And (a = "ITU" Or InStr(a, "HAREKET") > 0 Or InStr(a, "MOVEMENT") > 0 Or a = "MVT") Then cI = c
+        If cI = 0 And (a = "ITU" Or a = "HTU" Or a = "BWART" Or InStr(a, "HAREKET") > 0 Or InStr(a, "HRK") > 0 Or InStr(a, "MOVEMENT") > 0 Or a = "MVT") Then cI = c
         If cD = 0 And (a = "DPYR" Or InStr(a, "DEPO") > 0 Or a = "SLOC" Or InStr(a, "STOR") > 0) Then cD = c
         If cV = 0 And (InStr(a, "DGRL") > 0 Or InStr(a, "DEGERLEME") > 0 Or InStr(a, "VALUATION") > 0) Then cV = c
     Next c
@@ -9405,7 +9405,7 @@ End Sub
 ' (satirlar okunurken atil kapsamina gore suzulur). Donus: satirlar (ATIL_MB51_COZ).
 Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar() As String, ByVal bas As Date, ByVal son As Date, _
     ByVal etiket As String, ByRef turler() As String) As Collection
-    Dim sat As Collection, alv As Object, v As Variant, n As Long, pop As Object, t As String, b0 As Double
+    Dim sat As Collection, alv As Object, v As Variant, n As Long, pop As Object, t As String, b0 As Double, varsayilan As Boolean
     Set sat = New Collection
     Set ATIL_MB51 = sat
     n = UBound(mallar) - LBound(mallar) + 1
@@ -9431,6 +9431,7 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
     ses.FindById("wnd[0]/usr/ctxtBUDAT-LOW").Text = Format$(bas, "dd.mm.yyyy")
     ses.FindById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = Format$(son, "dd.mm.yyyy")
     ses.FindById("wnd[0]/usr/ctxtALV_DEF").Text = "/ATIL"
+Calistir:
     b0 = Timer
     ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
     ATIL_BEKLE ses
@@ -9453,6 +9454,13 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
     If alv Is Nothing And Not ses.FindById("wnd[0]/usr/ctxtWERKS-LOW", False) Is Nothing Then
         t = ATIL_SBAR(ses)
         If ATIL_BOS_MESAJ(t) Then Exit Function
+        ' /ATIL duzeni bu liste gosteriminde yoksa varsayilan duzen denenir (gerekli sutunlar basliktan bulunur).
+        If InStr(Y_NORM(t), "DUZEN") > 0 And Not varsayilan Then
+            AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | /ATIL düzeni kullanýlamadý (" & t & "); varsayýlan düzenle deneniyor"
+            varsayilan = True
+            ses.FindById("wnd[0]/usr/ctxtALV_DEF").Text = vbNullString
+            GoTo Calistir
+        End If
         If InStr(Y_NORM(t), "DUZEN") > 0 Then Err.Raise vbObjectError + 2347, , _
             "Bu sistemde MB51 için /ATIL düzeni yok (SAP: " & t & "). MB51'de listeyi açýp sütunlarý ayarlayýn ve /ATIL adýyla kaydedin."
         Err.Raise vbObjectError + 2347, , "MB51 sonuç vermedi: " & t
@@ -9543,6 +9551,10 @@ Bitir:
         For Each sis In oturumlar.keys
             Set ses = oturumlar(sis)
             If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+            ' SAP hafizasindaki malzeme (MAT) bosaltilir; yoksa sonraki MB52 stok okumalari tek malzemeyle calisir.
+            ses.StartTransaction "MB51"
+            AKSORA_SAP_MALZEME_TEMIZLE ses
+            ses.FindById("wnd[0]").SendVKey 0
             ses.StartTransaction "SESSION_MANAGER"
         Next sis
     End If
@@ -9830,6 +9842,7 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
         .VerticalAlignment = xlCenter
     End With
     cs.Range(cs.Rows(8), cs.Rows(7 + n)).RowHeight = 15
+    cs.Range(cs.Cells(8, 4), cs.Cells(7 + n, 4)).WrapText = True
     ' Kesirsiz miktarda virgul gosterilmez (ekrandaki tablolarla ayni bicim).
     AKSORA_V13_MIKTAR_BICIMI cs.Range(cs.Cells(8, 5), cs.Cells(7 + n, 5))
     cs.Range(cs.Cells(8, 6), cs.Cells(7 + n, 6)).NumberFormat = "#,##0.00 ""TL"""
@@ -9838,8 +9851,11 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
     cs.Range(cs.Cells(8, 7), cs.Cells(7 + n, 10)).HorizontalAlignment = xlCenter
     cs.Range(cs.Cells(8, 7), cs.Cells(7 + n, 10)).Font.bold = True
     cs.Range(cs.Cells(7, 6), cs.Cells(7 + n, 6)).HorizontalAlignment = xlRight
-    kol = Array(9, 11, 36, 13, 9, 13, 10, 10, 11, 8, 44)
+    kol = Array(9, 11, 32, 20, 9, 13, 10, 10, 11, 8, 41)
     For c = 0 To 10: cs.Columns(c + 1).ColumnWidth = kol(c): Next c
+    For r = 8 To 7 + n
+        If Len(CStr(cs.Cells(r, 4).Value2)) > 20 Then cs.Rows(r).AutoFit
+    Next r
     yol = AKSORA_KAYIT_KLASORU() & application.PathSeparator & "ATIL_TRANSFER_" & IIf(il = "TUM" Or Len(il) = 0, "TUM_ILLER", il) & "_" & Format$(Now, "yyyymmdd_hhnn") & ".pdf"
     On Error Resume Next
     With cs.PageSetup
@@ -9869,13 +9885,13 @@ Hata:
     Resume Cikis
 End Sub
 
+' Malzemenin bulundugu tum depolar ve miktarlari: "D001 (3), K002 (5)".
 Private Function ATIL_DEPO_METIN(ByVal dp As Object) As String
     Dim k As Variant, n As Long
     For Each k In dp.keys
         n = n + 1
-        If n <= 3 Then ATIL_DEPO_METIN = ATIL_DEPO_METIN & IIf(n > 1, ", ", "") & CStr(k)
+        ATIL_DEPO_METIN = ATIL_DEPO_METIN & IIf(n > 1, ", ", "") & CStr(k) & " (" & ADM_ADET(CDbl(dp(k)(1))) & ")"
     Next k
-    If n > 3 Then ATIL_DEPO_METIN = ATIL_DEPO_METIN & " +" & (n - 3)
 End Function
 
 Public Function AKSORA_ATIL_SAYFA(ByVal sh As Object) As Boolean
@@ -9951,7 +9967,7 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
     If s Is Nothing Then w = 1544 Else w = s.Width
     sw = application.Max(170, w - 1285)
-    Y_KOLONLAR ws, Array(90, 60, 95, 290, 80, 95, 115, 105, 125, 105, 125, sw)
+    Y_KOLONLAR ws, Array(90, 60, 95, 230, 140, 95, 115, 105, 125, 105, 125, sw)
     ws.Range("BX20").Value2 = ilSec
     gor = CStr(ws.Range("BX21").Value2)
     If gor <> "TRANSFER" And gor <> "LISTE" Then gor = "OZET"
@@ -10277,6 +10293,14 @@ Ayrinti:
             ws.Range(ws.Cells(a1 + 1, 1), ws.Cells(r, 1)).Font.bold = True
             ws.Range(ws.Cells(a1 + 1, 2), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
             ws.Range(ws.Cells(a1 + 1, 5), ws.Cells(r, 5)).HorizontalAlignment = xlCenter
+            ' Depo: tum depolar gorunur; uzun listede satir yuksekligi metne gore acilir.
+            ws.Range(ws.Cells(a1 + 1, 5), ws.Cells(r, 5)).WrapText = True
+            For i = a1 + 1 To r
+                If Len(CStr(ws.Cells(i, 5).Value2)) > 24 Then
+                    ws.Rows(i).AutoFit
+                    If ws.Rows(i).RowHeight < 20 Then ws.Rows(i).RowHeight = 20
+                End If
+            Next i
             ws.Range(ws.Cells(a1 + 1, 9), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
             ws.Range(ws.Cells(a1 + 1, 4), ws.Cells(r, 4)).WrapText = False
             ws.Range(ws.Cells(a1 + 1, 12), ws.Cells(r, 12)).WrapText = False

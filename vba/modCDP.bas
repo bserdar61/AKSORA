@@ -902,6 +902,7 @@ HedefSatir = HedefSatir + 1
     Set ses = SAP_SESSION_AL("CDP", hataMetni)
     If ses Is Nothing Then Err.Raise vbObjectError + 801, , "CDP SAP oturumu bulunamadi: " & hataMetni
     ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = "D001"
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "D999"
