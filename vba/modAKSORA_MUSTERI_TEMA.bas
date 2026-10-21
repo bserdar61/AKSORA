@@ -797,7 +797,7 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
-    Dim ws As Worksheet, kod As String, ev As Boolean, sc As Boolean
+    Dim ws As Worksheet, kod As String, ev As Boolean, sc As Boolean, kapsam As String
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
@@ -807,6 +807,15 @@ Public Sub AKSORA_MUSTERI_ARAMA_IL_SEC()
         Case "TUMU", "GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN"
         Case Else: GoTo Cikis
     End Select
+    ' Onceki arama yalniz bir ilde yapildiysa ve baska il secildiyse arama bu kapsamla yenilenir.
+    kapsam = UCase$(Trim$(CStr(ws.Range("BX28").Value2)))
+    If Len(Trim$(CStr(ws.Range("B6").Value2))) >= 2 And Len(kapsam) > 0 And kapsam <> "TUMU" And kapsam <> kod Then
+        ws.Unprotect ""
+        ws.Range("BX21").Value2 = kod
+        application.EnableEvents = ev: application.ScreenUpdating = sc
+        AKSORA_MUSTERI_YEREL_ARA
+        GoTo Cikis
+    End If
     AKSORA_MUSTERI_ARAMA_FILTRE kod
 Cikis:
     On Error Resume Next

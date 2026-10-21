@@ -911,7 +911,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
     Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean, ilc As Boolean
-    Dim ac As Boolean, aranan As String, adimNo As Long, adimSay As Long
+    Dim ac As Boolean, aranan As String, adimNo As Long, adimSay As Long, kapsam As String, iller As Variant
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = AKSORA_ARAMA_SAYFASI()
@@ -945,8 +945,14 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
         ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
         If Len(ekran) = 0 Then ekran = "ARTVIN"
     End If
-    adimSay = (UBound(AKSORA_MUSTERI_ILLER()) - LBound(AKSORA_MUSTERI_ILLER()) + 1) * (UBound(sayfalar) + 1)
-    For Each il In AKSORA_MUSTERI_ILLER()
+    ' Secili il varsa yalniz o il taranir (TUMU: bes il). Kapsam BX28'de saklanir; baska il secilince arama yenilenir.
+    kapsam = UCase$(Trim$(CStr(ws.Range("BX21").Value2)))
+    Select Case kapsam
+        Case "GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN": iller = Array(kapsam)
+        Case Else: kapsam = "TUMU": iller = AKSORA_MUSTERI_ILLER()
+    End Select
+    adimSay = (UBound(iller) - LBound(iller) + 1) * (UBound(sayfalar) + 1)
+    For Each il In iller
     kod = CStr(il)
     For i = 1 To UBound(sayfalar) + 1
         ad = sayfalar(i - 1)
@@ -993,6 +999,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Next i
     Next il
     ws.Unprotect ""
+    ws.Range("BX28").Value2 = kapsam
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
     eski = application.Max(13, AKSORA_M_SON(ws))

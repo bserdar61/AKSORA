@@ -427,6 +427,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Transfer PDF miktarı AKSORA_V13_MIKTAR_BICIMI (kesirsizde virgül yok).
 - Kullanıcı onayladı: transfer PDF özet + yazıcı renkleri uygun.
 
+- Müşteri/Yatırım/İlçe araması yalnız seçili ili tarar (BX21; TÜMÜ = 5 il). Kapsam BX28; arama sonrası başka il seçilirse arama o kapsamla yenilenir, TÜMÜ ile yapılmışsa yalnız filtre. Kullanıcı: PDF miktar biçimi ve arama kartı onaylı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
