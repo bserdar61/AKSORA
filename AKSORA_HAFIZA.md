@@ -429,6 +429,17 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - Müşteri/Yatırım/İlçe araması yalnız seçili ili tarar (BX21; TÜMÜ = 5 il). Kapsam BX28; arama sonrası başka il seçilirse arama o kapsamla yenilenir, TÜMÜ ile yapılmışsa yalnız filtre. Kullanıcı: PDF miktar biçimi ve arama kartı onaylı.
 
+## ATIL kuralı 2 (giriş yaşı + yüklenici) — 2026-10-21
+- Kullanıcı kuralı: atıl üretim yeri bazında; yüklenici depoları ve yüklenici sarfı dahil. Örnek: 7155 D001 50 + 7055 D002 10, yüklenici 7055'ten 5 alıp sarf etse atıl toplamı 55 kalır.
+- Hesap: eldeki stok FIFO ile girişlere dağıtılır (en yeni giriş önce kalır). 24 aydan eski girişten kalan (ya da girişi bulunmayan) kısım ATIL; 21–24 ay 3 AY KALDI; 18–21 ay 6 AY KALDI. Kalem birden çok basamakta olabilir (x(19) değer, x(20) miktar).
+- Giriş türleri: 101/102, 105/106, 501/502, 561/562 işaretiyle; 301/303/305/315 yalnız artı, 302/304/306/316 yalnız eksi (alan taraf). 311 (aynı ÜY) yaşı sıfırlamaz. Sarf: 201/221/241/261/281/291 ve iptalleri.
+- Kapsam: D###, K###, M###, BO## ve yüklenici stok sayfasındaki depolar (YÜKLENİCİ_STOK / _AKLIVE_<il>_YUK; mAtilYuk). HURDA ve ÇIKMA/BDSZ hariç.
+- SAP: ÜY başına 3 MB51 sorgusu (/ATIL düzeni; İTü ve DpYr sütunları gerekli; depo filtresi yok, MATNR ve BWART panodan): 1) 24 ay girişler, 2) stoğu girişleri aşanlar için 24–60 ay son giriş, 3) 6 ay sarf (birleşik malzeme listesi).
+- _ATIL etiketi ATIL2: sis | ÜY | mal | girişler "yyyymmdd=miktar;…" | eski giriş | 6 ay sarf | son sarf | SAP stoğu | son stok | son stok tarihi. ATIL1 kaydı okunmaz; sayfa "kural değişti, yeniden okuyun" der.
+- Sonraki stok verilerinde artış stok tarihiyle yeni giriş katmanı; okumadan sonra stoğa giren kalem tamamı yeni giriş.
+- Liste/transfer/PDF: Riskli miktar ve Riskli değer (18 aydan eski kısım). "Muhtemel sarf" yerine "Stoğu düşen".
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
-- ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
+- ATIL kuralı 2: kullanıcı SAP'DEN OKU ile yeniden okuyacak; teşhisten İTü/DpYr sütunları ve sorgu süreleri kontrol edilecek.
+- Kalite Kontrol birimi: kullanıcıdan MB51 /KK düzeni, IQ09 üretici/garanti alanları ve tasarım onayı bekleniyor.
