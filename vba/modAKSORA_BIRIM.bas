@@ -9526,7 +9526,7 @@ Private Function ATIL_HESAPLA(ByRef bilgi As Variant) As Collection
                         Else
                             oOnc = "DÜÞÜK": oMik = application.Min(o(0), oSarf)
                         End If
-                        oMetin = Y_IL_ADI(oIl) & " son 6 ayda " & ADM_ADET(oSarf) & " " & birim & " kullandý; deposunda " & _
+                        oMetin = "Son 6 ayda " & ADM_ADET(oSarf) & " " & birim & " kullandý; deposunda " & _
                             IIf(oStok > 0, ADM_ADET(oStok) & " " & birim & " var.", "hiç yok.")
                     End If
                 End If
@@ -9626,9 +9626,13 @@ Son:
     If no <> 0 Then MsgBox "Atýl stok sayfasý açýlamadý: " & metin, vbExclamation, "AKSORA"
 End Sub
 
-' Transfer onerileri PDF (yatay, tek sayfa genisliginde, baslik satiri her sayfada). Filtre uygulanmissa yalniz gorunen satirlar.
+' Transfer onerileri PDF: gecici cikti sayfasinda ozet + tablo (kurum yazicisina uygun acik gri / siyah),
+' filtre uygulanmissa yalniz gorunen satirlar. Yatay, tek sayfa genisligi, baslik satiri her sayfada.
 Public Sub AKSORA_ATIL_TRANSFER_PDF()
-    Dim ws As Worksheet, adres As String, yol As String, il As String, no As Long, metin As String
+    Dim ws As Worksheet, cs As Worksheet, onceki As Object, adres As String, yol As String, il As String, ilAd As String, metin As String
+    Dim v As Variant, a() As Variant, kol As Variant, hedef As Object, k As Variant, r As Long, n As Long, c As Long, ilk As Long
+    Dim yuksek As Long, toplam As Double, ozet As String, ev As Boolean, sc As Boolean, da As Boolean, no As Long
+    Dim anah() As String, idx() As Long, adlar() As String
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(ATIL_SAYFA)
     adres = CStr(ws.Range("BX22").Value2)
@@ -9636,29 +9640,99 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
         MsgBox "Önce TRANSFER ÖNERÝLERÝ sekmesini açýn.", vbInformation, "AKSORA | ATIL STOK": Exit Sub
     End If
     il = CStr(ws.Range("BX20").Value2)
+    If il = "TUM" Or Len(il) = 0 Then ilAd = "Tüm Ýller" Else ilAd = Y_IL_ADI(il)
+    ' Gorunen satirlar: Nereden, Malzeme, Tanim, Depo, Eldeki, Deger, Durum, Nereye, Gonderilecek, Oncelik, Neden (Sistem cikmaz).
+    v = ws.Range(adres).Value2
+    ilk = ws.Range(adres).Row
+    kol = Array(1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+    ReDim a(1 To UBound(v, 1), 1 To 11)
+    Set hedef = CreateObject("Scripting.Dictionary"): hedef.CompareMode = vbTextCompare
+    For r = 2 To UBound(v, 1)
+        If Not ws.Rows(ilk + r - 1).Hidden Then
+            n = n + 1
+            For c = 0 To 10: a(n, c + 1) = v(r, kol(c)): Next c
+            toplam = toplam + ATIL_HUCRE_SAYI(v(r, 7))
+            If CStr(v(r, 11)) = "YÜKSEK" Then yuksek = yuksek + 1
+            hedef(CStr(v(r, 9))) = hedef(CStr(v(r, 9))) + 1
+        End If
+    Next r
+    If n = 0 Then MsgBox "Yazdýrýlacak satýr yok (filtreyi kontrol edin).", vbInformation, "AKSORA | ATIL STOK": Exit Sub
+    ' Nereye ozeti (cok olandan aza)
+    ReDim anah(1 To hedef.Count): ReDim idx(1 To hedef.Count): ReDim adlar(1 To hedef.Count)
+    r = 0
+    For Each k In hedef.keys
+        r = r + 1: idx(r) = r: adlar(r) = CStr(k)
+        anah(r) = Format$(99999 - hedef(k), "00000") & CStr(k)
+    Next k
+    Y_SIRALA anah, idx, 1, hedef.Count
+    For r = 1 To hedef.Count
+        ozet = ozet & IIf(r > 1, "   •   ", "") & adlar(idx(r)) & ": " & hedef(adlar(idx(r))) & " kalem"
+    Next r
+    ev = application.EnableEvents: sc = application.ScreenUpdating: da = application.DisplayAlerts
+    application.EnableEvents = False: application.ScreenUpdating = False: application.DisplayAlerts = False
+    Set onceki = ActiveSheet
+    Set cs = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+    With cs.Cells.Font
+        .Name = "Aptos": .Size = 9: .Color = vbBlack
+    End With
+    cs.Range("A1").Value2 = "ATIL STOK TRANSFER ÖNERÝLERÝ   |   " & ilAd
+    cs.Range("A1").Font.Size = 14: cs.Range("A1").Font.bold = True
+    cs.Range("A2").Value2 = "Çoruh EDAÞ  •  Malzeme Stok Birimi  •  " & Format$(Now, "dd.mm.yyyy hh:nn") & _
+        "  •  Atýl: 24 ay sarf yok (D ve K depolarý)  •  Öneri: ayný sistemde son 6 ayda bu malzemeyi kullanan il"
+    cs.Range("A2").Font.Color = RGB(64, 64, 64)
+    cs.Range("A3").Value2 = "ÖZET:  " & n & " öneri   •   Toplam deðer: " & ADM_TL(toplam) & "   •   YÜKSEK öncelik: " & yuksek & "   •   DÜÞÜK öncelik: " & (n - yuksek)
+    cs.Range("A3").Font.bold = True: cs.Range("A3").Font.Size = 10
+    cs.Range("A4").Value2 = "NEREYE:  " & ozet
+    cs.Range("A5").Value2 = "YÜKSEK: alacak ilin deposu 6 aylýk kullanýmýna yetmiyor; gönderilecek = eksik kadar.   DÜÞÜK: alacak ilin stoðu yetiyor."
+    cs.Range("A5").Font.Italic = True: cs.Range("A5").Font.Color = RGB(64, 64, 64)
+    cs.Range("A7:K7").Value2 = Array("Nereden", "Malzeme", "Taným", "Depo", "Eldeki miktar", "Deðer", "Durum", "Nereye", "Gönderilecek", "Öncelik", "Neden")
+    With cs.Range("A7:K7")
+        .Font.bold = True: .Interior.Color = RGB(217, 217, 217)
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .WrapText = True
+    End With
+    cs.Rows(7).RowHeight = 24
+    cs.Range(cs.Cells(8, 2), cs.Cells(7 + n, 2)).NumberFormat = "@"
+    cs.Range("A8").Resize(n, 11).Value2 = a
+    With cs.Range(cs.Cells(7, 1), cs.Cells(7 + n, 11))
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(166, 166, 166)
+        .VerticalAlignment = xlCenter
+    End With
+    cs.Range(cs.Rows(8), cs.Rows(7 + n)).RowHeight = 15
+    cs.Range(cs.Cells(8, 5), cs.Cells(7 + n, 5)).NumberFormat = "#,##0.###"
+    cs.Range(cs.Cells(8, 6), cs.Cells(7 + n, 6)).NumberFormat = "#,##0.00 ""TL"""
+    cs.Range(cs.Cells(8, 1), cs.Cells(7 + n, 2)).HorizontalAlignment = xlCenter
+    cs.Range(cs.Cells(8, 4), cs.Cells(7 + n, 4)).HorizontalAlignment = xlCenter
+    cs.Range(cs.Cells(8, 7), cs.Cells(7 + n, 10)).HorizontalAlignment = xlCenter
+    cs.Range(cs.Cells(8, 7), cs.Cells(7 + n, 10)).Font.bold = True
+    cs.Range(cs.Cells(7, 6), cs.Cells(7 + n, 6)).HorizontalAlignment = xlRight
+    kol = Array(9, 11, 36, 13, 9, 13, 10, 10, 11, 8, 44)
+    For c = 0 To 10: cs.Columns(c + 1).ColumnWidth = kol(c): Next c
     yol = AKSORA_KAYIT_KLASORU() & application.PathSeparator & "ATIL_TRANSFER_" & IIf(il = "TUM" Or Len(il) = 0, "TUM_ILLER", il) & "_" & Format$(Now, "yyyymmdd_hhnn") & ".pdf"
-    ws.Unprotect ""
     On Error Resume Next
-    With ws.PageSetup
-        .PrintArea = adres
-        .PrintTitleRows = "$" & ws.Range(adres).Row & ":$" & ws.Range(adres).Row
+    With cs.PageSetup
+        .PrintArea = cs.Range(cs.Cells(1, 1), cs.Cells(7 + n, 11)).Address
+        .PrintTitleRows = "$7:$7"
         .Orientation = xlLandscape
         .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
-        .CenterHeader = "AKSORA  |  ATIL STOK TRANSFER ÖNERÝLERÝ  |  " & IIf(il = "TUM" Or Len(il) = 0, "Tüm Ýller", Y_IL_ADI(il))
-        .RightFooter = Format$(Now, "dd.mm.yyyy hh:nn") & "  •  Sayfa &P / &N"
+        .LeftMargin = application.InchesToPoints(0.3): .RightMargin = application.InchesToPoints(0.3)
+        .TopMargin = application.InchesToPoints(0.4): .BottomMargin = application.InchesToPoints(0.5)
+        .CenterFooter = "Sayfa &P / &N"
+        .LeftFooter = "AKSORA  •  Atýl Stok Transfer Önerileri  •  " & ilAd
     End With
     On Error GoTo Hata
-    ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
+    cs.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
         IgnorePrintAreas:=False, OpenAfterPublish:=True
-    Y_KORU ws
-    ws.EnableSelection = xlNoRestrictions
+Cikis:
+    On Error Resume Next
+    If Not cs Is Nothing Then cs.Delete
+    If Not onceki Is Nothing Then onceki.Activate
+    application.DisplayAlerts = da: application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If no <> 0 Then MsgBox "PDF oluþturulamadý: " & metin, vbExclamation, "AKSORA | ATIL STOK"
     Exit Sub
 Hata:
     no = Err.Number: metin = Err.Description
-    On Error Resume Next
-    Y_KORU ws
-    ws.EnableSelection = xlNoRestrictions
-    MsgBox "PDF oluþturulamadý: " & metin, vbExclamation, "AKSORA | ATIL STOK"
+    Resume Cikis
 End Sub
 
 Private Function ATIL_DEPO_METIN(ByVal dp As Object) As String
@@ -9733,6 +9807,10 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Dim gor As String, yuksek As Long, gAd As Variant, gKod As Variant, bw2 As Double
     ws.Unprotect ""
     Y_SAYFA_SIFIRLA ws
+    ' Sablondan gelen AKSORA amblemi (filigran) bu sayfada kullanilmaz.
+    For i = ws.Shapes.Count To 1 Step -1
+        If InStr(ws.Shapes(i).Name, "FILIGRAN") > 0 Then ws.Shapes(i).Delete
+    Next i
     Set s = Y_SEKIL(ws, "btnAnaPanelDon")
     If Not s Is Nothing Then s.AlternativeText = vbNullString: s.OnAction = BIRIM_MAKRO("ANA_PANELE_DON")
     Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | ATIL STOK  |  " & IIf(ilSec = "TUM", "Tüm Ýller", Y_IL_ADI(ilSec))

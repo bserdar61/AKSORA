@@ -415,6 +415,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - Doğrulandı (21.10.2026 11:49): yeni ARKA PLANA AL ile tüm birimler hatasız, 4 dk 21 sn (Malzeme 42 sn, Yatırım/İlçe il başına 0,3–1,4 sn, Müşteri il başına 30–50 sn).
 
+## 21.10.2026 (baz `up25`)
+- Kullanıcı: arka plan modu sorunsuz (alta al / aç / tekrar alta al). Admin ATIL tablosu görüldü.
+- Müşteri aramasında "iletken" sonuç vermedi: Müşteri verisinde (5 il, arşiv dahil) ILETKEN yok → doğru. Test kelimesi: "trifaze" (2.616 satır).
+- ATIL sayfasından AKSORA filigranı (AKSORA_CDP_V1_FILIGRAN) silinir.
+- Transfer PDF yeniden: geçici çıktı sayfası; özet (öneri sayısı, toplam değer, YÜKSEK/DÜŞÜK, nereye il dağılımı), kurum yazıcısına uygun açık gri başlık + siyah yazı, dolgusuz satırlar, Sistem sütunu yok; yalnız filtrede görünen satırlar; sayfa sonra silinir.
+- "Neden" kısaldı: "Son 6 ayda X kullandı; deposunda Y var / hiç yok." (il adı Nereye sütununda).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
