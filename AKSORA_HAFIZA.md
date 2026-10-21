@@ -448,6 +448,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## İlçe PB depoları doğrulaması — 2026-10-21
 - Artvin CDP ilçe verisinde PB01 (planlı bakım) çıktı; ILCE_V2_UY_DOGRULA yalnız K### kabul ettiği için zincir durdu. Doğrulama artık AKSORA_IL_DEPO_GECERLI(depo, "ILCE") kullanır (K001-K999 + PB01-PB999). Admin ADM_DEPO_TUR PB'yi ilçe sayar.
 
+## EPP MB51 liste gösterimi — 2026-10-21
+- EPP'de MB51 liste gösterimi hiyerarşiğe dönmüştü; /ATIL düzeni düz listede kayıtlı olduğundan SAP "Herhangi bir düzenek bulunamadı" dedi, varsayılan düzen hiyerarşik geldi (İTü/depo yok). ATIL_DUZ_LISTE sorgudan önce seçim ekranındaki "Düz liste" radyo düğmesini metninden bulup seçer (teşhise yazar).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2: kullanıcı SAP'DEN OKU ile yeniden okuyacak; teşhisten İTü/DpYr sütunları ve sorgu süreleri kontrol edilecek.

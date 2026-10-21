@@ -9324,7 +9324,7 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal sat As C
     Dim r As Long, c As Long, h As Long, cM As Long, cT As Long, cQ As Long, cU As Long, cI As Long, cD As Long, cV As Long
     Dim a As String, t As String, x As Double, son As Long, n As Long, dolu As Long, enIyi As Long
     Dim ham As String, mal As String, tar As Date, uyx As String, itu As String, depo As String, dgr As String, q As Double
-    Dim sMal As String, sTar As Date, sUy As String, sItu As String, sDepo As String, sDgr As String, atla As Long, okunan As Long
+    Dim sMal As String, sTar As Date, sUy As String, sItu As String, sDepo As String, sDgr As String, atla As Long, okunan As Long, hb As String
     For r = 1 To application.Min(UBound(v, 1), 40)
         For c = 1 To UBound(v, 2)
             If Y_NORM(CStr(v(r, c))) = "MALZEME" Or Y_NORM(CStr(v(r, c))) = "MATERIAL" Then h = r: cM = c: Exit For
@@ -9332,9 +9332,9 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal sat As C
         If h > 0 Then Exit For
     Next r
     If h = 0 Then Err.Raise vbObjectError + 2340, , "MB51 listesinde 'Malzeme' sütunu bulunamadý (/ATIL düzenini kontrol edin)."
-    a = vbNullString
-    For c = 1 To UBound(v, 2): a = a & " | " & CStr(v(h, c)): Next c
-    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | baþlýk (satýr " & h & ")" & a
+    hb = vbNullString
+    For c = 1 To UBound(v, 2): hb = hb & " | " & CStr(v(h, c)): Next c
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | baþlýk (satýr " & h & ")" & hb
     For c = 1 To UBound(v, 2)
         a = Y_NORM(CStr(v(h, c)))
         If cT = 0 And (InStr(a, "KAYIT") > 0 Or InStr(a, "KYT") > 0 Or InStr(a, "POSTING") > 0) Then cT = c
@@ -9369,7 +9369,7 @@ Private Sub ATIL_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByVal sat As C
     End If
     AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | sütunlar: malzeme " & cM & ", tarih " & cT & ", miktar " & cQ & ", ÜY " & cU & ", ÝTü " & cI & ", depo " & cD & ", dðrl " & cV
     If cT = 0 Or cQ = 0 Or cI = 0 Or cD = 0 Then Err.Raise vbObjectError + 2341, , _
-        "MB51 /ATIL düzeninde kayýt tarihi, miktar, hareket türü (ÝTü) ve depo yeri sütunlarý gerekli. Baþlýk:" & Left$(a, 200)
+        "MB51 /ATIL düzeninde kayýt tarihi, miktar, hareket türü (ÝTü) ve depo yeri sütunlarý gerekli. Baþlýk:" & Left$(hb, 200)
     For r = h + 1 To UBound(v, 1)
         If (r And 4095) = 0 Then AKSORA_BEKLE_NABIZ: ATIL_SURE_YAZ
         ham = Trim$(CStr(v(r, cM)))
@@ -9404,6 +9404,27 @@ End Sub
 
 ' MB51 (/ATIL duzeni): uretim yeri, hareket turleri ve malzemeler panodan, tarih araligi; depo filtresi yok
 ' (satirlar okunurken atil kapsamina gore suzulur). Donus: satirlar (ATIL_MB51_COZ).
+' MB51 liste gosterimi "Duz liste" secilir: /ATIL duzeni duz listede kayitli; hiyerarsik gosterimde
+' SAP "Herhangi bir duzenek bulunamadi" der. Secim ekranindaki radyo dugmesi metninden bulunur.
+Private Sub ATIL_DUZ_LISTE(ByVal ses As Object, ByVal etiket As String)
+    Dim usr As Object, i As Long, o As Object, t As String
+    On Error GoTo Son
+    Set usr = ses.FindById("wnd[0]/usr")
+    For i = 0 To usr.Children.Count - 1
+        Set o = usr.Children(i)
+        If o.Type = "GuiRadioButton" Then
+            t = Y_NORM(o.Text)
+            If InStr(t, "DUZ LISTE") > 0 Or InStr(t, "FLAT") > 0 Then
+                If Not o.Selected Then o.Select
+                AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (" & o.Name & ")"
+                Exit Sub
+            End If
+        End If
+    Next i
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | 'Düz liste' seçeneði seçim ekranýnda bulunamadý"
+Son:
+End Sub
+
 Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar() As String, ByVal bas As Date, ByVal son As Date, _
     ByVal etiket As String, ByRef turler() As String) As Collection
     Dim sat As Collection, alv As Object, v As Variant, n As Long, pop As Object, t As String, b0 As Double, varsayilan As Boolean
@@ -9431,6 +9452,7 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
     ATIL_COKLU_PANO ses, "BWART", turler
     ses.FindById("wnd[0]/usr/ctxtBUDAT-LOW").Text = Format$(bas, "dd.mm.yyyy")
     ses.FindById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = Format$(son, "dd.mm.yyyy")
+    ATIL_DUZ_LISTE ses, etiket
     ses.FindById("wnd[0]/usr/ctxtALV_DEF").Text = "/ATIL"
 Calistir:
     b0 = Timer
