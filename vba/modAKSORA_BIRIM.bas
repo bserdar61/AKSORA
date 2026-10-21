@@ -9405,24 +9405,34 @@ End Sub
 ' MB51 (/ATIL duzeni): uretim yeri, hareket turleri ve malzemeler panodan, tarih araligi; depo filtresi yok
 ' (satirlar okunurken atil kapsamina gore suzulur). Donus: satirlar (ATIL_MB51_COZ).
 ' MB51 liste gosterimi "Duz liste" secilir: /ATIL duzeni duz listede kayitli; hiyerarsik gosterimde
-' SAP "Herhangi bir duzenek bulunamadi" der. Secim ekranindaki radyo dugmesi metninden bulunur.
+' SAP "Herhangi bir duzenek bulunamadi" der. Once standart alan (RFLAT_L), yoksa secim ekranindaki
+' radyo dugmeleri metninden aranir. Bulunan secenekler teshise yazilir.
 Private Sub ATIL_DUZ_LISTE(ByVal ses As Object, ByVal etiket As String)
-    Dim usr As Object, i As Long, o As Object, t As String
-    On Error GoTo Son
+    Dim usr As Object, o As Object, t As String, liste As String, n As Long
+    On Error GoTo Hata
+    Set o = ses.FindById("wnd[0]/usr/radRFLAT_L", False)
+    If Not o Is Nothing Then
+        If Not o.Selected Then o.Select
+        AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (RFLAT_L)"
+        Exit Sub
+    End If
     Set usr = ses.FindById("wnd[0]/usr")
-    For i = 0 To usr.Children.Count - 1
-        Set o = usr.Children(i)
-        If o.Type = "GuiRadioButton" Then
-            t = Y_NORM(o.Text)
-            If InStr(t, "DUZ LISTE") > 0 Or InStr(t, "FLAT") > 0 Then
+    For n = 0 To CLng(usr.Children.Count) - 1
+        Set o = usr.Children.ElementAt(n)
+        If CStr(o.Type) = "GuiRadioButton" Then
+            t = Y_NORM(CStr(o.Text))
+            liste = liste & " | " & o.Name & "=" & o.Text
+            If InStr(t, "DUZ") > 0 Or InStr(t, "FLAT") > 0 Then
                 If Not o.Selected Then o.Select
                 AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (" & o.Name & ")"
                 Exit Sub
             End If
         End If
-    Next i
-    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | 'Düz liste' seçeneði seçim ekranýnda bulunamadý"
-Son:
+    Next n
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | 'Düz liste' seçeneði bulunamadý. Radyo düðmeleri:" & liste
+    Exit Sub
+Hata:
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi seçilemedi: " & Err.Description & " | bulunanlar:" & liste
 End Sub
 
 Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar() As String, ByVal bas As Date, ByVal son As Date, _
