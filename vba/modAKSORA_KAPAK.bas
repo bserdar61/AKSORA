@@ -659,6 +659,15 @@ Private Sub AKSORA_GIRIS_AC()
 
     Next r
 
+    ' Atil stok sayfasi (kurulduysa) Malzeme birimiyle birlikte acilir.
+    Set ws = Nothing
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ATIL_STOK")
+    On Error GoTo Hata
+    If Not ws Is Nothing Then
+        If AKSORA_ATIL_SAYFA(ws) Then ws.Visible = xlSheetVisible
+    End If
+
 
     ThisWorkbook.Worksheets("ANA PANEL").Visible = _
         xlSheetVisible

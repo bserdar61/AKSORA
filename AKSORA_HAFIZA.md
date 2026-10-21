@@ -387,6 +387,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Müşteri il başına 25–55 sn; en büyük kalem IQ09 (Trabzon 14 sn sorgu + 19 sn liste).
 - ATIL ilk sonuç şüpheli: il atıl oranı %72–81, stoktaki kalemlerin %45'i "5 yıldır sarf yok" (2.252). Muhtemel neden: sarf yalnız D/K depolarından sayılıyor; yatırım ambarından yükleniciye (Z) giden ve orada sarf edilen malzeme hiç sarf görmemiş sayılıyor (ör. Artvin EPP D002 Yatırım Ambarı %100 atıl). Ayrıca yeni girip henüz sarf edilmemiş malzeme "5+ yıl" görünür; iptal hareketleri (202/262…) düşülmüyor. Karar kullanıcıda (doğruluk testi).
 
+## 21.10.2026
+- Kullanıcı Artvin'deki tüm "5 yıldır sarf yok" kalemlerini SAP'de kontrol etti: gerçekten sarf yok (doğru).
+- ATIL_STOK, KAPAK'tan Malzeme'ye girişte (AKSORA_GIRIS_AC) etiketi doğruysa görünür yapılır (önceden yalnız düğmeyle açılıyordu).
+- Baz up23'e taşındı (optimize_base): 19,0 → 16,0 MB; _ATIL, ATIL_STOK, M_CDP_STOK verisi birebir, 40 arşiv fark 0.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
