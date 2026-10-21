@@ -162,6 +162,7 @@ Case Else: hucre = "M1"
     End Select
     application.CutCopyMode = False
     If ws.EnableSelection <> xlNoSelection Then ws.Range(hucre).Select
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
     With ThisWorkbook.Windows(1)
         .DisplayGridlines = False
         .DisplayHeadings = False

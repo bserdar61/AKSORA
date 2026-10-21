@@ -394,6 +394,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - Kullanıcı yeni dosya verdi (baz `up24`, 19,7 MB); ATIL sekme düzeltmesi bunun üzerine kuruldu → 16,2 MB, veri birebir. ATIL için yetkin kişiyle test yapılacak, sonuç kullanıcıdan gelecek.
 
+## Arka plan modu (21.10.2026)
+- Kullanıcı: "Tüm birimleri güncelle" sırasında Excel kilitli, küçültülemiyor (sebep: tüm iş boyunca Interactive=False + SAP sorgusu sırasında mesaj işlenmiyor).
+- DURDUR'lu kartta (tüm birimler, ATIL SAP okuması) yanına **ARKA PLANA AL** (lblAltBaslik): `AKSORA_ARKA_PLANA_AL` Excel'i simge durumuna alır, Interactive=True (görev çubuğundan geri açılabilsin). NABIZ/ILERLE arka planda giriş kapatmaz; kullanıcı pencereyi açarsa `ARKA_PLAN_KONTROL` arka planı bitirir, tüm birimlerde girişi yeniden kapatır. İş bitince `AKSORA_ARKA_PLAN_BITIR` pencereyi eski haline getirir, sonra sonuç mesajı.
+- Kart düzeni (durdurlu): lblDurum iki satır (adım + "Birim n/4 • Geçen süre"), çubuk 92, düğmeler 114 (DURDUR kırmızı, ARKA PLANA AL mavi), yükseklik 182.
+- Küçük pencerede pencere ayarı yapan yerlere `AKSORA_PENCERE_KUCUK` koruması: V13_GORUNUM, RAPOR/STOK_GORUNUM_TEK, MUSTERI_DUZEN, ANA_PANEL_UYGULA.
+- Müşteri IQ09'u 5 il tek sorguya indirmek ölçüldü: sabit maliyet il başına ~5 sn, kazanç ~20-30 sn; risk/kazanç düşük → yapılmadı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.

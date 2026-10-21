@@ -134,7 +134,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
     ' Arka plan resminden sonra tablolar ve butonlar her zaman ustte.
     V8_ONE_GETIR ws
     ' Burada Activate/Select/Zoom YOK: sekme gecisinde titreme olmasin.
-    If ActiveSheet Is ws Then
+    If ActiveSheet Is ws And Not AKSORA_PENCERE_KUCUK(ActiveWindow) Then
         ActiveWindow.DisplayGridlines = False
         ActiveWindow.DisplayWorkbookTabs = True
     End If

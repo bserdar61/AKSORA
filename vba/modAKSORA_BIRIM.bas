@@ -92,6 +92,10 @@ Public AKSORA_ATIL_CALISIYOR As Boolean
 Private mAtilKart As Boolean
 Private mAtilBas As Double
 Private mAtilSon As Double
+Private mAtilMetin As String
+' Uzun guncellemede kartin "ARKA PLANA AL" dugmesi: Excel simge durumuna alinir, is bitince geri acilir.
+Public AKSORA_ARKA_PLAN As Boolean
+Private mArkaDurum As Long
 Private Declare PtrSafe Function ATIL_OpenClipboard Lib "user32" Alias "OpenClipboard" (ByVal hWnd As LongPtr) As Long
 Private Declare PtrSafe Function ATIL_EmptyClipboard Lib "user32" Alias "EmptyClipboard" () As Long
 Private Declare PtrSafe Function ATIL_CloseClipboard Lib "user32" Alias "CloseClipboard" () As Long
@@ -6773,7 +6777,7 @@ Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Bo
     With frmSplash
         .Caption = "AKSORA"
         .StartUpPosition = 0
-        .Width = 420: .Height = IIf(durdur, 186, 150)
+        .Width = 420: .Height = IIf(durdur, 182, 150)
         .Left = application.Left + (application.Width - .Width) / 2
         .Top = application.Top + (application.Height - .Height) / 2
         .BackColor = RGB(255, 255, 255)
@@ -6781,37 +6785,45 @@ Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Bo
         w = .InsideWidth
         .imgLogo.Visible = False
         .lblImza.Visible = durdur
-        If durdur Then
-            ' DURDUR: frmSplash lblImza_Click ile AKSORA_ADMIN_IPTAL acilir.
-            With .lblImza
-                .Caption = "DURDUR": .Left = (w - 130) / 2: .Top = 134: .Width = 130: .Height = 26
-                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
-                .ForeColor = vbWhite: .BackColor = RGB(220, 38, 38): .BackStyle = fmBackStyleOpaque
-                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
-            End With
-        End If
         With .lblBaslik
-            .Caption = baslik: .Left = 0: .Top = 20: .Width = w: .Height = 26
+            .Caption = baslik: .Left = 0: .Top = 18: .Width = w: .Height = 26
             .Font.Name = "Segoe UI": .Font.Size = 15: .Font.bold = True: .Font.Italic = False
             .ForeColor = RGB(12, 45, 79): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
         End With
         With .lblDurum
-            .Caption = vbNullString: .Left = 0: .Top = 58: .Width = w: .Height = 18
+            ' Durdurulabilir islerde iki satir: adim + gecen sure.
+            .Caption = vbNullString: .Left = 8: .Top = IIf(durdur, 50, 58): .Width = w - 16: .Height = IIf(durdur, 34, 18)
             .Font.Name = "Segoe UI": .Font.Size = 10: .Font.bold = False: .Font.Italic = False
-            .ForeColor = RGB(20, 103, 173): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
+            .ForeColor = RGB(20, 103, 173): .TextAlign = fmTextAlignCenter: .WordWrap = durdur: .BackStyle = fmBackStyleTransparent
         End With
         With .lblBarArka
-            .Left = 36: .Top = 88: .Width = w - 72: .Height = 8: .BackColor = RGB(224, 232, 240): .BackStyle = fmBackStyleOpaque
+            .Left = 36: .Top = IIf(durdur, 92, 88): .Width = w - 72: .Height = 8: .BackColor = RGB(224, 232, 240): .BackStyle = fmBackStyleOpaque
         End With
         With .lblBar
-            .Left = 36: .Top = 88: .Width = 1: .Height = 8: .BackColor = RGB(0, 125, 110): .BackStyle = fmBackStyleOpaque
+            .Left = 36: .Top = IIf(durdur, 92, 88): .Width = 1: .Height = 8: .BackColor = RGB(0, 125, 110): .BackStyle = fmBackStyleOpaque
             .ZOrder 0
         End With
-        With .lblAltBaslik
-            .Caption = "Lütfen bekleyin, AKSORA verileri hazýrlýyor": .Left = 0: .Top = 106: .Width = w: .Height = 16
-            .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.bold = False: .Font.Italic = False
-            .ForeColor = RGB(100, 116, 139): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
-        End With
+        If durdur Then
+            ' DURDUR (lblImza) ve ARKA PLANA AL (lblAltBaslik) yan yana dugme.
+            With .lblImza
+                .Caption = "DURDUR": .Left = w / 2 - 166: .Top = 114: .Width = 160: .Height = 28
+                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+                .ForeColor = vbWhite: .BackColor = RGB(220, 38, 38): .BackStyle = fmBackStyleOpaque
+                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
+            End With
+            With .lblAltBaslik
+                .Caption = "ARKA PLANA AL": .Left = w / 2 + 6: .Top = 114: .Width = 160: .Height = 28
+                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+                .ForeColor = vbWhite: .BackColor = RGB(20, 103, 173): .BackStyle = fmBackStyleOpaque
+                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
+            End With
+        Else
+            With .lblAltBaslik
+                .Caption = "Lütfen bekleyin, AKSORA verileri hazýrlýyor": .Left = 0: .Top = 106: .Width = w: .Height = 16
+                .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.bold = False: .Font.Italic = False
+                .ForeColor = RGB(100, 116, 139): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
+            End With
+        End If
     End With
     On Error GoTo 0
 End Sub
@@ -6848,10 +6860,16 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * y)
     frmSplash.Repaint
     If mAdmYukSon = 0 Or Abs(Timer - mAdmYukSon) > 0.5 Then
-        iv = application.Interactive
-        application.Interactive = False
-        DoEvents
-        application.Interactive = iv
+        If AKSORA_ARKA_PLAN Then
+            ' Arka planda: pencere geri acilabilsin diye giris kapatilmaz.
+            DoEvents
+            ARKA_PLAN_KONTROL
+        Else
+            iv = application.Interactive
+            application.Interactive = False
+            DoEvents
+            application.Interactive = iv
+        End If
         mAdmYukSon = Timer
     End If
     On Error GoTo 0
@@ -6863,12 +6881,47 @@ Public Sub AKSORA_BEKLE_NABIZ()
     If Not mAdmYukleme Then Exit Sub
     If Abs(Timer - mAdmYukSon) <= 0.5 Then Exit Sub
     On Error Resume Next
-    iv = application.Interactive
-    application.Interactive = False
-    DoEvents
-    application.Interactive = iv
+    If AKSORA_ARKA_PLAN Then
+        DoEvents
+        ARKA_PLAN_KONTROL
+    Else
+        iv = application.Interactive
+        application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+    End If
     mAdmYukSon = Timer
     AKSORA_ADMIN_DURUM vbNullString
+    On Error GoTo 0
+End Sub
+
+' Kartin "ARKA PLANA AL" dugmesi (frmSplash lblAltBaslik_Click): Excel simge durumuna alinir; is surer.
+Public Sub AKSORA_ARKA_PLANA_AL()
+    On Error Resume Next
+    If Not AKSORA_ARKA_PLAN Then mArkaDurum = application.WindowState
+    AKSORA_ARKA_PLAN = True
+    application.Interactive = True
+    application.WindowState = xlMinimized
+    On Error GoTo 0
+End Sub
+
+' Kullanici pencereyi kendisi geri actiysa arka plan biter (tum birimlerde giris yeniden kapatilir).
+Private Sub ARKA_PLAN_KONTROL()
+    On Error Resume Next
+    If Not AKSORA_ARKA_PLAN Then Exit Sub
+    If application.WindowState = xlMinimized Then Exit Sub
+    AKSORA_ARKA_PLAN = False
+    If AKSORA_ADMIN_TOPLU Then application.Interactive = False
+    On Error GoTo 0
+End Sub
+
+' Is bitince pencere eski haline getirilir (sonuc mesaji gorunsun).
+Public Sub AKSORA_ARKA_PLAN_BITIR()
+    If Not AKSORA_ARKA_PLAN Then Exit Sub
+    AKSORA_ARKA_PLAN = False
+    On Error Resume Next
+    If mArkaDurum = xlMinimized Or mArkaDurum = 0 Then mArkaDurum = xlMaximized
+    application.WindowState = mArkaDurum
     On Error GoTo 0
 End Sub
 
@@ -8344,6 +8397,7 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     ADM_BIRIM_CALISTIR 3, "MÜÞTERÝ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
     On Error Resume Next
     application.Interactive = True
+    AKSORA_ARKA_PLAN_BITIR
     AKSORA_ORTAK_BIRAK
     AKSORA_ADMIN_TOPLU = False
     ADM_EKRAN_KILIT False
@@ -8413,9 +8467,8 @@ Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
     s = mAdmTopluAd & "  •  " & mAdmTopluMetin
     If AKSORA_ADMIN_IPTAL Then s = "Durduruluyor: çalýþan il bitince iþlem duracak..."
     If Len(s) > 72 Then s = Left$(s, 69) & "..."
-    frmSplash.lblDurum.Caption = s
+    frmSplash.lblDurum.Caption = s & vbLf & "Birim " & (mAdmTopluSira + 1) & " / 4   •   Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * application.Min(1, y))
-    frmSplash.lblAltBaslik.Caption = "Birim " & (mAdmTopluSira + 1) & " / 4   •   Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
     frmSplash.Repaint
     On Error GoTo 0
 End Sub
@@ -8838,8 +8891,8 @@ Private Sub ATIL_SURE_YAZ(Optional ByVal zorla As Boolean = False)
     mAtilSon = Timer
     sn = CLng(Fix(ATIL_GECEN(mAtilBas)))
     On Error Resume Next
-    If AKSORA_ADMIN_IPTAL Then frmSplash.lblDurum.Caption = "Durduruluyor: çalýþan SAP sorgusu bitince duracak..."
-    frmSplash.lblAltBaslik.Caption = "Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
+    If AKSORA_ADMIN_IPTAL Then mAtilMetin = "Durduruluyor: çalýþan SAP sorgusu bitince duracak..."
+    frmSplash.lblDurum.Caption = mAtilMetin & vbLf & "Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
     frmSplash.Repaint
     On Error GoTo 0
 End Sub
@@ -8848,6 +8901,7 @@ Private Sub ATIL_ADIM(ByVal y As Double, ByVal metin As String)
     application.StatusBar = "AKSORA | Atýl stok | " & metin
     If Len(metin) > 72 Then metin = Left$(metin, 69) & "..."
     If AKSORA_ADMIN_IPTAL Then metin = "Durduruluyor: çalýþan SAP sorgusu bitince duracak..."
+    mAtilMetin = metin
     AKSORA_BEKLE_ILERLE y, metin
     ATIL_SURE_YAZ True
 End Sub
@@ -9240,6 +9294,7 @@ Bitir:
         Next sis
     End If
     AKSORA_SAP_OLE_SESSIZ False
+    AKSORA_ARKA_PLAN_BITIR
     If AKSORA_ATIL_CALISIYOR Then application.EnableEvents = ev
     application.StatusBar = False
     If no = 0 Then

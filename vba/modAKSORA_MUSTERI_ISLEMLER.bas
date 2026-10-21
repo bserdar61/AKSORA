@@ -1655,6 +1655,7 @@ Public Sub AKSORA_MUSTERI_DUZEN(ByVal ws As Worksheet)
     If sonKol = 0 Then Exit Sub
     Set pn = ThisWorkbook.Windows(1)
     If Not (pn.ActiveSheet Is ws) Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(pn) Then Exit Sub
     If CStr(ws.Range("BX13").Value2) = M_DUZEN_IMZA(ws, pn) Then Exit Sub
     ev = application.EnableEvents
     On Error GoTo Hata

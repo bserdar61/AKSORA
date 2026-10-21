@@ -128,6 +128,12 @@ Private Sub lblImza_Click()
     Me.Repaint
 End Sub
 
+' ARKA PLANA AL: Excel simge durumuna alinir, guncelleme surer; bitince pencere geri acilir.
+Private Sub lblAltBaslik_Click()
+    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
+    AKSORA_ARKA_PLANA_AL
+End Sub
+
 ' Kart Alt+F4 ile kapatilamaz; islem bitince kod kapatir.
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     If CloseMode = vbFormControlMenu Then Cancel = True

@@ -235,7 +235,7 @@ Public Sub RAPOR_GORUNUM_TEK(ByVal sayfaAdi As String)
     AKSORA_RAPOR_AMBLEM_HIZALA sayfaAdi
     AKSORA_V11_BICIM_SAYFA ws
     AKSORA_TASARIM_SAYFA ws, True
-    If ActiveSheet Is ws Then
+    If ActiveSheet Is ws And Not AKSORA_PENCERE_KUCUK(ActiveWindow) Then
         application.CutCopyMode = False
         ws.Range("A1").MergeArea.Cells(1, 1).Select
         ActiveWindow.ScrollRow = 1
@@ -272,7 +272,7 @@ Public Sub STOK_GORUNUM_TEK(ByVal sayfaAdi As String)
 
     AKSORA_V11_BICIM_SAYFA ws
     AKSORA_TASARIM_SAYFA ws, True
-    If ActiveSheet Is ws Then
+    If ActiveSheet Is ws And Not AKSORA_PENCERE_KUCUK(ActiveWindow) Then
         application.CutCopyMode = False
         ws.Range("A1").MergeArea.Cells(1, 1).Select
         ActiveWindow.ScrollRow = 1
