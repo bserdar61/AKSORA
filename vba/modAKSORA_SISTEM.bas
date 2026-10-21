@@ -400,3 +400,24 @@ Public Sub AKSORA_SAYI_BICIMLERINI_YENILE()
         If Left$(ws.Name, 1) <> "_" And Left$(ws.Name, 2) <> "M_" Then AKSORA_SAYI_BICIM_SAYFA ws
     Next ws
 End Sub
+
+' Arama deseni: Turkce harf esdegerleri (i/I/Ý/ý, s/þ, g/ð, u/ü, o/ö, c/ç) ve buyuk/kucuk harf ayni sayilir.
+' Kullanim: metin Like AKSORA_ARAMA_DESEN(aranan)  (aranan metnin herhangi bir yerde gecmesi).
+Public Function AKSORA_ARAMA_DESEN(ByVal q As String) As String
+    Dim i As Long, ch As String, d As String
+    For i = 1 To Len(q)
+        ch = Mid$(q, i, 1)
+        Select Case ch
+            Case "i", "I", "Ý", "ý": d = d & "[iIÝý]"
+            Case "s", "S", "þ", "Þ": d = d & "[sSþÞ]"
+            Case "g", "G", "ð", "Ð": d = d & "[gGðÐ]"
+            Case "u", "U", "ü", "Ü": d = d & "[uUüÜ]"
+            Case "o", "O", "ö", "Ö": d = d & "[oOöÖ]"
+            Case "c", "C", "ç", "Ç": d = d & "[cCçÇ]"
+            Case "[", "?", "*", "#": d = d & "[" & ch & "]"
+            Case Else
+                If LCase$(ch) <> UCase$(ch) Then d = d & "[" & LCase$(ch) & UCase$(ch) & "]" Else d = d & ch
+        End Select
+    Next i
+    AKSORA_ARAMA_DESEN = "*" & d & "*"
+End Function

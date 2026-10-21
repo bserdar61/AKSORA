@@ -401,6 +401,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Küçük pencerede pencere ayarı yapan yerlere `AKSORA_PENCERE_KUCUK` koruması: V13_GORUNUM, RAPOR/STOK_GORUNUM_TEK, MUSTERI_DUZEN, ANA_PANEL_UYGULA.
 - Müşteri IQ09'u 5 il tek sorguya indirmek ölçüldü: sabit maliyet il başına ~5 sn, kazanç ~20-30 sn; risk/kazanç düşük → yapılmadı.
 
+## 21.10.2026 eklemeler
+- Arama (Müşteri, Malzeme il araması, Admin): `AKSORA_ARAMA_DESEN` (modAKSORA_SISTEM) ile `Like` deseni; i/I/İ/ı, s/ş, g/ğ, u/ü, o/ö, c/ç ve büyük/küçük harf aynı ("iletken" → ILETKEN, "şalter" → SALTER).
+- Admin: il karşılaştırmasının altında **ATIL STOK** tablosu (`ADM_ATIL_CIZ`, ATIL_HESAPLA ile aynı hesap; _ATIL yoksa çizilmez): il başına ATIL/3 AY/6 AY kalem-değer, atıl oranı, transfer önerisi, yüksek öncelik, muhtemel sarf, değerlendirme.
+- ATIL transfer sekmesinde **PDF ÇIKTI** (`AKSORA_ATIL_TRANSFER_PDF`): yatay, 1 sayfa genişlik, başlık satırı tekrar, filtre uygulanmışsa yalnız görünen satırlar; AKSORA kayıt klasörüne `ATIL_TRANSFER_<il>_<tarih>.pdf`, açılır.
+- Teminat kurulumu: satır formülleri sütun bazında tek seferde (FormulaR1C1), sonuç aynı.
+- ANA PANEL'e ATIL kartı eklenmedi (kilitli panel tasarımı; ATIL STOK düğmesi var).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.

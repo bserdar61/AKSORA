@@ -224,7 +224,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     Dim hataMetni As String, adim As String, bas As Double
     Dim iptal As XlEnableCancelKey, imlec As XlMousePointer
     Dim depolar As Object, mevcutIller As Object
-    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation
+    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation, desen As String
     If mAramaCalisiyor Then Exit Sub
     Set hedef = ThisWorkbook.Worksheets(sayfa)
     terim = Trim$(CStr(hedef.Range("B6").Value2))
@@ -237,6 +237,8 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     scr = application.ScreenUpdating: ev = application.EnableEvents
     hesap = application.Calculation
     iptal = application.EnableCancelKey: imlec = application.Cursor
+    ' Turkce harfler (i/I/İ/ı, ş/s ...) ve buyuk/kucuk harf ayni sayilir.
+    desen = AKSORA_ARAMA_DESEN(terim)
     bas = Timer
     On Error GoTo Hata
     mAramaCalisiyor = True
@@ -262,8 +264,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
                         ' Kaynak doğrulamasında okunan aynı dizi; ikinci Excel okuması yok.
                         For i = 1 To UBound(veri, 1)
                             kod = CStr(veri(i, 7))
-                            If InStr(1, kod, terim, vbTextCompare) > 0 Or _
-                               InStr(1, CStr(veri(i, 8)), terim, vbTextCompare) > 0 Then
+                            If kod Like desen Or CStr(veri(i, 8)) Like desen Then
                                 n = n + 1
                                 If n > kapasite Then
                                     kapasite = kapasite * 2

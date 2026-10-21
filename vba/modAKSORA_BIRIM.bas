@@ -2883,11 +2883,12 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
         ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 1)).NumberFormat = "@"
         ws.Range(ws.Cells(a3, 3), ws.Cells(b3, 3)).NumberFormat = "@"
         ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 13)).Value2 = blok
+        ' Satir formulleri tek seferde (sutun bazinda R1C1; ayni formuller, hucre hucre yazimdan hizli).
+        ws.Range(ws.Cells(a3, 9), ws.Cells(b3, 9)).FormulaR1C1 = "=RC6-RC10"
+        ws.Range(ws.Cells(a3, 10), ws.Cells(b3, 10)).FormulaR1C1 = "=IF(N(RC5)=0,0,RC6*IF(RC7=""Sahada"",1,IF(RC7=""Kýsmi"",MIN(N(RC8),RC5)/RC5,0)))"
+        ws.Range(ws.Cells(a3, 11), ws.Cells(b3, 11)).FormulaR1C1 = "=IF(OR(RC7=""Depoda"",N(RC13)=0),"""",TODAY()-INT(RC13))"
+        ws.Range(ws.Cells(a3, 14), ws.Cells(b3, 14)).FormulaR1C1 = "=RC3&"" ""&RC4"
         For r = a3 To b3
-            ws.Cells(r, 9).Formula = "=F" & r & "-J" & r
-            ws.Cells(r, 10).Formula = "=IF(N(E" & r & ")=0,0,F" & r & "*IF(G" & r & "=""Sahada"",1,IF(G" & r & "=""Kýsmi"",MIN(N(H" & r & "),E" & r & ")/E" & r & ",0)))"
-            ws.Cells(r, 11).Formula = "=IF(OR(G" & r & "=""Depoda"",N(M" & r & ")=0),"""",TODAY()-INT(M" & r & "))"
-            ws.Cells(r, 14).Formula = "=C" & r & "&"" ""&D" & r
             Y_MIKTAR_BICIM ws.Cells(r, 5), CStr(satirlar(sira(r - a3 + 1))(3))
         Next r
     Else
@@ -7897,6 +7898,8 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
         .BarFillType = xlDataBarFillSolid
     End With
     On Error GoTo 0
+    '--- atil stok (malzeme birimi atil stok kaydindan)
+    r = ADM_ATIL_CIZ(ws, r, secIl)
     '--- uyarilar
     r = r + 2
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 10), "YÖNETÝCÝ UYARILARI  •  " & ilMetin
@@ -8176,7 +8179,7 @@ Public Sub AKSORA_ADMIN_ARA()
     Dim satirlar As Long, toplamMk As Double, toplamTl As Double, ev As Boolean, kelime() As String, w As Long, uy As Boolean
     Dim alanMetin As String, ilMk As Object, dagilim As String, tur As Long, turMk(1 To 3) As Double, turSay(1 To 3) As Long
     Dim anah() As String, idx() As Long, cikti() As Variant, bas As Long, ilkS As Long, sonS As Long, satir1 As Long
-    Dim sc As Boolean, ac As Boolean
+    Dim sc As Boolean, ac As Boolean, desen() As String, araDesen As String
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(ADM)
     ara = Trim$(CStr(ws.Range(ADM_ARA_HUCRE).Value2))
@@ -8196,6 +8199,10 @@ Public Sub AKSORA_ADMIN_ARA()
     If Len(ara) < 2 Then GoTo Bitir
     Do While InStr(ara, "  ") > 0: ara = Replace(ara, "  ", " "): Loop
     kelime = Split(ara, " ")
+    ' Turkce harfler (i/I/Ý/ý, þ/s ...) ve buyuk/kucuk harf ayni sayilir.
+    ReDim desen(0 To UBound(kelime))
+    For w = 0 To UBound(kelime): desen(w) = AKSORA_ARAMA_DESEN(CStr(kelime(w))): Next w
+    araDesen = AKSORA_ARAMA_DESEN(ara)
     secIl = ADM_IL_KOD(CStr(ws.Range("BX3").Value2))
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
     Set depolar = CreateObject("Scripting.Dictionary"): Set birimler = CreateObject("Scripting.Dictionary")
@@ -8208,13 +8215,13 @@ Public Sub AKSORA_ADMIN_ARA()
                 veri = ADM_VERI(u, il)
                 For i = 1 To veri(2)
                     If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
-                    If InStr(1, veri(1)(i), kelime(0), vbTextCompare) > 0 Then
+                    If veri(1)(i) Like desen(0) Then
                         parca = Split(veri(1)(i), vbTab)
-                        seriEsles = (UBound(kelime) = 0 And InStr(1, parca(9), ara, vbTextCompare) > 0)
+                        seriEsles = (UBound(kelime) = 0 And parca(9) Like araDesen)
                         alanMetin = parca(3) & " " & parca(4)
                         uy = True
                         For w = 0 To UBound(kelime)
-                            If InStr(1, alanMetin, kelime(w), vbTextCompare) = 0 Then uy = False: Exit For
+                            If Not (alanMetin Like desen(w)) Then uy = False: Exit For
                         Next w
                         If Val(parca(6)) = 0 Then uy = False: seriEsles = False
                         If seriEsles Or uy Then
@@ -8494,6 +8501,93 @@ Private Function ADM_AD_OKU(ByVal ad As String) As String
     v = application.Evaluate(ThisWorkbook.names(ad).RefersTo)
     If Not IsError(v) Then ADM_AD_OKU = CStr(v)
     On Error GoTo 0
+End Function
+
+' Atil stok ozeti (ATIL STOK sayfasiyla ayni hesap). SAP okumasi yoksa bolum cizilmez. Donus: son satir.
+Private Function ADM_ATIL_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl As String) As Long
+    Dim c As Collection, bilgi As Variant, x As Variant, iller As Variant, p As Long, j As Long, ilk As Long, n As Long
+    Dim v(0 To 4, 0 To 8) As Double, kapsam(0 To 4) As Double, ok As String, t As Double, enAz As Double, enCok As Double
+    ADM_ATIL_CIZ = r
+    If ADM_WS(ATIL_KAYIT) Is Nothing Then Exit Function
+    On Error GoTo Hata
+    ADM_ILERLE 0.96, "Atýl stok özeti hesaplanýyor..."
+    Set c = ATIL_HESAPLA(bilgi)
+    If bilgi(0) <= 0 And bilgi(1) <= 0 Then Exit Function
+    iller = ADM_ILLER()
+    For Each x In c
+        For p = 0 To 4
+            If x(0) = iller(p) Then Exit For
+        Next p
+        If p <= 4 Then
+            kapsam(p) = kapsam(p) + x(8)
+            If x(10) >= 1 Then
+                ' v: 0/1 atil kalem/deger, 2/3 3 ay, 4/5 6 ay, 6 transfer onerisi, 7 yuksek oncelik, 8 muhtemel sarf
+                j = (3 - x(10)) * 2
+                v(p, j) = v(p, j) + 1: v(p, j + 1) = v(p, j + 1) + x(8)
+                If Len(x(13)) > 0 Then
+                    v(p, 6) = v(p, 6) + 1
+                    If x(18) = "YÜKSEK" Then v(p, 7) = v(p, 7) + 1
+                End If
+                If x(16) Then v(p, 8) = v(p, 8) + 1
+            End If
+        End If
+    Next x
+    ok = "SAP okumasý: CDP " & IIf(bilgi(0) > 0, Format$(bilgi(0), "dd.mm.yyyy"), "-") & "  •  EPP " & IIf(bilgi(1) > 0, Format$(bilgi(1), "dd.mm.yyyy"), "-")
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "ATIL STOK   (24 ay sarfsýz • D ve K depolarý • " & ok & ")"
+    r = r + 1: ilk = r
+    ADM_BASLIKLAR ws, r, 2, Array("Ýl", "ATIL kalem", "ATIL deðeri", "3 AY kalem", "3 AY deðeri", "6 AY kalem", "6 AY deðeri", _
+        "Atýl oraný", "Transfer önerisi", "Yüksek öncelik", "Muhtemel sarf", "Deðerlendirme")
+    enAz = -1: enCok = -1
+    For p = 0 To 4
+        If kapsam(p) > 0 Then t = v(p, 1) / kapsam(p) Else t = 0
+        If enAz < 0 Or t < enAz Then enAz = t
+        If t > enCok Then enCok = t
+    Next p
+    For p = 0 To 4
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(CStr(iller(p)) = secIl, RGB(226, 236, 247), vbWhite)
+        ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(iller(p))): ws.Cells(r, 2).Font.bold = True
+        For j = 0 To 5
+            ws.Cells(r, 3 + j).Value2 = IIf(j Mod 2 = 1, Round(v(p, j), 2), v(p, j))
+        Next j
+        If kapsam(p) > 0 Then t = v(p, 1) / kapsam(p) Else t = 0
+        ws.Cells(r, 9).Value2 = t
+        ws.Cells(r, 10).Value2 = v(p, 6): ws.Cells(r, 11).Value2 = v(p, 7): ws.Cells(r, 12).Value2 = v(p, 8)
+        If enCok > enAz + 0.0005 And t = enAz Then
+            ws.Cells(r, 13).Value2 = ChrW(9733) & " EN ÝYÝ"
+        ElseIf enCok > enAz + 0.0005 And t = enCok Then
+            ws.Cells(r, 13).Value2 = ChrW(9660) & " EN KÖTÜ"
+        Else
+            ws.Cells(r, 13).Value2 = IIf(t < 0.05, "ÝYÝ", IIf(t < 0.15, "ORTA", "ZAYIF"))
+        End If
+    Next p
+    r = r + 1
+    ws.Cells(r, 2).Value2 = "TOPLAM"
+    For j = 3 To 12
+        If j <> 9 Then ws.Cells(r, j).Formula = "=SUM(" & ADM_ADRES(ilk + 1, j, r - 1, j) & ")"
+    Next j
+    t = 0
+    For p = 0 To 4: t = t + kapsam(p): Next p
+    If t > 0 Then ws.Cells(r, 9).Value2 = (v(0, 1) + v(1, 1) + v(2, 1) + v(3, 1) + v(4, 1)) / t Else ws.Cells(r, 9).Value2 = 0
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
+    ws.Range(ADM_ADRES(ilk + 1, 2, r, 13)).HorizontalAlignment = xlCenter
+    ws.Range(ADM_ADRES(ilk + 1, 4, r, 4)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 6, r, 6)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 8, r, 8)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 9, r, 9)).NumberFormat = "0.0%"
+    ws.Range(ADM_ADRES(ilk + 1, 3, r, 4)).Font.Color = RGB(185, 28, 28)
+    ws.Range(ADM_ADRES(ilk + 1, 4, r, 8)).ShrinkToFit = True
+    I_DURUM_RENK ws.Range(ADM_ADRES(ilk + 1, 13, r - 1, 13))
+    ADM_KENAR ws.Range(ADM_ADRES(ilk, 2, r, 13)), True
+    ADM_ATIL_CIZ = r
+    Exit Function
+Hata:
+    On Error Resume Next
+    r = r + 1
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Atýl stok özeti hesaplanamadý: " & Err.Description, RGB(254, 243, 199), RGB(146, 64, 14), 9, False, xlLeft
+    ADM_ATIL_CIZ = r
 End Function
 
 Private Function ADM_ADRES(ByVal r1 As Long, ByVal c1 As Long, ByVal r2 As Long, ByVal c2 As Long) As String
@@ -9527,6 +9621,41 @@ Son:
     If no <> 0 Then MsgBox "Atýl stok sayfasý açýlamadý: " & metin, vbExclamation, "AKSORA"
 End Sub
 
+' Transfer onerileri PDF (yatay, tek sayfa genisliginde, baslik satiri her sayfada). Filtre uygulanmissa yalniz gorunen satirlar.
+Public Sub AKSORA_ATIL_TRANSFER_PDF()
+    Dim ws As Worksheet, adres As String, yol As String, il As String, no As Long, metin As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(ATIL_SAYFA)
+    adres = CStr(ws.Range("BX22").Value2)
+    If Len(adres) = 0 Or CStr(ws.Range("BX21").Value2) <> "TRANSFER" Then
+        MsgBox "Önce TRANSFER ÖNERÝLERÝ sekmesini açýn.", vbInformation, "AKSORA | ATIL STOK": Exit Sub
+    End If
+    il = CStr(ws.Range("BX20").Value2)
+    yol = AKSORA_KAYIT_KLASORU() & application.PathSeparator & "ATIL_TRANSFER_" & IIf(il = "TUM" Or Len(il) = 0, "TUM_ILLER", il) & "_" & Format$(Now, "yyyymmdd_hhnn") & ".pdf"
+    ws.Unprotect ""
+    On Error Resume Next
+    With ws.PageSetup
+        .PrintArea = adres
+        .PrintTitleRows = "$" & ws.Range(adres).Row & ":$" & ws.Range(adres).Row
+        .Orientation = xlLandscape
+        .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+        .CenterHeader = "AKSORA  |  ATIL STOK TRANSFER ÖNERÝLERÝ  |  " & IIf(il = "TUM" Or Len(il) = 0, "Tüm Ýller", Y_IL_ADI(il))
+        .RightFooter = Format$(Now, "dd.mm.yyyy hh:nn") & "  •  Sayfa &P / &N"
+    End With
+    On Error GoTo Hata
+    ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
+        IgnorePrintAreas:=False, OpenAfterPublish:=True
+    Y_KORU ws
+    ws.EnableSelection = xlNoRestrictions
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    Y_KORU ws
+    ws.EnableSelection = xlNoRestrictions
+    MsgBox "PDF oluþturulamadý: " & metin, vbExclamation, "AKSORA | ATIL STOK"
+End Sub
+
 Private Function ATIL_DEPO_METIN(ByVal dp As Object) As String
     Dim k As Variant, n As Long
     For Each k In dp.keys
@@ -9874,7 +10003,7 @@ Ayrinti:
             If Len(x(13)) > 0 Then j = j + 1
         Next x
         r = 12
-        Y_BOLUM ws, r, "TRANSFER ÖNERÝLERÝ (" & j & ")", "Ayný sistemde (CDP-CDP, EPP-EPP). YÜKSEK: alacak ilin deposu 6 aylýk kullanýmýna yetmiyor.", 12
+        Y_BOLUM ws, r, "TRANSFER ÖNERÝLERÝ (" & j & ")", "Ayný sistemde (CDP-CDP, EPP-EPP). YÜKSEK: alacak ilin deposu 6 aylýk kullanýmýna yetmiyor.", 10
         ws.Rows(r).RowHeight = 30
         r = r + 1
         Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Nereden", "Sistem", "Malzeme", "Taným", "Depo", _
@@ -9926,6 +10055,9 @@ Ayrinti:
             Y_DURUM_KF ws.Range(ws.Cells(a1 + 1, 11), ws.Cells(r, 11)), "YÜKSEK", RGB(220, 252, 231), RGB(21, 128, 61)
             Y_DURUM_KF ws.Range(ws.Cells(a1 + 1, 11), ws.Cells(r, 11)), "DÜÞÜK", RGB(241, 245, 249), RGB(100, 116, 139)
             ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12)).AutoFilter
+            ' PDF cikti: basliktan son satira (filtrede gizlenen satirlar basilmaz).
+            ws.Range("BX22").Value2 = ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12)).Address
+            Set s = Y_DUGME(ws, "ATIL_PDF", "PDF ÇIKTI", w - 150, ws.Rows(12).Top + 1, 150, 28, RGB(15, 118, 110), "AKSORA_ATIL_TRANSFER_PDF")
         End If
     Else
         ' tum riskli malzemeler

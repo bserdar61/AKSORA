@@ -923,6 +923,8 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     End If
     q = Trim$(CStr(ws.Range("B6").Value2))
     If Len(q) < 2 Then MsgBox "En az iki karakter giriniz.", vbInformation, "AKSORA": Exit Sub
+    ' Turkce harfler (i/I/Ý/ý, þ/s ...) ayni sayilir: "iletken" SAP'deki "ILETKEN"i bulur.
+    q = AKSORA_ARAMA_DESEN(q)
     application.EnableEvents = False: application.ScreenUpdating = False
     ReDim buffer(1 To 14, 1 To 500)
     ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
@@ -1024,7 +1026,7 @@ End Sub
 
 Private Function M_ESLESIR(ByVal v As Variant, ByVal q As String) As Boolean
     If IsError(v) Or IsEmpty(v) Then Exit Function
-    M_ESLESIR = (InStr(1, CStr(v), q, vbTextCompare) > 0)
+    M_ESLESIR = (CStr(v) Like q)
 End Function
 
 '==========================================================
