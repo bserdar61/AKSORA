@@ -413,6 +413,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Yeni ARKA PLANA AL: pencere küçültülmez, kart + Excel z-sırasında en alta gönderilir (SetWindowPos HWND_BOTTOM, NOACTIVATE); Interactive kapalı kalır. Bitişte görev çubuğu yanıp söner (FlashWindowEx), pencere zorla öne getirilmez.
 - Güvence: iş sürerken Excel küçültülmüşse NABIZ/ILERLE'de geri açılıp arkaya gönderilir (`ARKA_PLAN_KORU`); açılır liste dolduran yerler önce `AKSORA_PENCERE_GERI_AC` çağırır (tek birim güncellemelerinde de).
 
+- Doğrulandı (21.10.2026 11:49): yeni ARKA PLANA AL ile tüm birimler hatasız, 4 dk 21 sn (Malzeme 42 sn, Yatırım/İlçe il başına 0,3–1,4 sn, Müşteri il başına 30–50 sn).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
