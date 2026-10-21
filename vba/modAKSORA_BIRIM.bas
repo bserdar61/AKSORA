@@ -3624,7 +3624,8 @@ Public Sub AKSORA_YATIRIM_PROJE_YENILE()
 End Sub
 
 Public Sub AKSORA_YATIRIM_HAKEDIS_PDF()
-    Dim ws As Worksheet, yol As String
+    Dim ws As Worksheet, yol As String, kart As Boolean
+    kart = AKSORA_BEKLE_AC("AKSORA  |  HAKEDÝÞ", "PDF hazýrlanýyor...", 0.3)
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
     ' Yazdirma alani her zaman guncel tablo boyuna gore (proje sonradan yuklendiyse kesik cikmaz).
@@ -3635,8 +3636,10 @@ Public Sub AKSORA_YATIRIM_HAKEDIS_PDF()
         Format$(Now, "yyyymmdd_hhnn") & ".pdf"
     ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
         IgnorePrintAreas:=False, OpenAfterPublish:=True
+    If kart Then AKSORA_BEKLE_KAPAT
     Exit Sub
 Hata:
+    If kart Then AKSORA_BEKLE_KAPAT
     MsgBox "PDF oluþturulamadý: " & Err.Description, vbExclamation, "AKSORA"
 End Sub
 
@@ -9632,7 +9635,7 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
     Dim ws As Worksheet, cs As Worksheet, onceki As Object, adres As String, yol As String, il As String, ilAd As String, metin As String
     Dim v As Variant, a() As Variant, kol As Variant, hedef As Object, k As Variant, r As Long, n As Long, c As Long, ilk As Long
     Dim yuksek As Long, toplam As Double, ozet As String, ev As Boolean, sc As Boolean, da As Boolean, no As Long
-    Dim anah() As String, idx() As Long, adlar() As String
+    Dim anah() As String, idx() As Long, adlar() As String, kart As Boolean
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(ATIL_SAYFA)
     adres = CStr(ws.Range("BX22").Value2)
@@ -9657,6 +9660,7 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
         End If
     Next r
     If n = 0 Then MsgBox "Yazdýrýlacak satýr yok (filtreyi kontrol edin).", vbInformation, "AKSORA | ATIL STOK": Exit Sub
+    kart = AKSORA_BEKLE_AC("AKSORA  |  ATIL STOK", "PDF hazýrlanýyor (" & n & " satýr)...", 0.3)
     ' Nereye ozeti (cok olandan aza)
     ReDim anah(1 To hedef.Count): ReDim idx(1 To hedef.Count): ReDim adlar(1 To hedef.Count)
     r = 0
@@ -9698,7 +9702,8 @@ Public Sub AKSORA_ATIL_TRANSFER_PDF()
         .VerticalAlignment = xlCenter
     End With
     cs.Range(cs.Rows(8), cs.Rows(7 + n)).RowHeight = 15
-    cs.Range(cs.Cells(8, 5), cs.Cells(7 + n, 5)).NumberFormat = "#,##0.###"
+    ' Kesirsiz miktarda virgul gosterilmez (ekrandaki tablolarla ayni bicim).
+    AKSORA_V13_MIKTAR_BICIMI cs.Range(cs.Cells(8, 5), cs.Cells(7 + n, 5))
     cs.Range(cs.Cells(8, 6), cs.Cells(7 + n, 6)).NumberFormat = "#,##0.00 ""TL"""
     cs.Range(cs.Cells(8, 1), cs.Cells(7 + n, 2)).HorizontalAlignment = xlCenter
     cs.Range(cs.Cells(8, 4), cs.Cells(7 + n, 4)).HorizontalAlignment = xlCenter
@@ -9726,6 +9731,7 @@ Cikis:
     On Error Resume Next
     If Not cs Is Nothing Then cs.Delete
     If Not onceki Is Nothing Then onceki.Activate
+    If kart Then AKSORA_BEKLE_KAPAT
     application.DisplayAlerts = da: application.EnableEvents = ev: application.ScreenUpdating = True
     On Error GoTo 0
     If no <> 0 Then MsgBox "PDF oluþturulamadý: " & metin, vbExclamation, "AKSORA | ATIL STOK"

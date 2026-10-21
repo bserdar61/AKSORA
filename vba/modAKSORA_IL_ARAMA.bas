@@ -224,7 +224,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     Dim hataMetni As String, adim As String, bas As Double
     Dim iptal As XlEnableCancelKey, imlec As XlMousePointer
     Dim depolar As Object, mevcutIller As Object
-    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation, desen As String
+    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation, desen As String, ac As Boolean
     If mAramaCalisiyor Then Exit Sub
     Set hedef = ThisWorkbook.Worksheets(sayfa)
     terim = Trim$(CStr(hedef.Range("B6").Value2))
@@ -239,6 +239,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     iptal = application.EnableCancelKey: imlec = application.Cursor
     ' Turkce harfler (i/I/Ý/ý, þ/s ...) ve buyuk/kucuk harf ayni sayilir.
     desen = AKSORA_ARAMA_DESEN(terim)
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME ARAMA", "Aranýyor: " & terim, 0.05)
     bas = Timer
     On Error GoTo Hata
     mAramaCalisiyor = True
@@ -256,6 +257,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     For Each il In Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
         If secim = "TUMU" Or secim = CStr(il) Then
             For Each grup In Array("CDP_STOK", "EPP_STOK", "ILCE_STOK", "YUKLENICI_STOK")
+                AKSORA_BEKLE_ILERLE 0.1, "Aranýyor: " & terim & "  •  " & il & " " & grup
                 Set kaynak = AKSORA_V4_KAYNAK(CStr(il), CStr(grup), dogrulanmisCanli, veri)
                 If Not kaynak Is Nothing Then
                     mevcutIller(CStr(il)) = True
@@ -263,6 +265,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
                     If son >= 7 Then
                         ' Kaynak doðrulamasýnda okunan ayný dizi; ikinci Excel okumasý yok.
                         For i = 1 To UBound(veri, 1)
+                            If (i And 4095) = 0 Then AKSORA_BEKLE_NABIZ
                             kod = CStr(veri(i, 7))
                             If kod Like desen Or CStr(veri(i, 8)) Like desen Then
                                 n = n + 1
@@ -364,6 +367,7 @@ Cikis:
     application.EnableCancelKey = iptal
     mAramaCalisiyor = False
     AKSORA_V13_SURE_KAYDET "Malzeme arama", bas
+    If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     If Len(hataMetni) > 0 Then MsgBox hataMetni, vbExclamation, "AKSORA | Arama"
     Exit Sub

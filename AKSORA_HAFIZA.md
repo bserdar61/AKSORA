@@ -422,6 +422,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Transfer PDF yeniden: geçici çıktı sayfası; özet (öneri sayısı, toplam değer, YÜKSEK/DÜŞÜK, nereye il dağılımı), kurum yazıcısına uygun açık gri başlık + siyah yazı, dolgusuz satırlar, Sistem sütunu yok; yalnız filtrede görünen satırlar; sayfa sonra silinir.
 - "Neden" kısaldı: "Son 6 ayda X kullandı; deposunda Y var / hiç yok." (il adı Nereye sütununda).
 
+## KURAL: AKSORA'da donmak yok (21.10.2026, kullanıcı)
+- Bekleten her işte yükleme kartı (AKSORA_BEKLE_AC) açılır, döngülerde NABIZ/ILERLE. Eklendi: Müşteri/Yatırım/İlçe malzeme araması (il il ilerleme), Malzeme il araması, ATIL transfer PDF, Hakediş PDF, Müşteri stok sayfasına geçiş. MsgBox'tan önce kart kapatılır.
+- Transfer PDF miktarı AKSORA_V13_MIKTAR_BICIMI (kesirsizde virgül yok).
+- Kullanıcı onayladı: transfer PDF özet + yazıcı renkleri uygun.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.

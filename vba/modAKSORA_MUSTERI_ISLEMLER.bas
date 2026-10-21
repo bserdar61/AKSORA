@@ -338,7 +338,7 @@ Hata:
 End Sub
 
 Public Sub AKSORA_MUSTERI_SAYFA_AC()
-    Dim ws As Worksheet, hedef As Worksheet, ad As String, kilit As Boolean
+    Dim ws As Worksheet, hedef As Worksheet, ad As String, kilit As Boolean, kart As Boolean
     On Error GoTo Hata
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     Set ws = ActiveSheet
@@ -346,6 +346,8 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     ad = ws.Shapes(CStr(application.Caller)).AlternativeText
     If Not M_SAYFA(ad) Then Err.Raise vbObjectError + 1800, , "Müþteri sayfa baðlantýsý geçersiz."
     Set hedef = ThisWorkbook.Worksheets(ad)
+    ' Buyuk stok sayfalarinda depo listesi yenilenirken bekleme karti.
+    If M_STOK(hedef.Name) Then kart = AKSORA_BEKLE_AC("AKSORA  |  MÜÞTERÝ BÝRÝMÝ", "Sayfa açýlýyor...", 0.4)
     AKSORA_MUSTERI_STOK_HESAP_SAYFA = vbNullString
     ' Gecis boyunca pencere cizimi kilitlenir; yeni sayfa tek seferde ve hazir halde gorunur.
     kilit = (M_PencereKilit(application.hwnd) <> 0)
@@ -359,10 +361,12 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     If M_STOK(hedef.Name) Then M_DEPO_YENIDEN hedef
     application.ScreenUpdating = True
     If kilit Then M_PencereKilit 0
+    If kart Then AKSORA_BEKLE_KAPAT
     Exit Sub
 Hata:
     application.EnableEvents = True: application.ScreenUpdating = True
     If kilit Then M_PencereKilit 0
+    If kart Then AKSORA_BEKLE_KAPAT
     MsgBox Err.Description, vbExclamation, "AKSORA"
 End Sub
 
@@ -907,6 +911,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim q As String, r As Long, c As Long, n As Long, son As Long, eski As Long, satir As Long, kod As String
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
     Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean, ilc As Boolean
+    Dim ac As Boolean, aranan As String, adimNo As Long, adimSay As Long
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = AKSORA_ARAMA_SAYFASI()
@@ -925,7 +930,10 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     q = Trim$(CStr(ws.Range("B6").Value2))
     If Len(q) < 2 Then MsgBox "En az iki karakter giriniz.", vbInformation, "AKSORA": Exit Sub
     ' Turkce harfler (i/I/Ý/ý, þ/s ...) ayni sayilir: "iletken" SAP'deki "ILETKEN"i bulur.
+    aranan = q
     q = AKSORA_ARAMA_DESEN(q)
+    ' Bes il ve arsivler taranir (seri numarali stoklarda uzun surebilir): bekleme karti.
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME ARAMA", "Aranýyor: " & aranan, 0.05)
     application.EnableEvents = False: application.ScreenUpdating = False
     ReDim buffer(1 To 14, 1 To 500)
     ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
@@ -937,10 +945,13 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
         ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("M_CDP_STOK").Range("BX20").Value2)))
         If Len(ekran) = 0 Then ekran = "ARTVIN"
     End If
+    adimSay = (UBound(AKSORA_MUSTERI_ILLER()) - LBound(AKSORA_MUSTERI_ILLER()) + 1) * (UBound(sayfalar) + 1)
     For Each il In AKSORA_MUSTERI_ILLER()
     kod = CStr(il)
     For i = 1 To UBound(sayfalar) + 1
         ad = sayfalar(i - 1)
+        adimNo = adimNo + 1
+        AKSORA_BEKLE_ILERLE 0.05 + 0.85 * adimNo / application.Max(1, adimSay), "Aranýyor: " & aranan & "  •  " & kod & " " & etiketler(i - 1)
         veri = Empty
         ' Yatirim ve ilce: her zaman il kaydindan okunur (stok sayfasindaki filtre aramayi daraltmaz).
         If kod = ekran And Not yat And Not ilc Then
@@ -961,6 +972,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
         End If
         If IsArray(veri) Then
             For r = 1 To UBound(veri, 1)
+                If (r And 4095) = 0 Then AKSORA_BEKLE_NABIZ
                 If M_ESLESIR(veri(r, 5), q) Or M_ESLESIR(veri(r, 6), q) Or M_ESLESIR(veri(r, 10), q) Then
                     n = n + 1
                     If n > UBound(buffer, 2) Then ReDim Preserve buffer(1 To 14, 1 To UBound(buffer, 2) + 500)
@@ -999,6 +1011,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
                 End If
             Next r
         Next gec
+        AKSORA_BEKLE_ILERLE 0.93, "Sonuçlar yazýlýyor (" & n & " satýr)..."
         ws.Range("A13").Resize(n, 14).Value2 = sonuc
     End If
     M_TABLO_BICIM ws, 13, n + 12, 13, "3,6", "7,11"
@@ -1011,9 +1024,11 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
     ' Secili il dugmesi korunur: sonuc o ile gore listelenir.
     AKSORA_MUSTERI_ARAMA_FILTRE CStr(ws.Range("BX21").Value2)
+    If ac Then AKSORA_BEKLE_KAPAT: ac = False
     If n = 0 Then MsgBox IIf(ilc, "Ýlçe", IIf(yat, "Yatýrým", "Müþteri")) & " stoklarýnda eþleþen kayýt bulunamadý.", vbInformation, "AKSORA"
 Cikis:
     On Error Resume Next
+    If ac Then AKSORA_BEKLE_KAPAT
     If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
         UserInterfaceOnly:=True, AllowFiltering:=True
     application.EnableEvents = ev: application.ScreenUpdating = sc
