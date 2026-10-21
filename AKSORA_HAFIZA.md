@@ -445,6 +445,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - EPP MB51 "Herhangi bir düzenek bulunamadı": /ATIL yoksa varsayılan düzenle bir kez yeniden denenir (teşhise yazılır).
 - ATIL transfer tablosu ve PDF'de Depo sütunu tüm depoları miktarıyla gösterir ("D001 (3), K002 (5)"); uzun listede satır yüksekliği açılır.
 
+## İlçe PB depoları doğrulaması — 2026-10-21
+- Artvin CDP ilçe verisinde PB01 (planlı bakım) çıktı; ILCE_V2_UY_DOGRULA yalnız K### kabul ettiği için zincir durdu. Doğrulama artık AKSORA_IL_DEPO_GECERLI(depo, "ILCE") kullanır (K001-K999 + PB01-PB999). Admin ADM_DEPO_TUR PB'yi ilçe sayar.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2: kullanıcı SAP'DEN OKU ile yeniden okuyacak; teşhisten İTü/DpYr sütunları ve sorgu süreleri kontrol edilecek.

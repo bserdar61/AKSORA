@@ -450,11 +450,8 @@ End If
             GoTo gecersiz
         End If
         depo = UCase$(Trim$(CStr(veri(i, 2))))
-        If Len(depo) <> 4 Then neden = "Gecersiz ilce deposu: " & depo: GoTo gecersiz
-        If Left$(depo, 1) <> "K" Or Not (Mid$(depo, 2) Like "###") Then
-            neden = "Gecersiz ilce deposu: " & depo: GoTo gecersiz
-        End If
-        If CLng(Mid$(depo, 2)) < 1 Then neden = "Gecersiz ilce deposu: " & depo: GoTo gecersiz
+        ' Ilce depolari: K001-K999 ve PB01-PB999 (planli bakim); kural tek yerde (AKSORA_IL_DEPO_GECERLI).
+        If Not AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then neden = "Gecersiz ilce deposu: " & depo: GoTo gecersiz
         If Len(Trim$(CStr(veri(i, 7)))) = 0 Or _
            Len(Trim$(CStr(veri(i, 10)))) = 0 Then
             neden = "Malzeme veya birim bos.": GoTo gecersiz

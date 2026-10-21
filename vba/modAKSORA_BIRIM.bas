@@ -8157,8 +8157,9 @@ Private Sub ADM_MIKTAR(ByVal alan As Range)
     Next c
 End Sub
 
-' Depo turu: 1 ana depo (D..), 2 ilce (K..), 3 yuklenici / diger
+' Depo turu: 1 ana depo (D..), 2 ilce (K.., PB..), 3 yuklenici / diger
 Private Function ADM_DEPO_TUR(ByVal depo As String) As Long
+    If AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then ADM_DEPO_TUR = 2: Exit Function
     Select Case UCase$(Left$(Trim$(depo), 1))
         Case "D": ADM_DEPO_TUR = 1
         Case "K": ADM_DEPO_TUR = 2
