@@ -453,7 +453,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 ## ATIL KANIT düğmesi — 2026-10-21
 - MC50 bozuk; kurumda atıl MB51'den "2 yılda sarfı olmayan" çekilerek karşılaştırılıyor. AKSORA kuralı (giriş yaşı) farklı, o yüzden her kalem için kanıt: AKSORA_ATIL_KANIT (Public). TRANSFER ve LİSTE görünümünde "SEÇİLİ MALZEME: KANIT" düğmesi; seçili satırın il/sistem/malzemesinden _ATIL kaydı ve stok okunur, son 24 ay girişleri (yeni→eski, ilk 8), her girişin stokta kalan payı ve yaşı, karşılanmayan kısım, 2-5 yıl son giriş, 6 ay sarf, MB51 kontrol bilgisi MsgBox'ta (1024 sınırı).
-- Bu sürüm up25 tabanında; kullanıcının ATIL okuması yapılmış güncel dosyası gelince yeniden tabanlanacak.
+- Baz up26'ya taşındı (kullanıcının ATIL2 okuması yapılmış dosyası, 52feed3a; optimize_base --img): 152 sayfa verisi birebir, 40 arşiv fark 0, _ATIL ATIL2.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
