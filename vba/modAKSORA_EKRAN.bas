@@ -20,6 +20,13 @@ Kucuk:
     AKSORA_PENCERE_KUCUK = True
 End Function
 
+' Sayfa denetimleri (acilir liste) simge durumundaki pencerede doldurulamaz (hata 1004): pencere geri acilir.
+Public Sub AKSORA_PENCERE_GERI_AC()
+    On Error Resume Next
+    If application.WindowState = xlMinimized Then application.WindowState = xlMaximized
+    On Error GoTo 0
+End Sub
+
 Public Sub AKSORA_HATA_GOSTER(ByVal islem As String, ByVal no As Long, ByVal metin As String)
     On Error Resume Next
     application.EnableEvents = True

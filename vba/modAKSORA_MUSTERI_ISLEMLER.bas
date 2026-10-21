@@ -480,6 +480,7 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
         For Each k In d.keys: adlar(i) = CStr(k): i = i + 1: Next k
         M_SIRALA adlar
     End If
+    AKSORA_PENCERE_GERI_AC
     With liste.ControlFormat
         .ListFillRange = "": .LinkedCell = "": .RemoveAllItems
         .AddItem "TÜMÜ"

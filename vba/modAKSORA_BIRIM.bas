@@ -93,9 +93,17 @@ Private mAtilKart As Boolean
 Private mAtilBas As Double
 Private mAtilSon As Double
 Private mAtilMetin As String
-' Uzun guncellemede kartin "ARKA PLANA AL" dugmesi: Excel simge durumuna alinir, is bitince geri acilir.
+' Uzun guncellemede kartin "ARKA PLANA AL" dugmesi: Excel diger pencerelerin arkasina gonderilir
+' (kucultulmez: pencere durumu degisince sayfa denetimleri hata veriyordu). Is bitince gorev cubugu yanip soner.
 Public AKSORA_ARKA_PLAN As Boolean
-Private mArkaDurum As Long
+Private Type ADMW_FLASH
+    cbSize As Long
+    hWnd As LongPtr
+    dwFlags As Long
+    uCount As Long
+    dwTimeout As Long
+End Type
+Private Declare PtrSafe Function ADMW_FlashWindowEx Lib "user32" Alias "FlashWindowEx" (pfwi As ADMW_FLASH) As Long
 Private Declare PtrSafe Function ATIL_OpenClipboard Lib "user32" Alias "OpenClipboard" (ByVal hWnd As LongPtr) As Long
 Private Declare PtrSafe Function ATIL_EmptyClipboard Lib "user32" Alias "EmptyClipboard" () As Long
 Private Declare PtrSafe Function ATIL_CloseClipboard Lib "user32" Alias "CloseClipboard" () As Long
@@ -6861,16 +6869,11 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * y)
     frmSplash.Repaint
     If mAdmYukSon = 0 Or Abs(Timer - mAdmYukSon) > 0.5 Then
-        If AKSORA_ARKA_PLAN Then
-            ' Arka planda: pencere geri acilabilsin diye giris kapatilmaz.
-            DoEvents
-            ARKA_PLAN_KONTROL
-        Else
-            iv = application.Interactive
-            application.Interactive = False
-            DoEvents
-            application.Interactive = iv
-        End If
+        iv = application.Interactive
+        application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+        ARKA_PLAN_KORU
         mAdmYukSon = Timer
     End If
     On Error GoTo 0
@@ -6882,47 +6885,49 @@ Public Sub AKSORA_BEKLE_NABIZ()
     If Not mAdmYukleme Then Exit Sub
     If Abs(Timer - mAdmYukSon) <= 0.5 Then Exit Sub
     On Error Resume Next
-    If AKSORA_ARKA_PLAN Then
-        DoEvents
-        ARKA_PLAN_KONTROL
-    Else
-        iv = application.Interactive
-        application.Interactive = False
-        DoEvents
-        application.Interactive = iv
-    End If
+    iv = application.Interactive
+    application.Interactive = False
+    DoEvents
+    application.Interactive = iv
+    ARKA_PLAN_KORU
     mAdmYukSon = Timer
     AKSORA_ADMIN_DURUM vbNullString
     On Error GoTo 0
 End Sub
 
-' Kartin "ARKA PLANA AL" dugmesi (frmSplash lblAltBaslik_Click): Excel simge durumuna alinir; is surer.
+' Kartin "ARKA PLANA AL" dugmesi (frmSplash lblAltBaslik_Click): kart ve Excel penceresi z-sirasinda en alta
+' gonderilir; pencere boyutu/durumu degismez, giris kapali kalir. Kullanici baska programlarla calisir.
 Public Sub AKSORA_ARKA_PLANA_AL()
+    Dim h As LongPtr
     On Error Resume Next
-    If Not AKSORA_ARKA_PLAN Then mArkaDurum = application.WindowState
     AKSORA_ARKA_PLAN = True
-    application.Interactive = True
-    application.WindowState = xlMinimized
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    ' SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE; HWND_BOTTOM = 1
+    If h <> 0 Then ADMW_SetWindowPos h, 1, 0, 0, 0, 0, &H13
+    ADMW_SetWindowPos application.hWnd, 1, 0, 0, 0, 0, &H13
     On Error GoTo 0
 End Sub
 
-' Kullanici pencereyi kendisi geri actiysa arka plan biter (tum birimlerde giris yeniden kapatilir).
-Private Sub ARKA_PLAN_KONTROL()
+' Uzun is surerken Excel simge durumuna alinmissa geri acilir ve arkaya gonderilir (kucuk pencerede sayfa denetimleri yazilamiyor).
+Private Sub ARKA_PLAN_KORU()
+    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
     On Error Resume Next
-    If Not AKSORA_ARKA_PLAN Then Exit Sub
-    If application.WindowState = xlMinimized Then Exit Sub
-    AKSORA_ARKA_PLAN = False
-    If AKSORA_ADMIN_TOPLU Then application.Interactive = False
+    If application.WindowState = xlMinimized Then
+        application.WindowState = xlMaximized
+        AKSORA_ARKA_PLANA_AL
+    End If
     On Error GoTo 0
 End Sub
 
-' Is bitince pencere eski haline getirilir (sonuc mesaji gorunsun).
+' Is bitince Excel gorev cubugunda yanip soner (pencere one zorla getirilmez); sonuc mesaji Excel'de bekler.
 Public Sub AKSORA_ARKA_PLAN_BITIR()
+    Dim f As ADMW_FLASH
     If Not AKSORA_ARKA_PLAN Then Exit Sub
     AKSORA_ARKA_PLAN = False
     On Error Resume Next
-    If mArkaDurum = xlMinimized Or mArkaDurum = 0 Then mArkaDurum = xlMaximized
-    application.WindowState = mArkaDurum
+    f.cbSize = LenB(f): f.hWnd = application.hWnd: f.dwFlags = 15: f.uCount = 0: f.dwTimeout = 0
+    ADMW_FlashWindowEx f
     On Error GoTo 0
 End Sub
 

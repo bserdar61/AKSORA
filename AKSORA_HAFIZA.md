@@ -408,6 +408,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Teminat kurulumu: satır formülleri sütun bazında tek seferde (FormulaR1C1), sonuç aynı.
 - ANA PANEL'e ATIL kartı eklenmedi (kilitli panel tasarımı; ATIL STOK düğmesi var).
 
+## DERS: Excel simge durumundayken güncelleme yapılmaz (21.10.2026)
+- İlk ARKA PLANA AL Excel'i küçültüyordu: ekrandaki ilin (Artvin) stok sayfalarında depo açılır listesi (DropDown ListFillRange) doldurulamadı → Hata 1004, her birimde Artvin güncellenemedi, Malzeme'de "Görünüm yenilenemedi". Kullanıcı dosyayı kaydetmedi.
+- Yeni ARKA PLANA AL: pencere küçültülmez, kart + Excel z-sırasında en alta gönderilir (SetWindowPos HWND_BOTTOM, NOACTIVATE); Interactive kapalı kalır. Bitişte görev çubuğu yanıp söner (FlashWindowEx), pencere zorla öne getirilmez.
+- Güvence: iş sürerken Excel küçültülmüşse NABIZ/ILERLE'de geri açılıp arkaya gönderilir (`ARKA_PLAN_KORU`); açılır liste dolduran yerler önce `AKSORA_PENCERE_GERI_AC` çağırır (tek birim güncellemelerinde de).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.

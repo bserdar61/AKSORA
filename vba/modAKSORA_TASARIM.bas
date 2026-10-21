@@ -383,6 +383,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
             Set s = T_Dik(ws, AKT_PREFIX & "DEPO_KART_SIMGE_RAF_" & k, x + 19 + k * 5, y + 25, 3, 6, RGB(232, 243, 252))
         Next k
         Set s = T_Yazi(ws, AKT_PREFIX & "DEPO_KART_BASLIK", "DEPO:", x + 51, y + 5, bw - 60, 15, 8.5, RGB(39, 76, 106), True, msoAlignLeft)
+        AKSORA_PENCERE_GERI_AC
         Set depoKontrol = ws.Shapes.AddFormControl(xlDropDown, x + 51, y + 23, bw - 60, 17)
         depoKontrol.Name = AKT_PREFIX & "DEPO_KART_LISTE"
         depoKontrol.ControlFormat.ListFillRange = depoListe
