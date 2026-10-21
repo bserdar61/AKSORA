@@ -9786,6 +9786,106 @@ Hata:
     Resume Cikis
 End Sub
 
+' Secili satirdaki malzemenin atil hesabinin kaniti: uretim yerindeki son 24 ay girisleri (yeni -> eski),
+' her girisin stokta kalan payi ve yasi, girisle karsilanmayan kisim, sarf. MB51 ile elle karsilastirma icin.
+Public Sub AKSORA_ATIL_KANIT()
+    Dim ws As Worksheet, r As Long, ilAd As String, sis As String, mal As String, il As String, x As Variant, uy As String
+    Dim kayit As Object, okuma As Variant, kr As Variant, s As Object, td As Date, o As Variant, stok As Double, birim As String
+    Dim q() As Double, gm As String, gi As String, durum As Long, p As Variant, i As Long, j As Long, n As Long
+    Dim tt() As Double, mm() As Double, a As Double, b As Double, kalan As Double, al As Double, sinif As String
+    Dim s24 As Double, s21 As Double, s18 As Double, m As String, satir As String, gizli As Long, kart As Boolean
+    On Error GoTo Hata
+    Set ws = ActiveSheet
+    If ws.Name <> ATIL_SAYFA Then Exit Sub
+    r = ActiveCell.Row
+    ilAd = Trim$(CStr(ws.Cells(r, 1).Value2)): sis = UCase$(Trim$(CStr(ws.Cells(r, 2).Value2))): mal = Y_KOD_NORM(ws.Cells(r, 3).Value2)
+    For Each x In ADM_ILLER()
+        If Y_IL_ADI(CStr(x)) = ilAd Then il = CStr(x)
+    Next x
+    If Len(il) = 0 Or (sis <> "CDP" And sis <> "EPP") Or Len(mal) = 0 Then
+        MsgBox "Önce TRANSFER ÖNERÝLERÝ ya da ATIL LÝSTESÝ tablosunda bir malzeme satýrýna týklayýn, sonra KANIT düðmesine basýn.", vbInformation, "AKSORA | ATIL KANIT"
+        Exit Sub
+    End If
+    kart = AKSORA_BEKLE_AC("AKSORA  |  ATIL KANIT", mal & " hesabý hazýrlanýyor...", 0.4)
+    uy = AKSORA_IL_TESIS(il, sis)
+    Set kayit = ATIL_KAYIT_OKU(okuma)
+    If Not kayit.Exists(uy & "|" & mal) Then
+        If kart Then AKSORA_BEKLE_KAPAT
+        MsgBox mal & " için " & sis & " SAP okumasý kaydý yok.", vbInformation, "AKSORA | ATIL KANIT"
+        Exit Sub
+    End If
+    kr = kayit(uy & "|" & mal)
+    Set s = ATIL_STOK_OKU(il, td)
+    If s.Exists(uy & "|" & mal) Then
+        o = s(uy & "|" & mal): stok = o(0): birim = CStr(o(2))
+        m = mal & "  " & CStr(o(3)) & vbCrLf & ilAd & " " & sis & " (" & uy & ")  •  Stok: " & ADM_ADET(stok) & " " & birim & vbCrLf & _
+            "Depolar: " & ATIL_DEPO_METIN(o(5)) & vbCrLf & vbCrLf
+    Else
+        m = mal & vbCrLf & ilAd & " " & sis & " (" & uy & ")  •  Stok: 0" & vbCrLf & vbCrLf
+    End If
+    durum = ATIL_YAS(stok, CStr(kr(1)), kr(2), q, gm, gi)
+    s24 = CDbl(DateAdd("m", -24, Date)): s21 = CDbl(DateAdd("m", -21, Date)): s18 = CDbl(DateAdd("m", -18, Date))
+    ' Girisler yeni -> eski; stok en yeni giristen baslayarak dagitilir (ATIL_YAS ile ayni).
+    If Len(CStr(kr(1))) > 0 Then
+        p = Split(CStr(kr(1)), ";")
+        ReDim tt(0 To UBound(p)): ReDim mm(0 To UBound(p))
+        For i = 0 To UBound(p)
+            If InStr(p(i), "=") = 9 Then
+                tt(n) = CDbl(DateSerial(Val(Left$(p(i), 4)), Val(Mid$(p(i), 5, 2)), Val(Mid$(p(i), 7, 2))))
+                mm(n) = Val(Mid$(p(i), 10)): n = n + 1
+            End If
+        Next i
+        For i = 1 To n - 1
+            a = tt(i): b = mm(i): j = i - 1
+            Do While j >= 0
+                If tt(j) >= a Then Exit Do
+                tt(j + 1) = tt(j): mm(j + 1) = mm(j): j = j - 1
+            Loop
+            tt(j + 1) = a: mm(j + 1) = b
+        Next i
+    End If
+    m = m & "SON 24 AY GÝRÝÞLERÝ (yeni " & ChrW(8594) & " eski)  •  stokta kalan pay" & vbCrLf
+    If n = 0 Then m = m & "  Giriþ yok." & vbCrLf
+    kalan = stok
+    For i = 0 To n - 1
+        al = mm(i)
+        If al > kalan Then al = kalan
+        If al < 0 Then al = 0
+        kalan = kalan - al
+        If tt(i) < s24 Then
+            sinif = "ATIL"
+        ElseIf tt(i) < s21 Then
+            sinif = "3 AY KALDI"
+        ElseIf tt(i) < s18 Then
+            sinif = "6 AY KALDI"
+        Else
+            sinif = "normal"
+        End If
+        satir = "  " & Format$(CDate(tt(i)), "dd.mm.yyyy") & "   +" & ADM_ADET(mm(i)) & "   " & ChrW(8594) & " stokta " & ADM_ADET(al) & IIf(al > 0, "  (" & sinif & ")", "")
+        If i < 8 Then m = m & satir & vbCrLf Else gizli = gizli + 1
+    Next i
+    If gizli > 0 Then m = m & "  ... ve " & gizli & " giriþ daha" & vbCrLf
+    If kalan > 0.0000001 Then
+        m = m & "  Giriþlerle karþýlanmayan: " & ADM_ADET(kalan) & " " & birim & "  " & ChrW(8594) & " 24 aydan eski (ATIL)" & vbCrLf
+        If kr(2) > 0 Then
+            m = m & "  2-5 yýl önceki son giriþ: " & Format$(CDate(Int(kr(2))), "dd.mm.yyyy") & vbCrLf
+        Else
+            m = m & "  Son 5 yýlda giriþ yok." & vbCrLf
+        End If
+    End If
+    m = m & vbCrLf & "SONUÇ: " & ATIL_DURUM_ADI(durum) & "   •   ATIL " & ADM_ADET(q(3)) & "  •  3 AY " & ADM_ADET(q(2)) & "  •  6 AY " & ADM_ADET(q(1)) & _
+        IIf(Len(gm) > 0, "   •   " & gm, "") & vbCrLf
+    m = m & "Son 6 ay sarf: " & ADM_ADET(CDbl(kr(3))) & IIf(kr(4) > 0, "  (son sarf " & Format$(CDate(Int(kr(4))), "dd.mm.yyyy") & ")", "") & vbCrLf & vbCrLf
+    m = m & "MB51: ÜY " & uy & ", ÝTü 101-106/501/561/301-316, " & Format$(DateAdd("m", -24, Date), "dd.mm.yyyy") & " - " & _
+        Format$(Date, "dd.mm.yyyy") & " (311 depo transferi giriþ sayýlmaz)."
+    If kart Then AKSORA_BEKLE_KAPAT
+    MsgBox m, vbInformation, "AKSORA | ATIL KANIT"
+    Exit Sub
+Hata:
+    If kart Then AKSORA_BEKLE_KAPAT
+    MsgBox "Kanýt hazýrlanamadý: " & Err.Description, vbExclamation, "AKSORA | ATIL KANIT"
+End Sub
+
 Public Sub AKSORA_ATIL_GORUNUM()
     Dim ac As Boolean, no As Long, metin As String, gor As String
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Or AKSORA_ATIL_CALISIYOR Then Exit Sub
@@ -10349,6 +10449,7 @@ Ayrinti:
             ' PDF cikti: basliktan son satira (filtrede gizlenen satirlar basilmaz).
             ws.Range("BX22").Value2 = ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12)).Address
             Set s = Y_DUGME(ws, "ATIL_PDF", "PDF ÇIKTI", w - 150, ws.Rows(12).Top + 1, 150, 28, RGB(15, 118, 110), "AKSORA_ATIL_TRANSFER_PDF")
+            Set s = Y_DUGME(ws, "ATIL_KANIT", "SEÇÝLÝ MALZEME: KANIT", w - 150 - 8 - 190, ws.Rows(12).Top + 1, 190, 28, RGB(20, 103, 173), "AKSORA_ATIL_KANIT")
         End If
     Else
         ' tum riskli malzemeler
@@ -10384,6 +10485,7 @@ Ayrinti:
             ws.Range(ws.Cells(a1 + 1, 11), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
             ws.Range(ws.Cells(a1 + 1, 12), ws.Cells(r, 12)).Font.Color = RGB(20, 103, 173)
             ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12)).AutoFilter
+            Set s = Y_DUGME(ws, "ATIL_KANIT", "SEÇÝLÝ MALZEME: KANIT", w - 190, ws.Rows(12).Top + 1, 190, 28, RGB(20, 103, 173), "AKSORA_ATIL_KANIT")
         End If
     End If
 Son:

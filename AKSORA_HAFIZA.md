@@ -451,6 +451,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## EPP MB51 liste gösterimi — 2026-10-21
 - EPP'de MB51 liste gösterimi hiyerarşiğe dönmüştü; /ATIL düzeni düz listede kayıtlı olduğundan SAP "Herhangi bir düzenek bulunamadı" dedi, varsayılan düzen hiyerarşik geldi (İTü/depo yok). ATIL_DUZ_LISTE sorgudan önce seçim ekranındaki "Düz liste" radyo düğmesini metninden bulup seçer (teşhise yazar).
 
+## ATIL KANIT düğmesi — 2026-10-21
+- MC50 bozuk; kurumda atıl MB51'den "2 yılda sarfı olmayan" çekilerek karşılaştırılıyor. AKSORA kuralı (giriş yaşı) farklı, o yüzden her kalem için kanıt: AKSORA_ATIL_KANIT (Public). TRANSFER ve LİSTE görünümünde "SEÇİLİ MALZEME: KANIT" düğmesi; seçili satırın il/sistem/malzemesinden _ATIL kaydı ve stok okunur, son 24 ay girişleri (yeni→eski, ilk 8), her girişin stokta kalan payı ve yaşı, karşılanmayan kısım, 2-5 yıl son giriş, 6 ay sarf, MB51 kontrol bilgisi MsgBox'ta (1024 sınırı).
+- Bu sürüm up25 tabanında; kullanıcının ATIL okuması yapılmış güncel dosyası gelince yeniden tabanlanacak.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
