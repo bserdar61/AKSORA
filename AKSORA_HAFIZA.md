@@ -392,6 +392,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - ATIL_STOK, KAPAK'tan Malzeme'ye girişte (AKSORA_GIRIS_AC) etiketi doğruysa görünür yapılır (önceden yalnız düğmeyle açılıyordu).
 - Baz up23'e taşındı (optimize_base): 19,0 → 16,0 MB; _ATIL, ATIL_STOK, M_CDP_STOK verisi birebir, 40 arşiv fark 0.
 
+- Kullanıcı yeni dosya verdi (baz `up24`, 19,7 MB); ATIL sekme düzeltmesi bunun üzerine kuruldu → 16,2 MB, veri birebir. ATIL için yetkin kişiyle test yapılacak, sonuç kullanıcıdan gelecek.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL STOK: ilk SAP okuması kullanıcıda; MB51 metin dışa aktarım başlıkları teşhisten kontrol edilecek. Admin bölümü.
