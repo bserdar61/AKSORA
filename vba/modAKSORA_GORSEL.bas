@@ -99,7 +99,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
     End With
 
     With frm.lblImza
-        .Caption = "Designed by Burhan SERDAR"
+        .Caption = AKSORA_TELIF()
         .Top = 207
         .Height = 18
         .Font.Size = 8

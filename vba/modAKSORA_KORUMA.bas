@@ -3,8 +3,42 @@ Option Explicit
 
 ' Sahiplik imzasi: gorunur ve gizli imzalar her acilista koddan yeniden yazilir;
 ' silinir/degistirilirse sahip adina geri doner (kendini onarir).
-Public Const AKSORA_SAHIBI As String = "Burhan SERDAR"
 Public Const AKSORA_SIRKET As String = "Coruh EDAS"
+Private Const IMZA_KOD As String = "079130127117110123045096082095081078095"
+
+' Sahip adi kodda duz metin olarak tutulmaz.
+Public Function AKSORA_SAHIBI() As String
+    Dim i As Long, t As String
+    For i = 1 To Len(IMZA_KOD) Step 3
+        t = t & ChrW(CLng(Mid$(IMZA_KOD, i, 3)) - 13)
+    Next i
+    AKSORA_SAHIBI = t
+End Function
+
+' Yukleme kartlarinin altindaki telif satiri.
+Public Function AKSORA_TELIF() As String
+    AKSORA_TELIF = ChrW(174) & " " & AKSORA_SAHIBI()
+End Function
+
+' Karta (frmSplash) alt kenarda kucuk, soluk telif etiketi eklenir (yoksa olusturulur).
+Public Sub AKSORA_TELIF_ETIKET(ByVal frm As Object)
+    Dim c As Object
+    On Error Resume Next
+    Set c = frm.Controls("lblTelif")
+    If c Is Nothing Then
+        Err.Clear
+        Set c = frm.Controls.Add("Forms.Label.1", "lblTelif", True)
+    End If
+    If c Is Nothing Then Exit Sub
+    With c
+        .Caption = AKSORA_TELIF()
+        .Left = 0: .Width = frm.InsideWidth: .Height = 12: .Top = frm.InsideHeight - 15
+        .Font.Name = "Segoe UI": .Font.Size = 7: .Font.Bold = False: .Font.Italic = False
+        .ForeColor = RGB(163, 174, 189): .BackStyle = fmBackStyleTransparent
+        .TextAlign = fmTextAlignCenter: .WordWrap = False: .Visible = True
+    End With
+    On Error GoTo 0
+End Sub
 
 Public Sub AKSORA_IMZA_DOGRULA()
     Dim ad As String, ws As Worksheet

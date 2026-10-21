@@ -6791,7 +6791,7 @@ Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Bo
     With frmSplash
         .Caption = "AKSORA"
         .StartUpPosition = 0
-        .Width = 420: .Height = IIf(durdur, 182, 150)
+        .Width = 420: .Height = IIf(durdur, 196, 164)
         .Left = application.Left + (application.Width - .Width) / 2
         .Top = application.Top + (application.Height - .Height) / 2
         .BackColor = RGB(255, 255, 255)
@@ -6839,6 +6839,7 @@ Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Bo
             End With
         End If
     End With
+    AKSORA_TELIF_ETIKET frmSplash
     On Error GoTo 0
 End Sub
 

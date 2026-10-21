@@ -279,7 +279,7 @@ Private Sub TEMA_MUSTERI_ANA_DUZEN(ByVal ws As Worksheet)
         "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & il & " Ýl Müdürlüðü", _
         r.Left, r.Top + 1, r.Width, r.Height / 2 - 1, 9, RGB(255, 255, 255), True
     TEMA_ANA_YAZI ws, "AKSORA15_ALT_IMZA", _
-        "Burhan Serdar | Elektrik-Elektronik Mühendisi", _
+        StrConv(AKSORA_SAHIBI(), vbProperCase) & " | Elektrik-Elektronik Mühendisi", _
         r.Left, r.Top + r.Height / 2, r.Width, r.Height / 2 - 1, 8, RGB(220, 238, 248), False
     Set r = ws.Range("B30:AB30")
     Set z = TEMA_ANA_SEKIL(ws, "AKSORA15_TARIH_ZEMIN")

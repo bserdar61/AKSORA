@@ -106,7 +106,7 @@ Public Sub AKSORA_V8_DUZENLE()
     With ws.Shapes(PRE & "CREDIT")
 
         .TextFrame2.TextRange.Text = _
-            "Version: v3.0  |  Design by Burhan SERDAR"
+            "Version: v3.0  |  Design by " & AKSORA_SAHIBI()
 
         .TextFrame2.TextRange.Font.Size = 10
 

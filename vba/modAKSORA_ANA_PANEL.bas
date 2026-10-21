@@ -263,7 +263,7 @@ Private Sub V8_ALT_SERIT(ByVal ws As Worksheet)
     a.line.Visible = msoFalse
     V8_YAZI ws, p & "ALT_KURUM", "CORUH ELEKTRIK DAGITIM A.S.  |  ARTVIN IL MUDURLUGU", _
         r.Left, r.Top + 2, r.Width, r.Height / 2 - 1, 10, vbWhite, True, msoAlignCenter
-    V8_YAZI ws, p & "ALT_IMZA", "Burhan Serdar  |  Elektrik-Elektronik Muhendisi", _
+    V8_YAZI ws, p & "ALT_IMZA", StrConv(AKSORA_SAHIBI(), vbProperCase) & "  |  Elektrik-Elektronik Muhendisi", _
         r.Left, r.Top + r.Height / 2, r.Width, r.Height / 2 - 2, 9, RGB(220, 238, 248), False, msoAlignCenter
     ' Orijinal hucreleri silme: eski footer metni korunur.
 End Sub
