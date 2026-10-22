@@ -21,6 +21,8 @@ Private mAdmOturum As Boolean
 Private Const ADM_KUTU_BASLIK As String = "AKSORA - YONETICI GIRISI"
 Private Const BIRIM_KUTU_BASLIK As String = "AKSORA - BIRIM GIRISI"
 ' Birim sifreleri: her birim yalniz kendi sifresiyle (ya da yonetici sifresiyle) acilir.
+' Birim sifreleri simdilik kapali: True yapildiginda her birim girisinde sifre sorulur.
+Private Const BIRIM_SIFRE_AKTIF As Boolean = False
 Private Const SIFRE_MALZEME As String = "malzemebs1284"
 Private Const SIFRE_YATIRIM As String = "yatirimbs1284"
 Private Const SIFRE_MUSTERI As String = "musteribs1284"
@@ -6715,6 +6717,7 @@ End Sub
 '' Birim girisi: birimin kendi sifresi ya da yonetici (mudur) sifresi. Dogru giris bu oturumda hatirlanir.
 Private Function BIRIM_SIFRE_KONTROL(ByVal birim As String, ByVal ad As String) As Boolean
     Dim s As String, dogru As String
+    If Not BIRIM_SIFRE_AKTIF Then BIRIM_SIFRE_KONTROL = True: Exit Function
     If mAdmOturum Or InStr(mBirimAcik, "|" & birim & "|") > 0 Then BIRIM_SIFRE_KONTROL = True: Exit Function
     Select Case birim
         Case "MALZEME": dogru = SIFRE_MALZEME

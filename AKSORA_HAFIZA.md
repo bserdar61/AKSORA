@@ -473,6 +473,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Y_MALZEME_ARA alt başlığı "Yatırım (D002, D011) + Yüklenici Stokları", I_MALZEME_ARA "CDP + EPP İlçe Depoları"; ilçe notlarına PB eklendi; stok sayfalarında A sütunu en az 12 (Üretim Yeri başlığı kesilmesin).
 
 ## Birim şifreleri — 2026-10-22
+- ŞU AN KAPALI: BIRIM_SIFRE_AKTIF = False (BIRIM modülü başı). Paylaşımda True yapılacak.
 - Hub'daki "İşlemlere geç" (AKSORA_BIRIM_MALZEME/YATIRIM/MUSTERI/ILCE) önce BIRIM_SIFRE_KONTROL: birimin şifresi (SIFRE_MALZEME/YATIRIM/MUSTERI/ILCE sabitleri, BIRIM modülü başı) ya da yönetici şifresi. Doğru giriş oturumda hatırlanır (mBirimAcik); yönetici şifresi tüm birimleri ve Admin'i açar. Kutu ADM_SIFRE_SOR (yıldızlı, Şifreyi göster), başlık "AKSORA - BIRIM GIRISI". Açılışta yalnız HUB görünür, diğer birim sayfaları VeryHidden.
 
 ## Admin canlı il ve CEO kataloğu — 2026-10-22
