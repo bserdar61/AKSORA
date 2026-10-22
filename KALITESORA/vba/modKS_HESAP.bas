@@ -1,10 +1,10 @@
 Attribute VB_Name = "modKS_HESAP"
 Option Explicit
 
-' TÃ¼retilmiÅŸ alanlarÄ±n tek hesap merkezi. Form, toplu aktarÄ±m ve panel aynÄ± kurallarÄ± kullanÄ±r.
-'   Sevkiyat: tutar, gecikme, teslim durumu, garanti bitiÅŸi (gerÃ§ek geliÅŸ + garanti ayÄ±), garanti durumu
-'   ArÄ±za   : garanti kapsamÄ±, Ã¼retici dÃ¶nÃ¼ÅŸ sÃ¼resi, Ã§Ã¶zÃ¼m sÃ¼resi, durum, Ã¶nceki arÄ±za, tekrar sayÄ±sÄ±
-'   Malzeme : toplam sevk / arÄ±zalÄ± miktar, arÄ±za oranÄ±, son arÄ±za tarihi
+' Türetilmiþ alanlarýn tek hesap merkezi. Form, toplu aktarým ve panel ayný kurallarý kullanýr.
+'   Sevkiyat: tutar, gecikme, teslim durumu, garanti bitiþi (gerçek geliþ + garanti ayý), garanti durumu
+'   Arýza   : garanti kapsamý, üretici dönüþ süresi, çözüm süresi, durum, önceki arýza, tekrar sayýsý
+'   Malzeme : toplam sevk / arýzalý miktar, arýza oraný, son arýza tarihi
 
 Private mUyariGun As Long
 
@@ -25,36 +25,36 @@ Public Sub KS_SevkHesapla(ByRef a As Variant, ByVal i As Long)
     End If
     If hg And hp Then
         a(i, S_GECIKME) = CLng(gelis - plan)
-        If gelis <= plan Then a(i, S_TDURUM) = "ZAMANINDA" Else a(i, S_TDURUM) = "GECÄ°KMELÄ°"
+        If gelis <= plan Then a(i, S_TDURUM) = "ZAMANINDA" Else a(i, S_TDURUM) = "GECÝKMELÝ"
     ElseIf hp Then
         If Date > plan Then
             a(i, S_GECIKME) = CLng(Date - plan)
-            a(i, S_TDURUM) = "GECÄ°KÄ°YOR"
+            a(i, S_TDURUM) = "GECÝKÝYOR"
         Else
             a(i, S_GECIKME) = Empty
-            a(i, S_TDURUM) = "BEKLENÄ°YOR"
+            a(i, S_TDURUM) = "BEKLENÝYOR"
         End If
     ElseIf hg Then
         a(i, S_GECIKME) = Empty
-        a(i, S_TDURUM) = "TESLÄ°M ALINDI"
+        a(i, S_TDURUM) = "TESLÝM ALINDI"
     Else
         a(i, S_GECIKME) = Empty
-        a(i, S_TDURUM) = "TARÄ°H YOK"
+        a(i, S_TDURUM) = "TARÝH YOK"
     End If
     If hg And KS_Sayi(a(i, S_GARAY), gar) Then
         bit = DateAdd("m", CLng(gar), gelis)
         a(i, S_GARBIT) = bit
         kalan = CLng(bit - Date)
         If kalan < 0 Then
-            a(i, S_GDURUM) = "BÄ°TTÄ°"
+            a(i, S_GDURUM) = "BÝTTÝ"
         ElseIf kalan <= mUyariGun Then
-            a(i, S_GDURUM) = "BÄ°TÄ°YOR (" & kalan & " GÃœN)"
+            a(i, S_GDURUM) = "BÝTÝYOR (" & kalan & " GÜN)"
         Else
             a(i, S_GDURUM) = "DEVAM"
         End If
     Else
         a(i, S_GARBIT) = Empty
-        If hg Then a(i, S_GDURUM) = "SÃœRE TANIMSIZ" Else a(i, S_GDURUM) = "TESLÄ°M BEKLÄ°YOR"
+        If hg Then a(i, S_GDURUM) = "SÜRE TANIMSIZ" Else a(i, S_GDURUM) = "TESLÝM BEKLÝYOR"
     End If
 End Sub
 
@@ -68,22 +68,22 @@ Public Sub KS_ArizaHesapla(ByRef a As Variant, ByVal i As Long)
     If ht And KS_Tarih(a(i, A_GARBIT), bit) Then
         If t <= bit Then a(i, A_KAPSAM) = "EVET" Else a(i, A_KAPSAM) = "HAYIR"
     Else
-        a(i, A_KAPSAM) = "BELÄ°RSÄ°Z"
+        a(i, A_KAPSAM) = "BELÝRSÝZ"
     End If
     If hb And hd Then a(i, A_DONUSGUN) = CLng(don - bil) Else a(i, A_DONUSGUN) = Empty
     If ht And hc Then a(i, A_COZUMGUN) = CLng(coz - t) Else a(i, A_COZUMGUN) = Empty
     If hc Then
         a(i, A_DURUM) = "KAPANDI"
     ElseIf hd Then
-        a(i, A_DURUM) = "DÃ–NÃœÅž ALINDI"
+        a(i, A_DURUM) = "DÖNÜÞ ALINDI"
     ElseIf hb Then
-        a(i, A_DURUM) = "ÃœRETÄ°CÄ°DE"
+        a(i, A_DURUM) = "ÜRETÝCÝDE"
     Else
-        a(i, A_DURUM) = "AÃ‡IK"
+        a(i, A_DURUM) = "AÇIK"
     End If
 End Sub
 
-' TÃ¼m tablolarÄ± baÅŸtan hesaplar ve geri yazar. KullanÄ±cÄ± alanlarÄ±na dokunmaz.
+' Tüm tablolarý baþtan hesaplar ve geri yazar. Kullanýcý alanlarýna dokunmaz.
 Public Sub KS_HesaplaTumu()
     Dim loM As ListObject, loS As ListObject, loA As ListObject
     Dim aM As Variant, aS As Variant, aA As Variant
@@ -128,7 +128,7 @@ Public Sub KS_HesaplaTumu()
         Next i
     End If
 
-    ' ArÄ±zalar
+    ' Arýzalar
     Set grp = CreateObject("Scripting.Dictionary")
     If IsArray(aA) Then
         For i = 1 To UBound(aA, 1)
@@ -191,7 +191,7 @@ Public Sub KS_HesaplaTumu()
         Next k
     End If
 
-    ' Malzeme Ã¶zetleri
+    ' Malzeme özetleri
     If IsArray(aM) Then
         For i = 1 To UBound(aM, 1)
             aM(i, M_SEVKMIK) = sevkMik(i)
@@ -218,12 +218,12 @@ End Sub
 
 Public Sub KS_YENIDEN_HESAPLA()
     On Error GoTo Hata
-    KS_Durum "TÃ¼m kayÄ±tlar yeniden hesaplanÄ±yor..."
+    KS_Durum "Tüm kayýtlar yeniden hesaplanýyor..."
     KS_HesaplaTumu
     KS_Durum ""
     Application.StatusBar = False
-    KS_Log "YENÄ°DEN HESAPLA", "", "TÃ¼m tÃ¼retilmiÅŸ alanlar gÃ¼ncellendi"
-    MsgBox "TÃ¼m tÃ¼retilmiÅŸ alanlar yeniden hesaplandÄ±.", vbInformation, KS_AD
+    KS_Log "YENÝDEN HESAPLA", "", "Tüm türetilmiþ alanlar güncellendi"
+    MsgBox "Tüm türetilmiþ alanlar yeniden hesaplandý.", vbInformation, KS_AD
     Exit Sub
 Hata:
     KS_Bitir True

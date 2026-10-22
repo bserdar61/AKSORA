@@ -1,0 +1,8 @@
+' KALİTESORA - ThisWorkbook kodu
+' Yükleyici (KALITESORA_YUKLE) bunu kendisi ekler. Elle kurulumda:
+' VBA penceresinde (Alt+F11) sol tarafta "BuÇalışmaKitabı / ThisWorkbook" öğesine çift tıklayın,
+' aşağıdaki 3 satırı yapıştırın.
+
+Private Sub Workbook_Open()
+    KS_ACILIS
+End Sub

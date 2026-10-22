@@ -1,12 +1,12 @@
 Attribute VB_Name = "modKS_TASARIM"
 Option Explicit
 
-' KALÄ°TESORA gÃ¶rsel dili: lacivert bant, camgÃ¶beÄŸi vurgu, beyaz kartlar, Segoe UI.
+' KALÝTESORA görsel dili: lacivert bant, camgöbeði vurgu, beyaz kartlar, Segoe UI.
 
 Public Const KS_FONT As String = "Segoe UI"
 Public Const KS_STIL As String = "KS_STIL"
 
-' Ãœst bant (satÄ±r 1-2), menÃ¼ (satÄ±r 3) ve sayfa baÅŸlÄ±ÄŸÄ± (satÄ±r 5).
+' Üst bant (satýr 1-2), menü (satýr 3) ve sayfa baþlýðý (satýr 5).
 Public Sub KS_Bant(ByVal ws As Worksheet, ByVal sonKolon As Long, ByVal baslik As String, ByVal aciklama As String)
     Dim r As Range
     If sonKolon < 18 Then sonKolon = 18
@@ -34,7 +34,7 @@ Public Sub KS_Bant(ByVal ws As Worksheet, ByVal sonKolon As Long, ByVal baslik A
         .HorizontalAlignment = xlLeft
     End With
     With ws.Cells(2, 2)
-        .Value = "Ã‡ORUH BÃ–LGESÄ°  |  MALZEME KALÄ°TE Â· GARANTÄ° Â· ARIZA TAKÄ°BÄ°"
+        .Value = "ÇORUH BÖLGESÝ  |  MALZEME KALÝTE · GARANTÝ · ARIZA TAKÝBÝ"
         .Font.Name = KS_FONT
         .Font.Size = 8
         .Font.Bold = True
@@ -65,18 +65,18 @@ Public Sub KS_Bant(ByVal ws As Worksheet, ByVal sonKolon As Long, ByVal baslik A
     End With
 End Sub
 
-' Her sayfadaki ortak gezinme menÃ¼sÃ¼; aktif sayfa camgÃ¶beÄŸi ile vurgulanÄ±r.
+' Her sayfadaki ortak gezinme menüsü; aktif sayfa camgöbeði ile vurgulanýr.
 Public Sub KS_NavKur(ByVal ws As Worksheet)
     Dim hedef As Variant, etiket As Variant, i As Long, s As Shape, sol As Double
     Dim ust As Double, gen As Double, yuk As Double, aktif As Boolean
     KS_SekilSil ws, "ksNav_"
     hedef = KS_Sayfalar()
-    etiket = Array("PANEL", "KAYIT", "SEVKÄ°YAT", "ARIZA", "MALZEME", "KARNE", _
-        "PERFORMANS", "5 YIL", "TOPLU AKTAR", "TANIMLAR", "GÃœNLÃœK")
+    etiket = Array("PANEL", "KAYIT", "SEVKÝYAT", "ARIZA", "MALZEME", "KARNE", _
+        "PERFORMANS", "5 YIL", "TOPLU AKTAR", "TANIMLAR", "GÜNLÜK")
     sol = ws.Cells(3, 2).Left
     ust = ws.Cells(3, 2).Top + 3
     yuk = ws.Rows(3).RowHeight - 6
-    gen = 76
+    gen = 80
     For i = LBound(hedef) To UBound(hedef)
         aktif = (StrComp(CStr(hedef(i)), ws.Name, vbTextCompare) = 0)
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, sol, ust, gen, yuk)
@@ -167,7 +167,7 @@ Public Sub KS_SekilSil(ByVal ws As Worksheet, ByVal onek As String)
     Next i
 End Sub
 
-' SayfanÄ±n tamamÄ±nÄ± temizler ve kart zemini hazÄ±rlar (veri tablosu olmayan sayfalar iÃ§in).
+' Sayfanýn tamamýný temizler ve kart zemini hazýrlar (veri tablosu olmayan sayfalar için).
 Public Sub KS_SayfaSifirla(ByVal ws As Worksheet)
     Dim i As Long
     For i = ws.Shapes.Count To 1 Step -1
@@ -190,7 +190,7 @@ Public Sub KS_SayfaSifirla(ByVal ws As Worksheet)
     ws.Rows.RowHeight = 18
 End Sub
 
-' BÃ¶lÃ¼m baÅŸlÄ±ÄŸÄ±: lacivert metin, altÄ±nda camgÃ¶beÄŸi Ã§izgi.
+' Bölüm baþlýðý: lacivert metin, altýnda camgöbeði çizgi.
 Public Sub KS_Bolum(ByVal r As Range, ByVal metin As String)
     With r
         .Interior.Color = C_ZEMIN()
@@ -206,7 +206,7 @@ Public Sub KS_Bolum(ByVal r As Range, ByVal metin As String)
     r.EntireRow.RowHeight = 22
 End Sub
 
-' Rapor tablosu baÅŸlÄ±k satÄ±rÄ±.
+' Rapor tablosu baþlýk satýrý.
 Public Sub KS_TabloBaslik(ByVal r As Range, ByVal basliklar As Variant)
     r.Value = basliklar
     With r
@@ -221,7 +221,7 @@ Public Sub KS_TabloBaslik(ByVal r As Range, ByVal basliklar As Variant)
     r.EntireRow.RowHeight = 30
 End Sub
 
-' Rapor tablosu gÃ¶vdesi: beyaz zemin, ince Ã§izgi, zebra.
+' Rapor tablosu gövdesi: beyaz zemin, ince çizgi, zebra.
 Public Sub KS_TabloGovde(ByVal r As Range)
     Dim i As Long
     With r
@@ -238,7 +238,7 @@ Public Sub KS_TabloGovde(ByVal r As Range)
     Next i
 End Sub
 
-' KPI kartÄ±: Ã¼stte etiket, ortada bÃ¼yÃ¼k deÄŸer, altta aÃ§Ä±klama; solda camgÃ¶beÄŸi ÅŸerit.
+' KPI kartý: üstte etiket, ortada büyük deðer, altta açýklama; solda camgöbeði þerit.
 Public Sub KS_KartCiz(ByVal r As Range, ByVal etiket As String)
     With r
         .Interior.Color = C_KART()
@@ -278,13 +278,13 @@ Public Sub KS_KartYaz(ByVal r As Range, ByVal deger As Variant, ByVal bicim As S
         ByVal alt As String, Optional ByVal renk As Long = -1)
     With r.Cells(2, 1)
         .NumberFormat = bicim
-        .Value = deger
+        If IsEmpty(deger) Then .Value = "-" Else .Value = deger
         If renk = -1 Then .Font.Color = C_LAC() Else .Font.Color = renk
     End With
     r.Cells(3, 1).Value = alt
 End Sub
 
-' Pencere ayarlarÄ± sayfa aktif edilerek yapÄ±lÄ±r.
+' Pencere ayarlarý sayfa aktif edilerek yapýlýr.
 Public Sub KS_Pencere(ByVal ws As Worksheet, ByVal yakinlik As Long, ByVal dondurSatir As Long, _
         ByVal basliklar As Boolean)
     ws.Activate

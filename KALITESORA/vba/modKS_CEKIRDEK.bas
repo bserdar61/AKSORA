@@ -1,28 +1,28 @@
 Attribute VB_Name = "modKS_CEKIRDEK"
 Option Explicit
 
-' KALÄ°TESORA Ã§ekirdek modÃ¼lÃ¼: sabitler, renkler ve tÃ¼m modÃ¼llerin ortak yardÄ±mcÄ±larÄ±.
+' KALÝTESORA çekirdek modülü: sabitler, renkler ve tüm modüllerin ortak yardýmcýlarý.
 
-Public Const KS_AD As String = "KALÄ°TESORA"
+Public Const KS_AD As String = "KALÝTESORA"
 Public Const KS_SURUM As String = "1.0"
 Public Const KS_SIFRE As String = "KS2026"
-Public Const KS_ORNEK As String = "Ã–RNEK VERÄ°"
+Public Const KS_ORNEK As String = "ÖRNEK VERÝ"
 Public Const KS_BASLIK_SATIR As Long = 6
 
-' Sayfa adlarÄ±
+' Sayfa adlarý
 Public Const SH_PANEL As String = "PANEL"
 Public Const SH_KAYIT As String = "KAYIT"
-Public Const SH_SEVK As String = "SEVKÄ°YATLAR"
+Public Const SH_SEVK As String = "SEVKÝYATLAR"
 Public Const SH_ARIZA As String = "ARIZALAR"
 Public Const SH_MALZ As String = "MALZEMELER"
-Public Const SH_KARNE As String = "MALZEME KARNESÄ°"
+Public Const SH_KARNE As String = "MALZEME KARNESÝ"
 Public Const SH_PERF As String = "PERFORMANS"
 Public Const SH_RAPOR As String = "5 YILLIK RAPOR"
 Public Const SH_AKTAR As String = "TOPLU AKTAR"
 Public Const SH_TANIM As String = "TANIMLAR"
-Public Const SH_LOG As String = "GÃœNLÃœK"
+Public Const SH_LOG As String = "GÜNLÜK"
 
-' Tablo adlarÄ±
+' Tablo adlarý
 Public Const T_MALZ As String = "tblMalzeme"
 Public Const T_SEVK As String = "tblSevk"
 Public Const T_ARIZA As String = "tblAriza"
@@ -35,7 +35,7 @@ Public Const T_COZUM As String = "tblCozum"
 Public Const T_KARS As String = "tblKarsilayan"
 Public Const T_LOG As String = "tblGunluk"
 
-' MALZEMELER sÃ¼tunlarÄ±
+' MALZEMELER sütunlarý
 Public Const M_KOD As Long = 1
 Public Const M_AD As Long = 2
 Public Const M_KAT As Long = 3
@@ -51,7 +51,7 @@ Public Const M_ORAN As Long = 12
 Public Const M_SONARIZA As Long = 13
 Public Const M_KOLON As Long = 13
 
-' SEVKÄ°YATLAR sÃ¼tunlarÄ±
+' SEVKÝYATLAR sütunlarý
 Public Const S_NO As Long = 1
 Public Const S_SEVKCI As Long = 2
 Public Const S_YER As Long = 3
@@ -75,7 +75,7 @@ Public Const S_ZAMAN As Long = 20
 Public Const S_KULL As Long = 21
 Public Const S_KOLON As Long = 21
 
-' ARIZALAR sÃ¼tunlarÄ±
+' ARIZALAR sütunlarý
 Public Const A_NO As Long = 1
 Public Const A_SEVK As Long = 2
 Public Const A_SERI As Long = 3
@@ -113,23 +113,68 @@ Private mCalc As Long
 
 ' ---------------------------------------------------------------- renkler
 
-Public Function C_LAC() As Long: C_LAC = RGB(12, 45, 79): End Function
-Public Function C_LAC2() As Long: C_LAC2 = RGB(20, 58, 99): End Function
-Public Function C_CAMGOBEGI() As Long: C_CAMGOBEGI = RGB(0, 180, 216): End Function
-Public Function C_TURKUAZ() As Long: C_TURKUAZ = RGB(0, 118, 150): End Function
-Public Function C_ZEMIN() As Long: C_ZEMIN = RGB(241, 245, 249): End Function
-Public Function C_KART() As Long: C_KART = RGB(255, 255, 255): End Function
-Public Function C_CIZGI() As Long: C_CIZGI = RGB(219, 227, 236): End Function
-Public Function C_METIN() As Long: C_METIN = RGB(30, 41, 59): End Function
-Public Function C_GRI() As Long: C_GRI = RGB(100, 116, 139): End Function
-Public Function C_GIRIS() As Long: C_GIRIS = RGB(240, 249, 255): End Function
-Public Function C_OTO() As Long: C_OTO = RGB(236, 246, 248): End Function
-Public Function C_YESIL() As Long: C_YESIL = RGB(16, 150, 100): End Function
-Public Function C_KIRMIZI() As Long: C_KIRMIZI = RGB(220, 53, 69): End Function
-Public Function C_TURUNCU() As Long: C_TURUNCU = RGB(230, 140, 10): End Function
-Public Function C_SERIT() As Long: C_SERIT = RGB(246, 249, 252): End Function
+Public Function C_LAC() As Long
+    C_LAC = RGB(12, 45, 79)
+End Function
 
-' ---------------------------------------------------------------- biÃ§imler
+Public Function C_LAC2() As Long
+    C_LAC2 = RGB(20, 58, 99)
+End Function
+
+Public Function C_CAMGOBEGI() As Long
+    C_CAMGOBEGI = RGB(0, 180, 216)
+End Function
+
+Public Function C_TURKUAZ() As Long
+    C_TURKUAZ = RGB(0, 118, 150)
+End Function
+
+Public Function C_ZEMIN() As Long
+    C_ZEMIN = RGB(241, 245, 249)
+End Function
+
+Public Function C_KART() As Long
+    C_KART = RGB(255, 255, 255)
+End Function
+
+Public Function C_CIZGI() As Long
+    C_CIZGI = RGB(219, 227, 236)
+End Function
+
+Public Function C_METIN() As Long
+    C_METIN = RGB(30, 41, 59)
+End Function
+
+Public Function C_GRI() As Long
+    C_GRI = RGB(100, 116, 139)
+End Function
+
+Public Function C_GIRIS() As Long
+    C_GIRIS = RGB(240, 249, 255)
+End Function
+
+Public Function C_OTO() As Long
+    C_OTO = RGB(236, 246, 248)
+End Function
+
+Public Function C_YESIL() As Long
+    C_YESIL = RGB(16, 150, 100)
+End Function
+
+Public Function C_KIRMIZI() As Long
+    C_KIRMIZI = RGB(220, 53, 69)
+End Function
+
+Public Function C_TURUNCU() As Long
+    C_TURUNCU = RGB(230, 140, 10)
+End Function
+
+Public Function C_SERIT() As Long
+    C_SERIT = RGB(246, 249, 252)
+End Function
+
+
+' ---------------------------------------------------------------- biçimler
 
 Public Function KS_FmtTL() As String
     KS_FmtTL = "#,##0.00 """ & ChrW(8378) & """"
@@ -175,7 +220,7 @@ Public Sub KS_Durum(ByVal metin As String)
     Application.StatusBar = KS_AD & " | " & metin
 End Sub
 
-' ---------------------------------------------------------------- sayfa / tablo eriÅŸimi
+' ---------------------------------------------------------------- sayfa / tablo eriþimi
 
 Public Function KS_WS(ByVal ad As String) As Worksheet
     Dim ws As Worksheet
@@ -199,12 +244,12 @@ Public Function KS_LO(ByVal ad As String) As ListObject
     Next ws
 End Function
 
-' Tablo yoksa aÃ§Ä±klayÄ±cÄ± hata verir.
+' Tablo yoksa açýklayýcý hata verir.
 Public Function KS_LOZ(ByVal ad As String) As ListObject
     Set KS_LOZ = KS_LO(ad)
     If KS_LOZ Is Nothing Then
-        Err.Raise vbObjectError + 7001, KS_AD, "Tablo bulunamadÄ±: " & ad & _
-            ". Ã–nce KALITESORA_KUR makrosunu Ã§alÄ±ÅŸtÄ±rÄ±n."
+        Err.Raise vbObjectError + 7001, KS_AD, "Tablo bulunamadý: " & ad & _
+            ". Önce KALITESORA_KUR makrosunu çalýþtýrýn."
     End If
 End Function
 
@@ -233,7 +278,7 @@ Public Sub KS_AdHucre(ByVal ad As String, ByVal hucre As Range)
     KS_AdTanimla ad, "='" & hucre.Worksheet.Name & "'!" & hucre.Address
 End Sub
 
-' Tablonun veri gÃ¶vdesini 2 boyutlu dizi olarak verir; boÅŸ tabloda Empty.
+' Tablonun veri gövdesini 2 boyutlu dizi olarak verir; boþ tabloda Empty.
 Public Function KS_Veri(ByVal lo As ListObject) As Variant
     Dim a As Variant, b() As Variant
     If lo.DataBodyRange Is Nothing Then Exit Function
@@ -251,7 +296,7 @@ Public Function KS_Satir(ByVal a As Variant) As Long
     If IsArray(a) Then KS_Satir = UBound(a, 1)
 End Function
 
-' Dizinin i. satÄ±rÄ±nÄ± 1 satÄ±rlÄ±k yeni bir 2 boyutlu diziye kopyalar.
+' Dizinin i. satýrýný 1 satýrlýk yeni bir 2 boyutlu diziye kopyalar.
 Public Function KS_SatirKopya(ByRef a As Variant, ByVal i As Long) As Variant
     Dim b() As Variant, j As Long
     ReDim b(1 To 1, 1 To UBound(a, 2))
@@ -267,7 +312,7 @@ Public Function KS_BosSatir(ByVal kolon As Long) As Variant
     KS_BosSatir = b
 End Function
 
-' satir = 0 ise sona yeni satÄ±r ekler. YazÄ±lan ListRow sÄ±rasÄ±nÄ± dÃ¶ndÃ¼rÃ¼r.
+' satir = 0 ise sona yeni satýr ekler. Yazýlan ListRow sýrasýný döndürür.
 Public Function KS_SatirYaz(ByVal lo As ListObject, ByVal satir As Long, ByRef v As Variant) As Long
     If satir = 0 Then
         lo.ListRows.Add
@@ -277,7 +322,7 @@ Public Function KS_SatirYaz(ByVal lo As ListObject, ByVal satir As Long, ByRef v
     KS_SatirYaz = satir
 End Function
 
-' Ã‡ok satÄ±rÄ± tek seferde tablonun sonuna ekler (toplu aktarÄ±m ve Ã¶rnek veri iÃ§in).
+' Çok satýrý tek seferde tablonun sonuna ekler (toplu aktarým ve örnek veri için).
 Public Sub KS_TopluEkle(ByVal lo As ListObject, ByRef v As Variant, ByVal adet As Long)
     Dim w() As Variant, i As Long, j As Long, c As Long, ilk As Long
     Dim ws As Worksheet, bas As Range
@@ -339,7 +384,7 @@ Public Function KS_NoBicim(ByVal onek As String, ByVal n As Long) As String
     KS_NoBicim = onek & Format$(n, "000000")
 End Function
 
-' Tek sÃ¼tunluk tanÄ±m tablosundan bÃ¼yÃ¼k harfli anahtar sÃ¶zlÃ¼ÄŸÃ¼.
+' Tek sütunluk taným tablosundan büyük harfli anahtar sözlüðü.
 Public Function KS_Sozluk(ByVal tablo As String, Optional ByVal kolon As Long = 1) As Object
     Dim d As Object, a As Variant, i As Long, k As String, lo As ListObject
     Set d = CreateObject("Scripting.Dictionary")
@@ -372,6 +417,8 @@ End Sub
 Public Sub KS_Kapat(ByVal ws As Worksheet)
     If Not KS_KorumaAktif() Then Exit Sub
     If ws.ProtectContents Then Exit Sub
+    ' TANIMLAR açýk kalýr: kullanýcý listelere satýr ekleyebilmeli.
+    If StrComp(ws.Name, SH_TANIM, vbTextCompare) = 0 Then Exit Sub
     ws.Protect Password:=KS_SIFRE, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowFormattingColumns:=True, AllowFiltering:=True, AllowSorting:=True
     ws.EnableSelection = xlNoRestrictions
@@ -379,10 +426,10 @@ End Sub
 
 Public Sub KS_KORUMA_DEGISTIR()
     Dim s As String, ws As Worksheet, ac As Boolean
-    s = InputBox("Koruma ÅŸifresini girin:", KS_AD)
+    s = InputBox("Koruma þifresini girin:", KS_AD)
     If Len(s) = 0 Then Exit Sub
     If s <> KS_SIFRE Then
-        MsgBox "Åžifre hatalÄ±.", vbExclamation, KS_AD
+        MsgBox "Þifre hatalý.", vbExclamation, KS_AD
         Exit Sub
     End If
     ac = KS_KorumaAktif()
@@ -393,8 +440,8 @@ Public Sub KS_KORUMA_DEGISTIR()
             If ac Then KS_Ac ws Else KS_Kapat ws
         End If
     Next ws
-    KS_Log "KORUMA", "", IIf(ac, "Sayfa korumasÄ± kapatÄ±ldÄ±", "Sayfa korumasÄ± aÃ§Ä±ldÄ±")
-    MsgBox "Sayfa korumasÄ± " & IIf(ac, "KAPATILDI. DoÄŸrudan dÃ¼zenleme aÃ§Ä±k; iÅŸiniz bitince tekrar aÃ§Ä±n.", "AÃ‡ILDI."), _
+    KS_Log "KORUMA", "", IIf(ac, "Sayfa korumasý kapatýldý", "Sayfa korumasý açýldý")
+    MsgBox "Sayfa korumasý " & IIf(ac, "KAPATILDI. Doðrudan düzenleme açýk; iþiniz bitince tekrar açýn.", "AÇILDI."), _
         vbInformation, KS_AD
 End Sub
 
@@ -413,7 +460,7 @@ Public Function KS_BizimSayfa(ByVal ad As String) As Boolean
     Next s
 End Function
 
-' ---------------------------------------------------------------- deÄŸer Ã§Ã¶zÃ¼mleme
+' ---------------------------------------------------------------- deðer çözümleme
 
 Public Function KS_Anahtar(ByVal v As Variant) As String
     If IsError(v) Or IsEmpty(v) Or IsNull(v) Then Exit Function
@@ -434,7 +481,7 @@ Public Function KS_Metin(ByVal v As Variant) As String
     KS_Metin = Trim$(CStr(v))
 End Function
 
-' Tarih, seri numarasÄ± veya gg.aa.yyyy / yyyy-aa-gg metnini kabul eder.
+' Tarih, seri numarasý veya gg.aa.yyyy / yyyy-aa-gg metnini kabul eder.
 Public Function KS_Tarih(ByVal v As Variant, ByRef d As Date) As Boolean
     Dim s As String, p() As String, g As Long, a As Long, y As Long, t As Date
     If IsError(v) Then Exit Function
@@ -510,7 +557,7 @@ Public Function KS_ParamSayi(ByVal ad As String, ByVal varsayilan As Double) As 
 Son:
 End Function
 
-' ---------------------------------------------------------------- gÃ¼nlÃ¼k
+' ---------------------------------------------------------------- günlük
 
 Public Sub KS_Log(ByVal islem As String, ByVal kayit As String, ByVal detay As String)
     Dim lo As ListObject, v As Variant
@@ -529,9 +576,9 @@ Son:
     If Not lo Is Nothing Then KS_Kapat lo.Parent
 End Sub
 
-' ---------------------------------------------------------------- sÄ±ralama
+' ---------------------------------------------------------------- sýralama
 
-' a dizisinin satÄ±r sÄ±ralarÄ±nÄ±, kolon deÄŸerine gÃ¶re sÄ±ralÄ± indeks dizisi olarak verir.
+' a dizisinin satýr sýralarýný, kolon deðerine göre sýralý indeks dizisi olarak verir.
 Public Function KS_SiraIndeks(ByRef a As Variant, ByVal kolon As Long, ByVal azalan As Boolean, _
         Optional ByVal adet As Long = -1) As Variant
     Dim idx() As Long, n As Long, i As Long, j As Long, t As Long
@@ -563,7 +610,7 @@ Private Function KS_Once(ByVal x As Variant, ByVal y As Variant, ByVal azalan As
         KS_Once = (Not bosX And bosY)
         Exit Function
     End If
-    If (IsNumeric(x) And IsNumeric(y)) Or (IsDate(x) And IsDate(y)) Then
+    If KS_SayisalTur(x) And KS_SayisalTur(y) Then
         If CDbl(x) > CDbl(y) Then
             k = 1
         ElseIf CDbl(x) < CDbl(y) Then
@@ -573,4 +620,11 @@ Private Function KS_Once(ByVal x As Variant, ByVal y As Variant, ByVal azalan As
         k = StrComp(CStr(x), CStr(y), vbTextCompare)
     End If
     If azalan Then KS_Once = (k > 0) Else KS_Once = (k < 0)
+End Function
+
+Private Function KS_SayisalTur(ByVal v As Variant) As Boolean
+    Select Case VarType(v)
+        Case vbInteger, vbLong, vbSingle, vbDouble, vbCurrency, vbDate, vbDecimal, vbByte
+            KS_SayisalTur = True
+    End Select
 End Function

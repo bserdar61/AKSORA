@@ -1,10 +1,10 @@
 Attribute VB_Name = "modKS_TEDARIKCI"
 Option Explicit
 
-' Ã‡oruh bÃ¶lgesine 01.01.2026 ve sonrasÄ± teslimat tarihli SAP satÄ±nalma kalemlerinden Ã§Ä±karÄ±lan
-' tedarikÃ§i listesi (kaynak: TEDARÄ°KÃ‡Ä° Ä°SÄ°M.xlsx, "cdp" sayfasÄ±, 47 tedarikÃ§i kodu).
-' Ad, SAP'taki yazÄ±mdÄ±r (SAP 35 karakterde keser). TÃ¼r, SAP malzeme koduna gÃ¶re tahmindir:
-' 3xxx = hizmet, 1xxx / 7xxx = malzeme. Kontrol edip TANIMLAR sayfasÄ±nda dÃ¼zeltin.
+' Çoruh bölgesine 01.01.2026 ve sonrasý teslimat tarihli SAP satýnalma kalemlerinden çýkarýlan
+' tedarikçi listesi (kaynak: TEDARÝKÇÝ ÝSÝM.xlsx, "cdp" sayfasý, 47 tedarikçi kodu).
+' Ad, SAP'taki yazýmdýr (SAP 35 karakterde keser). Tür, SAP malzeme koduna göre tahmindir:
+' 3xxx = hizmet, 1xxx / 7xxx = malzeme. Kontrol edip TANIMLAR sayfasýnda düzeltin.
 
 Private Sub E(ByRef v As Variant, ByRef n As Long, ByVal kod As String, ByVal ad As String, _
         ByVal tur As String, ByVal yer As String, ByVal notu As String)
@@ -21,57 +21,57 @@ Public Function KS_TedarikciVeri(ByRef n As Long) As Variant
     Dim v() As Variant
     ReDim v(1 To 47, 1 To 6)
     n = 0
-    E v, n, "1200007200", "FIRAT ELEKTRÄ°K DAÄžITIM A.Åž.", "Kurum Ä°Ã§i", "TRABZON", "Grup ÅŸirketi / kurum iÃ§i transfer"
-    E v, n, "1300000429", "AKILCI BILIÅžIM Ã‡Ã–ZÃœMLERI VE DAN. A.", "Hizmet", "TRABZON", ""
-    E v, n, "1300000622", "GEPA ELEKTRONÄ°K SANAYÄ° VE TÄ°CARET L", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300000637", "BOYDEM YAPI VE ELEKTRÄ°K LTD. ÅžTÄ°.", "Malzeme", "GÃœMÃœÅžHANE, GÄ°RESUN", ""
-    E v, n, "1300000645", "MEKAP DERÄ° VE AYAKKABI SANAYÄ° TÄ°C.A", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300000667", "ALTINSOY ENERJÄ° MAKÄ°NE Ä°NÅžAAT TURÄ°Z", "Malzeme", "ARTVÄ°N, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300000704", "REFORM ALTYAPI BILISIM VE TEKN.HIZM", "Hizmet", "TRABZON", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
-    E v, n, "1300000706", "PÄ°RAMÄ°T Ä°Åž GÃœVENLÄ°ÄžÄ° MALZEMELERÄ° SA", "Malzeme", "GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300000769", "BTC BÄ°LÄ°ÅžÄ°M HÄ°ZMETLERÄ° A.Åž.", "Hizmet", "TRABZON", ""
-    E v, n, "1300000892", "NAR SÄ°STEM TEKNOLOJÄ° ANONÄ°M ÅžÄ°RKETÄ°", "Hizmet", "TRABZON", ""
-    E v, n, "1300001214", "BAYLAN Ã–LÃ‡Ãœ ALETLERÄ° SAN. VE TÄ°C.A.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001244", "DAKKÄ°K PLASTÄ°K METAL MAKÄ°NA VE KALI", "Malzeme", "GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001251", "MAVÄ° ALP BÄ°LGÄ° TEKNOLOJÄ°LERÄ° TÄ°C.LT", "Malzeme", "TRABZON", ""
-    E v, n, "1300001281", "Ä°ÅžTEKS Ä°Åž ELBÄ°SELERÄ° TEKS Ä°NÅž PROM", "Malzeme", "GÃœMÃœÅžHANE", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
+    E v, n, "1200007200", "FIRAT ELEKTRÝK DAÐITIM A.Þ.", "Kurum Ýçi", "TRABZON", "Grup þirketi / kurum içi transfer"
+    E v, n, "1300000429", "AKILCI BILIÞIM ÇÖZÜMLERI VE DAN. A.", "Hizmet", "TRABZON", ""
+    E v, n, "1300000622", "GEPA ELEKTRONÝK SANAYÝ VE TÝCARET L", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300000637", "BOYDEM YAPI VE ELEKTRÝK LTD. ÞTÝ.", "Malzeme", "GÜMÜÞHANE, GÝRESUN", ""
+    E v, n, "1300000645", "MEKAP DERÝ VE AYAKKABI SANAYÝ TÝC.A", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300000667", "ALTINSOY ENERJÝ MAKÝNE ÝNÞAAT TURÝZ", "Malzeme", "ARTVÝN, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300000704", "REFORM ALTYAPI BILISIM VE TEKN.HIZM", "Hizmet", "TRABZON", "Ayný firma farklý tedarikçi kodu ile de var"
+    E v, n, "1300000706", "PÝRAMÝT ÝÞ GÜVENLÝÐÝ MALZEMELERÝ SA", "Malzeme", "GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300000769", "BTC BÝLÝÞÝM HÝZMETLERÝ A.Þ.", "Hizmet", "TRABZON", ""
+    E v, n, "1300000892", "NAR SÝSTEM TEKNOLOJÝ ANONÝM ÞÝRKETÝ", "Hizmet", "TRABZON", ""
+    E v, n, "1300001214", "BAYLAN ÖLÇÜ ALETLERÝ SAN. VE TÝC.A.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001244", "DAKKÝK PLASTÝK METAL MAKÝNA VE KALI", "Malzeme", "GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001251", "MAVÝ ALP BÝLGÝ TEKNOLOJÝLERÝ TÝC.LT", "Malzeme", "TRABZON", ""
+    E v, n, "1300001281", "ÝÞTEKS ÝÞ ELBÝSELERÝ TEKS ÝNÞ PROM", "Malzeme", "GÜMÜÞHANE", "Ayný firma farklý tedarikçi kodu ile de var"
     E v, n, "1300001282", "MUHAMMED SELMAN KELES", "Malzeme", "TRABZON", ""
-    E v, n, "1300001290", "ENTES ELEKTRONÄ°K CÄ°HAZLAR AÅž", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001292", "MAPSAN MATBAACILIK LTD.ÅžTÄ°.", "Malzeme", "TRABZON", ""
-    E v, n, "1300001309", "CEMDAÄž AYDINLATMA SAN VE TÄ°C.A .Åž", "Malzeme", "ARTVÄ°N, TRABZON", ""
-    E v, n, "1300001354", "Ã‡ELÄ°KLER DEMÄ°R DÄ°REK Ä°MALAT VE TÄ°C.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001363", "ALTERNATÄ°F BÄ°LGÄ°SAYAR YAZ.", "Hizmet", "TRABZON", ""
-    E v, n, "1300001389", "HALÄ°Ã‡ TEKNÄ°K MAK.SAN.VE DIÅž TÄ°C.LTD", "Malzeme", "TRABZON", ""
-    E v, n, "1300001408", "AVANSAS OFÄ°S MALZEMELERÄ° TÄ°C.A.Åž.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001416", "LUNA ELEKTRÄ°K ELEKTRONÄ°K", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001425", "FEDERAL ELEKTRÄ°K YATIRIM VE TÄ°C. A.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001440", "DKO KALIP - MEHMET DELÄ°KEÅžOÄžLU", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001450", "GRUP Ä°MAJ AYDINLAT SAN.TÄ°C. A.Åž.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001752", "EAM MÃœHENDÄ°SLÄ°K VE ELEKTRÄ°K SÄ°STEML", "Hizmet", "TRABZON", ""
-    E v, n, "1300001787", "AKTÄ°F ENERJÄ° Ä°NÅžAAT SAN.TÄ°C.LTD ÅžTÄ°", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", ""
-    E v, n, "1300001814", "TÃœRMAK MAKÄ°NA SANAYÄ° VE TÄ°CARET A.Åž", "Malzeme", "TRABZON", ""
-    E v, n, "1300001893", "ER ELEKTRONÄ°K SAN.VE TÄ°C.A.Åž.", "Malzeme", "GÄ°RESUN", ""
-    E v, n, "1300001978", "FONT ELEKTRÄ°K TÄ°CARET LTD.ÅžTÄ°.", "Malzeme", "TRABZON", ""
-    E v, n, "1300001983", "NEXA ENERJÄ° ELK.Ä°TH.Ä°HR.SAN.VE TÄ°C.", "Malzeme", "TRABZON", ""
-    E v, n, "1300002105", "GANTEK TEKNOLOJÄ° BÄ°LÄ°ÅžÄ°M Ã‡Ã–ZÃœMLERÄ°", "Hizmet", "TRABZON", ""
-    E v, n, "1300002328", "EKÄ°P TEMÄ°ZLÄ°K VE HÄ°JYEN ÃœRÃœNLERÄ° TE", "Malzeme", "TRABZON", ""
-    E v, n, "1300002610", "TESTONE TEKNOLOJÄ° Ã‡Ã–ZÃœML.SAN.VE TÄ°C", "Malzeme", "TRABZON", ""
-    E v, n, "1300002778", "HTMLTEK YAZILIM SÄ°STEMLERÄ° DANIÅžMAN", "Hizmet", "TRABZON", ""
-    E v, n, "1300003021", "MÄ°NA GALVANÄ°Z SAN.TÄ°C.A.Åž.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", "SAP'ta farklÄ± yazÄ±m: MÄ°NA GALVANÄ°Z SAN.VE TÄ°C. A.Åž."
+    E v, n, "1300001290", "ENTES ELEKTRONÝK CÝHAZLAR AÞ", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001292", "MAPSAN MATBAACILIK LTD.ÞTÝ.", "Malzeme", "TRABZON", ""
+    E v, n, "1300001309", "CEMDAÐ AYDINLATMA SAN VE TÝC.A .Þ", "Malzeme", "ARTVÝN, TRABZON", ""
+    E v, n, "1300001354", "ÇELÝKLER DEMÝR DÝREK ÝMALAT VE TÝC.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001363", "ALTERNATÝF BÝLGÝSAYAR YAZ.", "Hizmet", "TRABZON", ""
+    E v, n, "1300001389", "HALÝÇ TEKNÝK MAK.SAN.VE DIÞ TÝC.LTD", "Malzeme", "TRABZON", ""
+    E v, n, "1300001408", "AVANSAS OFÝS MALZEMELERÝ TÝC.A.Þ.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001416", "LUNA ELEKTRÝK ELEKTRONÝK", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001425", "FEDERAL ELEKTRÝK YATIRIM VE TÝC. A.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001440", "DKO KALIP - MEHMET DELÝKEÞOÐLU", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001450", "GRUP ÝMAJ AYDINLAT SAN.TÝC. A.Þ.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, RÝZE, TRABZON", ""
+    E v, n, "1300001752", "EAM MÜHENDÝSLÝK VE ELEKTRÝK SÝSTEML", "Hizmet", "TRABZON", ""
+    E v, n, "1300001787", "AKTÝF ENERJÝ ÝNÞAAT SAN.TÝC.LTD ÞTÝ", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", ""
+    E v, n, "1300001814", "TÜRMAK MAKÝNA SANAYÝ VE TÝCARET A.Þ", "Malzeme", "TRABZON", ""
+    E v, n, "1300001893", "ER ELEKTRONÝK SAN.VE TÝC.A.Þ.", "Malzeme", "GÝRESUN", ""
+    E v, n, "1300001978", "FONT ELEKTRÝK TÝCARET LTD.ÞTÝ.", "Malzeme", "TRABZON", ""
+    E v, n, "1300001983", "NEXA ENERJÝ ELK.ÝTH.ÝHR.SAN.VE TÝC.", "Malzeme", "TRABZON", ""
+    E v, n, "1300002105", "GANTEK TEKNOLOJÝ BÝLÝÞÝM ÇÖZÜMLERÝ", "Hizmet", "TRABZON", ""
+    E v, n, "1300002328", "EKÝP TEMÝZLÝK VE HÝJYEN ÜRÜNLERÝ TE", "Malzeme", "TRABZON", ""
+    E v, n, "1300002610", "TESTONE TEKNOLOJÝ ÇÖZÜML.SAN.VE TÝC", "Malzeme", "TRABZON", ""
+    E v, n, "1300002778", "HTMLTEK YAZILIM SÝSTEMLERÝ DANIÞMAN", "Hizmet", "TRABZON", ""
+    E v, n, "1300003021", "MÝNA GALVANÝZ SAN.TÝC.A.Þ.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", "SAP'ta farklý yazým: MÝNA GALVANÝZ SAN.VE TÝC. A.Þ."
     E v, n, "1300003115", "MERFA ENERJI ELEKTRIK SAN. VE TIC.", "Malzeme", "TRABZON", ""
-    E v, n, "1300003210", "ATLI OTOMATÄ°V NAKLÄ°YAT SAN.TÄ°C.LTD.", "Malzeme", "GÄ°RESUN", ""
-    E v, n, "1300003265", "ETÄ°EN ENERJÄ° SÄ°STEMLERÄ° SAN.TÄ°C.LTD", "Malzeme", "ARTVÄ°N", ""
-    E v, n, "1300003330", "TUÅžLA TEKNOLOJI HIZMETLERI A.Åž.", "Hizmet", "TRABZON", ""
-    E v, n, "1300003503", "TENSE ELEKTRÄ°K ELEKTRONÄ°K SAN. TÄ°C.", "Malzeme", "GÃœMÃœÅžHANE", ""
-    E v, n, "1300003520", "ALTERNANS ELEKTRÄ°K GÃœÃ‡ SÄ°STEMLERÄ° M", "Hizmet", "TRABZON", ""
-    E v, n, "1300003523", "VERÄ° BÄ°LGÄ° MERKEZÄ° BÄ°LÄ°ÅžÄ°M HÄ°Z. A.Åž", "Hizmet", "TRABZON", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
-    E v, n, "1300009683", "REFORM ALTYAPI BILISIM VE TEKN.HIZM", "Hizmet", "TRABZON", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
-    E v, n, "1300023370", "Ä°ÅžTEKS Ä°Åž ELBÄ°SELERÄ° TEKSTÄ°L Ä°NÅž.", "Malzeme", "ARTVÄ°N, GÃœMÃœÅžHANE, GÄ°RESUN, RÄ°ZE, TRABZON", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
-    E v, n, "1300026317", "VERÄ° BÄ°LGÄ° MERKEZÄ° BÄ°LÄ°ÅžÄ°M HÄ°Z. A.Åž", "Hizmet", "TRABZON", "AynÄ± firma farklÄ± tedarikÃ§i kodu ile de var"
+    E v, n, "1300003210", "ATLI OTOMATÝV NAKLÝYAT SAN.TÝC.LTD.", "Malzeme", "GÝRESUN", ""
+    E v, n, "1300003265", "ETÝEN ENERJÝ SÝSTEMLERÝ SAN.TÝC.LTD", "Malzeme", "ARTVÝN", ""
+    E v, n, "1300003330", "TUÞLA TEKNOLOJI HIZMETLERI A.Þ.", "Hizmet", "TRABZON", ""
+    E v, n, "1300003503", "TENSE ELEKTRÝK ELEKTRONÝK SAN. TÝC.", "Malzeme", "GÜMÜÞHANE", ""
+    E v, n, "1300003520", "ALTERNANS ELEKTRÝK GÜÇ SÝSTEMLERÝ M", "Hizmet", "TRABZON", ""
+    E v, n, "1300003523", "VERÝ BÝLGÝ MERKEZÝ BÝLÝÞÝM HÝZ. A.Þ", "Hizmet", "TRABZON", "Ayný firma farklý tedarikçi kodu ile de var"
+    E v, n, "1300009683", "REFORM ALTYAPI BILISIM VE TEKN.HIZM", "Hizmet", "TRABZON", "Ayný firma farklý tedarikçi kodu ile de var"
+    E v, n, "1300023370", "ÝÞTEKS ÝÞ ELBÝSELERÝ TEKSTÝL ÝNÞ.", "Malzeme", "ARTVÝN, GÜMÜÞHANE, GÝRESUN, RÝZE, TRABZON", "Ayný firma farklý tedarikçi kodu ile de var"
+    E v, n, "1300026317", "VERÝ BÝLGÝ MERKEZÝ BÝLÝÞÝM HÝZ. A.Þ", "Hizmet", "TRABZON", "Ayný firma farklý tedarikçi kodu ile de var"
     KS_TedarikciVeri = v
 End Function
 
-' Listede olup tabloda olmayan tedarikÃ§ileri (koda gÃ¶re) TANIMLAR sayfasÄ±na ekler. Mevcutlara dokunmaz.
+' Listede olup tabloda olmayan tedarikçileri (koda göre) TANIMLAR sayfasýna ekler. Mevcutlara dokunmaz.
 Public Function KS_TedarikciEkle() As Long
     Dim lo As ListObject, v As Variant, n As Long, i As Long, j As Long, d As Object
     Dim yeni() As Variant, m As Long, korumali As Boolean
@@ -100,10 +100,10 @@ Public Sub KS_TEDARIKCI_YUKLE()
     Dim m As Long
     On Error GoTo Hata
     m = KS_TedarikciEkle()
-    KS_Log "TEDARÄ°KÃ‡Ä° YÃœKLE", "", m & " tedarikÃ§i eklendi"
-    MsgBox m & " tedarikÃ§i TANIMLAR sayfasÄ±na eklendi." & vbCrLf & _
-        "Kodu zaten kayÄ±tlÄ± olanlar deÄŸiÅŸtirilmedi.", vbInformation, KS_AD
+    KS_Log "TEDARÝKÇÝ YÜKLE", "", m & " tedarikçi eklendi"
+    MsgBox m & " tedarikçi TANIMLAR sayfasýna eklendi." & vbCrLf & _
+        "Kodu zaten kayýtlý olanlar deðiþtirilmedi.", vbInformation, KS_AD
     Exit Sub
 Hata:
-    MsgBox "TedarikÃ§i listesi yÃ¼klenemedi: " & Err.Description, vbExclamation, KS_AD
+    MsgBox "Tedarikçi listesi yüklenemedi: " & Err.Description, vbExclamation, KS_AD
 End Sub
