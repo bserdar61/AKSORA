@@ -475,6 +475,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## Birim şifreleri — 2026-10-22
 - Hub'daki "İşlemlere geç" (AKSORA_BIRIM_MALZEME/YATIRIM/MUSTERI/ILCE) önce BIRIM_SIFRE_KONTROL: birimin şifresi (SIFRE_MALZEME/YATIRIM/MUSTERI/ILCE sabitleri, BIRIM modülü başı) ya da yönetici şifresi. Doğru giriş oturumda hatırlanır (mBirimAcik); yönetici şifresi tüm birimleri ve Admin'i açar. Kutu ADM_SIFRE_SOR (yıldızlı, Şifreyi göster), başlık "AKSORA - BIRIM GIRISI". Açılışta yalnız HUB görünür, diğer birim sayfaları VeryHidden.
 
+## Admin canlı il ve CEO kataloğu — 2026-10-22
+- ADM_CANLI_IL birimin ekrandaki ilini A5 başlığından okuyordu; Yatırım/İlçe il değişince A5 güncellenmiyor → Artvin satırına Gümüşhane yatırımı (89,2 mn) ve Trabzon ilçe/İSG (2.595) yazılıyordu. Artık önce verinin ÜY kodundan (A7:A40, ATIL_TESIS_IL), sonra BX19/BX20/A5.
+- Doğru değerler (22.10 10:38 dosyası, çevrimdışı): Artvin İSG zimmet 1.042 adet/253 kalem, 5 il toplam 4.297; Artvin yatırım 119,99 mn TL; Yatırım toplam ≈1.073 mn; İlçe 9.911 satır/160 depo/39,4 mn; Müşteri 145.108 satır; atıl il sayıları ATIL sayfasıyla aynı (Artvin 259).
+- Katalog: katalog/AKSORA_Katalog.pdf (13 sayfa A4 yatay; HTML scratchpad/katalog → Chromium print-to-pdf). Yalnız doğrulanmış rakamlar; hatalı Admin ekranları kullanılmadı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

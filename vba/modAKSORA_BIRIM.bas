@@ -7163,13 +7163,32 @@ Private Function ADM_IL_KOD(ByVal metin As String) As String
 End Function
 
 ' Birimin ekrandaki ili (canli stok sayfasinin A5 basligindan).
+' Birimin ekrandaki ili: once verinin uretim yeri kodundan (en guvenilir; sayfa basligi il degisince
+' guncellenmeyebilir), veri yoksa sayfa isaretlerinden (BX19/BX20) ve basliktan (A5).
 Private Function ADM_CANLI_IL(ByVal u As Long) As String
-    Dim kx As Variant, sh As Worksheet, bb As Variant
+    Dim kx As Variant, sh As Worksheet, bb As Variant, r As Long, uy As String, v As Variant
     bb = ADM_BIRIMLER()
     For Each kx In bb(u)(2)
         Set sh = ADM_WS(CStr(kx))
         If Not sh Is Nothing Then
-            ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("A5").Value2))
+            v = sh.Range("A7:A40").Value2
+            For r = 1 To UBound(v, 1)
+                If Not IsError(v(r, 1)) Then
+                    uy = Trim$(CStr(v(r, 1)))
+                    If Len(uy) = 4 Then
+                        ADM_CANLI_IL = ATIL_TESIS_IL(uy)
+                        If Len(ADM_CANLI_IL) > 0 Then Exit Function
+                    End If
+                End If
+            Next r
+        End If
+    Next kx
+    For Each kx In bb(u)(2)
+        Set sh = ADM_WS(CStr(kx))
+        If Not sh Is Nothing Then
+            ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("BX19").Value2))
+            If Len(ADM_CANLI_IL) = 0 Then ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("BX20").Value2))
+            If Len(ADM_CANLI_IL) = 0 Then ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("A5").Value2))
             If Len(ADM_CANLI_IL) > 0 Then Exit Function
         End If
     Next kx
