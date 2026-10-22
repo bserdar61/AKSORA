@@ -10,7 +10,17 @@ Tasarım ailesi AKSORA ile aynıdır: lacivert bant, camgöbeği vurgu, beyaz ka
 
 ---
 
-## 1. Kurulum (yaklaşık 2 dakika)
+## 0. En kolayı: hazır dosya
+
+1. `KALITESORA.xlsm` dosyasını bilgisayardaki bir klasöre kaydedin.
+2. Dosyaya sağ tıklayın > **Özellikler** > alttaki **Engellemeyi kaldır** kutusunu işaretleyin > Tamam.
+   İnternetten indirilen dosyada bu adım yapılmazsa Excel makroları açmaz.
+3. Dosyayı açın, sarı şeritte **İçeriği Etkinleştir**'e basın.
+4. İlk açılışta kurulum kendiliğinden başlar. Sorulara **Evet** deyin, ardından dosyayı kaydedin.
+
+Kurulum kendiliğinden başlamazsa: **Alt+F8** > `KALITESORA_KUR` > Çalıştır.
+
+## 1. Kurulum: modülleri elle içe aktararak (yaklaşık 2 dakika)
 
 1. Excel'de **boş bir çalışma kitabı** açın ve **Makro İçerebilen Excel Çalışma Kitabı (.xlsm)** olarak
    kaydedin (örn. `KALITESORA.xlsm`). Dosyayı OneDrive adresinden değil, bilgisayardaki bir klasörden açın.

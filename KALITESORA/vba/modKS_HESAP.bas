@@ -86,7 +86,7 @@ End Sub
 ' Tüm tablolarý baþtan hesaplar ve geri yazar. Kullanýcý alanlarýna dokunmaz.
 Public Sub KS_HesaplaTumu()
     Dim loM As ListObject, loS As ListObject, loA As ListObject
-    Dim aM As Variant, aS As Variant, aA As Variant
+    Dim aM As Variant, arS As Variant, aA As Variant
     Dim dM As Object, dS As Object, grp As Object, k As Variant
     Dim i As Long, j As Long, n As Long, si As Long, mi As Long
     Dim mik As Double, d As Date, d2 As Date, enYakin As Date, bulundu As Boolean, sira As Long
@@ -98,7 +98,7 @@ Public Sub KS_HesaplaTumu()
     Set loS = KS_LOZ(T_SEVK)
     Set loA = KS_LOZ(T_ARIZA)
     aM = KS_Veri(loM)
-    aS = KS_Veri(loS)
+    arS = KS_Veri(loS)
     aA = KS_Veri(loA)
 
     Set dM = CreateObject("Scripting.Dictionary")
@@ -113,18 +113,18 @@ Public Sub KS_HesaplaTumu()
 
     ' Sevkiyatlar
     Set dS = CreateObject("Scripting.Dictionary")
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            dS(KS_Anahtar(aS(i, S_NO))) = i
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            dS(KS_Anahtar(arS(i, S_NO))) = i
             mi = 0
-            If dM.Exists(KS_Anahtar(aS(i, S_KOD))) Then mi = dM(KS_Anahtar(aS(i, S_KOD)))
+            If dM.Exists(KS_Anahtar(arS(i, S_KOD))) Then mi = dM(KS_Anahtar(arS(i, S_KOD)))
             If mi > 0 Then
-                aS(i, S_AD) = aM(mi, M_AD)
-                If KS_Bos(aS(i, S_GARAY)) Then aS(i, S_GARAY) = aM(mi, M_GARANTI)
-                If KS_Sayi(aS(i, S_ADET), mik) Then sevkMik(mi) = sevkMik(mi) + mik
+                arS(i, S_AD) = aM(mi, M_AD)
+                If KS_Bos(arS(i, S_GARAY)) Then arS(i, S_GARAY) = aM(mi, M_GARANTI)
+                If KS_Sayi(arS(i, S_ADET), mik) Then sevkMik(mi) = sevkMik(mi) + mik
             End If
-            KS_SevkHesapla aS, i
-            aS(i, S_ARIZA) = 0
+            KS_SevkHesapla arS, i
+            arS(i, S_ARIZA) = 0
         Next i
     End If
 
@@ -135,12 +135,12 @@ Public Sub KS_HesaplaTumu()
             si = 0
             If dS.Exists(KS_Anahtar(aA(i, A_SEVK))) Then si = dS(KS_Anahtar(aA(i, A_SEVK)))
             If si > 0 Then
-                aA(i, A_KOD) = aS(si, S_KOD)
-                aA(i, A_AD) = aS(si, S_AD)
-                aA(i, A_SEVKCI) = aS(si, S_SEVKCI)
-                aA(i, A_YER) = aS(si, S_YER)
-                aA(i, A_GARBIT) = aS(si, S_GARBIT)
-                If KS_Sayi(aA(i, A_ADET), mik) Then aS(si, S_ARIZA) = aS(si, S_ARIZA) + mik
+                aA(i, A_KOD) = arS(si, S_KOD)
+                aA(i, A_AD) = arS(si, S_AD)
+                aA(i, A_SEVKCI) = arS(si, S_SEVKCI)
+                aA(i, A_YER) = arS(si, S_YER)
+                aA(i, A_GARBIT) = arS(si, S_GARBIT)
+                If KS_Sayi(aA(i, A_ADET), mik) Then arS(si, S_ARIZA) = arS(si, S_ARIZA) + mik
             End If
             mi = 0
             If dM.Exists(KS_Anahtar(aA(i, A_KOD))) Then mi = dM(KS_Anahtar(aA(i, A_KOD)))
@@ -202,7 +202,7 @@ Public Sub KS_HesaplaTumu()
     End If
 
     KS_DiziGeriYaz loM, aM
-    KS_DiziGeriYaz loS, aS
+    KS_DiziGeriYaz loS, arS
     KS_DiziGeriYaz loA, aA
     KS_Bitir
 End Sub

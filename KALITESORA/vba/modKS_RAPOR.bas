@@ -11,20 +11,20 @@ Public Const R_GARDIS As Long = 20          ' Garanti dýþý arýza satýrý (grafik)
 
 ' ================================================================ ortak toplama
 
-Public Function KS_SevkYil(ByRef aS As Variant, ByVal i As Long) As Long
+Public Function KS_SevkYil(ByRef arS As Variant, ByVal i As Long) As Long
     Dim d As Date
-    If KS_Tarih(aS(i, S_GELIS), d) Then
+    If KS_Tarih(arS(i, S_GELIS), d) Then
         KS_SevkYil = Year(d)
-    ElseIf KS_Tarih(aS(i, S_PLAN), d) Then
+    ElseIf KS_Tarih(arS(i, S_PLAN), d) Then
         KS_SevkYil = Year(d)
     End If
 End Function
 
-Public Function KS_SevkAy(ByRef aS As Variant, ByVal i As Long) As Long
+Public Function KS_SevkAy(ByRef arS As Variant, ByVal i As Long) As Long
     Dim d As Date
-    If KS_Tarih(aS(i, S_GELIS), d) Then
+    If KS_Tarih(arS(i, S_GELIS), d) Then
         KS_SevkAy = Month(d)
-    ElseIf KS_Tarih(aS(i, S_PLAN), d) Then
+    ElseIf KS_Tarih(arS(i, S_PLAN), d) Then
         KS_SevkAy = Month(d)
     End If
 End Function
@@ -34,27 +34,27 @@ Private Function KS_Bol(ByVal pay As Double, ByVal payda As Double) As Variant
 End Function
 
 ' y1..y2 yýllarý arasýndaki göstergeler (0..16). Sevkiyat yýlý: geliþ, yoksa planlanan tarih.
-Public Function KS_Topla(ByRef aS As Variant, ByRef aA As Variant, ByVal y1 As Long, ByVal y2 As Long) As Variant
+Public Function KS_Topla(ByRef arS As Variant, ByRef aA As Variant, ByVal y1 As Long, ByVal y2 As Long) As Variant
     Dim r(0 To 16) As Variant, i As Long, y As Long, x As Double, d As Date, k As String
     Dim cnt As Long, mik As Double, tut As Double, zam As Long, tes As Long, gecTop As Double
     Dim aC As Long, aM As Double, gi As Long, gd As Long, donTop As Double, donN As Long, donMax As Double
     Dim cozTop As Double, cozN As Long, mal As Double, mU As Double, mK As Double, ku As String, kk As String
     ku = KS_Anahtar("Üretici")
     kk = KS_Anahtar("Kurum")
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            y = KS_SevkYil(aS, i)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            y = KS_SevkYil(arS, i)
             If y >= y1 And y <= y2 Then
                 cnt = cnt + 1
-                If KS_Sayi(aS(i, S_ADET), x) Then mik = mik + x
-                If KS_Sayi(aS(i, S_TUTAR), x) Then tut = tut + x
-                Select Case KS_Metin(aS(i, S_TDURUM))
+                If KS_Sayi(arS(i, S_ADET), x) Then mik = mik + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then tut = tut + x
+                Select Case KS_Metin(arS(i, S_TDURUM))
                     Case "ZAMANINDA"
                         zam = zam + 1
                         tes = tes + 1
                     Case "GECÝKMELÝ"
                         tes = tes + 1
-                        If KS_Sayi(aS(i, S_GECIKME), x) Then gecTop = gecTop + x
+                        If KS_Sayi(arS(i, S_GECIKME), x) Then gecTop = gecTop + x
                 End Select
             End If
         Next i
@@ -216,7 +216,7 @@ Hata:
 End Sub
 
 Public Sub KS_RaporHesapla(ByVal yil As Long)
-    Dim ws As Worksheet, aS As Variant, aA As Variant, g As Variant, t As Variant, sut(1 To 6) As Variant
+    Dim ws As Worksheet, arS As Variant, aA As Variant, g As Variant, t As Variant, sut(1 To 6) As Variant
     Dim i As Long, j As Long, y As Long, ay As Long, d As Date, x As Double, korumali As Boolean
     Dim mS(1 To 13) As Double, mT(1 To 13) As Double, mA(1 To 13) As Double, mG(1 To 13) As Double
     Dim mM(1 To 13) As Double, mD(1 To 13) As Double, mDn(1 To 13) As Long, v As Variant, onc As Variant
@@ -224,15 +224,15 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
     Set ws = KS_WS(SH_RAPOR)
     korumali = ws.ProtectContents
     KS_Ac ws
-    aS = KS_Veri(KS_LOZ(T_SEVK))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
     g = KS_Gostergeler()
     ws.Range("C7").Value = yil
     For j = 1 To 5
         ws.Cells(R_YIL_SATIR, 2 + j).Value = CStr(yil - 5 + j)
-        sut(j) = KS_Topla(aS, aA, yil - 5 + j, yil - 5 + j)
+        sut(j) = KS_Topla(arS, aA, yil - 5 + j, yil - 5 + j)
     Next j
-    sut(6) = KS_Topla(aS, aA, yil - 4, yil)
+    sut(6) = KS_Topla(arS, aA, yil - 4, yil)
     ws.Cells(R_YIL_SATIR, 8).Value = "5 YIL"
     For i = 0 To UBound(g)
         For j = 1 To 6
@@ -262,12 +262,12 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
     Next i
 
     ' Aylýk daðýlým (seçili yýl)
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            If KS_SevkYil(aS, i) = yil Then
-                ay = KS_SevkAy(aS, i)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            If KS_SevkYil(arS, i) = yil Then
+                ay = KS_SevkAy(arS, i)
                 mS(ay) = mS(ay) + 1
-                If KS_Sayi(aS(i, S_TUTAR), x) Then mT(ay) = mT(ay) + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then mT(ay) = mT(ay) + x
             End If
         Next i
     End If
@@ -341,7 +341,7 @@ Public Sub KS_KarneKur()
 End Sub
 
 Public Sub KS_KARNE_GOSTER()
-    Dim ws As Worksheet, aM As Variant, aS As Variant, aA As Variant, kod As String, mi As Long
+    Dim ws As Worksheet, aM As Variant, arS As Variant, aA As Variant, kod As String, mi As Long
     Dim i As Long, n As Long, r As Long, idx As Variant, liste() As Variant, x As Double, korumali As Boolean
     Dim sevkMik As Double, sevkTut As Double, arzN As Long, arzMik As Double, donTop As Double, donN As Long
     Dim mal As Double, garIc As Long, ilk As Date, son As Date, d As Date, k As Long
@@ -355,7 +355,7 @@ Public Sub KS_KARNE_GOSTER()
     KS_Basla
     KS_HesaplaTumu
     aM = KS_Veri(KS_LOZ(T_MALZ))
-    aS = KS_Veri(KS_LOZ(T_SEVK))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
     If IsArray(aM) Then
         For i = 1 To UBound(aM, 1)
@@ -400,18 +400,18 @@ Public Sub KS_KARNE_GOSTER()
         "Adet", "Birim Fiyat", "Tutar", "Planlanan", "Geliþ", "Gecikme (gün)", "Garanti Bitiþ", "Garanti Durumu", _
         "Arýzalý Adet")
     n = 0
-    If IsArray(aS) Then
-        ReDim liste(1 To UBound(aS, 1), 1 To 13)
-        For i = 1 To UBound(aS, 1)
-            If KS_Anahtar(aS(i, S_KOD)) = kod Then
+    If IsArray(arS) Then
+        ReDim liste(1 To UBound(arS, 1), 1 To 13)
+        For i = 1 To UBound(arS, 1)
+            If KS_Anahtar(arS(i, S_KOD)) = kod Then
                 n = n + 1
-                liste(n, 1) = aS(i, S_NO): liste(n, 2) = aS(i, S_SEVKCI): liste(n, 3) = aS(i, S_YER)
-                liste(n, 4) = aS(i, S_ADET): liste(n, 5) = aS(i, S_FIYAT): liste(n, 6) = aS(i, S_TUTAR)
-                liste(n, 7) = aS(i, S_PLAN): liste(n, 8) = aS(i, S_GELIS): liste(n, 9) = aS(i, S_GECIKME)
-                liste(n, 10) = aS(i, S_GARBIT): liste(n, 11) = aS(i, S_GDURUM): liste(n, 12) = aS(i, S_ARIZA)
-                If KS_Tarih(aS(i, S_GELIS), d) Then liste(n, 13) = d Else liste(n, 13) = aS(i, S_PLAN)
-                If KS_Sayi(aS(i, S_ADET), x) Then sevkMik = sevkMik + x
-                If KS_Sayi(aS(i, S_TUTAR), x) Then sevkTut = sevkTut + x
+                liste(n, 1) = arS(i, S_NO): liste(n, 2) = arS(i, S_SEVKCI): liste(n, 3) = arS(i, S_YER)
+                liste(n, 4) = arS(i, S_ADET): liste(n, 5) = arS(i, S_FIYAT): liste(n, 6) = arS(i, S_TUTAR)
+                liste(n, 7) = arS(i, S_PLAN): liste(n, 8) = arS(i, S_GELIS): liste(n, 9) = arS(i, S_GECIKME)
+                liste(n, 10) = arS(i, S_GARBIT): liste(n, 11) = arS(i, S_GDURUM): liste(n, 12) = arS(i, S_ARIZA)
+                If KS_Tarih(arS(i, S_GELIS), d) Then liste(n, 13) = d Else liste(n, 13) = arS(i, S_PLAN)
+                If KS_Sayi(arS(i, S_ADET), x) Then sevkMik = sevkMik + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then sevkTut = sevkTut + x
             End If
         Next i
     End If
@@ -593,7 +593,7 @@ Private Function KS_PerfBasliklar(ByVal grup As String) As Variant
 End Function
 
 Public Sub KS_PERF_HESAPLA()
-    Dim ws As Worksheet, aM As Variant, aS As Variant, aA As Variant, dM As Object, dG As Object
+    Dim ws As Worksheet, aM As Variant, arS As Variant, aA As Variant, dM As Object, dG As Object
     Dim grup As String, yilS As String, y1 As Long, y2 As Long, i As Long, j As Long, n As Long, g As Long
     Dim k As String, x As Double, d As Date, t() As Variant, idx As Variant, r As Long, korumali As Boolean
     Dim k1 As Double, k2 As Double, k3 As Double, skor As Double, oran As Double, gec As Double, don As Double
@@ -616,7 +616,7 @@ Public Sub KS_PERF_HESAPLA()
     KS_Basla
     KS_HesaplaTumu
     aM = KS_Veri(KS_LOZ(T_MALZ))
-    aS = KS_Veri(KS_LOZ(T_SEVK))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
     Set dM = CreateObject("Scripting.Dictionary")
     If IsArray(aM) Then
@@ -625,30 +625,30 @@ Public Sub KS_PERF_HESAPLA()
         Next i
     End If
     Set dG = CreateObject("Scripting.Dictionary")
-    ReDim t(1 To KS_Satir(aS) + KS_Satir(aA) + 1, 1 To 16)
+    ReDim t(1 To KS_Satir(arS) + KS_Satir(aA) + 1, 1 To 16)
 
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            j = KS_SevkYil(aS, i)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            j = KS_SevkYil(arS, i)
             If j >= y1 And j <= y2 Then
                 If grup = "SEVKÇÝ" Then
-                    k = KS_Metin(aS(i, S_SEVKCI))
-                ElseIf dM.Exists(KS_Anahtar(aS(i, S_KOD))) Then
-                    k = dM(KS_Anahtar(aS(i, S_KOD)))
+                    k = KS_Metin(arS(i, S_SEVKCI))
+                ElseIf dM.Exists(KS_Anahtar(arS(i, S_KOD))) Then
+                    k = dM(KS_Anahtar(arS(i, S_KOD)))
                 Else
                     k = ""
                 End If
                 g = KS_GrupNo(dG, t, n, k)
                 t(g, 2) = t(g, 2) + 1
-                If KS_Sayi(aS(i, S_ADET), x) Then t(g, 3) = t(g, 3) + x
-                If KS_Sayi(aS(i, S_TUTAR), x) Then t(g, 4) = t(g, 4) + x
-                Select Case KS_Metin(aS(i, S_TDURUM))
+                If KS_Sayi(arS(i, S_ADET), x) Then t(g, 3) = t(g, 3) + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then t(g, 4) = t(g, 4) + x
+                Select Case KS_Metin(arS(i, S_TDURUM))
                     Case "ZAMANINDA"
                         t(g, 5) = t(g, 5) + 1
                         t(g, 6) = t(g, 6) + 1
                     Case "GECÝKMELÝ"
                         t(g, 6) = t(g, 6) + 1
-                        If KS_Sayi(aS(i, S_GECIKME), x) Then t(g, 7) = t(g, 7) + x
+                        If KS_Sayi(arS(i, S_GECIKME), x) Then t(g, 7) = t(g, 7) + x
                 End Select
             End If
         Next i

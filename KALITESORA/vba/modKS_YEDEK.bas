@@ -56,7 +56,11 @@ End Function
 Public Sub KS_ACILIS()
     Dim ws As Worksheet, d As Date
     On Error GoTo Son
-    If Not KS_Kurulu() Then Exit Sub
+    ' Hazýr dosya ilk açýldýðýnda kurulum kendiliðinden baþlar.
+    If Not KS_Kurulu() Then
+        KALITESORA_KUR
+        Exit Sub
+    End If
     Set ws = KS_WS(SH_PANEL)
     KS_PanelYenile False
     ws.Activate

@@ -200,7 +200,7 @@ Public Sub KS_PANEL_YENILE()
 End Sub
 
 Public Sub KS_PanelYenile(ByVal mesaj As Boolean)
-    Dim ws As Worksheet, aS As Variant, aA As Variant, aM As Variant, t As Variant, korumali As Boolean
+    Dim ws As Worksheet, arS As Variant, aA As Variant, aM As Variant, t As Variant, korumali As Boolean
     Dim yilS As String, y1 As Long, y2 As Long, i As Long, n As Long, x As Double, d As Date, d2 As Date
     Dim bekleyen As Long, geciken As Long, garBit As Long, acik As Long, ureticide As Long, uyari As Long
     Dim liste() As Variant, idx As Variant, dK As Object, k As String, j As Long, renk As Long
@@ -218,20 +218,20 @@ Public Sub KS_PanelYenile(ByVal mesaj As Boolean)
         y1 = 0: y2 = 9999
     End If
     KS_RaporHesapla IIf(y1 = 0, Year(Date), y1)
-    aS = KS_Veri(KS_LOZ(T_SEVK))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
     aM = KS_Veri(KS_LOZ(T_MALZ))
     uyari = CLng(KS_ParamSayi("pGarUyari", 60))
-    t = KS_Topla(aS, aA, y1, y2)
+    t = KS_Topla(arS, aA, y1, y2)
 
     ' Güncel durum sayýlarý
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            Select Case KS_Metin(aS(i, S_TDURUM))
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            Select Case KS_Metin(arS(i, S_TDURUM))
                 Case "BEKLENÝYOR": bekleyen = bekleyen + 1
                 Case "GECÝKÝYOR": bekleyen = bekleyen + 1: geciken = geciken + 1
             End Select
-            If Left$(KS_Metin(aS(i, S_GDURUM)), 7) = "BÝTÝYOR" Then garBit = garBit + 1
+            If Left$(KS_Metin(arS(i, S_GDURUM)), 7) = "BÝTÝYOR" Then garBit = garBit + 1
         Next i
     End If
     If IsArray(aA) Then
@@ -320,15 +320,15 @@ Public Sub KS_PanelYenile(ByVal mesaj As Boolean)
 
     ' Liste 3: garantisi yakýnda bitecekler
     n = 0
-    ReDim liste(1 To KS_Satir(aS) + 1, 1 To 7)
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            If KS_Tarih(aS(i, S_GARBIT), d) Then
+    ReDim liste(1 To KS_Satir(arS) + 1, 1 To 7)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            If KS_Tarih(arS(i, S_GARBIT), d) Then
                 If d >= Date And d - Date <= uyari Then
                     n = n + 1
-                    liste(n, 1) = aS(i, S_NO)
-                    liste(n, 2) = KS_Metin(aS(i, S_KOD)) & "  " & KS_Metin(aS(i, S_AD))
-                    liste(n, 5) = aS(i, S_YER)
+                    liste(n, 1) = arS(i, S_NO)
+                    liste(n, 2) = KS_Metin(arS(i, S_KOD)) & "  " & KS_Metin(arS(i, S_AD))
+                    liste(n, 5) = arS(i, S_YER)
                     liste(n, 6) = d
                     liste(n, 7) = CLng(d - Date)
                 End If
@@ -340,16 +340,16 @@ Public Sub KS_PanelYenile(ByVal mesaj As Boolean)
 
     ' Liste 4: geciken teslimatlar
     n = 0
-    ReDim liste(1 To KS_Satir(aS) + 1, 1 To 7)
-    If IsArray(aS) Then
-        For i = 1 To UBound(aS, 1)
-            If KS_Metin(aS(i, S_TDURUM)) = "GECÝKÝYOR" Then
+    ReDim liste(1 To KS_Satir(arS) + 1, 1 To 7)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            If KS_Metin(arS(i, S_TDURUM)) = "GECÝKÝYOR" Then
                 n = n + 1
-                liste(n, 1) = aS(i, S_NO)
-                liste(n, 2) = KS_Metin(aS(i, S_KOD)) & "  " & KS_Metin(aS(i, S_AD))
-                liste(n, 5) = aS(i, S_SEVKCI)
-                liste(n, 6) = aS(i, S_PLAN)
-                liste(n, 7) = aS(i, S_GECIKME)
+                liste(n, 1) = arS(i, S_NO)
+                liste(n, 2) = KS_Metin(arS(i, S_KOD)) & "  " & KS_Metin(arS(i, S_AD))
+                liste(n, 5) = arS(i, S_SEVKCI)
+                liste(n, 6) = arS(i, S_PLAN)
+                liste(n, 7) = arS(i, S_GECIKME)
             End If
         Next i
     End If
