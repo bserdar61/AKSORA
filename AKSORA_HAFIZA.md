@@ -472,6 +472,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - modAKSORA_TASARIM kaynağı kullanıcı kaydında iki kez bozuldu (gömülü 5,3 KB base64 imza PNG'si bölgesinde Excel sıkıştırması). PNG kitabın gizli adlarına taşındı: _AKS_IMZA_001..027 (200 karakterlik parçalar); T_CiktiImzaResmi adlardan okur. Derlemede tools/imza_names.py (scratchpad fx/) final'e adları ekler.
 - Y_MALZEME_ARA alt başlığı "Yatırım (D002, D011) + Yüklenici Stokları", I_MALZEME_ARA "CDP + EPP İlçe Depoları"; ilçe notlarına PB eklendi; stok sayfalarında A sütunu en az 12 (Üretim Yeri başlığı kesilmesin).
 
+## Birim şifreleri — 2026-10-22
+- Hub'daki "İşlemlere geç" (AKSORA_BIRIM_MALZEME/YATIRIM/MUSTERI/ILCE) önce BIRIM_SIFRE_KONTROL: birimin şifresi (SIFRE_MALZEME/YATIRIM/MUSTERI/ILCE sabitleri, BIRIM modülü başı) ya da yönetici şifresi. Doğru giriş oturumda hatırlanır (mBirimAcik); yönetici şifresi tüm birimleri ve Admin'i açar. Kutu ADM_SIFRE_SOR (yıldızlı, Şifreyi göster), başlık "AKSORA - BIRIM GIRISI". Açılışta yalnız HUB görünür, diğer birim sayfaları VeryHidden.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

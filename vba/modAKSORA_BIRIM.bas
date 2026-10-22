@@ -19,6 +19,12 @@ Private Const ADM_IL_HUCRE As String = "C4"
 Private mAdmOnbellek As Object
 Private mAdmOturum As Boolean
 Private Const ADM_KUTU_BASLIK As String = "AKSORA - YONETICI GIRISI"
+Private Const BIRIM_KUTU_BASLIK As String = "AKSORA - BIRIM GIRISI"
+' Birim sifreleri: her birim yalniz kendi sifresiyle (ya da yonetici sifresiyle) acilir.
+Private Const SIFRE_MALZEME As String = "malzemebs1284"
+Private Const SIFRE_YATIRIM As String = "yatirimbs1284"
+Private Const SIFRE_MUSTERI As String = "musteribs1284"
+Private Const SIFRE_ILCE As String = "ilcebs1284"
 Private Type ADMW_RECT
     Left As Long
     Top As Long
@@ -92,6 +98,8 @@ Public AKSORA_ATIL_CALISIYOR As Boolean
 Private mAtilKart As Boolean
 Private mAtilBas As Double
 Private mAtilSon As Double
+Private mSifreBaslik As String
+Private mBirimAcik As String
 Private mAtilMetin As String
 Private mAtilYuk As Object
 Private mAtilEski As Boolean
@@ -355,6 +363,7 @@ End Function
 
 Public Sub AKSORA_BIRIM_MALZEME()
     Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("MALZEME", "MALZEME STOK BÝRÝMÝ") Then Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME STOK BÝRÝMÝ", "Birim açýlýyor...")
     On Error GoTo Son
     BIRIM_MALZEME_ASIL
@@ -391,6 +400,7 @@ End Sub
 
 Public Sub AKSORA_BIRIM_YATIRIM()
     Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("YATIRIM", "YATIRIM BÝRÝMÝ") Then Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM BÝRÝMÝ", "Birim açýlýyor...")
     On Error GoTo Son
     BIRIM_YATIRIM_ASIL
@@ -409,6 +419,7 @@ Hata:
 End Sub
 Public Sub AKSORA_BIRIM_MUSTERI()
     Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("MUSTERI", "MÜÞTERÝ BÝRÝMÝ") Then Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  MÜÞTERÝ BÝRÝMÝ", "Birim açýlýyor...")
     On Error GoTo Son
     BIRIM_MUSTERI_ASIL
@@ -3803,6 +3814,7 @@ End Function
 
 Public Sub AKSORA_BIRIM_ILCE()
     Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("ILCE", "ÝLÇE YÖNETÝM BÝRÝMÝ") Then Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  ÝLÇE YÖNETÝM BÝRÝMÝ", "Birim açýlýyor...")
     On Error GoTo Son
     BIRIM_ILCE_ASIL
@@ -6700,6 +6712,27 @@ End Sub
 ' degismedikce bellekte tutulur. Birimler arasi ayni depo (il+UY+depo) tekil toplamda bir kez sayilir.
 
 ' Yonetici girisi: sifre kutusu (Windows), yazilan sifre yildizla gizlenir.
+'' Birim girisi: birimin kendi sifresi ya da yonetici (mudur) sifresi. Dogru giris bu oturumda hatirlanir.
+Private Function BIRIM_SIFRE_KONTROL(ByVal birim As String, ByVal ad As String) As Boolean
+    Dim s As String, dogru As String
+    If mAdmOturum Or InStr(mBirimAcik, "|" & birim & "|") > 0 Then BIRIM_SIFRE_KONTROL = True: Exit Function
+    Select Case birim
+        Case "MALZEME": dogru = SIFRE_MALZEME
+        Case "YATIRIM": dogru = SIFRE_YATIRIM
+        Case "MUSTERI": dogru = SIFRE_MUSTERI
+        Case "ILCE": dogru = SIFRE_ILCE
+    End Select
+    s = ADM_SIFRE_SOR("AKSORA  |  " & ad & vbCrLf & vbCrLf & "Birim þifresini girin:", BIRIM_KUTU_BASLIK)
+    If Len(s) = 0 Then Exit Function
+    If s = dogru Or s = ADM_SIFRE Then
+        mBirimAcik = mBirimAcik & "|" & birim & "|"
+        If s = ADM_SIFRE Then mAdmOturum = True
+        BIRIM_SIFRE_KONTROL = True
+    Else
+        MsgBox "Þifre hatalý." & vbCrLf & ad & " yalnýzca birimin yetkilileri ve müdürler tarafýndan açýlabilir.", vbCritical, "AKSORA"
+    End If
+End Function
+
 Public Sub AKSORA_ADMIN_GIRIS()
     Dim s As String
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
@@ -6718,12 +6751,15 @@ End Sub
 
 ' Sifre kutusu: InputBox acilinca zamanlayici yazilani yildizli yapar ve
 ' kutunun altina "Sifreyi goster" secenegini ekler. Her giriste gizli baslar.
-Private Function ADM_SIFRE_SOR() As String
+Private Function ADM_SIFRE_SOR(Optional ByVal istem As String = "", Optional ByVal baslik As String = "") As String
+    If Len(baslik) = 0 Then baslik = ADM_KUTU_BASLIK
+    If Len(istem) = 0 Then istem = "AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:"
+    mSifreBaslik = baslik
     On Error Resume Next
     mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
     mAdmZaman = ADMW_SetTimer(0, 0, 40, AddressOf ADM_MASKE_ZAMAN)
     On Error GoTo 0
-    ADM_SIFRE_SOR = InputBox("AKSORA YÖNETÝM MERKEZÝ" & vbCrLf & vbCrLf & "Yönetici þifresini girin:", ADM_KUTU_BASLIK)
+    ADM_SIFRE_SOR = InputBox(istem, baslik)
     On Error Resume Next
     If mAdmZaman <> 0 Then ADMW_KillTimer 0, mAdmZaman
     mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
@@ -6733,7 +6769,7 @@ End Function
 Public Sub ADM_MASKE_ZAMAN(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal idEvent As LongPtr, ByVal dwTime As Long)
     Dim dlg As LongPtr, ed As LongPtr, goster As Boolean
     On Error Resume Next
-    dlg = ADMW_FindWindow(vbNullString, ADM_KUTU_BASLIK)
+    dlg = ADMW_FindWindow(vbNullString, IIf(Len(mSifreBaslik) > 0, mSifreBaslik, ADM_KUTU_BASLIK))
     If dlg = 0 Then Exit Sub
     ed = ADMW_FindWindowEx(dlg, 0, "Edit", vbNullString)
     If ed = 0 Then Exit Sub
