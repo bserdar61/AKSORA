@@ -323,6 +323,8 @@ Public Sub KS_SayfaSifirla(ByVal ws As Worksheet)
     ws.Cells.FormatConditions.Delete
     ws.Cells.Clear
     ws.Cells.ClearComments
+    ws.Rows.Hidden = False
+    ws.Columns.Hidden = False
     ws.Cells.Font.Name = KS_FONT
     ws.Cells.Font.Size = 10
     ws.Cells.Font.Color = C_METIN()

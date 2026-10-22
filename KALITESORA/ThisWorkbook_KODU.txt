@@ -7,6 +7,7 @@ Private Sub Workbook_Open()
 End Sub
 
 Private Sub Workbook_Activate()
+    KS_SURUM_KONTROL
     KS_UygulamaModuUygula
     KS_EkranSigdir ActiveSheet, False
 End Sub

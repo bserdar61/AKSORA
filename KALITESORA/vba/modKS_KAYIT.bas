@@ -14,10 +14,10 @@ Private mOlayda As Boolean
 ' Form bloklarý (satýr aralýklarý)
 Private Const B1_ILK As Long = 4
 Private Const B1_SON As Long = 12
-Private Const B2_ILK As Long = 14
-Private Const B2_SON As Long = 25
-Private Const B3_ILK As Long = 27
-Private Const B3_SON As Long = 50
+Private Const B2_ILK As Long = 13
+Private Const B2_SON As Long = 24
+Private Const B3_ILK As Long = 25
+Private Const B3_SON As Long = 45
 
 ' ================================================================ baðlam
 
@@ -378,47 +378,47 @@ Private Function KS_Alanlar(ByVal blok As Long) As Variant
                 Array("Not", "fM_NOT", "metin", False, "", 3, 9, 1))
         Case 2
             KS_Alanlar = Array( _
-                Array("Sevk No  (boþ = yeni)", "fS_NO", "listeS", False, "lstSevk", 1, 15, 1), _
-                Array("Malzeme Kodu", "fS_KOD", "listeS", True, "lstMalzeme", 1, 16, 1), _
-                Array("Malzeme Adý", "fS_AD", "listeS", True, "lstMalzemeAd", 1, 17, 1), _
-                Array("Sevkçi", "fS_SEVKCI", "listeS", True, "lstSevkci", 1, 18, 1), _
-                Array("Sevk Yeri", "fS_YER", "liste", True, "lstYer", 1, 19, 1), _
-                Array("Adet / Miktar", "fS_ADET", "sayi", True, "", 1, 20, 1), _
-                Array("Seri / Lot No", "fS_SERI", "kod", False, "", 1, 21, 1), _
-                Array("Birim Fiyat  (boþ = liste)", "fS_FIYAT", "para", False, "", 2, 15, 1), _
-                Array("Para Birimi", "fS_PB", "liste", False, "lstPB", 2, 16, 1), _
-                Array("Planlanan Teslim Tarihi", "fS_PLAN", "tarih", True, "", 2, 17, 1), _
-                Array("Gerçek Geliþ Tarihi", "fS_GELIS", "tarih", False, "", 2, 18, 1), _
-                Array("Garanti Süresi (Ay)", "fS_GARAY", "sayi", False, "", 2, 19, 1), _
-                Array("Belge / SAS No", "fS_IRS", "kod", False, "", 2, 20, 1), _
-                Array("» Garanti Bitiþ", "fS_GARBIT", "otoTarih", False, "", 2, 21, 1), _
-                Array("Not", "fS_NOT", "metin", False, "", 3, 22, 1))
+                Array("Sevk No  (boþ = yeni)", "fS_NO", "listeS", False, "lstSevk", 1, 14, 1), _
+                Array("Malzeme Kodu", "fS_KOD", "listeS", True, "lstMalzeme", 1, 15, 1), _
+                Array("Malzeme Adý", "fS_AD", "listeS", True, "lstMalzemeAd", 1, 16, 1), _
+                Array("Sevkçi", "fS_SEVKCI", "listeS", True, "lstSevkci", 1, 17, 1), _
+                Array("Sevk Yeri", "fS_YER", "liste", True, "lstYer", 1, 18, 1), _
+                Array("Adet / Miktar", "fS_ADET", "sayi", True, "", 1, 19, 1), _
+                Array("Seri / Lot No", "fS_SERI", "kod", False, "", 1, 20, 1), _
+                Array("Birim Fiyat  (boþ = liste)", "fS_FIYAT", "para", False, "", 2, 14, 1), _
+                Array("Para Birimi", "fS_PB", "liste", False, "lstPB", 2, 15, 1), _
+                Array("Planlanan Teslim Tarihi", "fS_PLAN", "tarih", True, "", 2, 16, 1), _
+                Array("Gerçek Geliþ Tarihi", "fS_GELIS", "tarih", False, "", 2, 17, 1), _
+                Array("Garanti Süresi (Ay)", "fS_GARAY", "sayi", False, "", 2, 18, 1), _
+                Array("Belge / SAS No", "fS_IRS", "kod", False, "", 2, 19, 1), _
+                Array("» Garanti Bitiþ", "fS_GARBIT", "otoTarih", False, "", 2, 20, 1), _
+                Array("Not", "fS_NOT", "metin", False, "", 3, 21, 1))
         Case Else
             KS_Alanlar = Array( _
-                Array("Arýza No  (boþ = yeni)", "fA_NO", "listeS", False, "lstAriza", 1, 28, 1), _
-                Array("Arýza Tarihi", "fA_TARIH", "tarih", True, "", 1, 29, 1), _
-                Array("Malzeme Kodu", "fA_KOD", "listeS", True, "lstMalzeme", 1, 30, 1), _
-                Array("Malzeme Adý", "fA_AD", "listeS", True, "lstMalzemeAd", 1, 31, 1), _
-                Array("Seri No", "fA_SERI", "kod", False, "", 1, 32, 1), _
-                Array("Arýzalý Adet", "fA_ADET", "sayi", True, "", 1, 33, 1), _
-                Array("Arýza Tipi", "fA_TIP", "listeS", False, "lstTip", 1, 34, 1), _
-                Array("» Üretici", "fA_URETICI", "oto", False, "", 2, 28, 1), _
-                Array("Baðlý Sevkiyat  (otomatik)", "fA_SEVK", "listeS", False, "lstSevk", 2, 29, 1), _
-                Array("» Sevk Yeri / Sevkçi", "fA_YER", "oto", False, "", 2, 30, 1), _
-                Array("» Garanti Bitiþ", "fA_GARBIT", "otoTarih", False, "", 2, 31, 1), _
-                Array("Garanti devam ediyor mu?", "fA_KAPSAM", "liste", False, "lstEvetHayir", 2, 32, 1), _
-                Array("Üreticiye Bildirim Tarihi", "fA_BILDIRIM", "tarih", False, "", 2, 33, 1), _
-                Array("Üretici Dönüþ Tarihi", "fA_DONUS", "tarih", False, "", 2, 34, 1), _
-                Array("Arýza Sebebi / Açýklama", "fA_ACIK", "metin", False, "", 3, 35, 3), _
-                Array("Üretici ile Mail Yazýþmasý", "fA_MAIL", "metin", False, "", 3, 38, 5), _
-                Array("Mail Dosyasý", "fA_MAILDOSYA", "dosya", False, "", 3, 43, 1), _
-                Array("Arýza devam ediyor mu?", "fA_DEVAM", "liste", False, "lstEvetHayir", 1, 44, 1), _
-                Array("Çözüm Tarihi", "fA_COZUM", "tarih", False, "", 1, 45, 1), _
-                Array("Tamir Maliyeti (TL)", "fA_MALIYET", "para", False, "", 1, 46, 1), _
-                Array("Çözüldü mü?", "fA_COZULDU", "liste", False, "lstCozuldu", 2, 44, 1), _
-                Array("Çözüm Þekli", "fA_SEKIL", "listeS", False, "lstCozum", 2, 45, 1), _
-                Array("Maliyeti Karþýlayan", "fA_KARS", "listeS", False, "lstKarsilayan", 2, 46, 1), _
-                Array("Not", "fA_NOT", "metin", False, "", 3, 47, 1))
+                Array("Arýza No  (boþ = yeni)", "fA_NO", "listeS", False, "lstAriza", 1, 26, 1), _
+                Array("Arýza Tarihi", "fA_TARIH", "tarih", True, "", 1, 27, 1), _
+                Array("Malzeme Kodu", "fA_KOD", "listeS", True, "lstMalzeme", 1, 28, 1), _
+                Array("Malzeme Adý", "fA_AD", "listeS", True, "lstMalzemeAd", 1, 29, 1), _
+                Array("Seri No", "fA_SERI", "kod", False, "", 1, 30, 1), _
+                Array("Arýzalý Adet", "fA_ADET", "sayi", True, "", 1, 31, 1), _
+                Array("Arýza Tipi", "fA_TIP", "listeS", False, "lstTip", 1, 32, 1), _
+                Array("Üreticiye Bildirim Tarihi", "fA_BILDIRIM", "tarih", False, "", 1, 33, 1), _
+                Array("Üretici Dönüþ Tarihi", "fA_DONUS", "tarih", False, "", 1, 34, 1), _
+                Array("Tamir Maliyeti (TL)", "fA_MALIYET", "para", False, "", 1, 35, 1), _
+                Array("» Üretici", "fA_URETICI", "oto", False, "", 2, 26, 1), _
+                Array("Baðlý Sevkiyat  (otomatik)", "fA_SEVK", "listeS", False, "lstSevk", 2, 27, 1), _
+                Array("» Sevk Yeri / Sevkçi", "fA_YER", "oto", False, "", 2, 28, 1), _
+                Array("» Garanti Bitiþ", "fA_GARBIT", "otoTarih", False, "", 2, 29, 1), _
+                Array("Garanti devam ediyor mu?", "fA_KAPSAM", "liste", False, "lstEvetHayir", 2, 30, 1), _
+                Array("Arýza devam ediyor mu?", "fA_DEVAM", "liste", False, "lstEvetHayir", 2, 31, 1), _
+                Array("Çözüldü mü?", "fA_COZULDU", "liste", False, "lstCozuldu", 2, 32, 1), _
+                Array("Çözüm Tarihi", "fA_COZUM", "tarih", False, "", 2, 33, 1), _
+                Array("Çözüm Þekli", "fA_SEKIL", "listeS", False, "lstCozum", 2, 34, 1), _
+                Array("Maliyeti Karþýlayan", "fA_KARS", "listeS", False, "lstKarsilayan", 2, 35, 1), _
+                Array("Arýza Sebebi / Açýklama", "fA_ACIK", "metin", False, "", 3, 36, 2), _
+                Array("Üretici ile Mail Yazýþmasý", "fA_MAIL", "metin", False, "", 3, 38, 3), _
+                Array("Mail Dosyasý", "fA_MAILDOSYA", "dosya", False, "", 3, 41, 1), _
+                Array("Not", "fA_NOT", "metin", False, "", 3, 42, 1))
     End Select
 End Function
 
@@ -438,7 +438,7 @@ Public Sub KS_KayitFormKur()
     alt = KS_SayfaCerceve(ws, False)
     ws.Rows(1).RowHeight = alt + 6
     ws.Rows(2).RowHeight = 48
-    ws.Rows(3).RowHeight = 6
+    ws.Rows(3).RowHeight = 10
     KS_SayfaBaslik ws, ws.Rows(2).Top + 6, "KAYIT MERKEZÝ", _
         "Kodu ya da adý yazýn; hafýzadaki bilgiler kendiliðinden dolar. Boþ kalanlarý siz tamamlayýn.  * zorunlu"
     For r = 4 To B3_SON
@@ -468,17 +468,16 @@ End Sub
 Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As Long, ByVal son As Long, _
         ByVal baslik As String, ByVal alt As String)
     Dim alanlar As Variant, a As Variant, i As Long, e As Range, v As Range, kL As Long, kV As Long
-    Dim kart As Range, bilgi As Range, x As Double, ust As Double, bb As Variant, b As Long, onek As String
+    Dim kart As Range, bilgi As Range, x As Double, ust As Double, bb As Variant, b As Long, onek As String, r As Long
 
     onek = "ksF" & blok & "_"
     Set kart = ws.Range(ws.Cells(ilk, 3), ws.Cells(son - 1, 7))
     kart.Interior.Color = vbWhite
-    kart.BorderAround xlContinuous, xlThin, , RGB(214, 224, 236)
+    KS_Cerceve kart
     ' baþlýk bandý
     With ws.Range(ws.Cells(ilk, 3), ws.Cells(ilk, 7))
-        .Interior.Color = C_ACIKMAVI()
-        .Borders(xlEdgeBottom).Color = C_MAVI()
-        .Borders(xlEdgeBottom).Weight = xlMedium
+        .Interior.Color = C_LAC()
+        .Font.Color = vbWhite
     End With
     ws.Rows(ilk).RowHeight = 30
     With ws.Cells(ilk, 3)
@@ -486,14 +485,14 @@ Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As 
         .Font.Name = KS_FONT_KALIN
         .Font.Bold = True
         .Font.Size = 11
-        .Font.Color = C_LAC()
+        .Font.Color = vbWhite
         .IndentLevel = 1
     End With
     With ws.Cells(ilk, 5)
         .Value = alt
         .Font.Size = 8.5
         .Font.Italic = True
-        .Font.Color = C_GRI()
+        .Font.Color = RGB(170, 205, 235)
     End With
 
     alanlar = KS_Alanlar(blok)
@@ -526,21 +525,23 @@ Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As 
             .VerticalAlignment = IIf(a(7) > 1, xlTop, xlCenter)
             .WrapText = (a(7) > 1)
             .IndentLevel = 1
-            .Borders(xlEdgeBottom).Color = RGB(200, 212, 228)
-            .Borders(xlEdgeTop).Color = RGB(200, 212, 228)
-            .Borders(xlEdgeLeft).Color = RGB(200, 212, 228)
-            .Borders(xlEdgeRight).Color = RGB(200, 212, 228)
+            With .Borders(xlEdgeBottom)
+                .LineStyle = xlContinuous
+                .Color = RGB(176, 194, 216)
+                .Weight = xlThin
+            End With
+            If a(7) > 1 Then KS_Cerceve v
         End With
         Select Case a(2)
             Case "oto", "otoTarih", "dosya"
-                v.Interior.Color = RGB(240, 246, 250)
+                v.Interior.Color = RGB(243, 248, 251)
                 v.Font.Color = C_TEAL()
                 v.Font.Bold = True
                 v.Locked = True
                 If a(2) = "otoTarih" Then v.NumberFormat = KS_FmtTarih()
                 If a(2) = "dosya" Then v.Font.Bold = False: v.Font.Underline = xlUnderlineStyleSingle
             Case Else
-                v.Interior.Color = RGB(252, 253, 255)
+                v.Interior.Color = RGB(250, 252, 255)
                 v.Font.Color = C_LAC()
                 v.Locked = False
                 Select Case a(2)
@@ -557,17 +558,15 @@ Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As 
     ' Hafýza paneli (sað kart)
     Set bilgi = ws.Range(ws.Cells(ilk, 9), ws.Cells(son - 1, 9))
     bilgi.Interior.Color = vbWhite
-    bilgi.BorderAround xlContinuous, xlThin, , RGB(214, 224, 236)
+    KS_Cerceve bilgi
     With ws.Cells(ilk, 9)
-        .Value = "HAFIZA"
+        .Value = "HAFIZA  ·  kayýt geçmiþi"
         .Font.Name = KS_FONT_KALIN
         .Font.Bold = True
-        .Font.Size = 10
-        .Font.Color = C_TEAL()
-        .Interior.Color = C_ACIKMAVI()
+        .Font.Size = 10.5
+        .Font.Color = vbWhite
+        .Interior.Color = C_TEAL()
         .IndentLevel = 1
-        .Borders(xlEdgeBottom).Color = C_TEAL()
-        .Borders(xlEdgeBottom).Weight = xlMedium
     End With
     Set bilgi = ws.Range(ws.Cells(ilk + 1, 9), ws.Cells(son - 1, 9))
     bilgi.Merge
@@ -598,15 +597,28 @@ Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As 
         End With
     Next b
     If blok = 3 Then
-        With KS_Buton(ws, onek & "Mail", "DOSYA EKLE", ws.Cells(1, 8).Left - 120, ws.Rows(43).Top + 1, 116, 22, _
+        r = KS_F("fA_MAILDOSYA").Row
+        With KS_Buton(ws, onek & "Mail", "DOSYA EKLE", ws.Cells(1, 8).Left - 120, ws.Rows(r).Top + 1, 116, 22, _
                 "KS_MAIL_EKLE", "koyu")
             .Placement = xlMove
         End With
-        ws.Range(ws.Cells(43, 4), ws.Cells(43, 7)).UnMerge
-        ws.Range(ws.Cells(43, 4), ws.Cells(43, 6)).Merge
+        ws.Range(ws.Cells(r, 4), ws.Cells(r, 7)).UnMerge
+        ws.Range(ws.Cells(r, 4), ws.Cells(r, 6)).Merge
     End If
     ws.Rows(son - 1).RowHeight = 34
     ws.Rows(son).RowHeight = 14
+End Sub
+
+' Ýnce, açýk gri dýþ çerçeve.
+Private Sub KS_Cerceve(ByVal r As Range)
+    Dim k As Variant
+    For Each k In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+        With r.Borders(k)
+            .LineStyle = xlContinuous
+            .Color = RGB(208, 219, 232)
+            .Weight = xlThin
+        End With
+    Next k
 End Sub
 
 Private Sub KS_KapsamRenk(ByVal ws As Worksheet)

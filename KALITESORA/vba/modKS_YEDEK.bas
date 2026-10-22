@@ -53,6 +53,20 @@ Son:
 End Function
 
 ' Workbook_Open içinden çaðrýlýr (bkz. ThisWorkbook_KODU.txt).
+' Workbook_Activate içinden: makrolar sonradan etkinleþtirildiyse (Workbook_Open çalýþmadýysa) sürüm kontrolü.
+Public Sub KS_SURUM_KONTROL()
+    Static bakildi As Boolean
+    If bakildi Then Exit Sub
+    bakildi = True
+    On Error Resume Next
+    If Not KS_Kurulu() Then Exit Sub
+    If KS_KuruluTasarim() < KS_TASARIM_NO Then
+        MsgBox KS_AD & " v" & KS_SURUM & " tasarým güncellemesi uygulanacak." & vbCrLf & vbCrLf & _
+            "Kayýtlarýnýz korunur; önce dosyanýn yedeði alýnýr.", vbInformation, KS_AD
+        KS_TasarimGuncelle
+    End If
+End Sub
+
 Public Sub KS_ACILIS()
     Dim ws As Worksheet, d As Date
     On Error GoTo Son

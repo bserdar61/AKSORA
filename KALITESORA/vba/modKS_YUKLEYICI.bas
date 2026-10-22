@@ -57,7 +57,7 @@ Public Sub KALITESORA_YUKLE()
         If cm.CountOfLines > 0 Then cm.DeleteLines 1, cm.CountOfLines
         cm.AddFromString "Option Explicit" & vbCrLf & vbCrLf & _
             "Private Sub Workbook_Open()" & vbCrLf & "    KS_ACILIS" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
-            "Private Sub Workbook_Activate()" & vbCrLf & "    KS_UygulamaModuUygula" & vbCrLf & _
+            "Private Sub Workbook_Activate()" & vbCrLf & "    KS_SURUM_KONTROL" & vbCrLf & "    KS_UygulamaModuUygula" & vbCrLf & _
             "    KS_EkranSigdir ActiveSheet, False" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
             "Private Sub Workbook_Deactivate()" & vbCrLf & "    KS_UYGULAMA_KAPAT" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
             "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbCrLf & "    KS_UYGULAMA_KAPAT" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
