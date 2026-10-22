@@ -463,6 +463,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Müşteri: fiyat listesi tüm _MA_ il kayıtlarına da uygulanır; Excel aktarım hatasında DisplayAlerts geri; Excel işlemleri yalnız SAP Excel'e aktardıysa kapatılır; IQ09/MB52 liste yoksa SAP mesajında 5 sn'de çıkılır; hatalarda sayfa koruması; fiyat yüklemesinde kart; tek satırlı tabloda ÇIKTI (SpecialCells Intersect).
 - Bilinçli dokunulmayan: MS_Birlestir "çift sayım" bulgusu (gerçek veride AKSORA = MB52, fark 0); ilçe yedek yollarında PB sorgusu (hızlı yol kullanılıyor); performans iyileştirmeleri (banding, KARS yazımı) ileride.
 
+## İlk SAP erişimi ve bozuk modül kaynağı — 2026-10-22 (baz up29)
+- Her oturumda bekleme sonrası ilk ekran erişimi düşüyor (ATIL ilk sorguda RFLAT_L "Object doesn't support this action", Tüm birimler ilk hızlı okumada 619; ikinci deneme sorunsuz). AKHZ_SISTEM_OKU 619'da 1 sn bekleyip bir kez yeniden dener, açık wnd[1]'i kapatır, düşülen adımı [adim] ile yazar. ATIL_DUZ_LISTE iki deneme.
+- Kullanıcının 22.10 09:05 kaydında modAKSORA_TASARIM kaynak akışı bozuktu (23. sıkıştırma parçası başlığı bozuk; Excel p-code ile çalışıyordu). Derleme kaynağı raw'dan yeniden yazar. extract.py bozuk modülde durur: tek tek atlayarak karşılaştır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

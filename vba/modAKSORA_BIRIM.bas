@@ -5624,7 +5624,7 @@ End Function
 ' Admin gunluk eksik listesi siralamasi: kritik malzemeler once, sonra eksik deger.
 Private Function ADM_DEM_SKOR(ByVal t As Variant) As Double
     ADM_DEM_SKOR = t(8)
-    If Len(I_KATEGORI(CStr(t(3)))) > 0 Then ADM_DEM_SKOR = ADM_DEM_SKOR + 1E+12
+    If Len(I_KATEGORI(CStr(t(3)))) > 0 Then ADM_DEM_SKOR = ADM_DEM_SKOR + 1000000000000#
 End Function
 
 Private Function ADM_DEM_DURUM(ByVal t As Variant) As String
@@ -9456,31 +9456,43 @@ End Sub
 ' SAP "Herhangi bir duzenek bulunamadi" der. Once standart alan (RFLAT_L), yoksa secim ekranindaki
 ' radyo dugmeleri metninden aranir. Bulunan secenekler teshise yazilir.
 Private Sub ATIL_DUZ_LISTE(ByVal ses As Object, ByVal etiket As String)
-    Dim usr As Object, o As Object, t As String, liste As String, n As Long
-    On Error GoTo Hata
-    Set o = ses.FindById("wnd[0]/usr/radRFLAT_L", False)
-    If Not o Is Nothing Then
-        If Not o.Selected Then o.Select
-        AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (RFLAT_L)"
-        Exit Sub
-    End If
-    Set usr = ses.FindById("wnd[0]/usr")
-    For n = 0 To CLng(usr.Children.Count) - 1
-        Set o = usr.Children.ElementAt(n)
-        If CStr(o.Type) = "GuiRadioButton" Then
-            t = Y_NORM(CStr(o.Text))
-            liste = liste & " | " & o.Name & "=" & o.Text
-            If InStr(t, "DUZ") > 0 Or InStr(t, "FLAT") > 0 Then
-                If Not o.Selected Then o.Select
-                AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (" & o.Name & ")"
-                Exit Sub
-            End If
+    Dim usr As Object, o As Object, t As String, liste As String, n As Long, deneme As Long, hata As String
+    ' Oturumdaki ilk erisimde ekran hazir olmayabilir: kisa bekleyip bir kez daha denenir.
+    For deneme = 1 To 2
+        hata = vbNullString: liste = vbNullString
+        On Error GoTo Hata
+        Set o = Nothing
+        Set o = ses.FindById("wnd[0]/usr/radRFLAT_L", False)
+        If Not o Is Nothing Then
+            o.Select
+            AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (RFLAT_L)"
+            Exit Sub
         End If
-    Next n
-    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | 'Düz liste' seçeneði bulunamadý. Radyo düðmeleri:" & liste
+        Set usr = ses.FindById("wnd[0]/usr")
+        For n = 0 To CLng(usr.Children.Count) - 1
+            Set o = usr.Children.ElementAt(n)
+            If CStr(o.Type) = "GuiRadioButton" Then
+                t = Y_NORM(CStr(o.Text))
+                liste = liste & " | " & o.Name & "=" & o.Text
+                If InStr(t, "DUZ") > 0 Or InStr(t, "FLAT") > 0 Then
+                    o.Select
+                    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi: " & o.Text & " (" & o.Name & ")"
+                    Exit Sub
+                End If
+            End If
+        Next n
+        AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | 'Düz liste' seçeneði bulunamadý. Radyo düðmeleri:" & liste
+        Exit Sub
+Sonraki:
+        On Error GoTo 0
+        ATIL_BEKLE ses
+        application.Wait Now + TimeSerial(0, 0, 1)
+    Next deneme
+    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi seçilemedi: " & hata & " | bulunanlar:" & liste
     Exit Sub
 Hata:
-    AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | liste gösterimi seçilemedi: " & Err.Description & " | bulunanlar:" & liste
+    hata = Err.Description
+    Resume Sonraki
 End Sub
 
 Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar() As String, ByVal bas As Date, ByVal son As Date, _
