@@ -8,6 +8,8 @@ Public Const R_GOSTERGE_ILK As Long = 11    ' ilk gösterge satýrý
 Public Const R_AY_BASLIK As Long = 28       ' aylýk tablo baþlýk satýrý
 Public Const R_GARIC As Long = 19           ' Garanti içi arýza satýrý (grafik)
 Public Const R_GARDIS As Long = 20          ' Garanti dýþý arýza satýrý (grafik)
+Private Const K_ILK As Long = 9             ' malzeme karnesi çýktý baþlangýcý
+Private Const P_BASLIK As Long = 10         ' performans tablosu baþlýk satýrý
 
 ' ================================================================ ortak toplama
 
@@ -305,7 +307,6 @@ End Sub
 
 ' ================================================================ MALZEME KARNESÝ
 
-Private Const K_ILK As Long = 9
 
 Public Sub KS_KarneKur()
     Dim ws As Worksheet
@@ -542,7 +543,6 @@ End Sub
 
 ' ================================================================ PERFORMANS
 
-Private Const P_BASLIK As Long = 10
 
 Public Sub KS_PerfKur()
     Dim ws As Worksheet

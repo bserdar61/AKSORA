@@ -128,7 +128,7 @@ Public Sub KS_ORNEK_VERI_YUKLE()
         "Devam edilsin mi?", vbQuestion + vbYesNo, KS_AD) <> vbYes Then Exit Sub
 
     KS_Basla
-    Rnd -1
+    Call Rnd(-1)
     Randomize 2026
     yer = KS_Veri(KS_LOZ(T_YER))
     If Not IsArray(yer) Then Err.Raise vbObjectError + 7301, KS_AD, "TANIMLAR'da sevk yeri yok."
