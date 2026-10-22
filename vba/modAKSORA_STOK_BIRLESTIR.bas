@@ -267,6 +267,9 @@ Hata:
 
     End If
 
+    ' Sessiz zincirde (panel / tum stok) hata cagirana iletilir; diger stok adimlari gibi.
+    If ANA_SESSIZ_MOD Then Err.Raise hataNo, "STOKLAR_RAPORLAR_BIRLESTIR_V2", hataAciklama
+
     End Sub
 
     Private Function BIR_V2_VERI_SATIRI_SAYISI( _

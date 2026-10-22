@@ -614,6 +614,18 @@ End Function
 ' YENI MOTOR: IQ09 (seri numarali stok) + MB52 (toplu stok ve deger)
 ' Liste SAP'den "Tablo hesaplama" (&XXL) ile Excel'e aktarilip okunur.
 '==========================================================
+Private Function MS_SapMesajVar(ByVal ses As Object) As Boolean
+    Dim t As String, tip As String
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then MS_SapMesajVar = True: Exit Function
+    t = ses.FindById("wnd[0]/sbar").Text
+    tip = ses.FindById("wnd[0]/sbar").MessageType
+    If Len(t) > 0 And (tip = "E" Or tip = "W" Or tip = "A") Then
+        MS_Teshis "SAP mesajý (liste yok): " & t
+        MS_SapMesajVar = True
+    End If
+End Function
+
 Private Function MS_GridBekle(ByVal ses As Object, ByVal saniye As Double) As Object
     Dim bas As Double, g As Object
     bas = Timer
@@ -624,6 +636,11 @@ Private Function MS_GridBekle(ByVal ses As Object, ByVal saniye As Double) As Ob
         On Error GoTo 0
         If Not g Is Nothing Then
             If Not ses.Busy Then Set MS_GridBekle = g: Exit Function
+        ElseIf MS_Gecen(bas) > 5 Then
+            ' Liste yok, SAP bos ve mesaj/pencere var (kayit yok, yetki): 15 dk beklenmez.
+            If Not ses.Busy Then
+                If MS_SapMesajVar(ses) Then Exit Function
+            End If
         End If
         If MS_Gecen(bas) > saniye Then Exit Function
         DoEvents: MS_Sleep 100
@@ -991,6 +1008,7 @@ Bulundu:
     ThisWorkbook.Activate
     Exit Function
 Hata:
+    application.DisplayAlerts = True
     MS_Teshis etiket & " Excel aktarým hatasý: " & Err.Description
     On Error Resume Next
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
@@ -1754,7 +1772,8 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
         " | Fiyatý olmayan " & eksik & " | " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn"
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_SURE_" & MS_IlKod(), RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
     ThisWorkbook.names.Add Name:="_AKSORA_MUSTERI_7155_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(MS_Gecen(mBas), 2))), Visible:=False
-    MS_ExcelTemizle
+    ' Yalniz SAP listeyi Excel'e aktardiysa (dis dosya) o islemler kapatilir; kullanicinin acti(gi) Excel'e dokunulmaz.
+    If Not mDisaDosyalar Is Nothing Then MS_ExcelTemizle
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_ARAMA_TARIH_YENILE
@@ -1792,7 +1811,8 @@ Hata:
         If Err.Number <> 0 Then hMesaj = hMesaj & vbCrLf & "Eski kayýtlarýn geri yüklenmesi doðrulanamadý: " & Err.Description
         On Error GoTo 0
     End If
-    MS_ExcelTemizle
+    ' Yalniz SAP listeyi Excel'e aktardiysa (dis dosya) o islemler kapatilir; kullanicinin acti(gi) Excel'e dokunulmaz.
+    If Not mDisaDosyalar Is Nothing Then MS_ExcelTemizle
     MS_DisaKapat
     AKSORA_MUSTERI_PANEL_YENILE
     AKSORA_MUSTERI_SERIT "Güncelleme tamamlanamadý  •  " & Replace(hMesaj, vbCrLf, "  •  "), 3
@@ -1947,7 +1967,7 @@ End Function
 Public Sub AKSORA_MUSTERI_FIYATLARI_UYGULA(Optional ByVal sessiz As Boolean = True)
     Dim d As Object, tarih As Date, hMesaj As String, adlar As Variant, i As Long, ws As Worksheet
     Dim son As Long, a As Variant, r As Long, c As Long, cikti() As Variant, korumali As Boolean
-    Dim ev As Boolean, sc As Boolean, wsF As Worksheet
+    Dim ev As Boolean, sc As Boolean, wsF As Worksheet, sh As Worksheet
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set d = MF_FIYAT_SOZLUGU(tarih, hMesaj)
@@ -1976,6 +1996,21 @@ Public Sub AKSORA_MUSTERI_FIYATLARI_UYGULA(Optional ByVal sessiz As Boolean = Tr
                 UserInterfaceOnly:=True, AllowFiltering:=True
         End If
     Next i
+    ' Diger illerin (ve ekrandaki ilin) kayitlari da yeni fiyatlarla yazilir; il degisince eski fiyat geri gelmesin.
+    For Each sh In ThisWorkbook.Worksheets
+        If sh.Name Like "_MA_*_CDP" Or sh.Name Like "_MA_*_ILCE" Or sh.Name Like "_MA_*_YUK" Then
+            AKSORA_BEKLE_NABIZ
+            a = AKSORA_PAKET_OKU(sh)
+            If IsArray(a) Then
+                For r = 1 To UBound(a, 1)
+                    If IsError(a(r, 7)) Then a(r, 7) = 0
+                    If VarType(a(r, 7)) = vbString Or IsEmpty(a(r, 7)) Then a(r, 7) = Val(CStr(a(r, 7)))
+                Next r
+                MS_FiyatUygula a, d, Format$(tarih, "dd.mm.yyyy")
+                AKSORA_PAKET_YAZ sh, a
+            End If
+        End If
+    Next sh
     Set wsF = ThisWorkbook.Worksheets("_FIYAT_LISTESI")
     wsF.Range("I4").Value2 = "Stoklara uygulandý"
     wsF.Range("J4").Value2 = wsF.Range("J3").Value2
@@ -1985,6 +2020,8 @@ Cikis:
     Exit Sub
 Hata:
     If Not sessiz Then MsgBox "Fiyatlar stoklara uygulanamadý: " & Err.Description, vbExclamation, "AKSORA"
+    On Error Resume Next
+    If Not ws Is Nothing Then If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     Resume Cikis
 End Sub
 
@@ -2430,6 +2467,13 @@ Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     Next i
 Cikis:
+    If hataNo <> 0 Then
+        On Error Resume Next
+        For i = 1 To 3
+            ThisWorkbook.Worksheets(CStr(adlar(i - 1))).Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        Next i
+        On Error GoTo 0
+    End If
     application.EnableEvents = ev
     If hataNo <> 0 Then Err.Raise hataNo, "AKSORA_MUSTERI_ARSIV_YUKLE", il & " stoklarý yüklenemedi: " & hataMetni
     Exit Sub

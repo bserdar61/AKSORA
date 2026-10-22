@@ -455,6 +455,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - MC50 bozuk; kurumda atıl MB51'den "2 yılda sarfı olmayan" çekilerek karşılaştırılıyor. AKSORA kuralı (giriş yaşı) farklı, o yüzden her kalem için kanıt: AKSORA_ATIL_KANIT (Public). TRANSFER ve LİSTE görünümünde "SEÇİLİ MALZEME: KANIT" düğmesi; seçili satırın il/sistem/malzemesinden _ATIL kaydı ve stok okunur, son 24 ay girişleri (yeni→eski, ilk 8), her girişin stokta kalan payı ve yaşı, karşılanmayan kısım, 2-5 yıl son giriş, 6 ay sarf, MB51 kontrol bilgisi MsgBox'ta (1024 sınırı).
 - Baz up26'ya taşındı (kullanıcının ATIL2 okuması yapılmış dosyası, 52feed3a; optimize_base --img): 152 sayfa verisi birebir, 40 arşiv fark 0, _ATIL ATIL2.
 
+## Genel denetim ve düzeltmeler — 2026-10-22 (baz up28)
+- Telif: sahip adı kodda düz metin değil (KORUMA IMZA_KOD, AKSORA_SAHIBI() fonksiyon); kartlarda AKSORA_TELIF_ETIKET ile soluk "® Burhan SERDAR" (frmSplash'a çalışma anında lblTelif).
+- ATIL: girişler ilin stok tarihine kadar okunur (stok tarihinden sonraki giriş çift sayılmıyordu); 313/315 giriş değil; ALV boş hücre yalnız malzeme hücresi boşken doldurulur; KANIT/PDF okuma sırasında çalışmaz; SAP okuma öncesi ve STOK_KONTROL'de kart; ATIL_GOSTER hatada sayfayı korur; Admin'de verisi olmayan il "Veri yok".
+- Yatırım: Y_PROJE_KARSILASTIR IIf → açık dallanma (eksik anahtarda Type mismatch); Teminat kurulumu başında BX25 silinir; Teminat/Hakediş elle hesaplamada kurulur; Y_/I_ sayfası yoksa güncelleme hata vermez; tek il Yatırım/İlçe güncellemesinde kart.
+- Stok: yedek MB52 okuyucularında (EPP, İLÇE EPP, Yüklenici x2) MATNR temizlenir; bütün iller sonunda raporlar canlı il ile yenilenir; BIRLESTIR sessiz modda hatayı iletir; stok sayfası SAP düğmesinde kart; il geçişinde C3/C4 SUBTOTAL formülü korunur.
+- Müşteri: fiyat listesi tüm _MA_ il kayıtlarına da uygulanır; Excel aktarım hatasında DisplayAlerts geri; Excel işlemleri yalnız SAP Excel'e aktardıysa kapatılır; IQ09/MB52 liste yoksa SAP mesajında 5 sn'de çıkılır; hatalarda sayfa koruması; fiyat yüklemesinde kart; tek satırlı tabloda ÇIKTI (SpecialCells Intersect).
+- Bilinçli dokunulmayan: MS_Birlestir "çift sayım" bulgusu (gerçek veride AKSORA = MB52, fark 0); ilçe yedek yollarında PB sorgusu (hızlı yol kullanılıyor); performans iyileştirmeleri (banding, KARS yazımı) ileride.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

@@ -499,8 +499,10 @@ Bitir:
     ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
     arayuzBas = Timer
     If canliGuncel Then
-        ' This routine already formats the refreshed live sheets and reports.
+        ' Raporlar AKSORA_AKTIF_IL()'e gore kurulur: yenileme canli il ile yapilir, secim sonra geri yazilir.
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = canli
         AKSORA_V11_CANLI_YENILE canli
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
     Else
         AKSORA_V11_BICIMLER
     End If

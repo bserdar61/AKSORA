@@ -1067,6 +1067,7 @@ SAPSession.FindById("wnd[0]/tbar[0]/okcd").Text = "/nMB52"
 SAPSession.FindById("wnd[0]").SendVKey 0
 ILCE_V2_EPP_BEKLE 0.3
 
+AKSORA_SAP_MALZEME_TEMIZLE SAPSession
 SAPSession.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = ILCE_EPP_UY
 SAPSession.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = ILCE_DEPO_ILK
 SAPSession.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = ILCE_DEPO_SON

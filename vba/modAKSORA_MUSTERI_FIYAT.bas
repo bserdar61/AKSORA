@@ -129,13 +129,14 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
     Dim son As Long, r As Long, d As Object, pd As Object, kayit As Variant, k As Variant, fk As Variant
     Dim m As String, f As Double, ham As Variant
     Dim bos As Long, gecersiz As Long, okunan As Long
-    Dim ev As Boolean, sc As Boolean, al As Boolean
+    Dim ev As Boolean, sc As Boolean, al As Boolean, kart As Boolean
     Dim lo As Double, hi As Double, secili As Double, enCok As Long, poz As Long, sifirVar As Boolean, liste As String
     Dim out() As Variant, n As Long, i As Long, gecis As Long, durum As String, nt As String
     Dim nTek As Long, nBel As Long, nSif As Long, ozet As String, tarih As Date, ilk As Long
 
     dosya = application.GetOpenFilename("Excel dosyalarý (*.xlsx;*.xlsm;*.xls),*.xlsx;*.xlsm;*.xls", , "Birim fiyat dosyasýný seçin")
     If VarType(dosya) = vbBoolean Then Exit Sub
+    kart = AKSORA_BEKLE_AC("AKSORA  |  FÝYAT LÝSTESÝ", "Fiyat dosyasý okunuyor...", 0.1)
 
     ev = application.EnableEvents: sc = application.ScreenUpdating: al = application.DisplayAlerts
     On Error GoTo Hata
@@ -163,6 +164,7 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
 
     Set d = CreateObject("Scripting.Dictionary")
     For r = 1 To UBound(v, 1)
+        If (r And 4095) = 0 Then AKSORA_BEKLE_NABIZ
         m = vbNullString
         If Not IsError(v(r, cM)) Then m = Trim$(CStr(v(r, cM)))
         If Len(m) = 0 Then
@@ -281,8 +283,10 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
             vbCrLf & "Ayrýntý: _FIYAT_LISTESI sayfasý (gizli, sað týk > Göster)."
     End If
     application.EnableEvents = ev: application.ScreenUpdating = sc: application.DisplayAlerts = al
+    AKSORA_BEKLE_ILERLE 0.7, "Fiyatlar stoklara ve il kayýtlarýna uygulanýyor..."
     AKSORA_MUSTERI_FIYATLARI_UYGULA False
     AKSORA_MUSTERI_PANEL_YENILE
+    If kart Then AKSORA_BEKLE_KAPAT
     MsgBox ozet, vbInformation, "AKSORA | Müþteri fiyat listesi"
     Exit Sub
 
@@ -291,5 +295,6 @@ Hata:
     On Error Resume Next
     If Not wbK Is Nothing Then wbK.Close SaveChanges:=False
     application.EnableEvents = ev: application.ScreenUpdating = sc: application.DisplayAlerts = al
+    If kart Then AKSORA_BEKLE_KAPAT
     MsgBox ozet, vbExclamation, "AKSORA | Müþteri fiyat listesi"
 End Sub

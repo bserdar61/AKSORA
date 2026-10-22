@@ -1880,7 +1880,7 @@ End Sub
 ' is bitince ayni stok sayfasina donulur ve tek ozet gosterilir.
 Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
     Dim ws As Worksheet, ad As String, bas As Double, sessiz As Boolean, no As Long, metin As String
-    Dim ev As Boolean, baslik As String, eski As String
+    Dim ev As Boolean, baslik As String, eski As String, kart As Boolean
     If AKSORA_V11_MESGUL Then Exit Sub
     Set ws = ActiveSheet
     ad = AKFIX_NORMAL(ws.Name)
@@ -1889,6 +1889,10 @@ Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
     On Error GoTo Hata
     AKHZ_TEMIZLE
     bas = Timer
+    Select Case ad
+        Case "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK"
+            kart = AKSORA_BEKLE_AC("AKSORA  |  STOK", "SAP'den stok alýnýyor...", 0.1)
+    End Select
     ANA_SESSIZ_MOD = True
     Select Case ad
         Case "CDP_STOK": baslik = "CDP stok": CDP_STOK_GUNCELLE_V2
@@ -1909,6 +1913,7 @@ Public Sub AKSORA_STOK_SAYFA_GUNCELLE()
     application.EnableEvents = ev
     AKSORA_V13_GORUNUM ws
     application.ScreenUpdating = True
+    If kart Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     If PANEL_C2(ws.Name) = eski Then
         MsgBox baslik & " güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
@@ -1926,6 +1931,7 @@ Hata:
     ws.Select Replace:=True
     AKSORA_V13_GORUNUM ws
     application.ScreenUpdating = True
+    If kart Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     AKSORA_HATA_GOSTER "Stok güncelleme", no, metin
 End Sub

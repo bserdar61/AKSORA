@@ -1582,7 +1582,9 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     son = ws.Cells(ws.Rows.Count, cM).End(xlUp).Row
     If son >= 7 Then
         On Error Resume Next
+        ' Tek hucrede SpecialCells tum kullanilan alani dondurur: tablo araligiyla kesistirilir.
         Set gor = ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)).SpecialCells(xlCellTypeVisible)
+        If Not gor Is Nothing Then Set gor = Intersect(gor, ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)))
         On Error GoTo 0
     End If
     If Not gor Is Nothing Then
@@ -1699,6 +1701,7 @@ Private Sub T_CiktiListe(ByVal ws As Worksheet)
     If son > hdr Then
         On Error Resume Next
         Set gor = ws.Range(ws.Cells(hdr + 1, c1), ws.Cells(son, c1)).SpecialCells(xlCellTypeVisible)
+        If Not gor Is Nothing Then Set gor = Intersect(gor, ws.Range(ws.Cells(hdr + 1, c1), ws.Cells(son, c1)))
         On Error GoTo 0
     End If
     If Not gor Is Nothing Then

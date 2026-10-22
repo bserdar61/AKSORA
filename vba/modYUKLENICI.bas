@@ -407,6 +407,7 @@ End If
     session.FindById("wnd[0]/tbar[0]/okcd").Text = "/nMB52"
     session.FindById("wnd[0]").SendVKey 0
 
+    AKSORA_SAP_MALZEME_TEMIZLE session
     session.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = UretimYeri
     session.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
     session.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
@@ -1349,6 +1350,7 @@ session.FindById("wnd[0]/tbar[0]/okcd").Text = "/nMB52"
 session.FindById("wnd[0]").SendVKey 0
 YUK_V2_EPP_BEKLE 0.3
 
+AKSORA_SAP_MALZEME_TEMIZLE session
 session.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = YUK_AKSADA_UY
 session.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
 session.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString

@@ -1501,6 +1501,9 @@ Public Sub AKSORA_MUSTERI_ARAMA_TEMIZLE()
     Exit Sub
 Hata:
     application.EnableEvents = ev: application.ScreenUpdating = sc
+    On Error Resume Next
+    If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
     AKSORA_HATA_GOSTER "Arama temizleme", Err.Number, Err.Description
 End Sub
 

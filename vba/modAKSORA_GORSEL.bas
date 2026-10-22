@@ -134,10 +134,10 @@ Public Sub RAPOR_GORUNUM_TEK(ByVal sayfaAdi As String)
     Dim r As Long, c As Long, metin As String
     Dim eskiOlay As Boolean, eskiEkran As Boolean
 
-    On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets(sayfaAdi)
     eskiOlay = application.EnableEvents
     eskiEkran = application.ScreenUpdating
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(sayfaAdi)
     application.EnableEvents = False
     application.ScreenUpdating = False
 
@@ -258,9 +258,9 @@ Public Sub STOK_GORUNUM_TEK(ByVal sayfaAdi As String)
     Dim sonSatir As Long
     Dim eskiEkran As Boolean
 
+    eskiEkran = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(sayfaAdi)
-    eskiEkran = application.ScreenUpdating
     application.ScreenUpdating = False
 
     ' Stok tablolarinda baslik 6. satirda, veriler 7. satirdan baslar.

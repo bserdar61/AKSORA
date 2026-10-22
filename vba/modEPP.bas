@@ -327,6 +327,7 @@ End If
 
                 EPP_V2_KISA_BEKLE 0.3
 
+                AKSORA_SAP_MALZEME_TEMIZLE SAPSession
                 SAPSession.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = EPP_UY
                 SAPSession.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = EPP_DEPO_ILK
                 SAPSession.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = EPP_DEPO_SON
