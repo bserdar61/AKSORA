@@ -1,15 +1,15 @@
 Attribute VB_Name = "modKS_RAPOR"
 Option Explicit
 
-' Raporlar: 5 yýllýk karþýlaþtýrma, malzeme karnesi, sevkçi / üretici performans karnesi.
+' RAPORLAR: 5 yýllýk karþýlaþtýrma, aylýk daðýlým ve grafikler.
+' KARNE  : tek arama kutusu; malzeme (kod / ad) ya da üretici (kod / ad) karnesi, tedarikçi sýralamasý.
 
-Public Const R_YIL_SATIR As Long = 10       ' 5 yýllýk tablo baþlýk satýrý
-Public Const R_GOSTERGE_ILK As Long = 11    ' ilk gösterge satýrý
-Public Const R_AY_BASLIK As Long = 28       ' aylýk tablo baþlýk satýrý
-Public Const R_GARIC As Long = 19           ' Garanti içi arýza satýrý (grafik)
-Public Const R_GARDIS As Long = 20          ' Garanti dýþý arýza satýrý (grafik)
-Private Const K_ILK As Long = 9             ' malzeme karnesi çýktý baþlangýcý
-Private Const P_BASLIK As Long = 10         ' performans tablosu baþlýk satýrý
+Public Const R_YIL_SATIR As Long = 6        ' 5 yýllýk tablo baþlýk satýrý
+Public Const R_GOSTERGE_ILK As Long = 7     ' ilk gösterge satýrý
+Public Const R_GARIC As Long = 15           ' Garanti içi arýza satýrý (grafik)
+Public Const R_GARDIS As Long = 16          ' Garanti dýþý arýza satýrý (grafik)
+Public Const R_AY_BASLIK As Long = 25       ' aylýk tablo baþlýk satýrý
+Private Const K_ILK As Long = 5             ' karne çýktýsýnýn ilk satýrý
 
 ' ================================================================ ortak toplama
 
@@ -104,104 +104,193 @@ Public Function KS_Topla(ByRef arS As Variant, ByRef aA As Variant, ByVal y1 As 
     KS_Topla = r
 End Function
 
-' ================================================================ 5 YILLIK RAPOR
+' ================================================================ RAPORLAR
 
 Private Function KS_Gostergeler() As Variant
-    ' etiket, tür (n = adet, tl, oran, gun)
     KS_Gostergeler = Array( _
-        Array("Sevk Kalemi", "n"), Array("Sevk Edilen Miktar", "n"), Array("Sevk Tutarý", "tl"), _
+        Array("Sevk Kalemi", "n"), Array("Sevk Edilen Miktar", "n"), Array("Sevk Tutarý (TL)", "tl"), _
         Array("Zamanýnda Teslim Oraný", "oran"), Array("Ortalama Gecikme (gün)", "gun"), _
         Array("Arýza Kaydý", "n"), Array("Arýzalý Miktar", "n"), Array("Arýza Oraný (arýzalý / sevk)", "oran"), _
         Array("Garanti Ýçi Arýza", "n"), Array("Garanti Dýþý Arýza", "n"), _
         Array("Ort. Üretici Dönüþ Süresi (gün)", "gun"), Array("Ort. Çözüm Süresi (gün)", "gun"), _
-        Array("Tamir Maliyeti", "tl"), Array("Üreticinin Karþýladýðý", "tl"), Array("Kurumun Karþýladýðý", "tl"))
+        Array("Tamir Maliyeti (TL)", "tl"), Array("Üreticinin Karþýladýðý (TL)", "tl"), Array("Kurumun Karþýladýðý (TL)", "tl"))
 End Function
 
 Private Function KS_TurBicim(ByVal tur As String) As String
     Select Case tur
-        Case "tl": KS_TurBicim = KS_FmtTLKisa()
+        Case "tl": KS_TurBicim = "#,##0"
         Case "oran": KS_TurBicim = "0.0%"
         Case "gun": KS_TurBicim = "0.0"
         Case Else: KS_TurBicim = "#,##0"
     End Select
 End Function
 
+Public Function KS_AyAdi(ByVal ay As Long) As String
+    KS_AyAdi = Choose(ay, "Ocak", "Þubat", "Mart", "Nisan", "Mayýs", "Haziran", "Temmuz", "Aðustos", _
+        "Eylül", "Ekim", "Kasým", "Aralýk")
+End Function
+
 Public Sub KS_RaporKur()
-    Dim ws As Worksheet, g As Variant, i As Long
+    Dim ws As Worksheet, g As Variant, i As Long, alt As Double
     Set ws = KS_WS(SH_RAPOR)
     KS_SayfaSifirla ws
     ws.Columns("B").ColumnWidth = 34
-    ws.Columns("C:G").ColumnWidth = 15
-    ws.Columns("H").ColumnWidth = 16
+    ws.Columns("C:G").ColumnWidth = 13
+    ws.Columns("H").ColumnWidth = 14
     ws.Columns("I").ColumnWidth = 14
     ws.Columns("J").ColumnWidth = 3
-    KS_Bant ws, 10, "5 YILLIK KALÝTE RAPORU", "Seçilen yýl ve önceki 4 yýl. Sevkiyat yýlý: geliþ tarihi, yoksa planlanan tarih."
+    ws.Columns("K:R").ColumnWidth = 9
+    alt = KS_SayfaCerceve(ws, False)
+    ws.Rows(1).RowHeight = alt + 6
+    ws.Rows(2).RowHeight = 44
+    KS_SayfaBaslik ws, ws.Rows(2).Top + 4, "RAPORLAR", "Seçilen yýl ve önceki 4 yýl. Sevkiyat yýlý: geliþ tarihi, yoksa planlanan tarih."
 
-    ws.Range("B7").Value = "RAPOR YILI (son yýl)"
-    ws.Range("B7").Font.Bold = True
-    ws.Range("B7").Font.Size = 9
-    ws.Range("B7").Font.Color = C_GRI()
-    With ws.Range("C7")
+    ws.Rows(3).RowHeight = 28
+    With ws.Range("B3")
+        .Value = "RAPOR YILI (son yýl)"
+        .Font.Bold = True
+        .Font.Size = 8.5
+        .Font.Color = C_GRI()
+        .HorizontalAlignment = xlRight
+    End With
+    With ws.Range("C3")
         .Value = Year(Date)
-        .Interior.Color = C_GIRIS()
+        .Interior.Color = vbWhite
         .Font.Bold = True
         .Font.Color = C_LAC()
         .HorizontalAlignment = xlCenter
         .Locked = False
-        .Borders(xlEdgeBottom).Color = C_CAMGOBEGI()
+        .BorderAround xlContinuous, xlThin, , RGB(190, 204, 222)
     End With
-    KS_AdHucre "rYil", ws.Range("C7")
-    KS_Liste ws.Range("C7"), "lstYilSayi", True
-    ws.Rows(7).RowHeight = 24
-    KS_Buton ws, "ksBtnRapor", "HESAPLA", ws.Range("E7").Left, ws.Range("E7").Top + 1, 110, 22, "KS_RAPOR_HESAPLA", "ana"
+    KS_AdHucre "rYil", ws.Range("C3")
+    KS_Liste ws.Range("C3"), "lstYilSayi", True
+    KS_Buton ws, "ksR_Hesapla", "HESAPLA", ws.Range("D3").Left + 8, ws.Rows(3).Top + 2, 100, 24, "KS_RAPOR_HESAPLA", "ana"
 
-    KS_Bolum ws.Range("B9:I9"), "5 YILLIK KARÞILAÞTIRMA"
-    KS_TabloBaslik ws.Range("B10:I10"), Array("GÖSTERGE", "", "", "", "", "", "5 YIL", "DEÐÝÞÝM (son yýl)")
+    KS_Bolum ws.Range("B5:I5"), "5 YILLIK KARÞILAÞTIRMA"
+    KS_TabloBaslik ws.Range("B" & R_YIL_SATIR & ":I" & R_YIL_SATIR), Array("GÖSTERGE", "", "", "", "", "", "5 YIL", "DEÐÝÞÝM")
     g = KS_Gostergeler()
     For i = 0 To UBound(g)
         ws.Cells(R_GOSTERGE_ILK + i, 2).Value = g(i)(0)
         ws.Range(ws.Cells(R_GOSTERGE_ILK + i, 3), ws.Cells(R_GOSTERGE_ILK + i, 8)).NumberFormat = KS_TurBicim(CStr(g(i)(1)))
     Next i
-    With ws.Range(ws.Cells(R_GOSTERGE_ILK, 2), ws.Cells(R_GOSTERGE_ILK + UBound(g), 9))
-        KS_TabloGovde .Cells
-        .RowHeight = 20
-    End With
-    ws.Range(ws.Cells(R_GOSTERGE_ILK, 2), ws.Cells(R_GOSTERGE_ILK + UBound(g), 2)).Font.Bold = True
+    KS_TabloGovde ws.Range(ws.Cells(R_GOSTERGE_ILK, 2), ws.Cells(R_GOSTERGE_ILK + UBound(g), 9))
     ws.Range(ws.Cells(R_GOSTERGE_ILK, 2), ws.Cells(R_GOSTERGE_ILK + UBound(g), 2)).IndentLevel = 1
     ws.Range(ws.Cells(R_GOSTERGE_ILK, 3), ws.Cells(R_GOSTERGE_ILK + UBound(g), 9)).HorizontalAlignment = xlRight
-    ws.Range(ws.Cells(R_GOSTERGE_ILK, 8), ws.Cells(R_GOSTERGE_ILK + UBound(g), 8)).Interior.Color = C_OTO()
-    ws.Range(ws.Cells(R_GOSTERGE_ILK, 8), ws.Cells(R_GOSTERGE_ILK + UBound(g), 8)).Font.Bold = True
+    With ws.Range(ws.Cells(R_GOSTERGE_ILK, 8), ws.Cells(R_GOSTERGE_ILK + UBound(g), 8))
+        .Interior.Color = C_ACIKMAVI()
+        .Font.Bold = True
+    End With
 
-    KS_Bolum ws.Range("B27:I27"), "AYLIK DAÐILIM"
-    KS_TabloBaslik ws.Range("B28:H28"), Array("AY", "Sevk Kalemi", "Sevk Tutarý", "Arýza Kaydý", _
-        "Garanti Ýçi Arýza", "Tamir Maliyeti", "Ort. Dönüþ (gün)")
+    KS_Bolum ws.Range("B" & R_AY_BASLIK - 1 & ":I" & R_AY_BASLIK - 1), "AYLIK DAÐILIM"
+    KS_TabloBaslik ws.Range("B" & R_AY_BASLIK & ":H" & R_AY_BASLIK), Array("AY", "Sevk Kalemi", "Sevk Tutarý (TL)", _
+        "Arýza Kaydý", "Garanti Ýçi", "Tamir Maliyeti", "Ort. Dönüþ (gün)")
     For i = 1 To 12
         ws.Cells(R_AY_BASLIK + i, 2).Value = KS_AyAdi(i)
     Next i
     ws.Cells(R_AY_BASLIK + 13, 2).Value = "TOPLAM"
     KS_TabloGovde ws.Range(ws.Cells(R_AY_BASLIK + 1, 2), ws.Cells(R_AY_BASLIK + 13, 8))
     ws.Range(ws.Cells(R_AY_BASLIK + 1, 2), ws.Cells(R_AY_BASLIK + 13, 2)).IndentLevel = 1
-    ws.Range(ws.Cells(R_AY_BASLIK + 1, 3), ws.Cells(R_AY_BASLIK + 13, 3)).NumberFormat = "#,##0"
-    ws.Range(ws.Cells(R_AY_BASLIK + 1, 4), ws.Cells(R_AY_BASLIK + 13, 4)).NumberFormat = KS_FmtTLKisa()
-    ws.Range(ws.Cells(R_AY_BASLIK + 1, 5), ws.Cells(R_AY_BASLIK + 13, 6)).NumberFormat = "#,##0"
-    ws.Range(ws.Cells(R_AY_BASLIK + 1, 7), ws.Cells(R_AY_BASLIK + 13, 7)).NumberFormat = KS_FmtTLKisa()
+    ws.Range(ws.Cells(R_AY_BASLIK + 1, 3), ws.Cells(R_AY_BASLIK + 13, 7)).NumberFormat = "#,##0"
     ws.Range(ws.Cells(R_AY_BASLIK + 1, 8), ws.Cells(R_AY_BASLIK + 13, 8)).NumberFormat = "0.0"
+    ws.Range(ws.Cells(R_AY_BASLIK + 1, 3), ws.Cells(R_AY_BASLIK + 13, 8)).HorizontalAlignment = xlRight
     With ws.Range(ws.Cells(R_AY_BASLIK + 13, 2), ws.Cells(R_AY_BASLIK + 13, 8))
         .Font.Bold = True
-        .Interior.Color = C_OTO()
+        .Interior.Color = C_ACIKMAVI()
         .Borders(xlEdgeTop).Color = C_LAC()
     End With
-    ws.Range("B44").Value = "Deðiþim sütunu: adet ve tutarda önceki yýla göre % deðiþim; oranlarda puan, sürelerde gün farký."
-    ws.Range("B44").Font.Size = 8
-    ws.Range("B44").Font.Italic = True
-    ws.Range("B44").Font.Color = C_GRI()
-    KS_Pencere ws, 90, 0, False
+    With ws.Range("B" & R_AY_BASLIK + 15)
+        .Value = "Deðiþim: adet ve tutarda önceki yýla göre % deðiþim; oranlarda puan, sürelerde gün farký."
+        .Font.Size = 8
+        .Font.Italic = True
+        .Font.Color = C_GRI()
+    End With
+    KS_Bolum ws.Range("K5:R5"), "5 YILLIK ARIZA EÐÝLÝMÝ"
+    KS_Bolum ws.Range("K" & R_AY_BASLIK - 1 & ":R" & R_AY_BASLIK - 1), "AYLIK ARIZA VE TAMÝR MALÝYETÝ"
+    KS_GrafikKur ws
+    KS_ZeminUygula ws, True
+    KS_Pencere ws, 90, 0
 End Sub
 
-Public Function KS_AyAdi(ByVal ay As Long) As String
-    KS_AyAdi = Choose(ay, "Ocak", "Þubat", "Mart", "Nisan", "Mayýs", "Haziran", "Temmuz", "Aðustos", _
-        "Eylül", "Ekim", "Kasým", "Aralýk")
-End Function
+Private Sub KS_GrafikKur(ByVal ws As Worksheet)
+    Dim co As ChartObject, s As Series, sol As Double, gen As Double
+    sol = ws.Columns("K").Left
+    gen = ws.Columns("S").Left - sol
+    Set co = ws.ChartObjects.Add(sol, ws.Rows(R_YIL_SATIR).Top, gen, _
+        ws.Rows(R_GOSTERGE_ILK + 15).Top - ws.Rows(R_YIL_SATIR).Top)
+    co.Name = "ksGrafikYil"
+    With co.Chart
+        .ChartType = xlColumnStacked
+        Do While .SeriesCollection.Count > 0
+            .SeriesCollection(1).Delete
+        Loop
+        Set s = .SeriesCollection.NewSeries
+        s.Name = "Garanti içi"
+        s.Values = ws.Range(ws.Cells(R_GARIC, 3), ws.Cells(R_GARIC, 7))
+        s.XValues = ws.Range(ws.Cells(R_YIL_SATIR, 3), ws.Cells(R_YIL_SATIR, 7))
+        s.Format.Fill.ForeColor.RGB = C_LAC()
+        Set s = .SeriesCollection.NewSeries
+        s.Name = "Garanti dýþý"
+        s.Values = ws.Range(ws.Cells(R_GARDIS, 3), ws.Cells(R_GARDIS, 7))
+        s.XValues = ws.Range(ws.Cells(R_YIL_SATIR, 3), ws.Cells(R_YIL_SATIR, 7))
+        s.Format.Fill.ForeColor.RGB = C_CAMGOBEGI()
+        .ChartGroups(1).GapWidth = 70
+    End With
+    KS_GrafikBicim co.Chart
+
+    Set co = ws.ChartObjects.Add(sol, ws.Rows(R_AY_BASLIK).Top, gen, _
+        ws.Rows(R_AY_BASLIK + 14).Top - ws.Rows(R_AY_BASLIK).Top)
+    co.Name = "ksGrafikAy"
+    With co.Chart
+        .ChartType = xlColumnClustered
+        Do While .SeriesCollection.Count > 0
+            .SeriesCollection(1).Delete
+        Loop
+        Set s = .SeriesCollection.NewSeries
+        s.Name = "Arýza kaydý"
+        s.Values = ws.Range(ws.Cells(R_AY_BASLIK + 1, 5), ws.Cells(R_AY_BASLIK + 12, 5))
+        s.XValues = ws.Range(ws.Cells(R_AY_BASLIK + 1, 2), ws.Cells(R_AY_BASLIK + 12, 2))
+        s.Format.Fill.ForeColor.RGB = C_LAC()
+        Set s = .SeriesCollection.NewSeries
+        s.Name = "Tamir maliyeti (TL)"
+        s.Values = ws.Range(ws.Cells(R_AY_BASLIK + 1, 7), ws.Cells(R_AY_BASLIK + 12, 7))
+        s.XValues = ws.Range(ws.Cells(R_AY_BASLIK + 1, 2), ws.Cells(R_AY_BASLIK + 12, 2))
+        s.ChartType = xlLineMarkers
+        s.AxisGroup = xlSecondary
+        s.Format.Line.ForeColor.RGB = C_CAMGOBEGI()
+        s.Format.Line.Weight = 2.25
+        s.MarkerStyle = xlMarkerStyleCircle
+        s.MarkerSize = 6
+        s.MarkerBackgroundColor = vbWhite
+        s.MarkerForegroundColor = C_CAMGOBEGI()
+        .ChartGroups(1).GapWidth = 80
+    End With
+    KS_GrafikBicim co.Chart
+    On Error Resume Next
+    co.Chart.Axes(xlValue, xlSecondary).TickLabels.NumberFormat = "#,##0"
+    co.Chart.Axes(xlValue, xlSecondary).Format.Line.Visible = msoFalse
+    On Error GoTo 0
+End Sub
+
+Private Sub KS_GrafikBicim(ByVal ch As Chart)
+    On Error Resume Next
+    ch.HasTitle = False
+    ch.HasLegend = True
+    ch.Legend.Position = xlLegendPositionTop
+    ch.Legend.Font.Size = 8
+    ch.Legend.Font.Color = C_GRI()
+    ch.ChartArea.Format.Fill.ForeColor.RGB = vbWhite
+    ch.ChartArea.Format.Line.ForeColor.RGB = RGB(222, 231, 241)
+    ch.ChartArea.Font.Name = KS_FONT
+    ch.ChartArea.Font.Size = 8
+    ch.ChartArea.Font.Color = C_GRI()
+    ch.PlotArea.Format.Fill.Visible = msoFalse
+    ch.Axes(xlValue).MajorGridlines.Format.Line.ForeColor.RGB = RGB(232, 237, 243)
+    ch.Axes(xlValue).Format.Line.Visible = msoFalse
+    ch.Axes(xlValue).TickLabels.NumberFormat = "#,##0"
+    ch.Axes(xlCategory).Format.Line.ForeColor.RGB = RGB(205, 216, 230)
+    ch.Axes(xlCategory).TickLabels.Font.Color = C_METIN()
+    On Error GoTo 0
+End Sub
 
 Public Sub KS_RAPOR_HESAPLA()
     Dim y As Double
@@ -218,8 +307,8 @@ Hata:
 End Sub
 
 Public Sub KS_RaporHesapla(ByVal yil As Long)
-    Dim ws As Worksheet, arS As Variant, aA As Variant, g As Variant, t As Variant, sut(1 To 6) As Variant
-    Dim i As Long, j As Long, y As Long, ay As Long, d As Date, x As Double, korumali As Boolean
+    Dim ws As Worksheet, arS As Variant, aA As Variant, g As Variant, sut(1 To 6) As Variant
+    Dim i As Long, j As Long, ay As Long, d As Date, x As Double, korumali As Boolean
     Dim mS(1 To 13) As Double, mT(1 To 13) As Double, mA(1 To 13) As Double, mG(1 To 13) As Double
     Dim mM(1 To 13) As Double, mD(1 To 13) As Double, mDn(1 To 13) As Long, v As Variant, onc As Variant
 
@@ -229,7 +318,7 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
     arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
     g = KS_Gostergeler()
-    ws.Range("C7").Value = yil
+    ws.Range("C3").Value = yil
     For j = 1 To 5
         ws.Cells(R_YIL_SATIR, 2 + j).Value = CStr(yil - 5 + j)
         sut(j) = KS_Topla(arS, aA, yil - 5 + j, yil - 5 + j)
@@ -240,7 +329,6 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
         For j = 1 To 6
             ws.Cells(R_GOSTERGE_ILK + i, 2 + j).Value = sut(j)(i)
         Next j
-        ' Deðiþim
         v = sut(5)(i): onc = sut(4)(i)
         With ws.Cells(R_GOSTERGE_ILK + i, 9)
             .Value = Empty
@@ -263,7 +351,6 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
         End With
     Next i
 
-    ' Aylýk daðýlým (seçili yýl)
     If IsArray(arS) Then
         For i = 1 To UBound(arS, 1)
             If KS_SevkYil(arS, i) = yil Then
@@ -301,210 +388,206 @@ Public Sub KS_RaporHesapla(ByVal yil As Long)
         ws.Cells(R_AY_BASLIK + ay, 7).Value = mM(ay)
         If mDn(ay) > 0 Then ws.Cells(R_AY_BASLIK + ay, 8).Value = mD(ay) / mDn(ay) Else ws.Cells(R_AY_BASLIK + ay, 8).Value = Empty
     Next ay
-    ws.Range("B27").Value = "AYLIK DAÐILIM  -  " & yil
+    ws.Range("B" & R_AY_BASLIK - 1).Value = "AYLIK DAÐILIM  -  " & yil
     If korumali Then KS_Kapat ws
 End Sub
 
-' ================================================================ MALZEME KARNESÝ
-
+' ================================================================ KARNE
 
 Public Sub KS_KarneKur()
-    Dim ws As Worksheet
+    Dim ws As Worksheet, alt As Double, et As Variant, mk As Variant, i As Long, gen As Double, x As Double
     Set ws = KS_WS(SH_KARNE)
     KS_SayfaSifirla ws
-    ws.Columns("B:N").ColumnWidth = 12.5
-    ws.Columns("O").ColumnWidth = 3
-    KS_Bant ws, 15, "MALZEME KARNESÝ", "Bir malzemenin tüm sevkiyat ve arýza geçmiþi tek sayfada."
-    With ws.Range("B7")
-        .Value = "MALZEME KODU"
+    ws.Columns("B:N").ColumnWidth = 16
+    ws.Columns("O").ColumnWidth = 2
+    alt = KS_SayfaCerceve(ws, False)
+    ws.Rows(1).RowHeight = alt + 6
+    ws.Rows(2).RowHeight = 44
+    KS_SayfaBaslik ws, ws.Rows(2).Top + 4, "KARNE", _
+        "Malzeme kodu / adý ya da üretici kodu / adý yazýn; uygun karne kendiliðinden açýlýr."
+    et = Array("MALZEME KARNESÝ", "ÜRETÝCÝ KARNESÝ", "TEDARÝKÇÝ SIRALAMASI")
+    mk = Array("KS_KARNE_MALZEME", "KS_KARNE_URETICI", "KS_KARNE_SIRALAMA")
+    gen = 150
+    x = ws.Cells(1, 2).Left + KS_GENISLIK - 3 * gen - 2 * 6
+    For i = 0 To 2
+        KS_Buton ws, "ksK_" & i, CStr(et(i)), x + i * (gen + 6), ws.Rows(2).Top + 9, gen, 28, CStr(mk(i)), "cizgi"
+    Next i
+
+    ws.Rows(3).RowHeight = 32
+    With ws.Range("B3")
+        .Value = "ARA  (kod ya da ad)"
         .Font.Bold = True
-        .Font.Size = 9
+        .Font.Size = 8.5
         .Font.Color = C_GRI()
+        .HorizontalAlignment = xlRight
+        .IndentLevel = 1
     End With
-    ws.Range("C7:D7").Merge
-    With ws.Range("C7:D7")
-        .Interior.Color = C_GIRIS()
+    ws.Range("C3:F3").Merge
+    With ws.Range("C3:F3")
+        .Interior.Color = vbWhite
+        .Font.Size = 11
         .Font.Bold = True
         .Font.Color = C_LAC()
         .Locked = False
         .NumberFormat = "@"
-        .Borders(xlEdgeBottom).Color = C_CAMGOBEGI()
-        .HorizontalAlignment = xlCenter
+        .IndentLevel = 1
+        .BorderAround xlContinuous, xlMedium, , C_MAVI()
     End With
-    ws.Rows(7).RowHeight = 24
-    KS_AdHucre "kKod", ws.Range("C7")
-    KS_Liste ws.Range("C7:D7"), "lstMalzeme", True
-    KS_Buton ws, "ksBtnKarne", "GÖSTER", ws.Range("F7").Left, ws.Range("F7").Top + 1, 110, 22, "KS_KARNE_GOSTER", "ana"
-    ws.Range("B" & K_ILK).Value = "Malzeme kodunu seçip GÖSTER'e basýn."
-    ws.Range("B" & K_ILK).Font.Color = C_GRI()
-    ws.Range("B" & K_ILK).Font.Italic = True
-    KS_Pencere ws, 90, 0, False
+    KS_AdHucre "kAra", ws.Range("C3")
+    KS_Buton ws, "ksK_Goster", "GÖSTER", ws.Range("G3").Left + 8, ws.Rows(3).Top + 4, 100, 24, "KS_KARNE_GOSTER", "ana"
+    With ws.Range("I3")
+        .Value = "YIL (sýralama)"
+        .Font.Bold = True
+        .Font.Size = 8.5
+        .Font.Color = C_GRI()
+        .HorizontalAlignment = xlRight
+    End With
+    With ws.Range("J3")
+        .Value = "TÜMÜ"
+        .Interior.Color = vbWhite
+        .Font.Bold = True
+        .Font.Color = C_LAC()
+        .HorizontalAlignment = xlCenter
+        .Locked = False
+        .BorderAround xlContinuous, xlThin, , RGB(190, 204, 222)
+    End With
+    KS_AdHucre "kYil", ws.Range("J3")
+    KS_Liste ws.Range("J3"), "lstYil", True
+    ws.Rows(4).RowHeight = 10
+    With ws.Range("B" & K_ILK)
+        .Value = "Arama kutusuna malzeme ya da üretici yazýn. Örnek: 1000006162, REDRESOR, 1300001416, LUNA ELEKTRÝK."
+        .Font.Italic = True
+        .Font.Color = C_GRI()
+    End With
+    KS_ZeminUygula ws, True
+    KS_Pencere ws, 90, 3
+End Sub
+
+' KARNE sayfasýnda arama kutusu deðiþince (Workbook_SheetChange) çaðrýlýr.
+Public Sub KS_KarneDegisti(ByVal Target As Range)
+    If Intersect(Target, KS_F("kAra").MergeArea) Is Nothing Then Exit Sub
+    Application.EnableEvents = False
+    KS_KarneCalistir ""
+    Application.EnableEvents = True
 End Sub
 
 Public Sub KS_KARNE_GOSTER()
-    Dim ws As Worksheet, aM As Variant, arS As Variant, aA As Variant, kod As String, mi As Long
-    Dim i As Long, n As Long, r As Long, idx As Variant, liste() As Variant, x As Double, korumali As Boolean
-    Dim sevkMik As Double, sevkTut As Double, arzN As Long, arzMik As Double, donTop As Double, donN As Long
-    Dim mal As Double, garIc As Long, ilk As Date, son As Date, d As Date, k As Long
-    On Error GoTo Hata
-    Set ws = KS_WS(SH_KARNE)
-    kod = KS_Anahtar(KS_FV("kKod"))
-    If Len(kod) = 0 Then
-        MsgBox "Malzeme kodu seçin.", vbExclamation, KS_AD
-        Exit Sub
-    End If
-    KS_Basla
-    KS_HesaplaTumu
-    aM = KS_Veri(KS_LOZ(T_MALZ))
-    arS = KS_Veri(KS_LOZ(T_SEVK))
-    aA = KS_Veri(KS_LOZ(T_ARIZA))
-    If IsArray(aM) Then
-        For i = 1 To UBound(aM, 1)
-            If KS_Anahtar(aM(i, M_KOD)) = kod Then mi = i: Exit For
+    KS_KarneCalistir ""
+End Sub
+
+Public Sub KS_KARNE_MALZEME()
+    KS_KarneCalistir "MALZEME"
+End Sub
+
+Public Sub KS_KARNE_URETICI()
+    KS_KarneCalistir "URETICI"
+End Sub
+
+Public Sub KS_KARNE_SIRALAMA()
+    KS_KarneCalistir "SIRALAMA"
+End Sub
+
+Private Sub KS_KarneSekme(ByVal ws As Worksheet, ByVal aktif As Long)
+    Dim i As Long, s As Shape
+    For i = 0 To 2
+        Set s = ws.Shapes("ksK_" & i)
+        If i = aktif Then
+            s.Fill.ForeColor.RGB = C_LAC()
+            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbWhite
+            s.Line.Visible = msoFalse
+        Else
+            s.Fill.ForeColor.RGB = vbWhite
+            s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = C_LAC()
+            s.Line.Visible = msoTrue
+        End If
+    Next i
+End Sub
+
+' Üretici / sevkçi adaylarýný toplar: TANIMLAR, sevkiyat sevkçileri, malzeme üreticileri.
+Private Function KS_UreticiAdaylari(ByVal metin As String) As Collection
+    Dim c As New Collection, d As Object, a As Variant, i As Long, k As String, v As String, ara As String
+    Set d = CreateObject("Scripting.Dictionary")
+    ara = KS_Anahtar(metin)
+    a = KS_Veri(KS_LOZ(T_SEVKCI))
+    If IsArray(a) Then
+        For i = 1 To UBound(a, 1)
+            v = KS_Metin(a(i, 1))
+            k = KS_Anahtar(v)
+            If Len(k) > 0 And Not d.Exists(k) Then
+                If InStr(1, k, ara, vbBinaryCompare) > 0 Or KS_Anahtar(a(i, 2)) = ara Then
+                    d(k) = v
+                    c.Add v
+                End If
+            End If
         Next i
     End If
-    If mi = 0 Then
-        KS_Bitir
-        MsgBox "Malzeme bulunamadý: " & KS_FV("kKod"), vbExclamation, KS_AD
-        Exit Sub
+    a = KS_Veri(KS_LOZ(T_SEVK))
+    If IsArray(a) Then
+        For i = 1 To UBound(a, 1)
+            v = KS_Metin(a(i, S_SEVKCI))
+            k = KS_Anahtar(v)
+            If Len(k) > 0 And Not d.Exists(k) And InStr(1, k, ara, vbBinaryCompare) > 0 Then
+                d(k) = v
+                c.Add v
+            End If
+        Next i
     End If
+    a = KS_Veri(KS_LOZ(T_MALZ))
+    If IsArray(a) Then
+        For i = 1 To UBound(a, 1)
+            v = KS_Metin(a(i, M_URETICI))
+            k = KS_Anahtar(v)
+            If Len(k) > 0 And Not d.Exists(k) And InStr(1, k, ara, vbBinaryCompare) > 0 Then
+                d(k) = v
+                c.Add v
+            End If
+        Next i
+    End If
+    Set KS_UreticiAdaylari = c
+End Function
 
+Private Sub KS_KarneCalistir(ByVal tur As String)
+    Dim ws As Worksheet, ara As String, mi As Long, aday As Collection, korumali As Boolean, i As Long
+    On Error GoTo Hata
+    Set ws = KS_WS(SH_KARNE)
+    ara = KS_Metin(KS_FV("kAra"))
+    KS_Basla
+    KS_HesaplaTumu
+    KS_BaglamYukle
     korumali = ws.ProtectContents
     KS_Ac ws
     KS_AlanTemizle ws, K_ILK
-
-    ' Baþlýk ve bilgi satýrý
-    ws.Range(ws.Cells(K_ILK, 2), ws.Cells(K_ILK, 14)).Merge
-    With ws.Cells(K_ILK, 2)
-        .Value = KS_Metin(aM(mi, M_KOD)) & "   " & KS_Metin(aM(mi, M_AD))
-        .Font.Size = 16
-        .Font.Bold = True
-        .Font.Color = C_LAC()
-        .Font.Italic = False
-    End With
-    ws.Rows(K_ILK).RowHeight = 30
-    ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)).Merge
-    With ws.Cells(K_ILK + 1, 2)
-        .Value = "Kategori: " & KS_Bilgi(aM(mi, M_KAT)) & "     |     Birim: " & KS_Bilgi(aM(mi, M_BIRIM)) & _
-            "     |     Üretici: " & KS_Bilgi(aM(mi, M_URETICI)) & "     |     Liste fiyatý: " & _
-            Format$(aM(mi, M_FIYAT), "#,##0.00") & " " & ChrW(8378) & "     |     Garanti: " & aM(mi, M_GARANTI) & " ay"
-        .Font.Size = 9
-        .Font.Color = C_GRI()
-    End With
-    ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)).Borders(xlEdgeBottom).Color = C_CAMGOBEGI()
-    ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)).Borders(xlEdgeBottom).Weight = xlMedium
-
-    ' Sevkiyat geçmiþi
-    r = K_ILK + 7
-    KS_Bolum ws.Range(ws.Cells(r, 2), ws.Cells(r, 14)), "SEVKÝYAT GEÇMÝÞÝ"
-    KS_TabloBaslik ws.Range(ws.Cells(r + 1, 2), ws.Cells(r + 1, 13)), Array("Sevk No", "Sevkçi", "Sevk Yeri", _
-        "Adet", "Birim Fiyat", "Tutar", "Planlanan", "Geliþ", "Gecikme (gün)", "Garanti Bitiþ", "Garanti Durumu", _
-        "Arýzalý Adet")
-    n = 0
-    If IsArray(arS) Then
-        ReDim liste(1 To UBound(arS, 1), 1 To 13)
-        For i = 1 To UBound(arS, 1)
-            If KS_Anahtar(arS(i, S_KOD)) = kod Then
-                n = n + 1
-                liste(n, 1) = arS(i, S_NO): liste(n, 2) = arS(i, S_SEVKCI): liste(n, 3) = arS(i, S_YER)
-                liste(n, 4) = arS(i, S_ADET): liste(n, 5) = arS(i, S_FIYAT): liste(n, 6) = arS(i, S_TUTAR)
-                liste(n, 7) = arS(i, S_PLAN): liste(n, 8) = arS(i, S_GELIS): liste(n, 9) = arS(i, S_GECIKME)
-                liste(n, 10) = arS(i, S_GARBIT): liste(n, 11) = arS(i, S_GDURUM): liste(n, 12) = arS(i, S_ARIZA)
-                If KS_Tarih(arS(i, S_GELIS), d) Then liste(n, 13) = d Else liste(n, 13) = arS(i, S_PLAN)
-                If KS_Sayi(arS(i, S_ADET), x) Then sevkMik = sevkMik + x
-                If KS_Sayi(arS(i, S_TUTAR), x) Then sevkTut = sevkTut + x
-            End If
-        Next i
-    End If
-    r = r + 2
-    If n = 0 Then
-        ws.Cells(r, 2).Value = "Bu malzeme için sevkiyat kaydý yok."
-        ws.Cells(r, 2).Font.Color = C_GRI()
-        r = r + 1
+    If tur = "SIRALAMA" Then
+        KS_KarneSekme ws, 2
+        KS_SiralamaYaz ws
+    ElseIf Len(ara) = 0 Then
+        ws.Range("B" & K_ILK).Value = "Arama kutusuna malzeme ya da üretici yazýn."
+        ws.Range("B" & K_ILK).Font.Color = C_GRI()
     Else
-        idx = KS_SiraIndeks(liste, 13, True, n)
-        For i = 1 To n
-            For k = 1 To 12
-                ws.Cells(r + i - 1, 1 + k).Value = liste(idx(i), k)
-            Next k
-        Next i
-        KS_TabloGovde ws.Range(ws.Cells(r, 2), ws.Cells(r + n - 1, 13))
-        ws.Range(ws.Cells(r, 5), ws.Cells(r + n - 1, 5)).NumberFormat = "General"
-        ws.Range(ws.Cells(r, 6), ws.Cells(r + n - 1, 7)).NumberFormat = KS_FmtTL()
-        ws.Range(ws.Cells(r, 8), ws.Cells(r + n - 1, 9)).NumberFormat = KS_FmtTarih()
-        ws.Range(ws.Cells(r, 11), ws.Cells(r + n - 1, 11)).NumberFormat = KS_FmtTarih()
-        ws.Range(ws.Cells(r, 3), ws.Cells(r + n - 1, 4)).ShrinkToFit = True
-        ws.Range(ws.Cells(r, 12), ws.Cells(r + n - 1, 12)).ShrinkToFit = True
-        r = r + n
-    End If
-
-    ' Arýza geçmiþi (kronolojik)
-    r = r + 1
-    KS_Bolum ws.Range(ws.Cells(r, 2), ws.Cells(r, 14)), "ARIZA GEÇMÝÞÝ  (eskiden yeniye)"
-    KS_TabloBaslik ws.Range(ws.Cells(r + 1, 2), ws.Cells(r + 1, 14)), Array("Arýza No", "Sevk No", "Seri No", _
-        "Arýza Tarihi", "Önceki Arýza", "Adet", "Arýza Tipi", "Garanti", "Bildirim", "Üretici Dönüþ", _
-        "Dönüþ (gün)", "Tamir Maliyeti", "Durum")
-    n = 0
-    If IsArray(aA) Then
-        ReDim liste(1 To UBound(aA, 1), 1 To 13)
-        For i = 1 To UBound(aA, 1)
-            If KS_Anahtar(aA(i, A_KOD)) = kod Then
-                n = n + 1
-                liste(n, 1) = aA(i, A_NO): liste(n, 2) = aA(i, A_SEVK): liste(n, 3) = aA(i, A_SERI)
-                liste(n, 4) = aA(i, A_TARIH): liste(n, 5) = aA(i, A_ONCEKI): liste(n, 6) = aA(i, A_ADET)
-                liste(n, 7) = aA(i, A_TIP): liste(n, 8) = aA(i, A_KAPSAM): liste(n, 9) = aA(i, A_BILDIRIM)
-                liste(n, 10) = aA(i, A_DONUS): liste(n, 11) = aA(i, A_DONUSGUN): liste(n, 12) = aA(i, A_MALIYET)
-                liste(n, 13) = aA(i, A_DURUM)
-                arzN = arzN + 1
-                If KS_Sayi(aA(i, A_ADET), x) Then arzMik = arzMik + x
-                If KS_Sayi(aA(i, A_DONUSGUN), x) Then donTop = donTop + x: donN = donN + 1
-                If KS_Sayi(aA(i, A_MALIYET), x) Then mal = mal + x
-                If KS_Metin(aA(i, A_KAPSAM)) = "EVET" Then garIc = garIc + 1
+        If tur <> "URETICI" Then mi = KS_MalzemeAra(ara)
+        If mi > 0 Then
+            KS_KarneSekme ws, 0
+            KS_MalzemeKarnesi ws, mi
+        Else
+            Set aday = KS_UreticiAdaylari(ara)
+            If aday.Count = 1 And tur <> "MALZEME" Then
+                KS_KarneSekme ws, 1
+                KS_UreticiKarnesi ws, aday(1)
+            ElseIf aday.Count > 1 And tur <> "MALZEME" Then
+                KS_KarneSekme ws, 1
+                KS_Bolum ws.Range(ws.Cells(K_ILK, 2), ws.Cells(K_ILK, 14)), aday.Count & " ÜRETÝCÝ / SEVKÇÝ EÞLEÞTÝ  -  birini kopyalayýp arama kutusuna yapýþtýrýn"
+                For i = 1 To aday.Count
+                    If i > 40 Then Exit For
+                    ws.Cells(K_ILK + i, 2).Value = aday(i)
+                Next i
+            ElseIf mi < 0 Then
+                ws.Range("B" & K_ILK).Value = -mi & " malzeme bu ifadeyi içeriyor. Daha ayrýntýlý yazýn ya da kodu girin."
+            Else
+                ws.Range("B" & K_ILK).Value = "Eþleþen malzeme ya da üretici bulunamadý: " & ara
+                ws.Range("B" & K_ILK).Font.Color = C_KIRMIZI()
             End If
-        Next i
+        End If
     End If
-    r = r + 2
-    If n = 0 Then
-        ws.Cells(r, 2).Value = "Bu malzeme için arýza kaydý yok."
-        ws.Cells(r, 2).Font.Color = C_YESIL()
-        ws.Cells(r, 2).Font.Bold = True
-    Else
-        idx = KS_SiraIndeks(liste, 4, False, n)
-        For i = 1 To n
-            For k = 1 To 13
-                ws.Cells(r + i - 1, 1 + k).Value = liste(idx(i), k)
-            Next k
-        Next i
-        KS_TabloGovde ws.Range(ws.Cells(r, 2), ws.Cells(r + n - 1, 14))
-        ws.Range(ws.Cells(r, 5), ws.Cells(r + n - 1, 6)).NumberFormat = KS_FmtTarih()
-        ws.Range(ws.Cells(r, 10), ws.Cells(r + n - 1, 11)).NumberFormat = KS_FmtTarih()
-        ws.Range(ws.Cells(r, 13), ws.Cells(r + n - 1, 13)).NumberFormat = KS_FmtTL()
-        KS_DurumYazRenk ws.Range(ws.Cells(r, 9), ws.Cells(r + n - 1, 9)), "EVET", "HAYIR"
-        KS_DurumYazRenk ws.Range(ws.Cells(r, 14), ws.Cells(r + n - 1, 14)), "KAPANDI", "AÇIK"
-    End If
-
-    ' KPI kartlarý
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 2), ws.Cells(K_ILK + 5, 3)), "SEVK EDÝLEN MÝKTAR"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 2), ws.Cells(K_ILK + 5, 3)), sevkMik, "#,##0", _
-        KS_Bilgi(aM(mi, M_BIRIM))
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 4), ws.Cells(K_ILK + 5, 5)), "SEVK TUTARI"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 4), ws.Cells(K_ILK + 5, 5)), sevkTut, KS_FmtTLKisa(), "tüm sevkiyatlar"
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 6), ws.Cells(K_ILK + 5, 7)), "ARIZA KAYDI"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 6), ws.Cells(K_ILK + 5, 7)), arzN, "#,##0", _
-        garIc & " garanti içi  |  " & arzMik & " adet", IIf(arzN > 0, C_KIRMIZI(), C_YESIL())
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 8), ws.Cells(K_ILK + 5, 9)), "ARIZA ORANI"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 8), ws.Cells(K_ILK + 5, 9)), KS_Bol(arzMik, sevkMik), "0.0%", _
-        "arýzalý / sevk edilen"
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 10), ws.Cells(K_ILK + 5, 11)), "ORT. ÜRETÝCÝ DÖNÜÞÜ"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 10), ws.Cells(K_ILK + 5, 11)), KS_Bol(donTop, donN), "0.0"" gün""", _
-        donN & " dönüþ kaydý"
-    KS_KartCiz ws.Range(ws.Cells(K_ILK + 3, 12), ws.Cells(K_ILK + 5, 13)), "TAMÝR MALÝYETÝ"
-    KS_KartYaz ws.Range(ws.Cells(K_ILK + 3, 12), ws.Cells(K_ILK + 5, 13)), mal, KS_FmtTLKisa(), "toplam"
-    ws.Rows(K_ILK + 2).RowHeight = 8
-    ws.Rows(K_ILK + 3).RowHeight = 18
-    ws.Rows(K_ILK + 4).RowHeight = 30
-    ws.Rows(K_ILK + 5).RowHeight = 16
-
     If korumali Then KS_Kapat ws
     KS_Bitir
     Exit Sub
@@ -513,97 +596,293 @@ Hata:
     MsgBox "Karne oluþturulamadý: " & Err.Description, vbExclamation, KS_AD
 End Sub
 
+Private Sub KS_KarneBaslik(ByVal ws As Worksheet, ByVal baslik As String, ByVal bilgi As String)
+    ws.Range(ws.Cells(K_ILK, 2), ws.Cells(K_ILK, 14)).Merge
+    With ws.Cells(K_ILK, 2)
+        .Value = baslik
+        .Font.Name = KS_FONT_KALIN
+        .Font.Size = 16
+        .Font.Bold = True
+        .Font.Color = C_LAC()
+        .Font.Italic = False
+    End With
+    ws.Rows(K_ILK).RowHeight = 30
+    ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)).Merge
+    With ws.Cells(K_ILK + 1, 2)
+        .Value = bilgi
+        .Font.Size = 9
+        .Font.Color = C_GRI()
+    End With
+    With ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)).Borders(xlEdgeBottom)
+        .Color = C_CAMGOBEGI()
+        .Weight = xlMedium
+    End With
+    ws.Rows(K_ILK + 2).RowHeight = 10
+    ws.Rows(K_ILK + 3).RowHeight = 18
+    ws.Rows(K_ILK + 4).RowHeight = 30
+    ws.Rows(K_ILK + 5).RowHeight = 16
+End Sub
+
+Private Sub KS_Kart2(ByVal ws As Worksheet, ByVal sira As Long, ByVal etiket As String, ByVal deger As Variant, _
+        ByVal bicim As String, ByVal alt As String, Optional ByVal renk As Long = -1)
+    Dim r As Range
+    Set r = ws.Range(ws.Cells(K_ILK + 3, 2 + sira * 2), ws.Cells(K_ILK + 5, 3 + sira * 2))
+    KS_KartCiz r, etiket
+    KS_KartYaz r, deger, bicim, alt, renk
+End Sub
+
+Private Sub KS_ListeTablo(ByVal ws As Worksheet, ByRef r As Long, ByVal baslik As String, ByVal basliklar As Variant, _
+        ByRef liste() As Variant, ByVal n As Long, ByVal siraKol As Long, ByVal azalan As Boolean, ByVal bicimler As Variant, _
+        ByVal bos As String)
+    Dim i As Long, k As Long, m As Long, idx As Variant
+    m = UBound(basliklar) + 1
+    KS_Bolum ws.Range(ws.Cells(r, 2), ws.Cells(r, 14)), baslik
+    KS_TabloBaslik ws.Range(ws.Cells(r + 1, 2), ws.Cells(r + 1, 1 + m)), basliklar
+    r = r + 2
+    If n = 0 Then
+        ws.Cells(r, 2).Value = bos
+        ws.Cells(r, 2).Font.Italic = True
+        ws.Cells(r, 2).Font.Color = C_GRI()
+        r = r + 2
+        Exit Sub
+    End If
+    idx = KS_SiraIndeks(liste, siraKol, azalan, n)
+    For i = 1 To n
+        For k = 1 To m
+            ws.Cells(r + i - 1, 1 + k).Value = liste(idx(i), k)
+        Next k
+    Next i
+    KS_TabloGovde ws.Range(ws.Cells(r, 2), ws.Cells(r + n - 1, 1 + m))
+    For k = 1 To m
+        If Len(bicimler(k - 1)) > 0 Then ws.Range(ws.Cells(r, 1 + k), ws.Cells(r + n - 1, 1 + k)).NumberFormat = bicimler(k - 1)
+    Next k
+    ws.Range(ws.Cells(r, 2), ws.Cells(r + n - 1, 1 + m)).ShrinkToFit = True
+    r = r + n + 1
+End Sub
+
+Private Sub KS_MalzemeKarnesi(ByVal ws As Worksheet, ByVal mi As Long)
+    Dim aM As Variant, arS As Variant, aA As Variant, kod As String, i As Long, n As Long, r As Long, x As Double
+    Dim liste() As Variant, sevkMik As Double, sevkTut As Double, arzN As Long, arzMik As Double, donTop As Double
+    Dim donN As Long, mal As Double, garIc As Long, acik As Long, d As Date, tr As String
+    tr = KS_FmtTarih()
+    aM = KS_Veri(KS_LOZ(T_MALZ))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
+    aA = KS_Veri(KS_LOZ(T_ARIZA))
+    kod = KS_Anahtar(aM(mi, M_KOD))
+    KS_KarneBaslik ws, "MALZEME   " & KS_Metin(aM(mi, M_KOD)) & "   " & KS_Metin(aM(mi, M_AD)), _
+        "Kategori: " & KS_Bilgi(aM(mi, M_KAT)) & "     |     Birim: " & KS_Bilgi(aM(mi, M_BIRIM)) & _
+        "     |     Üretici: " & KS_Bilgi(aM(mi, M_URETICI)) & "     |     Liste fiyatý: " & _
+        IIf(KS_Bos(aM(mi, M_FIYAT)), "-", Format$(aM(mi, M_FIYAT), "#,##0.00") & " " & KS_Metin(aM(mi, M_PB))) & _
+        "     |     Garanti: " & IIf(KS_Bos(aM(mi, M_GARANTI)), "GÝRÝLMEMÝÞ", KS_Metin(aM(mi, M_GARANTI)) & " ay")
+
+    r = K_ILK + 7
+    n = 0
+    If IsArray(arS) Then
+        ReDim liste(1 To UBound(arS, 1), 1 To 12)
+        For i = 1 To UBound(arS, 1)
+            If KS_Anahtar(arS(i, S_KOD)) = kod Then
+                n = n + 1
+                liste(n, 1) = arS(i, S_NO): liste(n, 2) = arS(i, S_SEVKCI): liste(n, 3) = arS(i, S_YER)
+                liste(n, 4) = arS(i, S_ADET): liste(n, 5) = arS(i, S_TUTAR): liste(n, 6) = arS(i, S_PLAN)
+                liste(n, 7) = arS(i, S_GELIS): liste(n, 8) = arS(i, S_TDURUM): liste(n, 9) = arS(i, S_GARBIT)
+                liste(n, 10) = arS(i, S_GDURUM): liste(n, 11) = arS(i, S_ARIZA)
+                If KS_Tarih(arS(i, S_GELIS), d) Then liste(n, 12) = d Else liste(n, 12) = arS(i, S_PLAN)
+                If KS_Sayi(arS(i, S_ADET), x) Then sevkMik = sevkMik + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then sevkTut = sevkTut + x
+            End If
+        Next i
+    Else
+        ReDim liste(1 To 1, 1 To 12)
+    End If
+    KS_ListeTablo ws, r, "SEVKÝYAT GEÇMÝÞÝ  (yeniden eskiye)", Array("Sevk No", "Sevkçi", "Sevk Yeri", "Adet", _
+        "Tutar (TL)", "Planlanan", "Geliþ", "Teslim", "Garanti Bitiþ", "Garanti", "Arýzalý"), liste, n, 12, True, _
+        Array("", "", "", "#,##0", "#,##0", tr, tr, "", tr, "", "#,##0"), "Bu malzeme için sevkiyat kaydý yok."
+
+    n = 0
+    If IsArray(aA) Then
+        ReDim liste(1 To UBound(aA, 1), 1 To 11)
+        For i = 1 To UBound(aA, 1)
+            If KS_Anahtar(aA(i, A_KOD)) = kod Then
+                n = n + 1
+                liste(n, 1) = aA(i, A_NO): liste(n, 2) = aA(i, A_TARIH): liste(n, 3) = aA(i, A_SERI)
+                liste(n, 4) = aA(i, A_ONCEKI): liste(n, 5) = aA(i, A_ADET): liste(n, 6) = aA(i, A_KAPSAM)
+                liste(n, 7) = aA(i, A_ACIK): liste(n, 8) = aA(i, A_BILDIRIM): liste(n, 9) = aA(i, A_DONUSGUN)
+                liste(n, 10) = aA(i, A_MALIYET): liste(n, 11) = aA(i, A_DURUM)
+                arzN = arzN + 1
+                If KS_Sayi(aA(i, A_ADET), x) Then arzMik = arzMik + x
+                If KS_Sayi(aA(i, A_DONUSGUN), x) Then donTop = donTop + x: donN = donN + 1
+                If KS_Sayi(aA(i, A_MALIYET), x) Then mal = mal + x
+                If KS_Metin(aA(i, A_KAPSAM)) = "EVET" Then garIc = garIc + 1
+                If KS_ArizaAcik(aA(i, A_DURUM)) Then acik = acik + 1
+            End If
+        Next i
+    Else
+        ReDim liste(1 To 1, 1 To 11)
+    End If
+    KS_ListeTablo ws, r, "ARIZA GEÇMÝÞÝ  (eskiden yeniye)", Array("Arýza No", "Arýza Tarihi", "Seri No", _
+        "Önceki Arýza", "Adet", "Garanti", "Sebep / Açýklama", "Bildirim", "Dönüþ (gün)", "Maliyet (TL)", "Durum"), _
+        liste, n, 2, False, Array("", tr, "", tr, "#,##0", "", "", tr, "0", "#,##0", ""), _
+        "Bu malzeme için arýza kaydý yok."
+
+    KS_Kart2 ws, 0, "SEVK EDÝLEN", sevkMik, "#,##0", KS_Bilgi(aM(mi, M_BIRIM))
+    KS_Kart2 ws, 1, "SEVK TUTARI (TL)", sevkTut, "#,##0", "tüm sevkiyatlar"
+    KS_Kart2 ws, 2, "ARIZA KAYDI", arzN, "#,##0", garIc & " garanti içi  |  " & acik & " açýk", _
+        IIf(arzN > 0, C_KIRMIZI(), C_YESIL())
+    KS_Kart2 ws, 3, "ARIZA ORANI", KS_Bol(arzMik, sevkMik), "0.0%", "arýzalý / sevk edilen"
+    KS_Kart2 ws, 4, "ORT. ÜRETÝCÝ DÖNÜÞÜ", KS_Bol(donTop, donN), "0.0"" gün""", donN & " dönüþ kaydý"
+    KS_Kart2 ws, 5, "TAMÝR MALÝYETÝ (TL)", mal, "#,##0", "toplam"
+End Sub
+
+Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
+    Dim aM As Variant, arS As Variant, aA As Variant, k As String, i As Long, n As Long, r As Long, x As Double
+    Dim dM As Object, dSec As Object, liste() As Variant, j As Long, kalem As Long, tut As Double, zam As Long, tes As Long
+    Dim gecTop As Double, arzN As Long, arzMik As Double, sevkMik As Double, donTop As Double, donN As Long, mal As Double
+    Dim acik As Long, skor As Double, oran As Double, gec As Double, don As Double, tr As String, kk As String
+    tr = KS_FmtTarih()
+    k = KS_Anahtar(ad)
+    aM = KS_Veri(KS_LOZ(T_MALZ))
+    arS = KS_Veri(KS_LOZ(T_SEVK))
+    aA = KS_Veri(KS_LOZ(T_ARIZA))
+    Set dM = CreateObject("Scripting.Dictionary")
+    If IsArray(aM) Then
+        For i = 1 To UBound(aM, 1)
+            dM(KS_Anahtar(aM(i, M_KOD))) = i
+        Next i
+    End If
+    ' Malzeme bazýnda topla
+    Set dSec = CreateObject("Scripting.Dictionary")
+    n = 0
+    ReDim liste(1 To KS_Satir(arS) + KS_Satir(aA) + 1, 1 To 8)
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            kk = KS_Anahtar(arS(i, S_KOD))
+            If KS_Anahtar(arS(i, S_SEVKCI)) = k Or KS_UreticiMi(aM, dM, kk, k) Then
+                If Not dSec.Exists(kk) Then
+                    n = n + 1
+                    dSec(kk) = n
+                    liste(n, 1) = arS(i, S_KOD): liste(n, 2) = arS(i, S_AD)
+                    For j = 3 To 7
+                        liste(n, j) = 0
+                    Next j
+                End If
+                j = dSec(kk)
+                liste(j, 3) = liste(j, 3) + 1
+                If KS_Sayi(arS(i, S_ADET), x) Then liste(j, 4) = liste(j, 4) + x: sevkMik = sevkMik + x
+                If KS_Sayi(arS(i, S_TUTAR), x) Then liste(j, 5) = liste(j, 5) + x: tut = tut + x
+                kalem = kalem + 1
+                Select Case KS_Metin(arS(i, S_TDURUM))
+                    Case "ZAMANINDA": zam = zam + 1: tes = tes + 1
+                    Case "GECÝKMELÝ"
+                        tes = tes + 1
+                        If KS_Sayi(arS(i, S_GECIKME), x) Then gecTop = gecTop + x
+                End Select
+            End If
+        Next i
+    End If
+    If IsArray(aA) Then
+        For i = 1 To UBound(aA, 1)
+            kk = KS_Anahtar(aA(i, A_KOD))
+            If KS_Anahtar(aA(i, A_SEVKCI)) = k Or KS_Anahtar(aA(i, A_URETICI)) = k Then
+                If Not dSec.Exists(kk) Then
+                    n = n + 1
+                    dSec(kk) = n
+                    liste(n, 1) = aA(i, A_KOD): liste(n, 2) = aA(i, A_AD)
+                    For j = 3 To 7
+                        liste(n, j) = 0
+                    Next j
+                End If
+                j = dSec(kk)
+                liste(j, 6) = liste(j, 6) + 1
+                arzN = arzN + 1
+                If KS_Sayi(aA(i, A_ADET), x) Then liste(j, 7) = liste(j, 7) + x: arzMik = arzMik + x
+                If KS_Sayi(aA(i, A_DONUSGUN), x) Then donTop = donTop + x: donN = donN + 1
+                If KS_Sayi(aA(i, A_MALIYET), x) Then mal = mal + x
+                If KS_ArizaAcik(aA(i, A_DURUM)) Then acik = acik + 1
+            End If
+        Next i
+    End If
+    For j = 1 To n
+        If liste(j, 4) > 0 Then liste(j, 8) = liste(j, 7) / liste(j, 4) Else liste(j, 8) = Empty
+    Next j
+
+    KS_KarneBaslik ws, "ÜRETÝCÝ / SEVKÇÝ   " & ad, "Bu üreticinin sevk ettiði ya da ürettiði " & n & " malzeme, " & kalem & _
+        " sevkiyat kalemi, " & arzN & " arýza kaydý."
+    r = K_ILK + 7
+    KS_ListeTablo ws, r, "MALZEMELERÝ  (arýza sayýsýna göre)", Array("Malzeme Kodu", "Malzeme Adý", "Sevk Kalemi", _
+        "Sevk Miktarý", "Tutar (TL)", "Arýza", "Arýzalý Miktar", "Arýza Oraný"), liste, n, 6, True, _
+        Array("", "", "#,##0", "#,##0", "#,##0", "#,##0", "#,##0", "0.0%"), "Kayýt yok."
+
+    n = 0
+    If IsArray(aA) Then
+        ReDim liste(1 To UBound(aA, 1), 1 To 10)
+        For i = 1 To UBound(aA, 1)
+            If KS_Anahtar(aA(i, A_SEVKCI)) = k Or KS_Anahtar(aA(i, A_URETICI)) = k Then
+                n = n + 1
+                liste(n, 1) = aA(i, A_NO): liste(n, 2) = aA(i, A_TARIH): liste(n, 3) = aA(i, A_KOD)
+                liste(n, 4) = aA(i, A_AD): liste(n, 5) = aA(i, A_SERI): liste(n, 6) = aA(i, A_KAPSAM)
+                liste(n, 7) = aA(i, A_ACIK): liste(n, 8) = aA(i, A_BILDIRIM): liste(n, 9) = aA(i, A_DONUSGUN)
+                liste(n, 10) = aA(i, A_DURUM)
+            End If
+        Next i
+    Else
+        ReDim liste(1 To 1, 1 To 10)
+    End If
+    KS_ListeTablo ws, r, "ARIZA GEÇMÝÞÝ  (yeniden eskiye)", Array("Arýza No", "Tarih", "Malzeme Kodu", "Malzeme Adý", _
+        "Seri No", "Garanti", "Sebep / Açýklama", "Bildirim", "Dönüþ (gün)", "Durum"), liste, n, 2, True, _
+        Array("", tr, "", "", "", "", "", tr, "0", ""), "Bu üretici için arýza kaydý yok."
+
+    If sevkMik > 0 Then oran = arzMik / sevkMik * 100
+    If tes > 0 Then gec = gecTop / tes
+    If donN > 0 Then don = donTop / donN
+    skor = 100 - KS_Min(50, oran * KS_ParamSayi("pKatAriza", 5)) - KS_Min(25, gec * KS_ParamSayi("pKatGecikme", 1)) - _
+        KS_Min(25, don * KS_ParamSayi("pKatDonus", 0.5))
+    If skor < 0 Then skor = 0
+    KS_Kart2 ws, 0, "SEVK KALEMÝ", kalem, "#,##0", Format$(sevkMik, "#,##0") & " birim"
+    KS_Kart2 ws, 1, "SEVK TUTARI (TL)", tut, "#,##0", "tüm sevkiyatlar"
+    KS_Kart2 ws, 2, "ZAMANINDA TESLÝM", KS_Bol(zam, tes), "0%", tes & " teslim  |  ort. gecikme " & Format$(gec, "0.0") & " gün"
+    KS_Kart2 ws, 3, "ARIZA KAYDI", arzN, "#,##0", acik & " açýk  |  oran " & Format$(oran / 100, "0.0%"), _
+        IIf(arzN > 0, C_KIRMIZI(), C_YESIL())
+    KS_Kart2 ws, 4, "ORT. DÖNÜÞ SÜRESÝ", KS_Bol(donTop, donN), "0.0"" gün""", donN & " dönüþ kaydý"
+    KS_Kart2 ws, 5, "KALÝTE SKORU", Round(skor, 1), "0.0", "Not: " & KS_Harf(skor) & "   (TANIMLAR katsayýlarý)", _
+        IIf(skor >= 70, C_YESIL(), IIf(skor >= 50, C_TURUNCU(), C_KIRMIZI()))
+End Sub
+
+Private Function KS_UreticiMi(ByRef aM As Variant, ByVal dM As Object, ByVal kod As String, ByVal k As String) As Boolean
+    Dim mi As Long
+    If dM.Exists(kod) Then
+        mi = dM(kod)
+        KS_UreticiMi = (KS_Anahtar(aM(mi, M_URETICI)) = k)
+    End If
+End Function
+
 Private Function KS_Bilgi(ByVal v As Variant) As String
     KS_Bilgi = KS_Metin(v)
     If Len(KS_Bilgi) = 0 Then KS_Bilgi = "-"
 End Function
 
-' Rapor alanýný (satýr ilk..son) biçim dahil temizler.
+' Çýktý alanýný (satýr ilk..) biçim dahil temizler.
 Public Sub KS_AlanTemizle(ByVal ws As Worksheet, ByVal ilk As Long)
     Dim r As Range
     Set r = ws.Range(ws.Rows(ilk), ws.Rows(ilk + 3000))
     r.FormatConditions.Delete
     r.UnMerge
     r.Clear
-    r.Interior.Color = C_ZEMIN()
+    r.Interior.Pattern = xlNone
     r.Font.Name = KS_FONT
     r.Font.Size = 10
     r.Font.Color = C_METIN()
-    r.RowHeight = 18
+    r.RowHeight = 20
     r.VerticalAlignment = xlCenter
 End Sub
 
-Public Sub KS_DurumYazRenk(ByVal r As Range, ByVal iyi As String, ByVal kotu As String)
-    Dim fc As Object
-    Set fc = r.FormatConditions.Add(Type:=xlTextString, String:=iyi, TextOperator:=xlBeginsWith)
-    fc.Font.Color = C_YESIL(): fc.Font.Bold = True
-    Set fc = r.FormatConditions.Add(Type:=xlTextString, String:=kotu, TextOperator:=xlBeginsWith)
-    fc.Font.Color = C_KIRMIZI(): fc.Font.Bold = True
-End Sub
+' ---------------------------------------------------------------- tedarikçi sýralamasý
 
-' ================================================================ PERFORMANS
-
-
-Public Sub KS_PerfKur()
-    Dim ws As Worksheet
-    Set ws = KS_WS(SH_PERF)
-    KS_SayfaSifirla ws
-    ws.Columns("B").ColumnWidth = 5
-    ws.Columns("C").ColumnWidth = 42
-    ws.Columns("D:R").ColumnWidth = 11
-    ws.Columns("S").ColumnWidth = 3
-    KS_Bant ws, 19, "TEDARÝKÇÝ / ÜRETÝCÝ PERFORMANSI", _
-        "Teslim, arýza ve dönüþ verilerinden hesaplanan kalite skoru. Katsayýlar TANIMLAR sayfasýnda."
-    ws.Range("C7").Value = "GRUPLAMA"
-    ws.Range("F7").Value = "YIL"
-    ws.Range("C7,F7").Font.Bold = True
-    ws.Range("C7,F7").Font.Size = 9
-    ws.Range("C7,F7").Font.Color = C_GRI()
-    ws.Range("C7,F7").HorizontalAlignment = xlRight
-    With ws.Range("D7:E7")
-        .Merge
-        .Value = "SEVKÇÝ"
-    End With
-    With ws.Range("G7")
-        .Value = "TÜMÜ"
-    End With
-    With ws.Range("D7:E7,G7")
-        .Interior.Color = C_GIRIS()
-        .Font.Bold = True
-        .Font.Color = C_LAC()
-        .Locked = False
-        .HorizontalAlignment = xlCenter
-        .Borders(xlEdgeBottom).Color = C_CAMGOBEGI()
-    End With
-    KS_AdHucre "pfGrup", ws.Range("D7")
-    KS_AdHucre "pfYil", ws.Range("G7")
-    KS_Liste ws.Range("D7:E7"), "lstGrup", True
-    KS_Liste ws.Range("G7"), "lstYil", True
-    ws.Rows(7).RowHeight = 24
-    KS_Buton ws, "ksBtnPerf", "HESAPLA", ws.Range("I7").Left, ws.Range("I7").Top + 1, 110, 22, "KS_PERF_HESAPLA", "ana"
-    KS_Bolum ws.Range("B9:R9"), "KALÝTE KARNESÝ"
-    KS_TabloBaslik ws.Range(ws.Cells(P_BASLIK, 2), ws.Cells(P_BASLIK, 18)), KS_PerfBasliklar("SEVKÇÝ")
-    KS_Pencere ws, 85, 0, False
-End Sub
-
-Private Function KS_PerfBasliklar(ByVal grup As String) As Variant
-    KS_PerfBasliklar = Array("#", IIf(grup = "ÜRETÝCÝ", "Üretici", "Sevkçi"), "Sevk Kalemi", "Sevk Miktarý", _
-        "Sevk Tutarý", "Zamanýnda Teslim", "Ort. Gecikme (gün)", "Arýza Kaydý", "Arýzalý Miktar", "Arýza Oraný", _
-        "Garanti Ýçi Arýza", "Ort. Dönüþ (gün)", "En Uzun Dönüþ", "Açýk Arýza", "Tamir Maliyeti", "Kalite Skoru", "Not")
-End Function
-
-Public Sub KS_PERF_HESAPLA()
-    Dim ws As Worksheet, aM As Variant, arS As Variant, aA As Variant, dM As Object, dG As Object
-    Dim grup As String, yilS As String, y1 As Long, y2 As Long, i As Long, j As Long, n As Long, g As Long
-    Dim k As String, x As Double, d As Date, t() As Variant, idx As Variant, r As Long, korumali As Boolean
+Private Sub KS_SiralamaYaz(ByVal ws As Worksheet)
+    Dim aM As Variant, arS As Variant, aA As Variant, dG As Object
+    Dim yilS As String, y1 As Long, y2 As Long, i As Long, j As Long, n As Long, g As Long
+    Dim k As String, x As Double, d As Date, t() As Variant, idx As Variant, r As Long
     Dim k1 As Double, k2 As Double, k3 As Double, skor As Double, oran As Double, gec As Double, don As Double
-    ' t sütunlarý: 1 ad, 2 kalem, 3 miktar, 4 tutar, 5 zamanýnda, 6 teslim, 7 gecikme top, 8 arýza, 9 arýzalý mik,
-    ' 10 garanti içi, 11 dönüþ top, 12 dönüþ n, 13 en uzun, 14 açýk, 15 maliyet, 16 skor
-    On Error GoTo Hata
-    Set ws = KS_WS(SH_PERF)
-    grup = KS_Metin(KS_FV("pfGrup"))
-    If grup <> "ÜRETÝCÝ" Then grup = "SEVKÇÝ"
-    yilS = KS_Metin(KS_FV("pfYil"))
+    yilS = KS_Metin(KS_FV("kYil"))
     If IsNumeric(yilS) And Len(yilS) = 4 Then
         y1 = CLng(yilS): y2 = y1
     Else
@@ -612,33 +891,16 @@ Public Sub KS_PERF_HESAPLA()
     k1 = KS_ParamSayi("pKatAriza", 5)
     k2 = KS_ParamSayi("pKatGecikme", 1)
     k3 = KS_ParamSayi("pKatDonus", 0.5)
-
-    KS_Basla
-    KS_HesaplaTumu
     aM = KS_Veri(KS_LOZ(T_MALZ))
     arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
-    Set dM = CreateObject("Scripting.Dictionary")
-    If IsArray(aM) Then
-        For i = 1 To UBound(aM, 1)
-            dM(KS_Anahtar(aM(i, M_KOD))) = KS_Metin(aM(i, M_URETICI))
-        Next i
-    End If
     Set dG = CreateObject("Scripting.Dictionary")
     ReDim t(1 To KS_Satir(arS) + KS_Satir(aA) + 1, 1 To 16)
-
     If IsArray(arS) Then
         For i = 1 To UBound(arS, 1)
             j = KS_SevkYil(arS, i)
             If j >= y1 And j <= y2 Then
-                If grup = "SEVKÇÝ" Then
-                    k = KS_Metin(arS(i, S_SEVKCI))
-                ElseIf dM.Exists(KS_Anahtar(arS(i, S_KOD))) Then
-                    k = dM(KS_Anahtar(arS(i, S_KOD)))
-                Else
-                    k = ""
-                End If
-                g = KS_GrupNo(dG, t, n, k)
+                g = KS_GrupNo(dG, t, n, KS_Metin(arS(i, S_SEVKCI)))
                 t(g, 2) = t(g, 2) + 1
                 If KS_Sayi(arS(i, S_ADET), x) Then t(g, 3) = t(g, 3) + x
                 If KS_Sayi(arS(i, S_TUTAR), x) Then t(g, 4) = t(g, 4) + x
@@ -657,7 +919,8 @@ Public Sub KS_PERF_HESAPLA()
         For i = 1 To UBound(aA, 1)
             If KS_Tarih(aA(i, A_TARIH), d) Then
                 If Year(d) >= y1 And Year(d) <= y2 Then
-                    If grup = "SEVKÇÝ" Then k = KS_Metin(aA(i, A_SEVKCI)) Else k = KS_Metin(aA(i, A_URETICI))
+                    k = KS_Metin(aA(i, A_SEVKCI))
+                    If Len(k) = 0 Then k = KS_Metin(aA(i, A_URETICI))
                     g = KS_GrupNo(dG, t, n, k)
                     t(g, 8) = t(g, 8) + 1
                     If KS_Sayi(aA(i, A_ADET), x) Then t(g, 9) = t(g, 9) + x
@@ -667,14 +930,12 @@ Public Sub KS_PERF_HESAPLA()
                         t(g, 12) = t(g, 12) + 1
                         If x > t(g, 13) Then t(g, 13) = x
                     End If
-                    If KS_Metin(aA(i, A_DURUM)) <> "KAPANDI" Then t(g, 14) = t(g, 14) + 1
+                    If KS_ArizaAcik(aA(i, A_DURUM)) Then t(g, 14) = t(g, 14) + 1
                     If KS_Sayi(aA(i, A_MALIYET), x) Then t(g, 15) = t(g, 15) + x
                 End If
             End If
         Next i
     End If
-
-    ' Skor = 100 - min(50, arýza% x k1) - min(25, ort. gecikme x k2) - min(25, ort. dönüþ x k3)
     For g = 1 To n
         oran = 0: gec = 0: don = 0
         If t(g, 3) > 0 Then oran = t(g, 9) / t(g, 3) * 100
@@ -685,74 +946,57 @@ Public Sub KS_PERF_HESAPLA()
         t(g, 16) = Round(skor, 1)
     Next g
 
-    korumali = ws.ProtectContents
-    KS_Ac ws
-    KS_AlanTemizle ws, P_BASLIK + 1
-    KS_TabloBaslik ws.Range(ws.Cells(P_BASLIK, 2), ws.Cells(P_BASLIK, 18)), KS_PerfBasliklar(grup)
-    ws.Range("B9").Value = "KALÝTE KARNESÝ  -  " & grup & "  -  " & IIf(y1 = 0, "TÜM YILLAR", CStr(y1))
-    r = P_BASLIK + 1
+    KS_Bolum ws.Range(ws.Cells(K_ILK, 2), ws.Cells(K_ILK, 14)), "TEDARÝKÇÝ KALÝTE SIRALAMASI  -  " & _
+        IIf(y1 = 0, "TÜM YILLAR", CStr(y1))
+    KS_TabloBaslik ws.Range(ws.Cells(K_ILK + 1, 2), ws.Cells(K_ILK + 1, 14)), Array("Sevkçi / Üretici", "Sevk Kalemi", _
+        "Sevk Tutarý (TL)", "Zamanýnda", "Ort. Gecikme", "Arýza", "Arýza Oraný", "Garanti Ýçi", "Ort. Dönüþ", _
+        "Açýk Arýza", "Tamir (TL)", "Skor", "Not")
+    r = K_ILK + 2
     If n = 0 Then
-        ws.Cells(r, 3).Value = "Seçilen dönemde kayýt yok."
-        ws.Cells(r, 3).Font.Color = C_GRI()
-    Else
-        idx = KS_SiraIndeks(t, 16, True, n)
-        For i = 1 To n
-            g = idx(i)
-            ws.Cells(r, 2).Value = i
-            ws.Cells(r, 3).Value = t(g, 1)
-            ws.Cells(r, 4).Value = t(g, 2)
-            ws.Cells(r, 5).Value = t(g, 3)
-            ws.Cells(r, 6).Value = t(g, 4)
-            ws.Cells(r, 7).Value = KS_Bol(t(g, 5), t(g, 6))
-            ws.Cells(r, 8).Value = KS_Bol(t(g, 7), t(g, 6))
-            ws.Cells(r, 9).Value = t(g, 8)
-            ws.Cells(r, 10).Value = t(g, 9)
-            ws.Cells(r, 11).Value = KS_Bol(t(g, 9), t(g, 3))
-            ws.Cells(r, 12).Value = t(g, 10)
-            ws.Cells(r, 13).Value = KS_Bol(t(g, 11), t(g, 12))
-            If t(g, 12) > 0 Then ws.Cells(r, 14).Value = t(g, 13)
-            ws.Cells(r, 15).Value = t(g, 14)
-            ws.Cells(r, 16).Value = t(g, 15)
-            ws.Cells(r, 17).Value = t(g, 16)
-            ws.Cells(r, 18).Value = KS_Harf(t(g, 16))
-            r = r + 1
-        Next i
-        With ws.Range(ws.Cells(P_BASLIK + 1, 2), ws.Cells(r - 1, 18))
-            KS_TabloGovde .Cells
-            .RowHeight = 20
-        End With
-        ws.Range(ws.Cells(P_BASLIK + 1, 2), ws.Cells(r - 1, 2)).HorizontalAlignment = xlCenter
-        ws.Range(ws.Cells(P_BASLIK + 1, 2), ws.Cells(r - 1, 2)).Font.Color = C_GRI()
-        ws.Range(ws.Cells(P_BASLIK + 1, 3), ws.Cells(r - 1, 3)).Font.Bold = True
-        ws.Range(ws.Cells(P_BASLIK + 1, 4), ws.Cells(r - 1, 5)).NumberFormat = "#,##0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 6), ws.Cells(r - 1, 6)).NumberFormat = KS_FmtTLKisa()
-        ws.Range(ws.Cells(P_BASLIK + 1, 7), ws.Cells(r - 1, 7)).NumberFormat = "0%"
-        ws.Range(ws.Cells(P_BASLIK + 1, 8), ws.Cells(r - 1, 8)).NumberFormat = "0.0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 9), ws.Cells(r - 1, 10)).NumberFormat = "#,##0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 11), ws.Cells(r - 1, 11)).NumberFormat = "0.0%"
-        ws.Range(ws.Cells(P_BASLIK + 1, 12), ws.Cells(r - 1, 12)).NumberFormat = "#,##0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 13), ws.Cells(r - 1, 14)).NumberFormat = "0.0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 15), ws.Cells(r - 1, 15)).NumberFormat = "#,##0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 16), ws.Cells(r - 1, 16)).NumberFormat = KS_FmtTLKisa()
-        ws.Range(ws.Cells(P_BASLIK + 1, 17), ws.Cells(r - 1, 17)).NumberFormat = "0.0"
-        ws.Range(ws.Cells(P_BASLIK + 1, 17), ws.Cells(r - 1, 18)).Font.Bold = True
-        ws.Range(ws.Cells(P_BASLIK + 1, 17), ws.Cells(r - 1, 18)).HorizontalAlignment = xlCenter
-        KS_PerfRenk ws.Range(ws.Cells(P_BASLIK + 1, 11), ws.Cells(r - 1, 11)), _
-            ws.Range(ws.Cells(P_BASLIK + 1, 17), ws.Cells(r - 1, 17)), ws.Range(ws.Cells(P_BASLIK + 1, 18), ws.Cells(r - 1, 18))
+        ws.Cells(r, 2).Value = "Seçilen dönemde kayýt yok."
+        ws.Cells(r, 2).Font.Color = C_GRI()
+        Exit Sub
     End If
+    idx = KS_SiraIndeks(t, 16, True, n)
+    For i = 1 To n
+        g = idx(i)
+        ws.Cells(r, 2).Value = t(g, 1)
+        ws.Cells(r, 3).Value = t(g, 2)
+        ws.Cells(r, 4).Value = t(g, 4)
+        ws.Cells(r, 5).Value = KS_Bol(t(g, 5), t(g, 6))
+        ws.Cells(r, 6).Value = KS_Bol(t(g, 7), t(g, 6))
+        ws.Cells(r, 7).Value = t(g, 8)
+        ws.Cells(r, 8).Value = KS_Bol(t(g, 9), t(g, 3))
+        ws.Cells(r, 9).Value = t(g, 10)
+        ws.Cells(r, 10).Value = KS_Bol(t(g, 11), t(g, 12))
+        ws.Cells(r, 11).Value = t(g, 14)
+        ws.Cells(r, 12).Value = t(g, 15)
+        ws.Cells(r, 13).Value = t(g, 16)
+        ws.Cells(r, 14).Value = KS_Harf(t(g, 16))
+        r = r + 1
+    Next i
+    KS_TabloGovde ws.Range(ws.Cells(K_ILK + 2, 2), ws.Cells(r - 1, 14))
+    ws.Range(ws.Cells(K_ILK + 2, 2), ws.Cells(r - 1, 2)).ShrinkToFit = True
+    ws.Range(ws.Cells(K_ILK + 2, 3), ws.Cells(r - 1, 14)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(K_ILK + 2, 3), ws.Cells(r - 1, 4)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(K_ILK + 2, 5), ws.Cells(r - 1, 5)).NumberFormat = "0%"
+    ws.Range(ws.Cells(K_ILK + 2, 6), ws.Cells(r - 1, 6)).NumberFormat = "0.0"
+    ws.Range(ws.Cells(K_ILK + 2, 7), ws.Cells(r - 1, 7)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(K_ILK + 2, 8), ws.Cells(r - 1, 8)).NumberFormat = "0.0%"
+    ws.Range(ws.Cells(K_ILK + 2, 10), ws.Cells(r - 1, 10)).NumberFormat = "0.0"
+    ws.Range(ws.Cells(K_ILK + 2, 12), ws.Cells(r - 1, 12)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(K_ILK + 2, 13), ws.Cells(r - 1, 13)).NumberFormat = "0.0"
+    ws.Range(ws.Cells(K_ILK + 2, 13), ws.Cells(r - 1, 14)).Font.Bold = True
+    KS_SiraRenk ws.Range(ws.Cells(K_ILK + 2, 8), ws.Cells(r - 1, 8)), ws.Range(ws.Cells(K_ILK + 2, 13), ws.Cells(r - 1, 13)), _
+        ws.Range(ws.Cells(K_ILK + 2, 14), ws.Cells(r - 1, 14))
     r = r + 1
-    ws.Cells(r, 3).Value = "Kalite skoru = 100 - en çok 50 (arýza oraný % x " & k1 & ") - en çok 25 (ort. gecikme gün x " & _
-        k2 & ") - en çok 25 (ort. üretici dönüþ gün x " & k3 & ").   Not: A >= 85, B >= 70, C >= 50, D < 50."
-    ws.Cells(r + 1, 3).Value = "Arýza oraný = arýzalý miktar / sevk miktarý (ayný dönem). Az sevkiyatý olan firmalarda tek arýza oraný belirgin yükseltir; skor birlikte okunmalýdýr."
-    ws.Range(ws.Cells(r, 3), ws.Cells(r + 1, 3)).Font.Size = 8
-    ws.Range(ws.Cells(r, 3), ws.Cells(r + 1, 3)).Font.Italic = True
-    ws.Range(ws.Cells(r, 3), ws.Cells(r + 1, 3)).Font.Color = C_GRI()
-    If korumali Then KS_Kapat ws
-    KS_Bitir
-    Exit Sub
-Hata:
-    KS_Bitir True
-    MsgBox "Performans hesaplanamadý: " & Err.Description, vbExclamation, KS_AD
+    With ws.Cells(r, 2)
+        .Value = "Skor = 100 - en çok 50 (arýza oraný % x " & k1 & ") - en çok 25 (ort. gecikme gün x " & k2 & _
+            ") - en çok 25 (ort. üretici dönüþ gün x " & k3 & ").   Not: A >= 85, B >= 70, C >= 50, D < 50."
+        .Font.Size = 8
+        .Font.Italic = True
+        .Font.Color = C_GRI()
+    End With
 End Sub
 
 Private Function KS_GrupNo(ByVal d As Object, ByRef t() As Variant, ByRef n As Long, ByVal ad As String) As Long
@@ -786,12 +1030,11 @@ Public Function KS_Harf(ByVal skor As Double) As String
     End If
 End Function
 
-Private Sub KS_PerfRenk(ByVal oran As Range, ByVal skor As Range, ByVal harf As Range)
+Private Sub KS_SiraRenk(ByVal oran As Range, ByVal skor As Range, ByVal harf As Range)
     Dim cs As Object, db As Object, fc As Object
     On Error Resume Next
     Set db = oran.FormatConditions.AddDatabar
     db.BarColor.Color = RGB(255, 140, 150)
-    db.BarFillType = 0
     Set cs = skor.FormatConditions.AddColorScale(3)
     cs.ColorScaleCriteria(1).Type = xlConditionValueNumber
     cs.ColorScaleCriteria(1).Value = 40
@@ -805,7 +1048,7 @@ Private Sub KS_PerfRenk(ByVal oran As Range, ByVal skor As Range, ByVal harf As 
     Set fc = harf.FormatConditions.Add(Type:=xlTextString, String:="A", TextOperator:=xlBeginsWith)
     fc.Font.Color = C_YESIL()
     Set fc = harf.FormatConditions.Add(Type:=xlTextString, String:="B", TextOperator:=xlBeginsWith)
-    fc.Font.Color = C_TURKUAZ()
+    fc.Font.Color = C_TEAL()
     Set fc = harf.FormatConditions.Add(Type:=xlTextString, String:="C", TextOperator:=xlBeginsWith)
     fc.Font.Color = C_TURUNCU()
     Set fc = harf.FormatConditions.Add(Type:=xlTextString, String:="D", TextOperator:=xlBeginsWith)

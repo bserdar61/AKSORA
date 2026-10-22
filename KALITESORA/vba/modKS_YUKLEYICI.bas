@@ -56,9 +56,12 @@ Public Sub KALITESORA_YUKLE()
                 "Ýçine elle 'KS_ACILIS' satýrýný ekleyin.", vbExclamation, "KALÝTESORA"
         Else
             cm.AddFromString "Private Sub Workbook_Open()" & vbCrLf & _
-                "    ' KALÝTESORA: paneli yeniler, yedek hatýrlatýr." & vbCrLf & _
                 "    KS_ACILIS" & vbCrLf & "End Sub"
         End If
+    End If
+    If InStr(1, metin, "KS_DEGISIKLIK", vbTextCompare) = 0 Then
+        cm.AddFromString "Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)" & vbCrLf & _
+            "    KS_DEGISIKLIK Sh, Target" & vbCrLf & "End Sub"
     End If
 
     MsgBox adet & " modül içe aktarýldý. Þimdi kurulum baþlayacak.", vbInformation, "KALÝTESORA"

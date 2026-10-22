@@ -1,25 +1,59 @@
 Attribute VB_Name = "modKS_HESAP"
 Option Explicit
 
-' Türetilmiþ alanlarýn tek hesap merkezi. Form, toplu aktarým ve panel ayný kurallarý kullanýr.
-'   Sevkiyat: tutar, gecikme, teslim durumu, garanti bitiþi (gerçek geliþ + garanti ayý), garanti durumu
-'   Arýza   : garanti kapsamý, üretici dönüþ süresi, çözüm süresi, durum, önceki arýza, tekrar sayýsý
+' Türetilmiþ alanlarýn tek hesap merkezi. Form, tablo düzenleme, toplu aktarým ve panel ayný kurallarý kullanýr.
+'   Sevkiyat: TL tutar (kur tablosuyla), gecikme, teslim durumu, garanti bitiþi, garanti durumu
+'   Arýza   : baðlý sevkiyat (otomatik seçim), garanti kapsamý, dönüþ / çözüm süresi, durum, önceki arýza
 '   Malzeme : toplam sevk / arýzalý miktar, arýza oraný, son arýza tarihi
 
 Private mUyariGun As Long
+Private mKur As Object
 
 Public Sub KS_ParamYukle()
+    Dim lo As ListObject, a As Variant, i As Long, x As Double
     mUyariGun = CLng(KS_ParamSayi("pGarUyari", 60))
+    Set mKur = CreateObject("Scripting.Dictionary")
+    mKur("TRY") = 1#
+    mKur("TL") = 1#
+    mKur("") = 1#
+    Set lo = KS_LO(T_KUR)
+    If Not lo Is Nothing Then
+        a = KS_Veri(lo)
+        If IsArray(a) Then
+            For i = 1 To UBound(a, 1)
+                If KS_Sayi(a(i, 2), x) Then
+                    If x > 0 Then mKur(KS_Anahtar(a(i, 1))) = x
+                End If
+            Next i
+        End If
+    End If
 End Sub
+
+' Para biriminin TL kuru; tanýmsýzsa 0.
+Public Function KS_Kur(ByVal pb As Variant) As Double
+    Dim k As String
+    If mKur Is Nothing Then KS_ParamYukle
+    k = KS_Anahtar(pb)
+    If mKur.Exists(k) Then KS_Kur = mKur(k)
+End Function
+
+Public Function KS_ArizaAcik(ByVal durum As Variant) As Boolean
+    Select Case KS_Metin(durum)
+        Case "DEVAM EDÝYOR", "ÜRETÝCÝDE", "KISMEN ÇÖZÜLDÜ"
+            KS_ArizaAcik = True
+    End Select
+End Function
 
 Public Sub KS_SevkHesapla(ByRef a As Variant, ByVal i As Long)
     Dim plan As Date, gelis As Date, bit As Date, hp As Boolean, hg As Boolean
-    Dim adet As Double, fiyat As Double, gar As Double, kalan As Long
-    If mUyariGun = 0 Then KS_ParamYukle
+    Dim adet As Double, fiyat As Double, gar As Double, kalan As Long, kur As Double
+    If mKur Is Nothing Then KS_ParamYukle
     hp = KS_Tarih(a(i, S_PLAN), plan)
     hg = KS_Tarih(a(i, S_GELIS), gelis)
-    If KS_Sayi(a(i, S_ADET), adet) And KS_Sayi(a(i, S_FIYAT), fiyat) Then
-        a(i, S_TUTAR) = Round(adet * fiyat, 2)
+    If KS_Bos(a(i, S_PB)) Then a(i, S_PB) = "TRY"
+    kur = KS_Kur(a(i, S_PB))
+    If KS_Sayi(a(i, S_ADET), adet) And KS_Sayi(a(i, S_FIYAT), fiyat) And kur > 0 Then
+        a(i, S_TUTAR) = Round(adet * fiyat * kur, 2)
     Else
         a(i, S_TUTAR) = Empty
     End If
@@ -50,36 +84,128 @@ Public Sub KS_SevkHesapla(ByRef a As Variant, ByVal i As Long)
         ElseIf kalan <= mUyariGun Then
             a(i, S_GDURUM) = "BÝTÝYOR (" & kalan & " GÜN)"
         Else
-            a(i, S_GDURUM) = "DEVAM"
+            a(i, S_GDURUM) = "DEVAM EDÝYOR"
         End If
     Else
         a(i, S_GARBIT) = Empty
-        If hg Then a(i, S_GDURUM) = "SÜRE TANIMSIZ" Else a(i, S_GDURUM) = "TESLÝM BEKLÝYOR"
+        If Not hg Then
+            a(i, S_GDURUM) = "TESLÝM BEKLÝYOR"
+        Else
+            a(i, S_GDURUM) = "GARANTÝ GÝRÝLMEDÝ"
+        End If
     End If
 End Sub
 
 Public Sub KS_ArizaHesapla(ByRef a As Variant, ByVal i As Long)
     Dim t As Date, bit As Date, bil As Date, don As Date, coz As Date
-    Dim ht As Boolean, hb As Boolean, hd As Boolean, hc As Boolean
+    Dim ht As Boolean, hb As Boolean, hd As Boolean, hc As Boolean, cz As String, dv As String
     ht = KS_Tarih(a(i, A_TARIH), t)
     hb = KS_Tarih(a(i, A_BILDIRIM), bil)
     hd = KS_Tarih(a(i, A_DONUS), don)
     hc = KS_Tarih(a(i, A_COZUM), coz)
-    If ht And KS_Tarih(a(i, A_GARBIT), bit) Then
-        If t <= bit Then a(i, A_KAPSAM) = "EVET" Else a(i, A_KAPSAM) = "HAYIR"
-    Else
-        a(i, A_KAPSAM) = "BELÝRSÝZ"
+    If KS_Metin(a(i, A_KAPKAYNAK)) <> "ELLE" Then
+        a(i, A_KAPKAYNAK) = "OTOMATÝK"
+        If ht And KS_Tarih(a(i, A_GARBIT), bit) Then
+            If t <= bit Then a(i, A_KAPSAM) = "EVET" Else a(i, A_KAPSAM) = "HAYIR"
+        Else
+            a(i, A_KAPSAM) = "BELÝRSÝZ"
+        End If
     End If
     If hb And hd Then a(i, A_DONUSGUN) = CLng(don - bil) Else a(i, A_DONUSGUN) = Empty
     If ht And hc Then a(i, A_COZUMGUN) = CLng(coz - t) Else a(i, A_COZUMGUN) = Empty
-    If hc Then
-        a(i, A_DURUM) = "KAPANDI"
-    ElseIf hd Then
-        a(i, A_DURUM) = "DÖNÜÞ ALINDI"
-    ElseIf hb Then
+    cz = KS_Anahtar(a(i, A_COZULDU))
+    dv = KS_Anahtar(a(i, A_DEVAM))
+    If cz = "EVET" Or (hc And cz <> "HAYIR" And cz <> "KISMEN") Then
+        a(i, A_DURUM) = "ÇÖZÜLDÜ"
+    ElseIf cz = "KISMEN" Then
+        a(i, A_DURUM) = "KISMEN ÇÖZÜLDÜ"
+    ElseIf cz = "HAYIR" And dv = "HAYIR" Then
+        a(i, A_DURUM) = "ÇÖZÜLEMEDÝ"
+    ElseIf hb And Not hd Then
         a(i, A_DURUM) = "ÜRETÝCÝDE"
     Else
-        a(i, A_DURUM) = "AÇIK"
+        a(i, A_DURUM) = "DEVAM EDÝYOR"
+    End If
+End Sub
+
+' Arýzanýn baðlanacaðý sevkiyatý seçer: seri no eþleþmesi, yoksa arýza tarihinden önceki en son teslim.
+' adaylar: ayný malzeme koduna sahip sevkiyat satýrlarýnýn "," ile ayrýlmýþ listesi.
+Public Function KS_SevkSec(ByRef arS As Variant, ByVal adaylar As String, ByVal seri As String, _
+        ByVal tarih As Variant) As Long
+    Dim p As Variant, i As Long, n As Long, t As Date, ht As Boolean, d As Date, enIyi As Date, sec As Long
+    Dim planSec As Long, planEnIyi As Date
+    If Len(adaylar) = 0 Then Exit Function
+    p = Split(adaylar, ",")
+    seri = KS_Anahtar(seri)
+    If Len(seri) > 0 Then
+        For i = 0 To UBound(p)
+            n = CLng(p(i))
+            If Len(KS_Anahtar(arS(n, S_SERI))) > 0 Then
+                If InStr(1, KS_Anahtar(arS(n, S_SERI)), seri, vbBinaryCompare) > 0 Then
+                    KS_SevkSec = n
+                    Exit Function
+                End If
+            End If
+        Next i
+    End If
+    ht = KS_Tarih(tarih, t)
+    For i = 0 To UBound(p)
+        n = CLng(p(i))
+        If KS_Tarih(arS(n, S_GELIS), d) Then
+            If (Not ht Or d <= t) And (sec = 0 Or d > enIyi) Then
+                sec = n
+                enIyi = d
+            End If
+        ElseIf KS_Tarih(arS(n, S_PLAN), d) Then
+            If (Not ht Or d <= t) And (planSec = 0 Or d > planEnIyi) Then
+                planSec = n
+                planEnIyi = d
+            End If
+        End If
+    Next i
+    If sec = 0 Then sec = planSec
+    KS_SevkSec = sec
+End Function
+
+' Malzeme kodu -> sevkiyat satýrlarý ("1,5,9") sözlüðü.
+Public Function KS_KodSevkleri(ByRef arS As Variant) As Object
+    Dim d As Object, i As Long, k As String
+    Set d = CreateObject("Scripting.Dictionary")
+    If IsArray(arS) Then
+        For i = 1 To UBound(arS, 1)
+            k = KS_Anahtar(arS(i, S_KOD))
+            If Len(k) > 0 Then
+                If d.Exists(k) Then d(k) = d(k) & "," & i Else d(k) = CStr(i)
+            End If
+        Next i
+    End If
+    Set KS_KodSevkleri = d
+End Function
+
+' Arýza satýrýna baðlý sevkiyat ve malzeme bilgilerini doldurur.
+Public Sub KS_ArizaBagla(ByRef aA As Variant, ByVal i As Long, ByRef arS As Variant, ByVal dS As Object, _
+        ByVal dKS As Object, ByRef aM As Variant, ByVal dM As Object)
+    Dim si As Long, mi As Long, k As String
+    k = KS_Anahtar(aA(i, A_KOD))
+    If dM.Exists(k) Then
+        mi = dM(k)
+        aA(i, A_AD) = aM(mi, M_AD)
+        aA(i, A_URETICI) = aM(mi, M_URETICI)
+    End If
+    If Len(KS_Anahtar(aA(i, A_SEVK))) > 0 Then
+        If dS.Exists(KS_Anahtar(aA(i, A_SEVK))) Then si = dS(KS_Anahtar(aA(i, A_SEVK)))
+    End If
+    If si = 0 And dKS.Exists(k) Then
+        si = KS_SevkSec(arS, dKS(k), KS_Metin(aA(i, A_SERI)), aA(i, A_TARIH))
+        If si > 0 Then aA(i, A_SEVK) = arS(si, S_NO)
+    End If
+    If si > 0 Then
+        aA(i, A_SEVKCI) = arS(si, S_SEVKCI)
+        aA(i, A_YER) = arS(si, S_YER)
+        aA(i, A_GARBIT) = arS(si, S_GARBIT)
+        If KS_Bos(aA(i, A_AD)) Then aA(i, A_AD) = arS(si, S_AD)
+    Else
+        aA(i, A_GARBIT) = Empty
     End If
 End Sub
 
@@ -87,7 +213,7 @@ End Sub
 Public Sub KS_HesaplaTumu()
     Dim loM As ListObject, loS As ListObject, loA As ListObject
     Dim aM As Variant, arS As Variant, aA As Variant
-    Dim dM As Object, dS As Object, grp As Object, k As Variant
+    Dim dM As Object, dS As Object, dKS As Object, grp As Object, k As Variant
     Dim i As Long, j As Long, n As Long, si As Long, mi As Long
     Dim mik As Double, d As Date, d2 As Date, enYakin As Date, bulundu As Boolean, sira As Long
     Dim sevkMik() As Double, arzMik() As Double, sonArz() As Date, uyeler As Variant, anahtar As String
@@ -108,6 +234,7 @@ Public Sub KS_HesaplaTumu()
         ReDim sonArz(1 To UBound(aM, 1))
         For i = 1 To UBound(aM, 1)
             dM(KS_Anahtar(aM(i, M_KOD))) = i
+            If KS_Bos(aM(i, M_PB)) Then aM(i, M_PB) = "TRY"
         Next i
     End If
 
@@ -120,43 +247,39 @@ Public Sub KS_HesaplaTumu()
             If dM.Exists(KS_Anahtar(arS(i, S_KOD))) Then mi = dM(KS_Anahtar(arS(i, S_KOD)))
             If mi > 0 Then
                 arS(i, S_AD) = aM(mi, M_AD)
-                If KS_Bos(arS(i, S_GARAY)) Then arS(i, S_GARAY) = aM(mi, M_GARANTI)
+                If KS_Bos(arS(i, S_GARAY)) And Not KS_Bos(aM(mi, M_GARANTI)) Then arS(i, S_GARAY) = aM(mi, M_GARANTI)
                 If KS_Sayi(arS(i, S_ADET), mik) Then sevkMik(mi) = sevkMik(mi) + mik
             End If
             KS_SevkHesapla arS, i
             arS(i, S_ARIZA) = 0
         Next i
     End If
+    Set dKS = KS_KodSevkleri(arS)
 
     ' Arýzalar
     Set grp = CreateObject("Scripting.Dictionary")
     If IsArray(aA) Then
         For i = 1 To UBound(aA, 1)
+            KS_ArizaBagla aA, i, arS, dS, dKS, aM, dM
             si = 0
             If dS.Exists(KS_Anahtar(aA(i, A_SEVK))) Then si = dS(KS_Anahtar(aA(i, A_SEVK)))
             If si > 0 Then
-                aA(i, A_KOD) = arS(si, S_KOD)
-                aA(i, A_AD) = arS(si, S_AD)
-                aA(i, A_SEVKCI) = arS(si, S_SEVKCI)
-                aA(i, A_YER) = arS(si, S_YER)
-                aA(i, A_GARBIT) = arS(si, S_GARBIT)
                 If KS_Sayi(aA(i, A_ADET), mik) Then arS(si, S_ARIZA) = arS(si, S_ARIZA) + mik
             End If
             mi = 0
             If dM.Exists(KS_Anahtar(aA(i, A_KOD))) Then mi = dM(KS_Anahtar(aA(i, A_KOD)))
             If mi > 0 Then
-                aA(i, A_URETICI) = aM(mi, M_URETICI)
                 If KS_Sayi(aA(i, A_ADET), mik) Then arzMik(mi) = arzMik(mi) + mik
                 If KS_Tarih(aA(i, A_TARIH), d) Then
                     If d > sonArz(mi) Then sonArz(mi) = d
                 End If
             End If
             KS_ArizaHesapla aA, i
-            ' Tekrar grubu: seri no varsa malzeme + seri, yoksa sevkiyat.
+            ' Tekrar grubu: seri no varsa malzeme + seri, yoksa malzeme + sevkiyat.
             If Len(KS_Anahtar(aA(i, A_SERI))) > 0 Then
                 anahtar = "S|" & KS_Anahtar(aA(i, A_KOD)) & "|" & KS_Anahtar(aA(i, A_SERI))
             Else
-                anahtar = "V|" & KS_Anahtar(aA(i, A_SEVK))
+                anahtar = "V|" & KS_Anahtar(aA(i, A_KOD)) & "|" & KS_Anahtar(aA(i, A_SEVK))
             End If
             If grp.Exists(anahtar) Then
                 grp(anahtar) = grp(anahtar) & "," & i
@@ -204,6 +327,7 @@ Public Sub KS_HesaplaTumu()
     KS_DiziGeriYaz loM, aM
     KS_DiziGeriYaz loS, arS
     KS_DiziGeriYaz loA, aA
+    KS_MailBaglantilari loA
     KS_Bitir
 End Sub
 
@@ -216,11 +340,28 @@ Private Sub KS_DiziGeriYaz(ByVal lo As ListObject, ByRef a As Variant)
     If korumali Then KS_Kapat lo.Parent
 End Sub
 
+' Mail dosyasý sütununda yol varsa týklanabilir köprü yapar.
+Public Sub KS_MailBaglantilari(ByVal lo As ListObject)
+    Dim r As Range, c As Range, korumali As Boolean, yol As String
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    korumali = lo.Parent.ProtectContents
+    KS_Ac lo.Parent
+    Set r = lo.ListColumns(A_MAILDOSYA).DataBodyRange
+    r.Hyperlinks.Delete
+    For Each c In r.Cells
+        yol = KS_Metin(c.Value)
+        If Len(yol) > 0 Then
+            lo.Parent.Hyperlinks.Add Anchor:=c, Address:=yol, TextToDisplay:=yol
+        End If
+    Next c
+    r.Font.Size = 9
+    If korumali Then KS_Kapat lo.Parent
+End Sub
+
 Public Sub KS_YENIDEN_HESAPLA()
     On Error GoTo Hata
     KS_Durum "Tüm kayýtlar yeniden hesaplanýyor..."
     KS_HesaplaTumu
-    KS_Durum ""
     Application.StatusBar = False
     KS_Log "YENÝDEN HESAPLA", "", "Tüm türetilmiþ alanlar güncellendi"
     MsgBox "Tüm türetilmiþ alanlar yeniden hesaplandý.", vbInformation, KS_AD

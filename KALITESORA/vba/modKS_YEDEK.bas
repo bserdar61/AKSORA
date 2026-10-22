@@ -152,6 +152,7 @@ Public Sub KS_ORNEK_VERI_YUKLE()
         m(i, M_BIRIM) = IIf(i = 4, "Metre", "Adet")
         m(i, M_URETICI) = uret((i - 1) Mod 4)
         m(i, M_FIYAT) = fiy(i - 1)
+        m(i, M_PB) = "TRY"
         m(i, M_GARANTI) = gar(i - 1)
         m(i, M_KAYIT) = DateSerial(Year(Date) - 4, 1, 2)
         m(i, M_NOT) = KS_ORNEK
@@ -173,6 +174,7 @@ Public Sub KS_ORNEK_VERI_YUKLE()
         s(i, S_AD) = m(mi, M_AD)
         If mi = 4 Then s(i, S_ADET) = KS_Rast(5, 60) * 50 Else s(i, S_ADET) = KS_Rast(1, 40)
         s(i, S_FIYAT) = Round(m(mi, M_FIYAT) * (0.9 + Rnd() * 0.25), 2)
+        s(i, S_PB) = "TRY"
         s(i, S_PLAN) = plan
         If plan < Date - 5 Then
             gelis = plan + KS_Rast(-6, 12) + IIf((mi - 1) Mod 4 = 2, KS_Rast(0, 25), 0)
@@ -202,17 +204,25 @@ Public Sub KS_ORNEK_VERI_YUKLE()
                     bit = DateAdd("m", s(i, S_GARAY), gelis)
                     a(na, A_NO) = KS_NoBicim("ARZ-", aNo)
                     a(na, A_SEVK) = s(i, S_NO)
+                    a(na, A_KOD) = s(i, S_KOD)
                     a(na, A_TARIH) = t
                     a(na, A_ADET) = KS_Rast(1, 3)
                     a(na, A_TIP) = tip(KS_Rast(0, 4))
-                    a(na, A_ACIK) = "Örnek arýza kaydý"
+                    a(na, A_ACIK) = "Örnek arýza kaydý: sahada " & LCase$(tip(KS_Rast(0, 4))) & " arýza tespit edildi."
                     bil = t + KS_Rast(0, 4)
-                    If bil <= Date Then a(na, A_BILDIRIM) = bil
+                    If bil <= Date Then
+                        a(na, A_BILDIRIM) = bil
+                        a(na, A_MAIL) = Format$(bil, "dd.mm.yyyy") & " - Arýza üreticiye bildirildi." & vbLf & _
+                            "Üretici: inceleme için malzemenin gönderilmesini istedi."
+                    End If
+                    a(na, A_DEVAM) = "EVET"
                     don = bil + KS_Rast(3, 45) + IIf(s(i, S_SEVKCI) = uret(1), KS_Rast(10, 40), 0)
                     If don <= Date And Not IsEmpty(a(na, A_BILDIRIM)) Then
                         a(na, A_DONUS) = don
                         If Rnd() < 0.85 And don + 7 <= Date Then
                             a(na, A_COZUM) = don + KS_Rast(0, 7)
+                            a(na, A_DEVAM) = "HAYIR"
+                            a(na, A_COZULDU) = "EVET"
                             a(na, A_SEKIL) = IIf(t <= bit, "Deðiþim", "Tamir")
                             If t <= bit Then
                                 a(na, A_MALIYET) = 0

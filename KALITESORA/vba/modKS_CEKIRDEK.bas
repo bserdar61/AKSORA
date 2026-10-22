@@ -4,10 +4,9 @@ Option Explicit
 ' KALÝTESORA çekirdek modülü: sabitler, renkler ve tüm modüllerin ortak yardýmcýlarý.
 
 Public Const KS_AD As String = "KALÝTESORA"
-Public Const KS_SURUM As String = "1.0"
+Public Const KS_SURUM As String = "2.0"
 Public Const KS_SIFRE As String = "KS2026"
 Public Const KS_ORNEK As String = "ÖRNEK VERÝ"
-Public Const KS_BASLIK_SATIR As Long = 6
 
 ' Sayfa adlarý
 Public Const SH_PANEL As String = "PANEL"
@@ -15,9 +14,8 @@ Public Const SH_KAYIT As String = "KAYIT"
 Public Const SH_SEVK As String = "SEVKÝYATLAR"
 Public Const SH_ARIZA As String = "ARIZALAR"
 Public Const SH_MALZ As String = "MALZEMELER"
-Public Const SH_KARNE As String = "MALZEME KARNESÝ"
-Public Const SH_PERF As String = "PERFORMANS"
-Public Const SH_RAPOR As String = "5 YILLIK RAPOR"
+Public Const SH_KARNE As String = "KARNE"
+Public Const SH_RAPOR As String = "RAPORLAR"
 Public Const SH_AKTAR As String = "TOPLU AKTAR"
 Public Const SH_TANIM As String = "TANIMLAR"
 Public Const SH_LOG As String = "GÜNLÜK"
@@ -33,7 +31,11 @@ Public Const T_BIRIM As String = "tblBirim"
 Public Const T_TIP As String = "tblArizaTipi"
 Public Const T_COZUM As String = "tblCozum"
 Public Const T_KARS As String = "tblKarsilayan"
+Public Const T_KUR As String = "tblKur"
 Public Const T_LOG As String = "tblGunluk"
+
+' Veri tablolarýnýn baþlýk satýrý
+Public Const KS_BASLIK_SATIR As Long = 3
 
 ' MALZEMELER sütunlarý
 Public Const M_KOD As Long = 1
@@ -42,14 +44,15 @@ Public Const M_KAT As Long = 3
 Public Const M_BIRIM As Long = 4
 Public Const M_URETICI As Long = 5
 Public Const M_FIYAT As Long = 6
-Public Const M_GARANTI As Long = 7
-Public Const M_KAYIT As Long = 8
-Public Const M_NOT As Long = 9
-Public Const M_SEVKMIK As Long = 10
-Public Const M_ARIZAMIK As Long = 11
-Public Const M_ORAN As Long = 12
-Public Const M_SONARIZA As Long = 13
-Public Const M_KOLON As Long = 13
+Public Const M_PB As Long = 7
+Public Const M_GARANTI As Long = 8
+Public Const M_SEVKMIK As Long = 9
+Public Const M_ARIZAMIK As Long = 10
+Public Const M_ORAN As Long = 11
+Public Const M_SONARIZA As Long = 12
+Public Const M_NOT As Long = 13
+Public Const M_KAYIT As Long = 14
+Public Const M_KOLON As Long = 14
 
 ' SEVKÝYATLAR sütunlarý
 Public Const S_NO As Long = 1
@@ -59,52 +62,58 @@ Public Const S_KOD As Long = 4
 Public Const S_AD As Long = 5
 Public Const S_ADET As Long = 6
 Public Const S_FIYAT As Long = 7
-Public Const S_TUTAR As Long = 8
-Public Const S_PLAN As Long = 9
-Public Const S_GELIS As Long = 10
-Public Const S_GECIKME As Long = 11
-Public Const S_TDURUM As Long = 12
-Public Const S_GARAY As Long = 13
-Public Const S_GARBIT As Long = 14
-Public Const S_GDURUM As Long = 15
-Public Const S_IRS As Long = 16
-Public Const S_SERI As Long = 17
-Public Const S_ARIZA As Long = 18
-Public Const S_NOT As Long = 19
-Public Const S_ZAMAN As Long = 20
-Public Const S_KULL As Long = 21
-Public Const S_KOLON As Long = 21
+Public Const S_PB As Long = 8
+Public Const S_TUTAR As Long = 9
+Public Const S_PLAN As Long = 10
+Public Const S_GELIS As Long = 11
+Public Const S_GECIKME As Long = 12
+Public Const S_TDURUM As Long = 13
+Public Const S_GARAY As Long = 14
+Public Const S_GARBIT As Long = 15
+Public Const S_GDURUM As Long = 16
+Public Const S_IRS As Long = 17
+Public Const S_SERI As Long = 18
+Public Const S_ARIZA As Long = 19
+Public Const S_NOT As Long = 20
+Public Const S_ZAMAN As Long = 21
+Public Const S_KULL As Long = 22
+Public Const S_KOLON As Long = 22
 
 ' ARIZALAR sütunlarý
 Public Const A_NO As Long = 1
-Public Const A_SEVK As Long = 2
-Public Const A_SERI As Long = 3
-Public Const A_KOD As Long = 4
-Public Const A_AD As Long = 5
-Public Const A_SEVKCI As Long = 6
-Public Const A_URETICI As Long = 7
+Public Const A_TARIH As Long = 2
+Public Const A_KOD As Long = 3
+Public Const A_AD As Long = 4
+Public Const A_SERI As Long = 5
+Public Const A_URETICI As Long = 6
+Public Const A_SEVKCI As Long = 7
 Public Const A_YER As Long = 8
-Public Const A_TARIH As Long = 9
-Public Const A_ADET As Long = 10
-Public Const A_TIP As Long = 11
-Public Const A_ACIK As Long = 12
-Public Const A_GARBIT As Long = 13
-Public Const A_KAPSAM As Long = 14
-Public Const A_BILDIRIM As Long = 15
-Public Const A_DONUS As Long = 16
-Public Const A_DONUSGUN As Long = 17
-Public Const A_COZUM As Long = 18
-Public Const A_COZUMGUN As Long = 19
-Public Const A_SEKIL As Long = 20
-Public Const A_MALIYET As Long = 21
-Public Const A_KARS As Long = 22
-Public Const A_ONCEKI As Long = 23
-Public Const A_TEKRAR As Long = 24
-Public Const A_DURUM As Long = 25
-Public Const A_NOT As Long = 26
-Public Const A_ZAMAN As Long = 27
-Public Const A_KULL As Long = 28
-Public Const A_KOLON As Long = 28
+Public Const A_SEVK As Long = 9
+Public Const A_GARBIT As Long = 10
+Public Const A_KAPSAM As Long = 11
+Public Const A_KAPKAYNAK As Long = 12
+Public Const A_ADET As Long = 13
+Public Const A_TIP As Long = 14
+Public Const A_ACIK As Long = 15
+Public Const A_BILDIRIM As Long = 16
+Public Const A_MAIL As Long = 17
+Public Const A_MAILDOSYA As Long = 18
+Public Const A_DONUS As Long = 19
+Public Const A_DONUSGUN As Long = 20
+Public Const A_DEVAM As Long = 21
+Public Const A_COZULDU As Long = 22
+Public Const A_DURUM As Long = 23
+Public Const A_COZUM As Long = 24
+Public Const A_COZUMGUN As Long = 25
+Public Const A_SEKIL As Long = 26
+Public Const A_MALIYET As Long = 27
+Public Const A_KARS As Long = 28
+Public Const A_ONCEKI As Long = 29
+Public Const A_TEKRAR As Long = 30
+Public Const A_NOT As Long = 31
+Public Const A_ZAMAN As Long = 32
+Public Const A_KULL As Long = 33
+Public Const A_KOLON As Long = 33
 
 Private mDerinlik As Long
 Private mEv As Boolean
@@ -447,7 +456,7 @@ End Sub
 
 Public Function KS_Sayfalar() As Variant
     KS_Sayfalar = Array(SH_PANEL, SH_KAYIT, SH_SEVK, SH_ARIZA, SH_MALZ, SH_KARNE, _
-        SH_PERF, SH_RAPOR, SH_AKTAR, SH_TANIM, SH_LOG)
+        SH_RAPOR, SH_AKTAR, SH_TANIM, SH_LOG)
 End Function
 
 Public Function KS_BizimSayfa(ByVal ad As String) As Boolean

@@ -4,24 +4,35 @@ Option Explicit
 ' TOPLU AKTAR: geçmiþ yýllarýn verisini Excel'den yapýþtýrýp form kurallarýyla doðrulayarak aktarýr.
 ' Hatalý satýrlar aktarýlmaz; SONUÇ sütununda nedeni yazar. Aktarýlan satýr ikinci kez aktarýlmaz.
 
-Private Const T_BASLIK As Long = 10
-Private Const T_ILK As Long = 11
+Private Const T_BASLIK As Long = 5
+Private Const T_ILK As Long = 6
 Private Const T_KOLON As Long = 2
+Private Const T_GENIS As Long = 20
 Private Const T_SONSATIR As Long = 60000
 
 Private Function KS_Sablon(ByVal tur As String) As Variant
     Select Case tur
         Case "MALZEME"
             KS_Sablon = Array("Malzeme Kodu *", "Malzeme Adý *", "Kategori", "Birim", "Üretici", _
-                "Birim Fiyat (TL) *", "Garanti (Ay) *", "Not")
+                "Birim Fiyat", "Para Birimi", "Garanti (Ay)", "Not")
         Case "SEVKÝYAT"
-            KS_Sablon = Array("Sevkçi *", "Sevk Yeri *", "Malzeme Kodu *", "Adet / Miktar *", _
-                "Birim Fiyat (boþ = liste)", "Planlanan Teslim *", "Gerçek Geliþ", "Ýrsaliye / Belge No", _
+            KS_Sablon = Array("Sevkçi *", "Sevk Yeri *", "Malzeme Kodu *", "Adet *", "Birim Fiyat (boþ = liste)", _
+                "Para Birimi", "Planlanan Teslim *", "Gerçek Geliþ", "Garanti (Ay)", "Belge / SAS No", _
                 "Seri / Lot No", "Not")
         Case Else
-            KS_Sablon = Array("Sevk No *", "Seri No", "Arýza Tarihi *", "Arýzalý Adet *", "Arýza Tipi", _
-                "Arýza Açýklamasý", "Üreticiye Bildirim", "Üretici Dönüþ", "Çözüm Tarihi", "Çözüm Þekli", _
-                "Tamir Maliyeti (TL)", "Maliyeti Karþýlayan", "Not")
+            KS_Sablon = Array("Arýza Tarihi *", "Malzeme Kodu *", "Seri No", "Arýzalý Adet *", "Arýza Tipi", _
+                "Arýza Sebebi / Açýklama", "Baðlý Sevk No (boþ = otomatik)", "Garanti Devam? (EVET/HAYIR)", _
+                "Üreticiye Bildirim", "Mail Yazýþmasý", "Mail Dosyasý (yol)", "Üretici Dönüþ", _
+                "Arýza Devam Ediyor mu?", "Çözüldü mü?", "Çözüm Tarihi", "Çözüm Þekli", "Tamir Maliyeti (TL)", _
+                "Maliyeti Karþýlayan", "Not")
+    End Select
+End Function
+
+Private Function KS_TarihKolonlari(ByVal tur As String) As Variant
+    Select Case tur
+        Case "MALZEME": KS_TarihKolonlari = Array()
+        Case "SEVKÝYAT": KS_TarihKolonlari = Array(6, 7)
+        Case Else: KS_TarihKolonlari = Array(0, 8, 11, 14)
     End Select
 End Function
 
@@ -29,90 +40,95 @@ Public Sub KS_AktarKur()
     Dim ws As Worksheet, b As Variant, i As Long, sol As Double
     Set ws = KS_WS(SH_AKTAR)
     KS_SayfaSifirla ws
-    ws.Columns("B:N").ColumnWidth = 15
-    ws.Columns("O").ColumnWidth = 3
-    ws.Columns("P").ColumnWidth = 3
-    KS_Bant ws, 16, "TOPLU AKTARIM", _
-        "Þablonu seçin, verileri 11. satýrdan itibaren DEÐER olarak yapýþtýrýn, KONTROL ET + AKTAR'a basýn."
-    b = Array("MALZEME ÞABLONU", "KS_SABLON_MALZEME", "cizgi", "SEVKÝYAT ÞABLONU", "KS_SABLON_SEVK", "cizgi", _
-        "ARIZA ÞABLONU", "KS_SABLON_ARIZA", "cizgi", "KONTROL ET + AKTAR", "KS_AKTAR_CALISTIR", "yesil", _
-        "TEMÝZLE", "KS_AKTAR_TEMIZLE", "gri")
-    sol = ws.Range("B7").Left
-    ws.Rows(7).RowHeight = 28
-    For i = 0 To 4
-        KS_Buton ws, "ksAktar_" & i, CStr(b(i * 3)), sol, ws.Range("B7").Top + 2, 128, 24, CStr(b(i * 3 + 1)), CStr(b(i * 3 + 2))
-        sol = sol + 134
+    ws.Columns("B:U").ColumnWidth = 15
+    ws.Columns("V").ColumnWidth = 2
+    KS_VeriSayfaUst ws, "TOPLU AKTARIM", _
+        "Þablonu seçin, verileri 6. satýrdan itibaren DEÐER olarak yapýþtýrýn, KONTROL ET + AKTAR'a basýn.", _
+        Array("SAP / YILLIK EXCEL", "KS_SAP_AKTAR", "yesil", "KONTROL ET + AKTAR", "KS_AKTAR_CALISTIR", "ana", _
+            "TEMÝZLE", "KS_AKTAR_TEMIZLE", "cizgi")
+    ws.Rows(3).RowHeight = 34
+    b = Array("MALZEME ÞABLONU", "KS_SABLON_MALZEME", "SEVKÝYAT ÞABLONU", "KS_SABLON_SEVK", _
+        "ARIZA ÞABLONU", "KS_SABLON_ARIZA")
+    sol = ws.Cells(1, 2).Left
+    For i = 0 To 2
+        KS_Buton ws, "ksA_S" & i, CStr(b(i * 2)), sol + i * 146, ws.Rows(3).Top + 5, 140, 24, CStr(b(i * 2 + 1)), "cizgi"
     Next i
-    KS_Buton ws, "ksAktar_SAP", "SAP LÝSTESÝNDEN AKTAR", sol + 20, ws.Range("B7").Top + 2, 160, 24, "KS_SAP_AKTAR", "koyu"
-    ws.Range("B8").Value = "AKTARIM TÜRÜ"
-    ws.Range("E8").Value = "EKSÝK TANIMLARI EKLE"
-    ws.Range("B8,E8").Font.Size = 8
-    ws.Range("B8,E8").Font.Bold = True
-    ws.Range("B8,E8").Font.Color = C_GRI()
-    With ws.Range("C8")
+    With ws.Range("F3")
+        .Value = "TÜR"
+        .Font.Size = 8
+        .Font.Bold = True
+        .Font.Color = C_GRI()
+        .HorizontalAlignment = xlRight
+    End With
+    With ws.Range("G3")
         .Value = "SEVKÝYAT"
         .Font.Bold = True
         .Font.Color = C_LAC()
-        .Interior.Color = C_OTO()
+        .Interior.Color = C_ACIKMAVI()
         .HorizontalAlignment = xlCenter
     End With
-    KS_AdHucre "aTur", ws.Range("C8")
-    With ws.Range("F8")
+    KS_AdHucre "aTur", ws.Range("G3")
+    With ws.Range("I3")
+        .Value = "EKSÝK TANIMLARI EKLE"
+        .Font.Size = 8
+        .Font.Bold = True
+        .Font.Color = C_GRI()
+        .HorizontalAlignment = xlRight
+    End With
+    With ws.Range("J3")
         .Value = "HAYIR"
         .Font.Bold = True
         .Font.Color = C_LAC()
-        .Interior.Color = C_GIRIS()
+        .Interior.Color = vbWhite
         .HorizontalAlignment = xlCenter
         .Locked = False
+        .BorderAround xlContinuous, xlThin, , RGB(190, 204, 222)
     End With
-    KS_AdHucre "aOto", ws.Range("F8")
-    KS_Liste ws.Range("F8"), "lstEvetHayir", True
-    ws.Range("G8").Value = "EVET: listede olmayan sevkçi / sevk yerini TANIMLAR'a ekler (yazým hatalarýna dikkat)."
-    ws.Range("G8").Font.Size = 8
-    ws.Range("G8").Font.Italic = True
-    ws.Range("G8").Font.Color = C_GRI()
-    ws.Rows(8).RowHeight = 22
+    KS_AdHucre "aOto", ws.Range("J3")
+    KS_Liste ws.Range("J3"), "lstEvetHayir", True
+    With ws.Range("K3")
+        .Value = "EVET: listede olmayan sevkçi / sevk yerini TANIMLAR'a ekler."
+        .Font.Size = 8
+        .Font.Italic = True
+        .Font.Color = C_GRI()
+    End With
+    ws.Rows(4).RowHeight = 6
     KS_SablonCiz ws, "SEVKÝYAT"
-    KS_Pencere ws, 85, T_BASLIK, False
+    KS_Pencere ws, 90, T_BASLIK
 End Sub
 
 Private Sub KS_SablonCiz(ByVal ws As Worksheet, ByVal tur As String)
-    Dim h As Variant, n As Long, alan As Range, fc As Object, sonuc As Range
+    Dim h As Variant, n As Long, alan As Range, fc As Object, sonuc As Range, k As Variant
     h = KS_Sablon(tur)
     n = UBound(h) + 1
-    ws.Range(ws.Cells(T_BASLIK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + 13)).Clear
-    ws.Range(ws.Cells(T_BASLIK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + 13)).FormatConditions.Delete
+    With ws.Range(ws.Cells(T_BASLIK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + T_GENIS))
+        .FormatConditions.Delete
+        .Clear
+        .Font.Name = KS_FONT
+        .Font.Size = 9.5
+    End With
     KS_TabloBaslik ws.Range(ws.Cells(T_BASLIK, T_KOLON), ws.Cells(T_BASLIK, T_KOLON + n - 1)), h
     Set sonuc = ws.Cells(T_BASLIK, T_KOLON + n)
     KS_TabloBaslik sonuc, Array("SONUÇ")
-    sonuc.Interior.Color = C_TURKUAZ()
+    sonuc.Interior.Color = C_TEAL()
+    ws.Range(ws.Columns(T_KOLON), ws.Columns(T_KOLON + T_GENIS)).ColumnWidth = 15
     ws.Columns(T_KOLON + n).ColumnWidth = 60
-    If T_KOLON + n < 15 Then ws.Range(ws.Columns(T_KOLON + n + 1), ws.Columns(15)).ColumnWidth = 15
     Set alan = ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + n - 1))
     alan.Interior.Color = vbWhite
     alan.Locked = False
     alan.NumberFormat = "@"
-    Select Case tur
-        Case "MALZEME"
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 5), ws.Cells(T_SONSATIR, T_KOLON + 6)).NumberFormat = "General"
-        Case "SEVKÝYAT"
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 3), ws.Cells(T_SONSATIR, T_KOLON + 4)).NumberFormat = "General"
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 5), ws.Cells(T_SONSATIR, T_KOLON + 6)).NumberFormat = KS_FmtTarih()
-        Case Else
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 2), ws.Cells(T_SONSATIR, T_KOLON + 2)).NumberFormat = KS_FmtTarih()
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 3), ws.Cells(T_SONSATIR, T_KOLON + 3)).NumberFormat = "General"
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 6), ws.Cells(T_SONSATIR, T_KOLON + 8)).NumberFormat = KS_FmtTarih()
-            ws.Range(ws.Cells(T_ILK, T_KOLON + 10), ws.Cells(T_SONSATIR, T_KOLON + 10)).NumberFormat = "General"
-    End Select
+    For Each k In KS_TarihKolonlari(tur)
+        ws.Range(ws.Cells(T_ILK, T_KOLON + k), ws.Cells(T_SONSATIR, T_KOLON + k)).NumberFormat = KS_FmtTarih()
+    Next k
     Set sonuc = ws.Range(ws.Cells(T_ILK, T_KOLON + n), ws.Cells(T_SONSATIR, T_KOLON + n))
-    sonuc.Interior.Color = C_OTO()
+    sonuc.Interior.Color = RGB(240, 246, 250)
     sonuc.Font.Size = 9
     Set fc = sonuc.FormatConditions.Add(Type:=xlTextString, String:="AKTARILDI", TextOperator:=xlBeginsWith)
     fc.Font.Color = C_YESIL(): fc.Font.Bold = True
     Set fc = sonuc.FormatConditions.Add(Type:=xlTextString, String:="HATA", TextOperator:=xlBeginsWith)
     fc.Font.Color = C_KIRMIZI(): fc.Font.Bold = True
-    ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + n)).Borders(xlInsideHorizontal).Color = C_CIZGI()
-    ws.Rows(T_BASLIK).RowHeight = 32
+    ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + n)).Borders(xlInsideHorizontal).Color = RGB(230, 236, 243)
+    ws.Rows(T_BASLIK).RowHeight = 36
     KS_F("aTur").Value = tur
 End Sub
 
@@ -149,7 +165,7 @@ End Sub
 
 Private Function KS_SonSatir(ByVal ws As Worksheet) As Long
     Dim c As Long, r As Long
-    For c = T_KOLON To T_KOLON + 13
+    For c = T_KOLON To T_KOLON + T_GENIS
         r = ws.Cells(ws.Rows.Count, c).End(xlUp).Row
         If r > KS_SonSatir Then KS_SonSatir = r
     Next c
@@ -165,7 +181,7 @@ Public Sub KS_AKTAR_TEMIZLE()
     If MsgBox("Aktarým alanýndaki " & son - T_ILK + 1 & " satýr temizlensin mi?" & vbCrLf & _
         "(Aktarýlmýþ kayýtlar tablolarda kalýr.)", vbQuestion + vbYesNo, KS_AD) <> vbYes Then Exit Sub
     KS_Ac ws
-    ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(son, T_KOLON + 13)).ClearContents
+    ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(son, T_KOLON + T_GENIS)).ClearContents
     KS_Kapat ws
     Exit Sub
 Hata:

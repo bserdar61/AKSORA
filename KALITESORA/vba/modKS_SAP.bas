@@ -1,11 +1,9 @@
 Attribute VB_Name = "modKS_SAP"
 Option Explicit
 
-' SAP satýnalma listesi (ME2N benzeri, "TEDARÝKÇÝ ÝSÝM.xlsx" biçimi) aktarýmý.
-' Yalnýz TANIMLAR'daki sevk yerlerine (ÇEDAÞ üretim yerleri) ait, baþlangýç tarihinden sonraki kalemler alýnýr.
-' Ayný SAS belgesi + kalem + malzeme ikinci kez aktarýlmaz; aktarým tekrar çalýþtýrýlabilir.
-' SAP listesinde mal giriþ tarihi yoktur: gerçek geliþ tarihi KAYIT ekranýndan ya da sorulduðunda
-' (yaklaþýk olarak) SAP teslimat tarihinden doldurulur.
+' Yýllýk SAP satýnalma listesi (ME2N biçimi; "ÖRNEK.xlsx" / "TEDARÝKÇÝ ÝSÝM.xlsx") aktarýmý.
+' Baþlýklar adla bulunur. Ayný SAS belgesi + kalem + malzeme ikinci kez aktarýlmaz; aktarým tekrar çalýþtýrýlabilir.
+' SAP listesinde mal giriþ tarihi ve garanti süresi yoktur: garanti MALZEMELER / SEVKÝYATLAR sayfasýnda elle girilir.
 
 Private Function KS_Norm(ByVal v As Variant) As String
     If IsError(v) Or IsEmpty(v) Then Exit Function
@@ -25,17 +23,18 @@ End Function
 Public Sub KS_SAP_AKTAR()
     Dim dosya As Variant, wb As Workbook, ws As Worksheet, v As Variant, bas As Variant, adim As String
     Dim cT As Long, cM As Long, cK As Long, cMik As Long, cGir As Long, cBr As Long, cYer As Long
-    Dim cBel As Long, cKal As Long, cSat As Long, cFiy As Long, cPb As Long, cSil As Long
+    Dim cBel As Long, cKal As Long, cSat As Long, cFiy As Long, cPb As Long, cSil As Long, cTed As Long
     Dim baslangic As Date, d As Date, s As String, i As Long, j As Long, gelisSor As VbMsgBoxResult
-    Dim dYer As Object, dYeniM As Object, mSat() As Variant, mN As Long, sSat() As Variant, sN As Long
-    Dim g(0 To 9) As Variant, satir As Variant, hata As String, uyari As String, x As Double, mik As Double
-    Dim nTarih As Long, nBolge As Long, nSil As Long, nVar As Long, nHata As Long, nDoviz As Long, ilkHata As String
-    Dim kod As String, pb As String, garanti As Long, korumali As Boolean, lo As ListObject
+    Dim dYer As Object, dYeniM As Object, dYeniYer As Object, mSat() As Variant, mN As Long, sSat() As Variant, sN As Long
+    Dim g(0 To 11) As Variant, satir As Variant, hata As String, uyari As String, x As Double, mik As Double
+    Dim nTarih As Long, nBolge As Long, nSil As Long, nVar As Long, nHata As Long, ilkHata As String
+    Dim kod As String, pb As String, lo As ListObject, yerEkle As Boolean, sevkci As String, k As Variant, liste As String
+    Dim gecis As Long, toplamSatir As Long, sonSatir As Long
     On Error GoTo Hata
 
     adim = "Dosya seçimi"
     dosya = Application.GetOpenFilename("Excel Dosyalarý (*.xlsx;*.xlsm;*.xls),*.xlsx;*.xlsm;*.xls", , _
-        "SAP satýnalma listesini seçin")
+        "Yýllýk SAP satýnalma listesini seçin")
     If VarType(dosya) = vbBoolean Then Exit Sub
     s = InputBox("Hangi teslimat tarihinden itibaren aktarýlsýn? (gg.aa.yyyy)", KS_AD, "01.01." & Year(Date))
     If Len(s) = 0 Then Exit Sub
@@ -47,28 +46,37 @@ Public Sub KS_SAP_AKTAR()
         "Girilen miktarý sipariþ miktarýna ulaþmýþ ve teslimat tarihi geçmiþ kalemlerde, geliþ tarihi olarak " & _
         "SAP teslimat tarihi yazýlsýn mý?" & vbCrLf & vbCrLf & _
         "EVET: garanti hemen iþler, baþlangýç yaklaþýktýr (notta belirtilir)." & vbCrLf & _
-        "HAYIR: geliþ tarihi boþ kalýr, KAYIT ekranýndan girersiniz.", vbQuestion + vbYesNoCancel, KS_AD)
+        "HAYIR: geliþ tarihi boþ kalýr; SEVKÝYATLAR sayfasýnda elle girersiniz.", vbQuestion + vbYesNoCancel, KS_AD)
     If gelisSor = vbCancel Then Exit Sub
 
     adim = "Yedek"
     KS_YedekKopya "SAP_ONCESI"
     KS_Basla
-    garanti = CLng(KS_ParamSayi("pSapGaranti", 24))
     Set dYer = KS_Sozluk(T_YER)
     Set dYeniM = CreateObject("Scripting.Dictionary")
+    Set dYeniYer = CreateObject("Scripting.Dictionary")
     adim = "SAP dosyasýný açma"
     Set wb = Workbooks.Open(Filename:=CStr(dosya), ReadOnly:=True, UpdateLinks:=0)
-    KS_BaglamYukle
-    KS_OtoTanimAyarla True
-
-    ' 1. geçiþ: eksik malzemeleri topla; 2. geçiþ: sevkiyatlarý hazýrla.
-    Dim gecis As Long, toplamSatir As Long, sonSatir As Long
     For Each ws In wb.Worksheets
         toplamSatir = toplamSatir + ws.UsedRange.Row + ws.UsedRange.Rows.Count
     Next ws
     ReDim mSat(1 To toplamSatir, 1 To M_KOLON)
     ReDim sSat(1 To toplamSatir, 1 To S_KOLON)
-    For gecis = 1 To 2
+    KS_BaglamYukle
+
+    ' 0: tanýmsýz üretim yerleri, 1: yeni malzemeler, 2: sevkiyatlar
+    For gecis = 0 To 2
+        If gecis = 1 And dYeniYer.Count > 0 Then
+            liste = ""
+            For Each k In dYeniYer.Keys
+                If Len(liste) < 400 Then liste = liste & vbCrLf & "  - " & dYeniYer(k)
+            Next k
+            KS_Bitir True
+            yerEkle = (MsgBox("Dosyada TANIMLAR'da olmayan " & dYeniYer.Count & " üretim yeri var:" & liste & vbCrLf & vbCrLf & _
+                "EVET: bunlar sevk yeri olarak eklenir ve kalemleri aktarýlýr." & vbCrLf & _
+                "HAYIR: bu üretim yerlerinin kalemleri atlanýr (bölge dýþý).", vbQuestion + vbYesNo, KS_AD) = vbYes)
+            KS_Basla
+        End If
         If gecis = 2 Then
             If mN > 0 Then
                 adim = "Yeni malzemeleri yazma"
@@ -85,10 +93,11 @@ Public Sub KS_SAP_AKTAR()
             If Application.WorksheetFunction.CountA(ws.Rows(1)) > 3 Then
                 bas = ws.Range(ws.Cells(1, 1), ws.Cells(1, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).Value
                 cSat = KS_SapKolon(bas, "Satýcý/teslimat yapan ürt.yeri")
+                cTed = KS_SapKolon(bas, "Tedarikçi adý")
                 cM = KS_SapKolon(bas, "Malzeme")
                 cT = KS_SapKolon(bas, "Teslimat tarihi")
                 cYer = KS_SapKolon(bas, "Üretim Yeri Adý")
-                If cSat > 0 And cM > 0 And cT > 0 And cYer > 0 Then
+                If (cSat > 0 Or cTed > 0) And cM > 0 And cT > 0 And cYer > 0 Then
                     cK = KS_SapKolon(bas, "Kýsa metin")
                     cMik = KS_SapKolon(bas, "Miktar (depo ÖB)")
                     cGir = KS_SapKolon(bas, "Girilen miktar")
@@ -102,45 +111,49 @@ Public Sub KS_SAP_AKTAR()
                     If sonSatir < 2 Then sonSatir = 2
                     v = ws.Range(ws.Cells(1, 1), ws.Cells(sonSatir, UBound(bas, 2))).Value
                     For i = 2 To UBound(v, 1)
-                        If KS_SapSatirUygun(v, i, cT, cYer, cSil, baslangic, dYer, gecis = 2, nTarih, nBolge, nSil) Then
+                        If gecis = 0 Then
+                            If Len(KS_Anahtar(v(i, cYer))) > 0 And Not dYer.Exists(KS_Anahtar(v(i, cYer))) Then
+                                dYeniYer(KS_Anahtar(v(i, cYer))) = KS_Metin(v(i, cYer))
+                            End If
+                        ElseIf KS_SapSatirUygun(v, i, cT, cYer, cSil, baslangic, dYer, yerEkle, gecis = 2, nTarih, nBolge, nSil) Then
                             kod = KS_Metin(v(i, cM))
-                            pb = UCase$(KS_Metin(v(i, cPb)))
+                            pb = ""
+                            If cPb > 0 Then pb = UCase$(KS_Metin(v(i, cPb)))
+                            If Len(pb) = 0 Then pb = "TRY"
                             If gecis = 1 Then
-                                If Not KS_MalzemeVar(kod) And Not dYeniM.Exists(KS_Anahtar(kod)) And Len(kod) > 0 Then
+                                If Len(kod) > 0 And Not KS_MalzemeVar(kod) And Not dYeniM.Exists(KS_Anahtar(kod)) Then
                                     mN = mN + 1
                                     dYeniM(KS_Anahtar(kod)) = mN
                                     mSat(mN, M_KOD) = kod
-                                    mSat(mN, M_AD) = KS_Metin(v(i, cK))
+                                    If cK > 0 Then mSat(mN, M_AD) = KS_Metin(v(i, cK))
                                     If cBr > 0 Then mSat(mN, M_BIRIM) = KS_Metin(v(i, cBr))
-                                    If pb = "TRY" And cFiy > 0 Then mSat(mN, M_FIYAT) = v(i, cFiy) Else mSat(mN, M_FIYAT) = 0
-                                    mSat(mN, M_GARANTI) = garanti
+                                    mSat(mN, M_URETICI) = KS_SapSevkci(v, i, cSat, cTed)
+                                    If cFiy > 0 Then mSat(mN, M_FIYAT) = v(i, cFiy)
+                                    mSat(mN, M_PB) = pb
                                     mSat(mN, M_KAYIT) = Date
-                                    mSat(mN, M_NOT) = "SAP aktarýmý - garanti süresini ve fiyatý kontrol edin"
+                                    mSat(mN, M_NOT) = "SAP aktarýmý - garanti süresini girin"
                                 End If
                             Else
                                 adim = ws.Name & " satýr " & i
-                                g(0) = Application.WorksheetFunction.Trim(CStr(v(i, cSat)))
+                                sevkci = KS_SapSevkci(v, i, cSat, cTed)
+                                g(0) = sevkci
                                 g(1) = KS_Metin(v(i, cYer))
                                 g(2) = kod
-                                g(3) = v(i, cMik)
-                                If pb = "TRY" Or pb = "" Then
-                                    g(4) = v(i, cFiy)
-                                Else
-                                    g(4) = 0
-                                    nDoviz = nDoviz + 1
-                                End If
-                                g(5) = v(i, cT)
-                                g(6) = Empty
-                                If gelisSor = vbYes And cGir > 0 Then
+                                If cMik > 0 Then g(3) = v(i, cMik) Else g(3) = Empty
+                                If cFiy > 0 Then g(4) = v(i, cFiy) Else g(4) = Empty
+                                g(5) = pb
+                                g(6) = v(i, cT)
+                                g(7) = Empty
+                                If gelisSor = vbYes And cGir > 0 And cMik > 0 Then
                                     If KS_Sayi(v(i, cGir), x) And KS_Sayi(v(i, cMik), mik) And KS_Tarih(v(i, cT), d) Then
-                                        If x >= mik And mik > 0 And d <= Date Then g(6) = d
+                                        If x >= mik And mik > 0 And d <= Date Then g(7) = d
                                     End If
                                 End If
-                                g(7) = "SAS " & KS_Metin(v(i, cBel)) & "/" & KS_Metin(v(i, cKal))
                                 g(8) = Empty
-                                g(9) = "SAP | girilen " & KS_Metin(v(i, cGir)) & " / " & KS_Metin(v(i, cMik))
-                                If pb <> "TRY" And pb <> "" Then g(9) = g(9) & " | fiyat " & KS_Metin(v(i, cFiy)) & " " & pb & " (TL'ye çevrilmedi)"
-                                If Not IsEmpty(g(6)) Then g(9) = g(9) & " | geliþ = SAP teslimat tarihi (yaklaþýk)"
+                                g(9) = "SAS " & KS_Metin(v(i, cBel)) & "/" & KS_Metin(v(i, cKal))
+                                g(10) = Empty
+                                g(11) = "SAP | girilen " & KS_Metin(v(i, cGir)) & " / " & KS_Metin(v(i, cMik))
+                                If Not IsEmpty(g(7)) Then g(11) = g(11) & " | geliþ = SAP teslimat tarihi (yaklaþýk)"
                                 If KS_SevkHazirla(g, 0, satir, hata, uyari) Then
                                     If Len(uyari) > 0 Then
                                         nVar = nVar + 1
@@ -176,15 +189,16 @@ Public Sub KS_SAP_AKTAR()
     KS_HesaplaTumu
     KS_Bitir True
     KS_Log "SAP AKTAR", CStr(dosya), sN & " sevkiyat, " & mN & " yeni malzeme, " & nVar & " zaten vardý, " & nHata & " hatalý"
-    MsgBox "SAP aktarýmý tamamlandý." & vbCrLf & vbCrLf & _
+    MsgBox "Yýllýk liste aktarýmý tamamlandý." & vbCrLf & vbCrLf & _
         "Yeni sevkiyat: " & sN & vbCrLf & _
-        "Yeni malzeme kartý: " & mN & "  (garanti " & garanti & " ay varsayýldý - kontrol edin)" & vbCrLf & _
+        "Yeni malzeme kartý: " & mN & vbCrLf & _
         "Daha önce aktarýlmýþ (atlandý): " & nVar & vbCrLf & _
         "Baþlangýç tarihinden önce: " & nTarih & vbCrLf & _
-        "Bölge dýþý üretim yeri: " & nBolge & vbCrLf & _
+        "Atlanan üretim yeri: " & nBolge & vbCrLf & _
         "Silme göstergeli: " & nSil & vbCrLf & _
-        "Döviz fiyatlý (TL tutarý 0 yazýldý): " & nDoviz & vbCrLf & _
-        "Hatalý: " & nHata & IIf(Len(ilkHata) > 0, vbCrLf & "Ýlk hata: " & ilkHata, ""), _
+        "Hatalý: " & nHata & IIf(Len(ilkHata) > 0, vbCrLf & "Ýlk hata: " & ilkHata, "") & vbCrLf & vbCrLf & _
+        "Sýradaki adým: MALZEMELER > GARANTÝSÝ GÝRÝLMEMÝÞ ile garanti sürelerini girin." & vbCrLf & _
+        "Döviz kalemleri için YÖNETÝM sayfasýndaki kur tablosunu doldurun.", _
         IIf(nHata > 0, vbExclamation, vbInformation), KS_AD
     Exit Sub
 Hata:
@@ -194,8 +208,14 @@ Hata:
     MsgBox "SAP aktarýmý durdu." & vbCrLf & "Adým: " & adim & vbCrLf & "Hata: " & Err.Description, vbCritical, KS_AD
 End Sub
 
+' Sevkçi deðeri SAP biçiminde: "1300001416 LUNA ELEKTRÝK ELEKTRONÝK". Satýcý sütunu boþsa Tedarikçi adý kullanýlýr.
+Private Function KS_SapSevkci(ByRef v As Variant, ByVal i As Long, ByVal cSat As Long, ByVal cTed As Long) As String
+    If cSat > 0 Then KS_SapSevkci = Application.WorksheetFunction.Trim(KS_Metin(v(i, cSat)))
+    If Len(KS_SapSevkci) = 0 And cTed > 0 Then KS_SapSevkci = Application.WorksheetFunction.Trim(KS_Metin(v(i, cTed)))
+End Function
+
 Private Function KS_SapSatirUygun(ByRef v As Variant, ByVal i As Long, ByVal cT As Long, ByVal cYer As Long, _
-        ByVal cSil As Long, ByVal baslangic As Date, ByVal dYer As Object, ByVal say As Boolean, _
+        ByVal cSil As Long, ByVal baslangic As Date, ByVal dYer As Object, ByVal yerEkle As Boolean, ByVal say As Boolean, _
         ByRef nTarih As Long, ByRef nBolge As Long, ByRef nSil As Long) As Boolean
     Dim d As Date
     If cSil > 0 Then
@@ -212,7 +232,7 @@ Private Function KS_SapSatirUygun(ByRef v As Variant, ByVal i As Long, ByVal cT 
         If say Then nTarih = nTarih + 1
         Exit Function
     End If
-    If Not dYer.Exists(KS_Anahtar(v(i, cYer))) Then
+    If Not dYer.Exists(KS_Anahtar(v(i, cYer))) And Not yerEkle Then
         If say Then nBolge = nBolge + 1
         Exit Function
     End If

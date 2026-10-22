@@ -1,8 +1,12 @@
 ' KALİTESORA - ThisWorkbook kodu
-' Yükleyici (KALITESORA_YUKLE) bunu kendisi ekler. Elle kurulumda:
+' Hazır dosyada ve yükleyicide (KALITESORA_YUKLE) bu kod kendiliğinden eklenir. Elle kurulumda:
 ' VBA penceresinde (Alt+F11) sol tarafta "BuÇalışmaKitabı / ThisWorkbook" öğesine çift tıklayın,
-' aşağıdaki 3 satırı yapıştırın.
+' aşağıdaki satırları yapıştırın.
 
 Private Sub Workbook_Open()
     KS_ACILIS
+End Sub
+
+Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    KS_DEGISIKLIK Sh, Target
 End Sub
