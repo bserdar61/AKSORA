@@ -50,17 +50,20 @@ Public Sub KALITESORA_YUKLE()
     adim = "ThisWorkbook açýlýþ kodu"
     Set cm = proje.VBComponents(ThisWorkbook.CodeName).CodeModule
     If cm.CountOfLines > 0 Then metin = cm.Lines(1, cm.CountOfLines)
-    If InStr(1, metin, "KS_ACILIS", vbTextCompare) = 0 Then
-        If InStr(1, metin, "Workbook_Open", vbTextCompare) > 0 Then
-            MsgBox "ThisWorkbook içinde baþka bir Workbook_Open var; açýlýþ kodu eklenmedi." & vbCrLf & _
-                "Ýçine elle 'KS_ACILIS' satýrýný ekleyin.", vbExclamation, "KALÝTESORA"
-        Else
-            cm.AddFromString "Private Sub Workbook_Open()" & vbCrLf & _
-                "    KS_ACILIS" & vbCrLf & "End Sub"
-        End If
-    End If
-    If InStr(1, metin, "KS_DEGISIKLIK", vbTextCompare) = 0 Then
-        cm.AddFromString "Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)" & vbCrLf & _
+    If InStr(1, metin, "Workbook_", vbTextCompare) > 0 And InStr(1, metin, "KS_ACILIS", vbTextCompare) = 0 Then
+        MsgBox "ThisWorkbook içinde baþka olay kodlarý var; KALÝTESORA olaylarý eklenmedi." & vbCrLf & _
+            "ThisWorkbook_KODU.txt içeriðini elle ekleyin.", vbExclamation, "KALÝTESORA"
+    Else
+        If cm.CountOfLines > 0 Then cm.DeleteLines 1, cm.CountOfLines
+        cm.AddFromString "Option Explicit" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_Open()" & vbCrLf & "    KS_ACILIS" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_Activate()" & vbCrLf & "    KS_UygulamaModuUygula" & vbCrLf & _
+            "    KS_EkranSigdir ActiveSheet, False" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_Deactivate()" & vbCrLf & "    KS_UYGULAMA_KAPAT" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbCrLf & "    KS_UYGULAMA_KAPAT" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_SheetActivate(ByVal Sh As Object)" & vbCrLf & "    KS_EkranSigdir Sh" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_WindowResize(ByVal Wn As Window)" & vbCrLf & "    KS_EkranSigdir ActiveSheet, False" & vbCrLf & "End Sub" & vbCrLf & vbCrLf & _
+            "Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)" & vbCrLf & _
             "    KS_DEGISIKLIK Sh, Target" & vbCrLf & "End Sub"
     End If
 

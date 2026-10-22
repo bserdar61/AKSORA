@@ -61,10 +61,17 @@ Public Sub KS_ACILIS()
         KALITESORA_KUR
         Exit Sub
     End If
+    If KS_KuruluTasarim() < KS_TASARIM_NO Then
+        MsgBox KS_AD & " v" & KS_SURUM & " tasarým güncellemesi uygulanacak." & vbCrLf & vbCrLf & _
+            "Kayýtlarýnýz korunur; önce dosyanýn yedeði alýnýr.", vbInformation, KS_AD
+        KS_TasarimGuncelle
+        Exit Sub
+    End If
+    KS_UygulamaModuUygula
     Set ws = KS_WS(SH_PANEL)
     KS_PanelYenile False
     ws.Activate
-    ActiveWindow.ScrollRow = 1
+    KS_EkranSigdir ws
     If KS_Tarih(KS_FV("pSonYedek"), d) Then
         If Date - d <= KS_ParamSayi("pYedekGun", 7) Then Exit Sub
     End If

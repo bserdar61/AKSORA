@@ -11,6 +11,12 @@ Public Const KS_STIL As String = "KS_STIL"
 Public Const KS_GENISLIK As Double = 1180     ' sayfa içerik geniþliði (pt)
 Public Const KS_KLASOR As String = "KALITESORA_GORSEL"
 
+Private mDurumAlindi As Boolean
+Private mRibbon As Boolean
+Private mFormulBar As Boolean
+Private mBasliklar As Boolean
+Private mSigdiriliyor As Boolean
+
 ' ---------------------------------------------------------------- ek renkler
 
 Public Function C_MAVI() As Long
@@ -55,7 +61,6 @@ End Sub
 ' Banner + sekme çubuðu. tam = True ise büyük banner (PANEL). Çerçevenin alt kenarýný (pt) döndürür.
 Public Function KS_SayfaCerceve(ByVal ws As Worksheet, ByVal tam As Boolean) As Double
     Dim sol As Double, ust As Double, yuk As Double, p As String, s As Shape, alt As Double
-    KS_SekilSil ws, "ksC_"
     sol = ws.Cells(1, 2).Left
     If tam Then
         p = KS_GorselYol("KALITESORA_BANNER.png")
@@ -64,7 +69,29 @@ Public Function KS_SayfaCerceve(ByVal ws As Worksheet, ByVal tam As Boolean) As 
         p = KS_GorselYol("KALITESORA_BANNER_INCE.png")
         yuk = KS_GENISLIK * 170 / 2400
     End If
-    If Len(p) > 0 Then
+    ' Görsel klasörü yoksa daha önce gömülmüþ banner korunur.
+    Set s = Nothing
+    If Len(p) = 0 Then
+        On Error Resume Next
+        Set s = ws.Shapes("ksC_Banner")
+        On Error GoTo 0
+        If Not s Is Nothing Then
+            If s.Type <> msoPicture Then Set s = Nothing
+        End If
+    End If
+    If s Is Nothing Then
+        KS_SekilSil ws, "ksC_"
+    Else
+        s.Name = "ksBanner_Gecici"
+        KS_SekilSil ws, "ksC_"
+        s.Name = "ksC_Banner"
+        s.Left = sol
+        s.Top = 0
+        s.Width = KS_GENISLIK
+    End If
+    If Not s Is Nothing Then
+        ' korunan banner kullanýlýr
+    ElseIf Len(p) > 0 Then
         Set s = ws.Shapes.AddPicture(p, msoFalse, msoTrue, sol, 0, KS_GENISLIK, yuk)
     Else
         Set s = ws.Shapes.AddShape(msoShapeRectangle, sol, 0, KS_GENISLIK, yuk)
@@ -446,4 +473,121 @@ Public Sub KS_TabloStiliKur()
         .Borders(xlEdgeBottom).LineStyle = xlContinuous
     End With
     On Error GoTo 0
+End Sub
+
+' ================================================================ uygulama modu ve ekran sýðdýrma (AKSORA)
+
+
+Public Function KS_UygulamaModuAcik() As Boolean
+    KS_UygulamaModuAcik = True
+    On Error Resume Next
+    KS_UygulamaModuAcik = (ThisWorkbook.Names("_KS_UYGULAMA").RefersTo <> "=0")
+    On Error GoTo 0
+End Function
+
+' Excel þeridi, formül çubuðu, satýr / sütun baþlýklarý ve kýlavuz çizgileri gizlenir.
+Public Sub KS_UygulamaModuUygula()
+    Dim ws As Worksheet, aktif As Object
+    On Error Resume Next
+    If Not KS_Kurulu() Then Exit Sub
+    If Not KS_UygulamaModuAcik() Then Exit Sub
+    If Not mDurumAlindi Then
+        mRibbon = Application.CommandBars("Ribbon").Visible
+        mFormulBar = Application.DisplayFormulaBar
+        mBasliklar = ThisWorkbook.Windows(1).DisplayHeadings
+        mDurumAlindi = True
+    End If
+    Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",False)"
+    Application.DisplayFormulaBar = False
+    Application.DisplayStatusBar = True
+    With ThisWorkbook.Windows(1)
+        .DisplayHeadings = False
+        .DisplayGridlines = False
+        .DisplayWorkbookTabs = True
+        .DisplayHorizontalScrollBar = True
+        .DisplayVerticalScrollBar = True
+    End With
+    On Error GoTo 0
+End Sub
+
+' Excel görünümü geri getirilir (dosya kapanýrken ya da baþka kitaba geçerken).
+Public Sub KS_UYGULAMA_KAPAT()
+    On Error Resume Next
+    If mDurumAlindi Then
+        Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon""," & IIf(mRibbon, "True", "False") & ")"
+        Application.DisplayFormulaBar = mFormulBar
+    Else
+        Application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",True)"
+        Application.DisplayFormulaBar = True
+    End If
+    Application.DisplayStatusBar = True
+    mDurumAlindi = False
+    On Error GoTo 0
+End Sub
+
+Public Sub KS_UYGULAMA_MODU_DEGISTIR()
+    Dim acik As Boolean
+    acik = KS_UygulamaModuAcik()
+    KS_AdTanimla "_KS_UYGULAMA", IIf(acik, "=0", "=1")
+    ThisWorkbook.Names("_KS_UYGULAMA").Visible = False
+    If acik Then
+        KS_UYGULAMA_KAPAT
+        On Error Resume Next
+        ThisWorkbook.Windows(1).DisplayHeadings = True
+        On Error GoTo 0
+        MsgBox "Excel görünümüne geçildi. Uygulama moduna dönmek için ayný düðmeye basýn.", vbInformation, KS_AD
+    Else
+        KS_UygulamaModuUygula
+        KS_EkranSigdir ActiveSheet
+    End If
+End Sub
+
+' Sayfanýn içerik geniþliði (banner) pencereye tam oturacak þekilde yakýnlaþtýrýr.
+Public Sub KS_EkranSigdir(ByVal Sh As Object, Optional ByVal basaDon As Boolean = True)
+    Dim ws As Worksheet, wn As Window, hedef As Double, c As Long, olay As Boolean, ekran As Boolean
+    Dim secim As Boolean, z As Long
+    If mSigdiriliyor Then Exit Sub
+    If Not TypeOf Sh Is Worksheet Then Exit Sub
+    Set ws = Sh
+    If Not KS_BizimSayfa(ws.Name) Then Exit Sub
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    On Error GoTo Son
+    If Not Application.Visible Then Exit Sub
+    If Application.WindowState = xlMinimized Then Exit Sub
+    Set wn = ActiveWindow
+    If wn.WindowState = xlMinimized Then Exit Sub
+    mSigdiriliyor = True
+    olay = Application.EnableEvents
+    ekran = Application.ScreenUpdating
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    hedef = ws.Cells(1, 2).Left + KS_GENISLIK + 4
+    c = 2
+    Do While ws.Columns(c).Left + ws.Columns(c).Width < hedef And c < 200
+        c = c + 1
+    Loop
+    secim = (ws.EnableSelection <> xlNoRestrictions)
+    If secim Then ws.EnableSelection = xlNoRestrictions
+    wn.ScrollRow = 1
+    wn.ScrollColumn = 1
+    ws.Range(ws.Cells(1, 1), ws.Cells(1, c)).Select
+    wn.Zoom = True
+    z = CLng(wn.Zoom)
+    If z > 12 Then wn.Zoom = z - 1
+    ws.Cells(1, 1).Select
+    If basaDon Then
+        wn.ScrollRow = 1
+        wn.ScrollColumn = 1
+    End If
+Son:
+    On Error Resume Next
+    Application.EnableEvents = olay
+    Application.ScreenUpdating = ekran
+    mSigdiriliyor = False
+    On Error GoTo 0
+End Sub
+
+Public Sub KS_EKRANA_SIGDIR()
+    KS_EkranSigdir ActiveSheet
 End Sub

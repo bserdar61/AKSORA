@@ -5,10 +5,28 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
+Public Const KS_TASARIM_NO As Long = 21      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+
+Private mSessiz As Boolean
 
 Public Function KS_Kurulu() As Boolean
     KS_Kurulu = KS_AdVar(ETIKET)
 End Function
+
+Public Function KS_KuruluTasarim() As Long
+    Dim s As String
+    On Error Resume Next
+    s = Mid$(ThisWorkbook.Names(ETIKET).RefersTo, 2)
+    If IsNumeric(s) Then KS_KuruluTasarim = CLng(s)
+    On Error GoTo 0
+End Function
+
+' Açýlýþta eski tasarým bulunursa onaysýz onarým (yedek yine alýnýr).
+Public Sub KS_TasarimGuncelle()
+    mSessiz = True
+    KALITESORA_KUR
+    mSessiz = False
+End Sub
 
 Public Sub KALITESORA_KUR()
     Dim adim As String, yedek As String, ilk As Boolean, ad As Variant, ws As Worksheet
@@ -34,9 +52,11 @@ Public Sub KALITESORA_KUR()
                 "tasarým görselsiz kurulacak.", "") & vbCrLf & vbCrLf & _
             "Devam edilsin mi?", vbQuestion + vbYesNo, KS_AD) <> vbYes Then Exit Sub
     Else
-        If MsgBox(KS_AD & " zaten kurulu." & vbCrLf & vbCrLf & _
-            "Onarým modunda: kayýtlar korunur, eksik parçalar tamamlanýr, tüm sayfalarýn tasarýmý yenilenir." & _
-            vbCrLf & "Önce dosyanýn yedeði alýnacak. Devam edilsin mi?", vbQuestion + vbYesNo, KS_AD) <> vbYes Then Exit Sub
+        If Not mSessiz Then
+            If MsgBox(KS_AD & " zaten kurulu." & vbCrLf & vbCrLf & _
+                "Onarým modunda: kayýtlar korunur, eksik parçalar tamamlanýr, tüm sayfalarýn tasarýmý yenilenir." & _
+                vbCrLf & "Önce dosyanýn yedeði alýnacak. Devam edilsin mi?", vbQuestion + vbYesNo, KS_AD) <> vbYes Then Exit Sub
+        End If
         adim = "Kurulum öncesi yedek"
         yedek = KS_YedekKopya("ONARIM_ONCESI")
     End If
@@ -83,7 +103,7 @@ Public Sub KALITESORA_KUR()
     KS_PanelKur
 
     adim = "Kurulum kaydý"
-    KS_AdTanimla ETIKET, "=2"
+    KS_AdTanimla ETIKET, "=" & KS_TASARIM_NO
     ThisWorkbook.Names(ETIKET).Visible = False
     If Not KS_AdVar("_KS_KORUMA") Then
         KS_AdTanimla "_KS_KORUMA", "=1"
@@ -104,10 +124,17 @@ Public Sub KALITESORA_KUR()
     KS_Log IIf(ilk, "KURULUM", "ONARIM"), "v" & KS_SURUM, IIf(Len(yedek) > 0, "Yedek: " & yedek, "")
     KS_WS(SH_PANEL).Activate
     ActiveWindow.ScrollRow = 1
+    KS_UygulamaModuUygula
+    KS_EkranSigdir KS_WS(SH_PANEL)
+    If mSessiz Then
+        MsgBox KS_AD & " tasarýmý güncellendi (v" & KS_SURUM & ")." & vbCrLf & _
+            "Kayýtlarýnýz korundu. Önceki dosyanýn yedeði: " & vbCrLf & yedek, vbInformation, KS_AD
+        Exit Sub
+    End If
     MsgBox KS_AD & " " & IIf(ilk, "kuruldu.", "onarýldý.") & vbCrLf & vbCrLf & _
         "Baþlangýç:" & vbCrLf & _
         "1) SEVKÝYATLAR > YILLIK EXCEL YÜKLE ile yýl baþý listesini alýn." & vbCrLf & _
-        "2) MALZEMELER sayfasýnda garanti sürelerini girin (sarý sütun)." & vbCrLf & _
+        "2) MALZEMELER sayfasýnda garanti sürelerini girin." & vbCrLf & _
         "3) Arýzalarý KAYIT > ARIZA sekmesinden girin." & vbCrLf & vbCrLf & _
         "Sayfa koruma þifresi: " & KS_SIFRE & _
         IIf(Len(yedek) > 0, vbCrLf & "Onarým öncesi yedek: " & yedek, ""), vbInformation, KS_AD
@@ -208,9 +235,10 @@ End Function
 ' Hesaplanan sütunlarýn baþlýðý koyu turkuaz, elle girilebilen sütunlarýn baþlýðý amber.
 Private Sub KS_BaslikRenk(ByVal lo As ListObject, ByVal kolonlar As Variant, ByVal renk As Long)
     Dim k As Variant
+    ' Tüm baþlýklar tek renk (tablo stili). Eski sürümün renkli baþlýklarý temizlenir.
     For Each k In kolonlar
         With lo.HeaderRowRange.Cells(1, CLng(k))
-            .Interior.Color = renk
+            .Interior.Pattern = xlNone
             .Font.Color = vbWhite
         End With
     Next k
@@ -224,7 +252,7 @@ Private Sub KS_DuzenlenebilirSutun(ByVal lo As ListObject, ByVal kolonlar As Var
         c = lo.HeaderRowRange.Cells(1, CLng(k)).Column
         ws.Range(ws.Cells(lo.HeaderRowRange.Row + 1, c), ws.Cells(ws.Rows.Count, c)).Locked = False
         With lo.HeaderRowRange.Cells(1, CLng(k))
-            .Interior.Color = RGB(214, 150, 20)
+            .Interior.Pattern = xlNone
             .Font.Color = vbWhite
         End With
     Next k
@@ -276,7 +304,7 @@ Private Sub KS_VeriSayfalariKur()
         Array("@", "@", "@", "@", "@", tl, "@", "0", "#,##0", "#,##0", "0.0%", tr, "@", tr), yeni)
     KS_BaslikRenk lo, Array(M_SEVKMIK, M_ARIZAMIK, M_ORAN, M_SONARIZA, M_KAYIT), C_TEAL()
     KS_DuzenlenebilirSutun lo, Array(M_KAT, M_BIRIM, M_GARANTI, M_NOT)
-    KS_VeriSayfaUst ws, "MALZEMELER", "Sarý baþlýklý sütunlar doðrudan düzenlenebilir. Garanti süresi boþ sevkiyatlara da uygulanýr.", _
+    KS_VeriSayfaUst ws, "MALZEMELER", "Kategori, birim, garanti ve not doðrudan yazýlabilir; garanti boþ sevkiyatlara uygulanýr.", _
         Array("+ YENÝ MALZEME", "KS_GIT_KAYIT_MALZ", "ana", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_MALZ_GARYOK", "turuncu", _
             "ARIZA VERENLER", "KS_F_MALZ_ARIZALI", "teal", "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi")
     KS_Pencere ws, 90, 3
@@ -446,6 +474,7 @@ Private Sub KS_TanimlarKur()
         "TÜMÜNÜ YENÝDEN HESAPLA", "KS_YENIDEN_HESAPLA", "koyu", _
         "SAYFA KORUMASI AÇ / KAPAT", "KS_KORUMA_DEGISTIR", "koyu", _
         "TASARIMI YENÝLE (ONARIM)", "KALITESORA_KUR", "teal", _
+        "UYGULAMA / EXCEL GÖRÜNÜMÜ", "KS_UYGULAMA_MODU_DEGISTIR", "teal", _
         "ÖRNEK VERÝ YÜKLE (deneme)", "KS_ORNEK_VERI_YUKLE", "cizgi", _
         "ÖRNEK VERÝYÝ SÝL", "KS_ORNEK_VERI_SIL", "cizgi", _
         "VBA KODUNU DIÞA AKTAR", "KS_VBA_DISARI_AKTAR", "gri")

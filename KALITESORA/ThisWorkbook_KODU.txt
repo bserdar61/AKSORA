@@ -1,10 +1,30 @@
-' KALİTESORA - ThisWorkbook kodu
-' Hazır dosyada ve yükleyicide (KALITESORA_YUKLE) bu kod kendiliğinden eklenir. Elle kurulumda:
-' VBA penceresinde (Alt+F11) sol tarafta "BuÇalışmaKitabı / ThisWorkbook" öğesine çift tıklayın,
-' aşağıdaki satırları yapıştırın.
+Option Explicit
+
+' KALİTESORA olayları: uygulama modu, ekrana sığdırma, otomatik doldurma.
 
 Private Sub Workbook_Open()
     KS_ACILIS
+End Sub
+
+Private Sub Workbook_Activate()
+    KS_UygulamaModuUygula
+    KS_EkranSigdir ActiveSheet, False
+End Sub
+
+Private Sub Workbook_Deactivate()
+    KS_UYGULAMA_KAPAT
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    KS_UYGULAMA_KAPAT
+End Sub
+
+Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+    KS_EkranSigdir Sh
+End Sub
+
+Private Sub Workbook_WindowResize(ByVal Wn As Window)
+    KS_EkranSigdir ActiveSheet, False
 End Sub
 
 Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)

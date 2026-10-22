@@ -1,4 +1,4 @@
-# KALİTESORA v2 — Kurulum ve Kullanım
+# KALİTESORA v2.1 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -25,6 +25,17 @@ Daha önce v1 kuruluysa: v2'de tablo yapısı değişti. Yeni paketi **boş** ol
 haber verin, aktarma yolunu birlikte yapalım.
 
 ---
+
+## 1a. Uygulama modu ve ekran doldurma (v2.1)
+
+- Dosya açılınca **uygulama modu** devreye girer: Excel şeridi, formül çubuğu, satır/sütun başlıkları ve
+  kılavuz çizgileri gizlenir. Başka bir Excel dosyasına geçince ya da dosya kapanınca Excel görünümü geri gelir.
+- Her sayfa açıldığında ve pencere boyutu değiştiğinde ekran kendiliğinden doldurulur: banner ve sekme bandı
+  pencere genişliğini tam kaplayacak şekilde yakınlaştırma ayarlanır.
+- Excel görünümüne geçmek için: PANEL > **EXCEL / UYGULAMA** düğmesi (YÖNETİM sayfasında da var).
+- v2.0 kurulu dosyada v2.1 ilk açıldığında **tasarım güncellemesi kendiliğinden** uygulanır; kayıtlar korunur,
+  önce yedek alınır. Bu sırada `KALITESORA_GORSEL` klasörü dosyanın yanında olmalı; klasör yoksa mevcut banner korunur.
+- Tablo başlıkları tek renk (lacivert). Elle yazılabilen sütunlar her sayfanın açıklama satırında belirtilir.
 
 ## 2. Sayfalar
 

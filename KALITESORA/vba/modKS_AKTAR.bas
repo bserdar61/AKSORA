@@ -110,7 +110,6 @@ Private Sub KS_SablonCiz(ByVal ws As Worksheet, ByVal tur As String)
     KS_TabloBaslik ws.Range(ws.Cells(T_BASLIK, T_KOLON), ws.Cells(T_BASLIK, T_KOLON + n - 1)), h
     Set sonuc = ws.Cells(T_BASLIK, T_KOLON + n)
     KS_TabloBaslik sonuc, Array("SONUÇ")
-    sonuc.Interior.Color = C_TEAL()
     ws.Range(ws.Columns(T_KOLON), ws.Columns(T_KOLON + T_GENIS)).ColumnWidth = 15
     ws.Columns(T_KOLON + n).ColumnWidth = 60
     Set alan = ws.Range(ws.Cells(T_ILK, T_KOLON), ws.Cells(T_SONSATIR, T_KOLON + n - 1))

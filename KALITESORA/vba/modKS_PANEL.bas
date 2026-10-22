@@ -99,6 +99,8 @@ Public Sub KS_PanelKur()
         "KS_PANEL_YENILE", "ana"
     KS_Buton ws, "ksP_Yedek", "YEDEK AL", ws.Range("D" & P_DONEM).Left + 104, ws.Rows(P_DONEM).Top + 3, 90, 24, _
         "KS_YEDEK_AL", "cizgi"
+    KS_Buton ws, "ksP_Mod", "EXCEL / UYGULAMA", ws.Range("D" & P_DONEM).Left + 200, ws.Rows(P_DONEM).Top + 3, 128, 24, _
+        "KS_UYGULAMA_MODU_DEGISTIR", "cizgi"
     ws.Range("I" & P_DONEM & ":M" & P_DONEM).Merge
     With ws.Range("I" & P_DONEM)
         .HorizontalAlignment = xlRight
