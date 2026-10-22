@@ -126,9 +126,7 @@ Optional ByVal ws As Worksheet)
     ' SON SATIR
     '------------------------------------------------------
     sonSatir = _
-        ws.Cells( _
-            ws.Rows.Count, _
-            "A").End(xlUp).Row
+        AKSORA_SON_SATIR(ws, "A")
 
     If sonSatir < ILK_SONUC_SATIRI Then
         sonSatir = ILK_SONUC_SATIRI

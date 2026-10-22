@@ -156,7 +156,7 @@ Public Sub RAPOR_GORUNUM_TEK(ByVal sayfaAdi As String)
     If baslik = 0 Then GoTo Cikis
 
     'TOPLAM satirini bul; altindaki bos satirlara dokunma.
-    For r = baslik + 1 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    For r = baslik + 1 To AKSORA_SON_SATIR(ws, 1)
         For c = 1 To 5
             metin = UCase$(Trim$(CStr(ws.Cells(r, c).Value2)))
             If metin = "TOPLAM" Then
@@ -265,7 +265,7 @@ Public Sub STOK_GORUNUM_TEK(ByVal sayfaAdi As String)
 
     ' Stok tablolarinda baslik 6. satirda, veriler 7. satirdan baslar.
     ' G sutunundaki malzeme kodunu esas alarak son veri satirini bul.
-    sonSatir = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    sonSatir = AKSORA_SON_SATIR(ws, "G")
     If sonSatir < 6 Then sonSatir = 6
 
     ws.Rows("6:" & sonSatir).RowHeight = 20

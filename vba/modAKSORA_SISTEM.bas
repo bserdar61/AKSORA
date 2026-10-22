@@ -22,7 +22,7 @@ Public Sub AKSORA_V13_ARAMA_OZET(ByVal ws As Worksheet)
     Set depo = CreateObject("Scripting.Dictionary")
     Set birim = CreateObject("Scripting.Dictionary")
     deger = CDec(0)
-    son = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "D")
     If son >= 13 Then
         veri = ws.Range("A13:K" & son).Value2
         Set gorunen = AKSORA_V13_GORUNEN_SATIRLAR(ws, son)
@@ -382,10 +382,10 @@ Public Sub AKSORA_SAYI_BICIM_SAYFA(ByVal ws As Worksheet)
     If Left$(ad, 2) = "M_" Then ad = Mid$(ad, 3)
     Select Case ad
         Case "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK"
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son >= 7 Then AKSORA_V13_MIKTAR_BICIMI ws.Range("I7:I" & son)
         Case "MALZEME_ARA"
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son >= 13 Then AKSORA_V13_MIKTAR_BICIMI ws.Range("G13:G" & son)
             AKSORA_V13_MIKTAR_BICIMI ws.Range("F10")
             ws.Range("A10").MergeArea.NumberFormat = "#,##0"

@@ -21,7 +21,7 @@ Public Sub AKSORA_IL_CANLI_ARSIV_KAYDET()
     For i = 0 To 4
         Set ws = AK_CANLI_SAYFA(CStr(kaynak(i)))
         If ws Is Nothing Then Err.Raise vbObjectError + 950, , "Kaynak sayfa yok: " & CStr(kaynak(i))
-        son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "A")
         If son < 7 Then Err.Raise vbObjectError + 951, , "Stok sayfasi bos: " & ws.Name
         For r = 7 To son
             If Len(Trim$(CStr(ws.Cells(r, "G").Value2))) > 0 Then
@@ -59,9 +59,9 @@ Public Sub AKSORA_IL_CANLI_ARSIV_KAYDET()
                CStr(hedef.Range("C1").Value2) <> CStr(tip(i)) Then
                 Err.Raise vbObjectError + 953, , "Arsiv kimligi uyusmuyor: " & ad
             End If
-            hedef.Range("A1:L" & hedef.Cells(hedef.Rows.Count, "A").End(xlUp).Row).ClearContents
+            hedef.Range("A1:L" & AKSORA_SON_SATIR(hedef, "A")).ClearContents
         End If
-        son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "A")
         hedef.Range("A1").Value2 = "AKSORA_CANLI_ARSIV_V1"
         hedef.Range("B1").Value2 = il
         hedef.Range("C1").Value2 = CStr(tip(i))
@@ -124,7 +124,7 @@ Public Sub AKSORA_IL_STOK_ILK_ARSIV()
     For i = 0 To UBound(kaynaklar)
         Set ws = AKSORA_ARSIV_SAYFA(CStr(kaynaklar(i)))
         If ws Is Nothing Then Err.Raise vbObjectError + 920, , "Kaynak sayfa bulunamadi: " & CStr(kaynaklar(i))
-        son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "A")
         For r = 7 To son
             If Len(Trim$(CStr(ws.Cells(r, "G").Value2))) > 0 Then
                 tesis = Trim$(CStr(ws.Cells(r, "A").Value2))
@@ -151,7 +151,7 @@ Public Sub AKSORA_IL_STOK_ILK_ARSIV()
         Else
             Set arsiv = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
             arsiv.Name = ad
-            son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "A")
             arsiv.Range("A1").Value2 = "AKSORA_IL_ARSIV_V2"
             arsiv.Range("B1").Value2 = il
             arsiv.Range("C1").Value2 = CStr(kodlar(i))

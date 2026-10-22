@@ -274,7 +274,7 @@ Public Sub AKSORA_IL_ILK_ARSIV_YUKLE()
         End If
 
         For j = 1 To 12
-            If ar(i).Cells(ar(i).Rows.Count, j).End(xlUp).Row >= 7 Then
+            If AKSORA_SON_SATIR(ar(i), j) >= 7 Then
                 Err.Raise vbObjectError + 812, , _
                           "Hedef arþiv boþ deðil: " & ad
             End If

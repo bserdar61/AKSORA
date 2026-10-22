@@ -128,7 +128,7 @@ Private Sub AK_RaporKur(ByVal ws As Worksheet)
         End If
     End If
     If degerKol = 0 Or adetKol = 0 Then Err.Raise vbObjectError + 104, , "Stok Satiri / Stok Degeri sutunlari tespit edilemedi; atlandi."
-    For r = 9 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    For r = 9 To AKSORA_SON_SATIR(ws, 1)
         s = AK_Norm(CStr(ws.Cells(r, 1).Value2))
         If s = "TOPLAM" Or s = "GENEL TOPLAM" Then
             toplam = r
@@ -815,7 +815,7 @@ Private Function AK_GercekStokSatiri(ByVal rapor As Worksheet) As String
             "Stok sayfasi bulunamadi: " & ad
     End If
 
-    son = kaynak.Cells(kaynak.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(kaynak, "G")
 
     If son >= 7 Then
         adet = application.WorksheetFunction.CountA( _
@@ -870,7 +870,7 @@ Public Sub AKSORA_RAPOR_KARTLARI_YENILE(ByVal sayfaAdi As String)
     koruma = ws.ProtectDrawingObjects
     If koruma Then ws.Unprotect Password:=""
 
-    son = kaynak.Cells(kaynak.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(kaynak, "G")
     If son >= 7 Then
         toplam = application.WorksheetFunction.Sum( _
             kaynak.Range("K7:K" & son))
@@ -943,7 +943,7 @@ Public Sub AKSORA_RAPOR_GRAFIK_YENILE(ByVal sayfaAdi As String)
             Exit Sub
     End Select
 
-    For r = 9 To ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    For r = 9 To AKSORA_SON_SATIR(ws, "A")
         If AK_Norm(CStr(ws.Cells(r, 1).Value2)) = "TOPLAM" Then
             toplamSatiri = r
             Exit For
@@ -1054,7 +1054,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(sayfaAdi)
 
-    For r = 9 To ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    For r = 9 To AKSORA_SON_SATIR(ws, "A")
         If UCase$(Trim$(CStr(ws.Cells(r, "A").Value2))) = "TOPLAM" Then
             toplamSatiri = r
             Exit For
@@ -1248,7 +1248,7 @@ Public Sub AKSORA_RAPOR_TABLO_BITISI(ByVal sayfaAdi As String)
             sonKol = 4
     End Select
 
-    For r = 9 To ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    For r = 9 To AKSORA_SON_SATIR(ws, "A")
         If UCase$(Trim$(CStr(ws.Cells(r, "A").Value2))) = "TOPLAM" Then
             toplam = r
             Exit For

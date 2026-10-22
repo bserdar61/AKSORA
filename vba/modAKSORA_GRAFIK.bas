@@ -22,7 +22,7 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
         MsgBox "CDP_RAPOR korumali; islem yapilmadi.", vbExclamation, "AKSORA"
         Exit Sub
     End If
-    For r = 9 To ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    For r = 9 To AKSORA_SON_SATIR(ws, "A")
         If UCase$(Trim$(CStr(ws.Cells(r, "A").Value2))) = "TOPLAM" Then
             toplamSatiri = r
             Exit For

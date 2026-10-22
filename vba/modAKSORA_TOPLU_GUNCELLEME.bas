@@ -35,12 +35,12 @@ Public Sub AKSORA_V11_BICIM_SAYFA(ByVal ws As Worksheet)
     Dim baslik As String, alan As Range, metin As String, r As Long, hucre As Range
     Select Case AKFIX_NORMAL(ws.Name)
         Case "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK"
-            h = 6: kolon = 12: son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            h = 6: kolon = 12: son = AKSORA_SON_SATIR(ws, "G")
             ws.Range("C4").NumberFormat = PARA
         Case "CDP_RAPOR", "EPP_RAPOR", "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR"
             h = 8: kolon = ws.Cells(h, ws.Columns.Count).End(xlToLeft).Column
             If kolon > 5 Then kolon = 5
-            son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "A")
             ' End at the last real depot/total row; leave the note outside the table.
             Do While son > h
                 metin = AKFIX_NORMAL(CStr(ws.Cells(son, 1).Value2))
@@ -50,10 +50,10 @@ Public Sub AKSORA_V11_BICIM_SAYFA(ByVal ws As Worksheet)
             Loop
             ws.Range("B5").NumberFormat = PARA
         Case "MALZEME_ARA"
-            h = 12: kolon = 11: son = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+            h = 12: kolon = 11: son = AKSORA_SON_SATIR(ws, "D")
             ws.Range("I10").NumberFormat = PARA
         Case "STOK_KARSILASTIRMA"
-            h = 15: kolon = 13: son = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+            h = 15: kolon = 13: son = AKSORA_SON_SATIR(ws, "D")
         Case "ANA PANEL"
             ' Numeric dashboard money cells retain their values and merges.
             For r = 1 To 40
@@ -138,7 +138,7 @@ Public Function AKSORA_V11_IL_TARIH(ByVal il As String, Optional ByVal dogrulanm
                CStr(ar.Range("B1").Value2) = il And _
                CStr(ar.Range("C1").Value2) = CStr(tip(i)) Then
                 If Val(CStr(ar.Range("A4").Value2)) > 0 And _
-                   ar.Cells(ar.Rows.Count, "G").End(xlUp).Row >= 7 Then
+                   AKSORA_SON_SATIR(ar, "G") >= 7 Then
                     tarih = AK12_TARIH(ar.Range("A3").Value2)
                 End If
             End If
@@ -327,7 +327,7 @@ End Sub
 Private Function AK11_SON(ByVal ws As Worksheet, ByVal kolon As Long) As Long
     Dim c As Long, n As Long
     For c = 1 To kolon
-        n = ws.Cells(ws.Rows.Count, c).End(xlUp).Row
+        n = AKSORA_SON_SATIR(ws, c)
         If n > AK11_SON Then AK11_SON = n
     Next c
     If AK11_SON < 1 Then AK11_SON = 1
@@ -712,7 +712,7 @@ Public Sub AKSORA_V12_YUK_ALT_SABITLE()
     Dim ws As Worksheet, r As Long, c As Long, son As Long
     Dim v As Variant
     Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_RAPOR")
-    son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "A")
     ' Some older versions used cell text. Remove only matching footer text.
     For r = 9 To son
         For c = 1 To 5

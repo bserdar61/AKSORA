@@ -646,7 +646,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     End If
     ' Tablo: veri nerede bitiyorsa tablo orada biter (TOPLAM satiri dahil)
     ilk = 9
-    eskiSon = application.Max(60, ws.Cells(ws.Rows.Count, "A").End(xlUp).Row + 5)
+    eskiSon = application.Max(60, AKSORA_SON_SATIR(ws, "A") + 5)
     With ws.Range(ws.Cells(ilk, 1), ws.Cells(eskiSon, 5))
         .ClearContents: .ClearFormats
     End With
@@ -1603,6 +1603,17 @@ Public Function AKSORA_M_SON(ByVal ws As Worksheet) As Long
         SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
     On Error GoTo 0
     If c Is Nothing Then AKSORA_M_SON = 1 Else AKSORA_M_SON = c.Row
+End Function
+
+' Son dolu satir; filtreyle gizlenen satirlar da sayilir (End(xlUp) filtreli listede gizli satirlari atlar,
+' filtre acikken okunan/kopyalanan veri eksik kaliyordu).
+Public Function AKSORA_SON_SATIR(ByVal ws As Worksheet, ByVal kolon As Variant) As Long
+    Dim c As Range
+    On Error Resume Next
+    Set c = ws.Columns(kolon).Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
+        SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
+    On Error GoTo 0
+    If c Is Nothing Then AKSORA_SON_SATIR = 1 Else AKSORA_SON_SATIR = c.Row
 End Function
 
 Private Function M_KAYNAK_IMZA(ByVal ad As String) As String

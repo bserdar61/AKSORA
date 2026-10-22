@@ -1506,7 +1506,7 @@ Dim ws As Worksheet
 Dim sonSatir As Long
 
 Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK")
-sonSatir = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+sonSatir = AKSORA_SON_SATIR(ws, "A")
 
 If sonSatir >= 7 Then
     ws.Range("A7:L" & sonSatir).Borders.LineStyle = xlNone

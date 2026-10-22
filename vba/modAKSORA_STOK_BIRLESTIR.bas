@@ -278,9 +278,7 @@ Hata:
     Dim sonSatir As Long
 
     sonSatir = _
-    ws.Cells( _
-    ws.Rows.Count, _
-    "A").End(xlUp).Row
+    AKSORA_SON_SATIR(ws, "A")
 
     If sonSatir < 7 Then
 

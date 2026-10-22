@@ -158,7 +158,7 @@ End Sub
 Private Sub ANA_TUM_ILCE_RAPOR_DOGRULA(ByVal BeklenenDeger As Double)
 Dim ws As Worksheet, sonSatir As Long, i As Long, toplamSatiri As Long, RaporDeger As Double
 Set ws = ThisWorkbook.Worksheets("ÝLÇE_RAPORLAR")
-sonSatir = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+sonSatir = AKSORA_SON_SATIR(ws, "A")
 For i = 9 To sonSatir
     If UCase$(Trim$(CStr(ws.Cells(i, 1).Value2))) = "TOPLAM" Then toplamSatiri = i: Exit For
 Next i
@@ -170,7 +170,7 @@ End Sub
 Private Sub ANA_TUM_YUK_RAPOR_DOGRULA(ByVal BeklenenDeger As Double)
 Dim ws As Worksheet, sonSatir As Long, i As Long, toplamSatiri As Long, RaporDeger As Double
 Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_RAPOR")
-sonSatir = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+sonSatir = AKSORA_SON_SATIR(ws, "A")
 For i = 9 To sonSatir
     If UCase$(Trim$(CStr(ws.Cells(i, 1).Value2))) = "TOPLAM" Then toplamSatiri = i: Exit For
 Next i
@@ -569,9 +569,7 @@ Set ws = _
 ThisWorkbook.Worksheets("RAPORLAR")
 
 sonSatir = _
-ws.Cells( _
-ws.Rows.Count, _
-"A").End(xlUp).Row
+AKSORA_SON_SATIR(ws, "A")
 
 If sonSatir < 9 Then
 

@@ -334,7 +334,7 @@ Public Sub STOK_KARS_KPI_GUNCELLE()
     Dim durum As String
 
     Set ws = ThisWorkbook.Worksheets(KARS_SAYFA)
-    sonSatir = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    sonSatir = AKSORA_SON_SATIR(ws, "D")
 
     For r = 16 To sonSatir
         If Not ws.Rows(r).Hidden Then
@@ -389,9 +389,7 @@ Private Sub STOK_KARS_FILTRE(ByVal durum As String)
     On Error GoTo 0
 
     sonSatir = _
-        ws.Cells( _
-            ws.Rows.Count, _
-            "D").End(xlUp).Row
+        AKSORA_SON_SATIR(ws, "D")
 
     If sonSatir < 16 Then
         AKFIX_EN_USTE ws
@@ -528,7 +526,7 @@ Private Function STOK_KARS_SECILEN_SNAPSHOT(ByVal GorunenTarih As Variant) As St
     Dim w As Worksheet, r As Long, son As Long
     Set w = ThisWorkbook.Worksheets(KARS_SAYFA)
     If Not IsDate(GorunenTarih) Then Exit Function
-    son = w.Cells(w.Rows.Count, "X").End(xlUp).Row
+    son = AKSORA_SON_SATIR(w, "X")
     For r = 2 To son
         If IsDate(w.Cells(r, "X").Value) Then
             If Abs(CDbl(CDate(w.Cells(r, "X").Value)) - CDbl(CDate(GorunenTarih))) < 0.00000001 Then
@@ -1137,7 +1135,7 @@ Public Sub AKSORA_KARS_IL_GECIS_YENILE()
 
     If ws.FilterMode Then ws.ShowAllData
 
-    son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "A")
     If son >= 16 Then ws.Range("A16:M" & son).ClearContents
 
     ws.Range("B6").MergeArea.ClearContents

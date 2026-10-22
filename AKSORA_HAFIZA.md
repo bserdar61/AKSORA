@@ -467,6 +467,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Her oturumda bekleme sonrası ilk ekran erişimi düşüyor (ATIL ilk sorguda RFLAT_L "Object doesn't support this action", Tüm birimler ilk hızlı okumada 619; ikinci deneme sorunsuz). AKHZ_SISTEM_OKU 619'da 1 sn bekleyip bir kez yeniden dener, açık wnd[1]'i kapatır, düşülen adımı [adim] ile yazar. ATIL_DUZ_LISTE iki deneme.
 - Kullanıcının 22.10 09:05 kaydında modAKSORA_TASARIM kaynak akışı bozuktu (23. sıkıştırma parçası başlığı bozuk; Excel p-code ile çalışıyordu). Derleme kaynağı raw'dan yeniden yazar. extract.py bozuk modülde durur: tek tek atlayarak karşılaştır.
 
+## Ekran incelemesi düzeltmeleri — 2026-10-22 (baz up30)
+- Filtreli listede End(xlUp) gizli satırları atlıyordu: depo filtresi açıkken il geçişi arşive eksik kopyalıyor, Admin ATIL Artvin 249 (doğrusu 259) sayıyordu. Tüm `X.Cells(X.Rows.Count, c).End(xlUp).Row` (111 yer) → AKSORA_SON_SATIR(ws, kolon) (Find xlFormulas, gizli satırlar dahil; MUSTERI_ISLEMLER).
+- modAKSORA_TASARIM kaynağı kullanıcı kaydında iki kez bozuldu (gömülü 5,3 KB base64 imza PNG'si bölgesinde Excel sıkıştırması). PNG kitabın gizli adlarına taşındı: _AKS_IMZA_001..027 (200 karakterlik parçalar); T_CiktiImzaResmi adlardan okur. Derlemede tools/imza_names.py (scratchpad fx/) final'e adları ekler.
+- Y_MALZEME_ARA alt başlığı "Yatırım (D002, D011) + Yüklenici Stokları", I_MALZEME_ARA "CDP + EPP İlçe Depoları"; ilçe notlarına PB eklendi; stok sayfalarında A sütunu en az 12 (Üretim Yeri başlığı kesilmesin).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

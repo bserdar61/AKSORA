@@ -137,7 +137,7 @@ Public Sub AKSORA_IL_ARAMA_KUR()
         .Borders(xlInsideHorizontal).Color = RGB(215, 228, 242)
     End With
     If ws.AutoFilterMode Then ws.AutoFilterMode = False
-    ws.Range("A12:K" & application.Max(13, ws.Cells(ws.Rows.Count, "D").End(xlUp).Row)).AutoFilter
+    ws.Range("A12:K" & application.Max(13, AKSORA_SON_SATIR(ws, "D"))).AutoFilter
     AKSORA_V11_ARAMA_DUGME
     AKSORA_V11_ARAMA_TARIH
     ws.Activate
@@ -261,7 +261,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
                 Set kaynak = AKSORA_V4_KAYNAK(CStr(il), CStr(grup), dogrulanmisCanli, veri)
                 If Not kaynak Is Nothing Then
                     mevcutIller(CStr(il)) = True
-                    son = kaynak.Cells(kaynak.Rows.Count, "G").End(xlUp).Row
+                    son = AKSORA_SON_SATIR(kaynak, "G")
                     If son >= 7 Then
                         ' Kaynak doðrulamasýnda okunan ayný dizi; ikinci Excel okumasý yok.
                         For i = 1 To UBound(veri, 1)
@@ -297,7 +297,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     Next il
     adim = "Sonuçlarý yazma"
     If hedef.AutoFilterMode Then hedef.AutoFilterMode = False
-    eskiSon = hedef.Cells(hedef.Rows.Count, "D").End(xlUp).Row
+    eskiSon = AKSORA_SON_SATIR(hedef, "D")
     If eskiSon >= 13 Then
         With hedef.Range("A13:K" & eskiSon)
             .ClearContents
@@ -431,7 +431,7 @@ Private Function AKSORA_V4_KAYNAK( _
         End If
     End If
 
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son < 7 Then Exit Function
 
     If son > 250000 Then
@@ -482,7 +482,7 @@ End Function
 Public Sub AKSORA_ARAMA_MIKTAR_BICIMI()
     Dim ws As Worksheet, son As Long
     Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
-    son = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "D")
     AKSORA_V13_MIKTAR_BICIMI ws.Range("F10")
     If son >= 13 Then AKSORA_V13_MIKTAR_BICIMI ws.Range("G13:G" & son)
 End Sub
@@ -491,7 +491,7 @@ Public Sub AKSORA_ARAMA_DEPO_RENKLERI()
     Dim ws As Worksheet, son As Long, eskiSon As Long, r As Long
     Dim veri As Variant, ilk As Long, depo As String
     Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
-    son = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "D")
     eskiSon = application.Max(13, son)
     ws.Range("A13:K" & eskiSon).Interior.Color = vbWhite
     If son < 13 Then Exit Sub
@@ -526,7 +526,7 @@ Public Sub AKSORA_ARAMA_SONUCLARI_TEMIZLE()
     son = 13
 
     For c = 1 To 11
-        r = ws.Cells(ws.Rows.Count, c).End(xlUp).Row
+        r = AKSORA_SON_SATIR(ws, c)
         If r > son Then son = r
     Next c
 

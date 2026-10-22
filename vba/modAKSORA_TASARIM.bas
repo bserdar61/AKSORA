@@ -58,7 +58,7 @@ Public Sub AKSORA_P1_S2_R1_KUR()
             End If
         Next s
         If T_Stok(ws) Then
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son < 7 Then son = 7
             veriAlan = "A7:L" & son
             adim = "Stok verisini güvenceye alma: " & ws.Name & " / " & veriAlan
@@ -69,7 +69,7 @@ Public Sub AKSORA_P1_S2_R1_KUR()
             fil(ws.Name) = T_FiltreImza(ws)
         ElseIf T_Rapor(ws) Then
             adim = "Rapor verisini güvenceye alma: " & ws.Name
-            son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "A")
             If son < 8 Then son = 8
             veriAlan = "A8:E" & son
             veri(ws.Name & "|" & veriAlan) = ws.Range(veriAlan).Value2
@@ -291,6 +291,8 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     Dim depoListe As String, depoKontrol As Object, di As Long
     ' Veri baslangici 7. satirda kalir. Gizlenen 3-5 satirlardaki kaynaklar korunur.
     ' Tablo pencereye tam oturur (son sutun pencere kenarina kadar uzar).
+    ' "Uretim Yeri" basligi filtre okunun altinda kesilmesin.
+    If ws.Columns(1).ColumnWidth < 12 Then ws.Columns(1).ColumnWidth = 12
     T_TamGenislik ws, 12
     ws.Rows(1).RowHeight = 32: ws.Rows(2).RowHeight = 46
     ws.Rows("3:5").Hidden = True: ws.Rows(6).RowHeight = 25
@@ -302,7 +304,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     ws.Range("C3").NumberFormat = "0"
     ws.Range("C4").NumberFormat = "#,##0.00 ""TL"""
     ws.Range("C2:C4").Font.Color = RGB(26, 57, 88)
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son >= 7 Then AKSORA_V13_MIKTAR_BICIMI ws.Range("I7:I" & son)
     T_StokListeBicim ws, son
     With ws.Range("A6:L6")
@@ -492,7 +494,7 @@ Private Sub T_RaporYap(ByVal ws As Worksheet)
         T_Yerlestir s, x + 61, y + 29, w - 69, h - 32
         s.TextFrame2.TextRange.Font.Size = 13
     Next i
-    son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "A")
     For i = 9 To son
         If AKFIX_NORMAL(CStr(ws.Cells(i, 1).Value2)) = "TOPLAM" Then son = i: Exit For
     Next i
@@ -917,18 +919,18 @@ Public Function AKSORA_GORSEL_PAKET_UYGULA() As String
     For Each ws In ThisWorkbook.Worksheets
         If T_Stok(ws) Or T_Rapor(ws) Then
             If T_Stok(ws) Then
-                son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "G")
                 If son < 7 Then son = 7
                 veri(ws.Name & "|A7:L" & son) = ws.Range("A7:L" & son).Value2
                 form(ws.Name) = Array(ws.Range("C3").Formula, ws.Range("C4").Formula, ws.Range("H2").Value2)
                 fil(ws.Name) = T_FiltreImza(ws)
             Else
-                son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "A")
                 If son < 8 Then son = 8
                 veri(ws.Name & "|A8:E" & son) = ws.Range("A8:E" & son).Value2
             End If
         ElseIf Left$(ws.Name, 8) = "_AKLIVE_" And Left$(ws.Name, Len("_AKLIVE_" & il & "_")) <> "_AKLIVE_" & il & "_" Then
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son < 7 Then son = 7
             veri(ws.Name & "|A1:L" & son) = ws.Range("A1:L" & son).Value2
         End If
@@ -1064,18 +1066,18 @@ Public Function AKSORA_GORSEL_SON_UYGULA() As String
     For Each ws In ThisWorkbook.Worksheets
         If T_Stok(ws) Or T_Rapor(ws) Then
             If T_Stok(ws) Then
-                son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "G")
                 If son < 7 Then son = 7
                 veri(ws.Name & "|A7:L" & son) = ws.Range("A7:L" & son).Value2
                 form(ws.Name) = Array(ws.Range("C3").Formula, ws.Range("C4").Formula, ws.Range("H2").Value2)
                 fil(ws.Name) = T_FiltreImza(ws)
             Else
-                son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "A")
                 If son < 8 Then son = 8
                 veri(ws.Name & "|A8:E" & son) = ws.Range("A8:E" & son).Value2
             End If
         ElseIf Left$(ws.Name, 8) = "_AKLIVE_" And Left$(ws.Name, Len("_AKLIVE_" & il & "_")) <> "_AKLIVE_" & il & "_" Then
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son < 7 Then son = 7
             veri(ws.Name & "|A1:L" & son) = ws.Range("A1:L" & son).Value2
         End If
@@ -1160,18 +1162,18 @@ Public Function AKSORA_DORT_KART_UYGULA() As String
     For Each ws In ThisWorkbook.Worksheets
         If T_Stok(ws) Or T_Rapor(ws) Then
             If T_Stok(ws) Then
-                son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "G")
                 If son < 7 Then son = 7
                 veri(ws.Name & "|A7:L" & son) = ws.Range("A7:L" & son).Value2
                 form(ws.Name) = Array(ws.Range("C3").Formula, ws.Range("C4").Formula, ws.Range("H2").Value2)
                 fil(ws.Name) = T_FiltreImza(ws)
             Else
-                son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "A")
                 If son < 8 Then son = 8
                 veri(ws.Name & "|A8:E" & son) = ws.Range("A8:E" & son).Value2
             End If
         ElseIf Left$(ws.Name, 8) = "_AKLIVE_" And Left$(ws.Name, Len("_AKLIVE_" & il & "_")) <> "_AKLIVE_" & il & "_" Then
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son < 7 Then son = 7
             veri(ws.Name & "|A1:L" & son) = ws.Range("A1:L" & son).Value2
         End If
@@ -1264,18 +1266,18 @@ Public Function AKSORA_STOK_TEMA_UYGULA() As String
     For Each ws In ThisWorkbook.Worksheets
         If T_Stok(ws) Or T_Rapor(ws) Then
             If T_Stok(ws) Then
-                son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "G")
                 If son < 7 Then son = 7
                 veri(ws.Name & "|A7:L" & son) = ws.Range("A7:L" & son).Value2
                 form(ws.Name) = Array(ws.Range("C3").Formula, ws.Range("C4").Formula, ws.Range("H2").Value2)
                 fil(ws.Name) = T_FiltreImza(ws)
             Else
-                son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                son = AKSORA_SON_SATIR(ws, "A")
                 If son < 8 Then son = 8
                 veri(ws.Name & "|A8:E" & son) = ws.Range("A8:E" & son).Value2
             End If
         ElseIf Left$(ws.Name, 8) = "_AKLIVE_" And Left$(ws.Name, Len("_AKLIVE_" & il & "_")) <> "_AKLIVE_" & il & "_" Then
-            son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+            son = AKSORA_SON_SATIR(ws, "G")
             If son < 7 Then son = 7
             veri(ws.Name & "|A1:L" & son) = ws.Range("A1:L" & son).Value2
         End If
@@ -1579,7 +1581,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Else
         cM = 5: cT = 6: cP = 9: cQ = 7: cB = 8: cS = 10
     End If
-    son = ws.Cells(ws.Rows.Count, cM).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, cM)
     If son >= 7 Then
         On Error Resume Next
         ' Tek hucrede SpecialCells tum kullanilan alani dondurur: tablo araligiyla kesistirilir.
@@ -1695,7 +1697,7 @@ Private Sub T_CiktiListe(ByVal ws As Worksheet)
     Next j
     If k = 0 Then Err.Raise vbObjectError + 9602, , "Tablo bulunamadý."
     For j = 1 To k
-        r = ws.Cells(ws.Rows.Count, kol(j)).End(xlUp).Row
+        r = AKSORA_SON_SATIR(ws, kol(j))
         If r > son Then son = r
     Next j
     If son > hdr Then
@@ -1753,7 +1755,7 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
         If Not ws.Columns(j).Hidden Then
             If application.WorksheetFunction.CountA(ws.Columns(j)) > 0 Then sonK = j
             If ws.Columns(j).Left < sagX - 1 Then If j > sonK Then sonK = j
-            r = ws.Cells(ws.Rows.Count, j).End(xlUp).Row
+            r = AKSORA_SON_SATIR(ws, j)
             If r > sonS And r < 5000 Then sonS = r
         End If
     Next j
@@ -1818,42 +1820,23 @@ End Sub
 
 ' Kase/imza bandi (seffaf zeminli PNG, 27,7 x 1,3 cm, 300 dpi; yazilar Cikti/Sayfa boyutunda) kodun icinde; gecici klasore bir kez yazilir.
 Private Function T_CiktiImzaResmi() As String
-    Dim s As String, yol As String, b() As Byte, d As Object, e As Object, f As Integer
+    Dim s As String, yol As String, b() As Byte, d As Object, e As Object, f As Integer, i As Long, p As String
     On Error GoTo Yok
     yol = Environ$("TEMP")
     If Len(yol) = 0 Then yol = AKSORA_KAYIT_KLASORU()
     yol = yol & application.PathSeparator & "AKSORA_IMZA_BANDI_V3.png"
     If Len(Dir$(yol)) > 0 Then T_CiktiImzaResmi = yol: Exit Function
-    s = s & "iVBORw0KGgoAAAANSUhEUgAADMgAAACaCAQAAABMDV0uAAAACXBIWXMAAC4jAAAuIwF4pT92AAAPQUlEQVR42u3df7ClZUEH8O8Du+xuoYDJDsJQkoAwroAQDSxqQCE4KQi6tUAkMxQQkiagTU5TUGMThUKDQeGMM+EKCphBMsBY/FSWBgyM"
-    s = s & "hTQcwETlR4Ekwv64+PTHPXu5P8+Pu/vc6579fN4Zzu57zvu893nOcuf73u+555Qa2JqUmiS1WAkAAJkOAADkWubONpYAAAAAAACgLYUMAAAAAABAYwoZAAAAAACAxhQyAAAAAAAAjSlkAAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAA"
-    s = s & "AAAA0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAAAAAAAI0pZADYIpQ1pZZPtR5h088CAAAAANNRyAAAAAAAADRWqjVgK/wnX4uVAACQ6QAAQK5l7vgNGQC2hICystRSSy2Lp/5twuNKObqsKo+UH5W15Yny9XJZOb7/EbqMu/Ge"
-    s = s & "n5S15any9XJFWT7Nva9s90zZv6F8r1xXDht31OJyZvlKebqsL8+V+8pflF1nnP2S8sfl/vJCWV+eLg+Xfyxn9TPKhLOvLY+Wz5W3zDTTcvboo6Ycud/YEe8Y23f4TGvVfdSZ59HruCQpf1lq+cDMz1CSlLeOfY1vmuHZmbAO3UcDAIY8UZby"
-    s = s & "952UtrJXNhs78p/H9txXaqnlzKQ8OSUJjm4HdEtjfea4xX3MZqYEOrvcOs0Mt4R02l+6n6uUCQAzU8gAMDwX2Tvnltyck7Nnts+i7JYD83u5evOeIouyNAfmd/O1cnXZfoAjF2TXvDd3ldM7A+2d+3N5fi07Z2F2zEH5o3yrnDDtKRfnzvx5"
-    s = s & "DsjPZmF2zr45Pr89dl+/oyzKHjkpq8shA8733LE/nbfJS9dlHn04NskNPR5z6jR/2jzrAAAMW27cJp/J6Uk2ZGX9fN+p6l3lrbM84ZQU0n8anNPc2scMhyWdSpkAzAeFDADDclm9ODflqCQv5qPZI4uyW5bn/Dy8WU+yJNtl71yQDUlW5toy"
-    s = s & "8ZeKl4y9SO6QyfuzR+5MUnJJ2TkpO+bm7JPkwRyWxXlDrkqyfT4//jdoxpyWX0qyOsuyOLvm7bkoT3Rm3N8oS7Iwh+bZJItyzoDzPbHsliRlvxy1yWs34zz6eG73yr759/rdro9ZkhVjf/mtsu00z93s1wEAGK7cuG0+m1OTrM/76hcHymYX"
-    s = s & "Tt5RdxnNf/lEkuShsTz4QLcUMlAa7JFPZ0qgs8qt08xwaNOplAnAPFDIADAszs5BSWreXf+6Pl7X1+/X1fWCeuDmPUndUB+p5+fkJMkx+Y2+j3s8H+5csP1qknOyR5KRvLveXdfVR3NKHkiyMBdPc+joqxQ/Wx+q6+oP6l31I/V9nXv6HKWO"
-    s = s & "1HvypSTJLw4w1WezLgvzwSSjr0B8Nus2aelmnkdvxyW5vsdjTsirk9yTbybZJUdP8xzMbh0AgGGzIFfnpCRr8556wyCpKsnycuwsEuTUFDJIGpzb3Np7hsOSTqVMAOaBQgaAYXFqkuSWemv7U9Vrc/+4c/bn0c7t0iQrkyTX1+90xvtJLk2S"
-    s = s & "HFxeP+W4DUmSD5Vjp7zVxCCjjL4m8qkBvt7nsirJGeVVZbesTHJ5RjZp0Waex+a5VB59Llblc12fmcHXAQAYNtdkRZKXcmy9aaBU9US+m+TjZXY/SZmYQgbJcXOXW/ub4bCkUykTgHmgkAFgKJRFGf2IzTvn6IR3JUkOmrDvpbGP9fyDaY54"
-    s = s & "Q+f26bI4eyVJ1oy798HO7f5TjludJHljrs8PyzfKpza+r3f/o5QF5ZC8J0nymYHm+InU7JDfyYeyMOs6l9OzN8M8+nhud87yPF6/0fUxu+fIJCO5pnOpfGzZacpjZrsOAMBweWeSH+ed9SsDpqp1+dMky3LKwEl1UgoZMA121z2BDpZb+5vh"
-    s = s & "sKRTKROAeaCQAWA47Ni5fbZzWbRm7CLzvCbne27CWXtf7r0+nxy9+M2t2aGz85lxD3i6c7vDlEM/na92/rRt9ssHcldZNeGRvUZ5KRuyOq/J93Ja/eIgU6z/mRuTfDinJ1lVN/X1fjPNo7d3ZZuer1w8JdskuaU+Ux/L3UkWdV6huRnWAQAY"
-    s = s & "Qo+PVQUZIJtdmYeT/FlZNNC5pqaQwdLgXObWfmY4LOlUygRgHihkABgOP+zc7jRH53vNhLOOeuXDUS+ZeJFWah7L25PUnFufzvOd/TuPe8zSzu3zUy48R3JkTs8dWT+26+Tym+Me2dcoSRbmR72ucafsuSjJ7tkhtVMnzUbtMY/eX00/byXx"
-    s = s & "/iTpvG6x+9tJ9F4HAGC41SRvyq3ltZOSU89UVV/Ox5L8fM6a1XlfSSGD5rhuZkqgs8qt/cxwWNKplAnAfFDIADAc19Xr8lCSjR8ymrqslnyt4QnfliS5r+/Hj+TJfCmH18uTujaPJEnnTdZGLevc/sc0c9tQP10Pzw45Ihd33in7sAFGWZKf"
-    s = s & "y2VJluaqcnBn34ud21d1bl89Ye8rZ74j9yZJbqoP9zHHHqNOP49ex5UlOSrPdd5qYwZlefZOklxVaqn52yTJL5d9J/7YYZp1AAC2RqdlJMn+ua0sTQbLZvX63J3kY2O5pR9TUsigaXAuc2s/MxyOdCplAjAfFDIADIsrkyTHlEPbn6qsyAFJ"
-    s = s & "kn/o7yK8lrqwvq6eUDd+ws0XkiTHld0745X8fpLk3vrYjBe+a+vt9ZzckCRZMMgo9dl8MA8mWZC/6ez6dud248XkPhP2jnfRuP/20teo08yj+3FH5WdyY+3+ka3v72fvNOsAAGyNrs6JGUmyLLeXXQbOZn+Y5LWdH9P3aZoUMos0OCe5dYAZ"
-    s = s & "bvHpVMoEYB4oZAAYFpfmgSTb5qZyVnldWVB2bfAO3CkLyp7l/M7bFdyca2Y5zCfznSQL8+VyaNmu7JEr85YkIzl3mjNeWL5QTi5vLjuVJeVXOr9Tcs9go9SXc0GS5NByVJLUhzsftnpheWPZvrw3K8ZdQk888ppaaqm39fWjhq6jzjyPHl/N"
-    s = s & "cUn+qetzsjijb312wMa33siRSZJTyrbd1wEA2DrV67Ii65Psm9vLroNls/rVfHkWZ5ycQgY441zn1l4zHJZ0KmUCMD8xxGbbqrbRG+tgs21x/++u7Pxh8YS/vbKN1NRkl9wxzcHn9TvCxMdMe/7x21XZfsZ7R6aec9KI++S/Ju16ISumnfvf"
-    s = s & "Tdm1Ogt7jzJpxiUPpabmzs69B+f5SUf+S7abcOS3p3wlL6Sm5vAuK9ht1G7zmPG4bJOnsrb7SufE1NR8f9xXul3naz2m2zp0e35sNptMZ7PZhj5R/nrWpqbmkezeK5tNTEdZlpc7d5w5bvSLUlOzZsbzTU5j/eS4SemyRz4d2eTc2nWGP83p"
-    s = s & "dMZ5zUvKtNlsNrnWNvPmN2QAGJ4XGTyZI3J8rst/Z21ezGNZnYvzjly6WV/HsD7P5P5ckeX1pPrCJgz0zeyfs3Nr/icj+b/cnwuzT7122odelj/JLfl2nsvLeT7/lo/myLph0FFqzceTJG8rRyRJvTdvziVZkx9nJP+b23JGjq7rN3l5uo3a"
-    s = s & "bR4zH3doluZfe6z06JtG3DLu61if0VdNntprHQCArTY53pjjsjbJnrm9/MIA2Sx1TVbN4nyT09gAZ5zr3NpjhsORTqVMAOZFqdaArfCffC1WAmCL+K79V/lIzqhXWAlApgNAygTkWobjGQff5AD4afyu/a3sld3qD6wEINMBIGUCci3D8YyD"
-    s = s & "b3IAAMh0AAAg19KMz5ABAAAAAABoTCEDAAAAAADQmEIGAAAAAACgMYUMAAAAAABAYwoZAAAAAACAxhQyAAAAAAAAjSlkAAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAAAAAA0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAA"
-    s = s & "AAAAAI0pZAAAAAAAABpTyAAAAAAAADSmkAEAAAAAAGhMIQMAAAAAANCYQgYAAAAAAKAxhQwAAAAAAEBjChkAAAAAAIDGFDIAAAAAAACNKWQAAAAAAAAaU8gAAAAAAAA0ppABAAAAAABoTCEDAAAAAADQmEIGAAAAAACgMYUMAAAAAABAYwoZ"
-    s = s & "AAAAAACAxhQyAAAAAAAAjSlkAAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAAAAAA0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAAAAAAAI0pZAAAAAAAABpTyAAAAAAAADSmkAEAAAAAAGhMIQMAAAAAANCYQgYAAAAAAKAx"
-    s = s & "hQwAAAAAAEBjChkAAAAAAIDGFDIAAAAAAACNKWQAAAAAAAAaU8gAAAAAAAA0ppABAAAAAABoTCEDAAAAAADQmEIGAAAAAACgMYUMAAAAAABAYwoZAAAAAACAxhQyAAAAAAAAjSlkAAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAAAAAA"
-    s = s & "0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAAAAAAAI0pZAAAAAAAABpTyAAAAAAAADSmkAEAAAAAAGhMIQMAAAAAANCYQgYAAAAAAKAxhQwAAAAAAEBjChkAAAAAAIDGFDIAAAAAAACNKWQAAAAAAAAaU8gAAAAAAAA0ppABAAAA"
-    s = s & "AABoTCEDAAAAAADQmEIGAAAAAACgMYUMAAAAAABAYwoZAAAAAACAxhQyAAAAAAAAjSlkAAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAAAAAA0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAAAAAAAI0pZAAAAAAAABpTyAAA"
-    s = s & "AAAAADSmkAEAAAAAAGhMIQMAAAAAANCYQgYAAAAAAKAxhQwAAAAAAEBjChkAAAAAAIDGFDIAAAAAAACNKWQAAAAAAAAaU8gAAAAAAAA0ppABAAAAAABoTCEDAAAAAADQmEIGAAAAAACgMYUMAAAAAABAYwoZAAAAAACAxhQyAAAAAAAAjSlk"
-    s = s & "AAAAAAAAGlPIAAAAAAAANKaQAQAAAAAAaEwhAwAAAAAA0JhCBgAAAAAAoDGFDAAAAAAAQGMKGQAAAAAAgMYUMgAAAAAAAI0pZAAAAAAAABpTyAAAAAAAADSmkAEAAAAAAGhMIQMAAAAAANCYQgYAAAAAAKAxhQwAAAAAAEBjChkAAAAAAIDG"
-    s = s & "FDIAAAAAAACNKWQAAAAAAAAaU8gAAAAAAAA0ppABAAAAAABoTCEDAAAAAADQ2P8DwwUMN/uq6nAAAAAASUVORK5CYII="
+    ' Resim (base64) kitabin gizli adlarinda (_AKS_IMZA_001...); kod metninde tutulmaz:
+    ' buyuk rastgele metin Excel kaydinda modul kaynagini bozuyordu.
+    For i = 1 To 999
+        p = vbNullString
+        On Error Resume Next
+        p = ThisWorkbook.names("_AKS_IMZA_" & Format$(i, "000")).RefersTo
+        On Error GoTo Yok
+        If Len(p) < 4 Then Exit For
+        s = s & Mid$(p, 3, Len(p) - 3)
+    Next i
+    If Len(s) = 0 Then GoTo Yok
     Set d = CreateObject("MSXML2.DOMDocument")
     Set e = d.createElement("b")
     e.DataType = "bin.base64": e.Text = s

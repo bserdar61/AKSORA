@@ -2580,7 +2580,7 @@ Public Function AKSORA_PAKET_ADET(ByVal ar As Worksheet) As Long
     If AKSORA_PAKET_MI(ar) Then
         AKSORA_PAKET_ADET = CLng(Val(CStr(ar.Range("D1").Value2)))
     Else
-        AKSORA_PAKET_ADET = application.Max(0, ar.Cells(ar.Rows.Count, "E").End(xlUp).Row - 1)
+        AKSORA_PAKET_ADET = application.Max(0, AKSORA_SON_SATIR(ar, "E") - 1)
     End If
 End Function
 
@@ -2600,7 +2600,7 @@ Public Function AKSORA_PAKET_OKU(ByVal ar As Worksheet) As Variant
     p2 = (CStr(ar.Range("C1").Value2) = "PAKET2")
     ReDim onceki(0 To 63)
     ReDim sonuc(1 To n, 1 To sutun)
-    son = ar.Cells(ar.Rows.Count, 1).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ar, 1)
     If son < 2 Then Exit Function
     ' Uzun metinler hucre hucre okunur (dizi aktariminda uzunluk siniri olabilir).
     For b = 2 To son

@@ -99,7 +99,7 @@ Public Sub AKFIX_STOK_LISTE(ByVal ws As Worksheet, Optional ByVal sifirla As Boo
     If mListeIl Is Nothing Then Set mListeIl = CreateObject("Scripting.Dictionary")
     If mListeIl.Exists(ws.Name) Then oncekiIl = mListeIl(ws.Name)
     If oncekiIl <> il Then sifirla = True
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son < 7 Then son = 7
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = vbTextCompare
@@ -114,7 +114,7 @@ Public Sub AKFIX_STOK_LISTE(ByVal ws As Worksheet, Optional ByVal sifirla As Boo
         Next r
     End If
     sec = Trim$(CStr(ws.Range("H2").Value2))
-    eskiSon = ws.Cells(ws.Rows.Count, "N").End(xlUp).Row
+    eskiSon = AKSORA_SON_SATIR(ws, "N")
     If eskiSon < 2 Then eskiSon = 2
     ws.Range("N2:N" & eskiSon).ClearContents
     ws.Range("N2").Value = "TÜMÜ"
@@ -165,7 +165,7 @@ End Sub
 Public Sub AKFIX_STOK_SECIM(ByVal ws As Worksheet)
     Dim sec As String, son As Long
     sec = Trim$(CStr(ws.Range("H2").Value2))
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son < 7 Then son = 7
     If Not ws.AutoFilterMode Then ws.Range("A6:L" & son).AutoFilter
     If Len(sec) = 0 Or AKFIX_NORMAL(sec) = "TUMU" Then
@@ -195,7 +195,7 @@ End Sub
 
 Public Sub AKFIX_NORMAL_STOK_HAZIRLA(ByVal ws As Worksheet)
     Dim son As Long
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son < 7 Then son = 7
     If ws.AutoFilterMode Then
         If ws.AutoFilter.Range.Address <> ws.Range("A6:L" & son).Address Then ws.AutoFilterMode = False
@@ -220,7 +220,7 @@ Private Function AKFIX_GECMIS_VAR(ByVal il As String) As Boolean
     Dim ws As Worksheet
     Set ws = AKFIX_WS(AKFIX_HAFIZA_ADI(il, "INDEX"))
     If ws Is Nothing Then Exit Function
-    AKFIX_GECMIS_VAR = (ws.Cells(ws.Rows.Count, "A").End(xlUp).Row >= 2)
+    AKFIX_GECMIS_VAR = (AKSORA_SON_SATIR(ws, "A") >= 2)
 End Function
 
 Public Sub AKFIX_KARS_TARIHLER()
@@ -244,7 +244,7 @@ Public Sub AKFIX_KARS_TARIHLER()
         If AKFIX_GECMIS_VAR(CStr(il)) Then
             mKarsIller(CStr(il)) = True
             Set idx = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(CStr(il), "INDEX"))
-            son = idx.Cells(idx.Rows.Count, "A").End(xlUp).Row
+            son = AKSORA_SON_SATIR(idx, "A")
             ilk = 1E+20
             For r = 2 To son
                 If IsNumeric(idx.Cells(r, "B").Value2) Then
@@ -259,7 +259,7 @@ Public Sub AKFIX_KARS_TARIHLER()
         End If
     Next il
     If w.FilterMode Then w.ShowAllData
-    son = w.Cells(w.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(w, "A")
     If son >= 16 Then w.Range("A16:M" & son).ClearContents
     For Each k In Array("A10", "D10", "G10", "J10", "A12", "D12", "G12", "J12")
         w.Range(CStr(k)).Value = 0
@@ -267,7 +267,7 @@ Public Sub AKFIX_KARS_TARIHLER()
     w.Range("B6").MergeArea.ClearContents: w.Range("I6").MergeArea.ClearContents
     w.Range("B7").MergeArea.ClearContents: w.Range("I7").MergeArea.ClearContents
     w.Range("B6").Validation.Delete: w.Range("I6").Validation.Delete
-    son = w.Cells(w.Rows.Count, "X").End(xlUp).Row
+    son = AKSORA_SON_SATIR(w, "X")
     If son < 2 Then son = 2
     w.Range("X1:Y" & son).ClearContents
     w.Range("X1").Value = "GÖRÜNEN": w.Range("Y1").Value = "SNAPSHOT_ID"
@@ -330,7 +330,7 @@ End Sub
 Public Function AKFIX_KARS_TARIH(ByVal id As String) As Date
     Dim w As Worksheet, r As Long, son As Long
     Set w = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
-    son = w.Cells(w.Rows.Count, "Y").End(xlUp).Row
+    son = AKSORA_SON_SATIR(w, "Y")
     For r = 2 To son
         If CStr(w.Cells(r, "Y").Value2) = id Then
             AKFIX_KARS_TARIH = CDate(w.Cells(r, "X").Value)
@@ -343,7 +343,7 @@ End Function
 Private Function AKFIX_INDEX_SATIR(ByVal il As String, ByVal tarih As Date) As Long
     Dim idx As Worksheet, r As Long, son As Long, t As Double, enSon As Double
     Set idx = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(il, "INDEX"))
-    son = idx.Cells(idx.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(idx, "A")
     For r = 2 To son
         If IsNumeric(idx.Cells(r, "B").Value2) Then
             t = CDbl(idx.Cells(r, "B").Value2)
@@ -380,7 +380,7 @@ Public Function AKFIX_KARS_DURUM(ByVal id As String) As Object
         ix = AKFIX_INDEX_SATIR(CStr(il), tarih)
         hedef = CDbl(idx.Cells(ix, "B").Value2)
         Set ws = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(CStr(il), "CURRENT"))
-        son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "A")
         If son < 2 Then Err.Raise vbObjectError + 905, , CStr(il) & " geçmiþ stok verisi boþ."
         veri = ws.Range("A2:L" & son).Value2
         For r = 1 To UBound(veri, 1)
@@ -402,7 +402,7 @@ Public Function AKFIX_KARS_DURUM(ByVal id As String) As Object
             End If
         Next r
         Set ws = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(CStr(il), "DELTA"))
-        son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "A")
         If son >= 2 Then
             veri = ws.Range("A2:N" & son).Value2
             For r = UBound(veri, 1) To 1 Step -1
@@ -477,7 +477,7 @@ End Sub
 
 Private Sub AKFIX_KPI_FORMULLERI(ByVal ws As Worksheet)
     Dim son As Long, f As String
-    son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "G")
     If son < 7 Then son = 7
     f = "=SUBTOTAL(103,A7:A" & son & ")"
     If ws.Range("C3").Formula <> f Then ws.Range("C3").Formula = f

@@ -282,10 +282,10 @@ Private Sub AKG_KOPYALA(ByVal src As Worksheet, ByVal dst As Worksheet)
     hedefSon = FIRST_DATA - 1
 
     For c = 1 To 12
-        r = src.Cells(src.Rows.Count, c).End(xlUp).Row
+        r = AKSORA_SON_SATIR(src, c)
         If r > son Then son = r
 
-        r = dst.Cells(dst.Rows.Count, c).End(xlUp).Row
+        r = AKSORA_SON_SATIR(dst, c)
         If r > hedefSon Then hedefSon = r
     Next c
 
@@ -442,10 +442,7 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
 
 
         son = _
-            ar.Cells( _
-                ar.Rows.Count, _
-                "G" _
-            ).End(xlUp).Row
+            AKSORA_SON_SATIR(ar, "G")
 
 
         If son > 250000 Then _
@@ -590,7 +587,7 @@ Private Sub AKG_RAPORLARI_YENILE()
                       "Rapor veri alaný korumalý: " & rp.Name
         End If
 
-        n = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row - 6
+        n = AKSORA_SON_SATIR(ws, "G") - 6
 
         If n <= 0 Then
             Err.Raise vbObjectError + 822, _
@@ -644,7 +641,7 @@ Public Sub AKSORA_V11_CANLI_YENILE(ByVal il As String)
         If ws(i).ProtectContents Or AKG_SAYFA(CStr(rapor(i))).ProtectContents Then
             Err.Raise vbObjectError + 1106, , "Canlý stok veya rapor korumalý."
         End If
-        son(i) = ws(i).Cells(ws(i).Rows.Count, "G").End(xlUp).Row
+        son(i) = AKSORA_SON_SATIR(ws(i), "G")
         If son(i) < 7 Then son(i) = 7
         eski(i) = ws(i).Range("A7:L" & son(i)).Value2
         meta(i) = ws(i).Range("C2:C4").Value2
@@ -662,7 +659,7 @@ Hata:
         On Error Resume Next
         For i = 0 To 4
             Err.Clear
-            n = ws(i).Cells(ws(i).Rows.Count, "G").End(xlUp).Row
+            n = AKSORA_SON_SATIR(ws(i), "G")
             ws(i).Range("A7:L" & application.Max(7, n, son(i))).ClearContents
             ws(i).Range("A7:L" & son(i)).Value2 = eski(i)
             For j = 1 To 3: ws(i).Cells(j + 1, "C").Value2 = meta(i)(j, 1): Next j

@@ -593,7 +593,7 @@ ByVal sutun As String) As Long
 
     Dim son As Long
 
-    son = ws.Cells(ws.Rows.Count, sutun).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, sutun)
 
     If son = 1 And Len(Trim$(CStr(ws.Cells(1, sutun).Value2))) = 0 Then
         STOK_HAFIZA_SON_SATIR = 0

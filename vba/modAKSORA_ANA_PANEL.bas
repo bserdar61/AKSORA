@@ -554,7 +554,7 @@ Private Function V22_DEPO_ADET(ByVal ad As String) As Long
     Dim sh As Worksheet, son As Long, v As Variant, r As Long, d As Object, t As String
     On Error GoTo Cikis
     Set sh = ThisWorkbook.Worksheets(ad)
-    son = sh.Cells(sh.Rows.Count, "G").End(xlUp).Row
+    son = AKSORA_SON_SATIR(sh, "G")
     If son < 7 Then Exit Function
     v = sh.Range("B7:B" & son).Value2
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare

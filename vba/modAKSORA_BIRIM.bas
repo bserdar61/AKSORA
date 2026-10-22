@@ -1388,7 +1388,7 @@ Private Sub Y_STOK_TEMIZLE(ByVal ws As Worksheet)
     Dim son As Long, s As Shape, i As Long
     If ws.FilterMode Then ws.ShowAllData
     ws.AutoFilterMode = False
-    son = application.Max(7, ws.Cells(ws.Rows.Count, 5).End(xlUp).Row)
+    son = application.Max(7, AKSORA_SON_SATIR(ws, 5))
     ws.Range("A7:N" & son).Clear
     ws.Range(ws.Cells(7, 75), ws.Cells(son, 75)).ClearContents
     ws.Range(ws.Rows(7), ws.Rows(son)).RowHeight = ws.StandardHeight
@@ -1418,7 +1418,7 @@ End Sub
 
 Private Sub Y_RAPOR_TEMIZLE(ByVal ws As Worksheet)
     Dim son As Long, s As Shape, i As Long, ad As String, co As ChartObject
-    son = application.Max(60, ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 5)
+    son = application.Max(60, AKSORA_SON_SATIR(ws, 1) + 5)
     ws.Range("A9:E" & son).Clear
     ws.Range(ws.Rows(9), ws.Rows(son)).RowHeight = ws.StandardHeight
     ws.Range("A9").Value2 = "Veri bekleniyor: depo tanýmlarý yapýlýnca rapor oluþacak."
@@ -2381,6 +2381,9 @@ Private Sub Y_ARAMA_TEMIZLE(ByVal ws As Worksheet)
     If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_BUTUN_ILLER")
     Y_YAZ Y_SEKIL(ws, "AKSORA_TOPLU_DURUM"), "Arama, her ilin yukarýdaki tarihli yatýrým stoklarýný kullanýr."
     Y_YAZ Y_SEKIL(ws, "AKSORA_ARAMA_SABIT_ACIKLAMA"), "Yalnýzca yatýrým birimi stoklarý aranýr."
+    On Error Resume Next
+    If CStr(ws.Range("A3").Value2) <> "Yatýrým (D002, D011) + Yüklenici Stoklarý" Then ws.Unprotect "": ws.Range("A3").Value2 = "Yatýrým (D002, D011) + Yüklenici Stoklarý": ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
 End Sub
 
 Private Sub Y_ARAMA_TARIH(Optional ByVal ilce As Boolean)
@@ -2501,7 +2504,7 @@ End Function
 
 Private Function Y_KAYIT_SATIR(ByVal ws As Worksheet, ByVal anahtar As String, ByVal olustur As Boolean) As Long
     Dim m As Variant, son As Long
-    son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 1)
     If son >= 1 And Len(CStr(ws.Cells(1, 1).Value2)) > 0 Then
         m = application.Match(anahtar, ws.Range("A1:A" & son), 0)
         If Not IsError(m) Then Y_KAYIT_SATIR = CLng(m): Exit Function
@@ -2735,7 +2738,7 @@ Private Function Y_KAYIT_SOZLUK(ByVal ad As String) As Object
     Dim ws As Worksheet, d As Object, son As Long, v As Variant, r As Long
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set ws = Y_KAYIT_SAYFA(ad)
-    son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 1)
     If son >= 1 And Len(CStr(ws.Cells(1, 1).Value2)) > 0 Then
         v = ws.Range("A1:D" & son).Value2
         For r = 1 To UBound(v, 1)
@@ -3293,10 +3296,10 @@ Public Sub AKSORA_YATIRIM_PROJE_YUKLE()
     End If
     ' Kayit: _Y_PROJE (A il, B kod, C tanim, D birim, E miktar, F fiyat); ust bilgi "#il" satirinda
     Set g = Y_KAYIT_SAYFA("_Y_PROJE")
-    For r = g.Cells(g.Rows.Count, 1).End(xlUp).Row To 1 Step -1
+    For r = AKSORA_SON_SATIR(g, 1) To 1 Step -1
         If CStr(g.Cells(r, 1).Value2) = il Or CStr(g.Cells(r, 1).Value2) = "#" & il Then g.Rows(r).Delete
     Next r
-    r = g.Cells(g.Rows.Count, 1).End(xlUp).Row
+    r = AKSORA_SON_SATIR(g, 1)
     If Len(CStr(g.Cells(1, 1).Value2)) = 0 Then r = 0
     ReDim blok(1 To en.Count + 1, 1 To 6)
     blok(1, 1) = "#" & il: blok(1, 2) = Mid$(CStr(f), InStrRev(CStr(f), application.PathSeparator) + 1)
@@ -3345,7 +3348,7 @@ Private Sub Y_PROJE_KARSILASTIR(ByVal ws As Worksheet)
     ' Proje
     Set proje = CreateObject("Scripting.Dictionary"): proje.CompareMode = vbTextCompare
     Set g = Y_KAYIT_SAYFA("_Y_PROJE")
-    son = g.Cells(g.Rows.Count, 1).End(xlUp).Row
+    son = AKSORA_SON_SATIR(g, 1)
     If son >= 1 And Len(CStr(g.Cells(1, 1).Value2)) > 0 Then
         v = g.Range("A1:F" & son).Value2
         For r = 1 To UBound(v, 1)
@@ -3852,7 +3855,7 @@ Private Sub I_TEMIZLE(ByVal ws As Worksheet)
         Case "KARS": I_KARS_HAZIRLA ws
         Case Else: Y_SAYFA_SIFIRLA ws
     End Select
-    If I_TUR(ws.Name) = "STOK" Then ws.Range("A7").Value2 = "Veri bekleniyor: SAP STOKLARINI GÜNCELLE ile ilçe depolarý (K001-K999) SAP'den alýnýr."
+    If I_TUR(ws.Name) = "STOK" Then ws.Range("A7").Value2 = "Veri bekleniyor: SAP STOKLARINI GÜNCELLE ile ilçe depolarý (K001-K999, PB) SAP'den alýnýr."
     If I_TUR(ws.Name) = "RAPOR" Then ws.Range("A9").Value2 = "Veri bekleniyor: ilçe stoklarý güncellenince rapor oluþacak."
     I_BAGLA ws
 End Sub
@@ -3872,7 +3875,10 @@ Private Sub I_BAGLA(ByVal ws As Worksheet)
         Set s = Y_SEKIL(ws, "AKSORA_TOPLU_VURGU")
         If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_BUTUN_ILLER")
         Y_YAZ Y_SEKIL(ws, "AKSORA_TOPLU_DURUM"), "Arama, her ilin yukarýdaki tarihli ilçe depo stoklarýný kullanýr."
-        Y_YAZ Y_SEKIL(ws, "AKSORA_ARAMA_SABIT_ACIKLAMA"), "Yalnýzca ilçe depolarý (CDP ve EPP, K001-K999) aranýr."
+        Y_YAZ Y_SEKIL(ws, "AKSORA_ARAMA_SABIT_ACIKLAMA"), "Yalnýzca ilçe depolarý (CDP ve EPP, K001-K999 ve PB planlý bakým) aranýr."
+        On Error Resume Next
+        If CStr(ws.Range("A3").Value2) <> "CDP + EPP Ýlçe Depolarý" Then ws.Unprotect "": ws.Range("A3").Value2 = "CDP + EPP Ýlçe Depolarý": ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        On Error GoTo 0
     End If
 End Sub
 
@@ -4656,7 +4662,7 @@ Private Function I_MAL_HARITA() As Object
     Set ws = ThisWorkbook.Worksheets("_I_MALZEME")
     On Error GoTo 0
     If Not ws Is Nothing Then
-        son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, 1)
         If Len(CStr(ws.Cells(son, 1).Value2)) > 0 Then
             v = ws.Range("A1:D" & son).Value2
             For r = 1 To UBound(v, 1)
@@ -4818,7 +4824,7 @@ Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Lo
             End If
         End If
     Next k
-    sonR = ws.Cells(ws.Rows.Count, c).End(xlUp).Row
+    sonR = AKSORA_SON_SATIR(ws, c)
     If sonR >= 2 Then ws.Range(ws.Cells(2, c), ws.Cells(sonR, c)).ClearContents
     ws.Columns(c).NumberFormat = "@"
     ws.Cells(1, c).NumberFormat = "dd.mm.yyyy"
@@ -6183,7 +6189,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
         End If
     Next k
     ' Tablo
-    son = application.Max(16, ws.Cells(ws.Rows.Count, 4).End(xlUp).Row, ws.Cells(ws.Rows.Count, 14).End(xlUp).Row)
+    son = application.Max(16, AKSORA_SON_SATIR(ws, 4), AKSORA_SON_SATIR(ws, 14))
     ws.Range("A16:N" & son + 1).Clear
     If n > 0 Then
         Y_SIRALA anah, idx, 1, n
@@ -6247,7 +6253,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     ws.Range("A1").Value2 = "STOK / DEMONTAJ KONTROL MERKEZÝ"
     Y_FILIGRAN ws
     ws.Range("A3").Value2 = UCase$(Y_IL_ADI(il)) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " + EPP " & AKSORA_IL_TESIS(il, "EPP") & _
-        " | Ýlçe Depolarý (K001-K999)" & IIf(Len(sec) > 0, " | " & sec & " " & I_DEPO_KISA(CStr(depolar(sec))), "")
+        " | Ýlçe Depolarý (K001-K999, PB)" & IIf(Len(sec) > 0, " | " & sec & " " & I_DEPO_KISA(CStr(depolar(sec))), "")
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
     I_BAGLA ws
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
@@ -6272,7 +6278,7 @@ Private Sub I_KARS_FILTRE(ByVal tur As String)
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
-    son = ws.Cells(ws.Rows.Count, 4).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 4)
     If son >= 16 Then
         If Not ws.AutoFilterMode Then ws.Range("A15:N" & son).AutoFilter
         Select Case tur
@@ -7162,7 +7168,7 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
     If canli Then
         For Each kx In bb(u)(2)
             Set sh = ADM_WS(CStr(kx))
-            If Not sh Is Nothing Then imza = imza & "|" & CStr(sh.Range("C2").Value2) & "#" & sh.Cells(sh.Rows.Count, IIf(u = 0, 7, 5)).End(xlUp).Row
+            If Not sh Is Nothing Then imza = imza & "|" & CStr(sh.Range("C2").Value2) & "#" & AKSORA_SON_SATIR(sh, IIf(u = 0, 7, 5))
         Next kx
     Else
         For Each kx In ADM_KAYIT_ADLARI(u, il)
@@ -7196,7 +7202,7 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
                 If Not IsError(t) Then
                     If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
                 End If
-                son = sh.Cells(sh.Rows.Count, IIf(u = 0, 7, 5)).End(xlUp).Row
+                son = AKSORA_SON_SATIR(sh, IIf(u = 0, 7, 5))
                 If son >= 7 Then v = sh.Range(sh.Cells(7, 1), sh.Cells(son, 14)).Value2
             Else
                 t = sh.Range("A1").Value
@@ -8824,7 +8830,7 @@ Private Function ATIL_STOK_OKU(ByVal il As String, ByRef tarih As Date) As Objec
             If Not IsError(t) Then
                 If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
             End If
-            son = sh.Cells(sh.Rows.Count, 7).End(xlUp).Row
+            son = AKSORA_SON_SATIR(sh, 7)
             v = Empty
             If son >= 7 Then v = sh.Range(sh.Cells(7, 1), sh.Cells(son, 14)).Value2
             If IsArray(v) Then
@@ -8895,7 +8901,7 @@ Private Function ATIL_KAYIT_OKU(ByRef okuma As Variant) As Object
     If CStr(ws.Range("A1").Value2) = "ATIL1" Then mAtilEski = True
     If CStr(ws.Range("A1").Value2) <> "ATIL2" Then Exit Function
     okuma = Array(ATIL_HUCRE_SAYI(ws.Range("D1").Value2), ATIL_HUCRE_SAYI(ws.Range("E1").Value2))
-    son = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 2)
     If son < 3 Then Exit Function
     v = ws.Range("A3:J" & son).Value2
     For r = 1 To UBound(v, 1)
@@ -8917,7 +8923,7 @@ Private Function ATIL_KARSILASTIR(ByVal tum As Object) As Long
     If ws Is Nothing Then Exit Function
     If CStr(ws.Range("A1").Value2) <> "ATIL2" Then Exit Function
     ok0 = ATIL_HUCRE_SAYI(ws.Range("D1").Value2): ok1 = ATIL_HUCRE_SAYI(ws.Range("E1").Value2)
-    son = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 2)
     Set var = CreateObject("Scripting.Dictionary"): var.CompareMode = vbTextCompare
     If son >= 3 Then
         v = ws.Range("A3:J" & son).Value2
@@ -8991,7 +8997,7 @@ Private Sub ATIL_KAYDET(ByVal sonuc As Object, ByVal tum As Object, ByVal oturum
     Set ws = Y_KAYIT_SAYFA(ATIL_KAYIT)
     ok = Array(0#, 0#)
     If CStr(ws.Range("A1").Value2) = "ATIL2" Then ok = Array(ATIL_HUCRE_SAYI(ws.Range("D1").Value2), ATIL_HUCRE_SAYI(ws.Range("E1").Value2))
-    son = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, 2)
     kap = application.Max(son, 3) + sonuc.Count
     For Each il In ADM_ILLER()
         kap = kap + tum(CStr(il))(0).Count

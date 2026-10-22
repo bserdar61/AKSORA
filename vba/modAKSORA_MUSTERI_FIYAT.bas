@@ -86,7 +86,7 @@ Public Function MF_FIYAT_SOZLUGU(ByRef tarih As Date, ByRef Hata As String) As O
         Hata = "Fiyat listesi yüklenmemiþ. Önce AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE makrosunu çalýþtýrýp fiyat dosyasýný seçin."
         Exit Function
     End If
-    son = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    son = AKSORA_SON_SATIR(ws, "A")
     If son < 2 Then
         Hata = "Fiyat listesi boþ. AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE makrosuyla yeniden yükleyin."
         Exit Function
@@ -157,7 +157,7 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
     If cF > maxc Then maxc = cF
     If cT > maxc Then maxc = cT
     If cG > maxc Then maxc = cG
-    son = wsK.Cells(wsK.Rows.Count, cM).End(xlUp).Row
+    son = AKSORA_SON_SATIR(wsK, cM)
     If son < 2 Then Err.Raise vbObjectError + 2002, , "Fiyat dosyasýnda veri satýrý yok."
     v = wsK.Range(wsK.Cells(2, 1), wsK.Cells(son, maxc)).Value2
     tarih = MF_DosyaTarihi(CStr(dosya))

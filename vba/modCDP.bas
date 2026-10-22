@@ -893,8 +893,8 @@ HedefSatir = HedefSatir + 1
     On Error GoTo Hata
     uy = CDP_UY()
     Set ws = ThisWorkbook.Worksheets("CDP_STOK")
-    mevcutSayi = application.WorksheetFunction.CountA(ws.Range("A7:A" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row))
-    mevcut = application.WorksheetFunction.Sum(ws.Range("K7:K" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row))
+    mevcutSayi = application.WorksheetFunction.CountA(ws.Range("A7:A" & AKSORA_SON_SATIR(ws, 1)))
+    mevcut = application.WorksheetFunction.Sum(ws.Range("K7:K" & AKSORA_SON_SATIR(ws, 1)))
     t = Timer
     ' Hizli yol: ilin MB52 listesi tek sorguda metin olarak alinir (olmazsa asagidaki eski yontem).
     If AKHZ_TEK_AL(1, VeriDizisi, veriSatiri, SutunSayisi, hataMesaji) Then CDP_V2_30_BLOK_AL = True: Exit Function

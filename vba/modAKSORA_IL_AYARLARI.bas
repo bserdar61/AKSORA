@@ -112,7 +112,7 @@ Public Function AKSORA_CANLI_STOK_IL() As String
     Next il
     For i = 0 To 4
         Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
-        son = ws.Cells(ws.Rows.Count, "G").End(xlUp).Row
+        son = AKSORA_SON_SATIR(ws, "G")
         adet = 0
         If son > 250000 Then Err.Raise vbObjectError + 770, "AKSORA_CANLI_STOK_IL", "Beklenmeyen stok aralýðý: " & ws.Name
         If son >= 7 Then
