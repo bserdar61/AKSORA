@@ -1059,16 +1059,37 @@ Hata:
     If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
 End Function
 
+' Hizli okuma: ilk deneme SAP ekran durumundan (ornek: atil okumasindan hemen sonra) dusebilir;
+' bir kez daha denenir. Dusulen adim teshise yazilir.
 Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, _
     Optional ByVal tekTesis As String = "") As Variant
-    Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long
+    Dim v As Variant
+    v = AKHZ_SISTEM_OKU_1(sistem, mesaj, tekTesis)
+    If Not IsArray(v) And InStr(mesaj, "619") > 0 Then
+        AKSORA_SAP_TESHIS_YAZ "Hýzlý okuma | " & sistem & " | ilk deneme: " & mesaj & " | yeniden deneniyor"
+        mesaj = vbNullString
+        AKHZ_BEKLE 1
+        v = AKHZ_SISTEM_OKU_1(sistem, mesaj, tekTesis)
+    End If
+    AKHZ_SISTEM_OKU = v
+End Function
+
+Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String, _
+    Optional ByVal tekTesis As String = "") As Variant
+    Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long, adim As String
     Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long, kayma As Long, adet As Long, t As String
     On Error GoTo Hata
     Set ses = SAP_SESSION_AL(sistem, h)
     If ses Is Nothing Then mesaj = "SAP oturumu bulunamadý " & h: Exit Function
+    adim = "MB52 açýlýþý"
+    ' Onceki islemden kalan acik pencere (wnd[1]) secim ekranini kilitler: kapatilir.
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+    On Error GoTo Hata
     ses.StartTransaction "MB52"
     AKSORA_SAP_MALZEME_TEMIZLE ses
     AKHZ_BEKLE 0.3
+    adim = "MB52 üretim yeri"
     If Len(tekTesis) > 0 Then
         ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = tekTesis
         ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = vbNullString
@@ -1076,10 +1097,12 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, 
         ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = AKSORA_IL_TESIS("RIZE", sistem)
         ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = AKSORA_IL_TESIS("ARTVIN", sistem)
     End If
+    adim = "MB52 depo alaný"
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
     ses.FindById("wnd[0]").SendVKey 0
     AKHZ_BEKLE 0.3
+    adim = "MB52 çalýþtýrma"
     ses.FindById("wnd[0]").SendVKey 8
     Set alv = AKHZ_GRID(ses, 900)
     If alv Is Nothing Then mesaj = "MB52 listesi açýlmadý": Exit Function
@@ -1093,6 +1116,7 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, 
     Set alv = AKHZ_GRID(ses, 60)
     If alv Is Nothing Then mesaj = "Liste hazýr olmadý": Exit Function
     If CLng(alv.ColumnOrder.Count) < 12 Then mesaj = "PANEL düzeninde 12 sütun yok": Exit Function
+    adim = "liste dýþa aktarma"
     satirSayisi = CLng(alv.RowCount)
     v = AKSORA_ALV_METIN_AL(ses, alv, "TOPLU_" & sistem)
     If Not IsArray(v) Then mesaj = "Liste metin dosyasý olarak alýnamadý": Exit Function
@@ -1140,10 +1164,10 @@ Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, 
         End If
     Next r
     If adet = 0 Then mesaj = "Depo / malzeme sütunlarý doðrulanamadý": Exit Function
-    AKHZ_SISTEM_OKU = v
+    AKHZ_SISTEM_OKU_1 = v
     Exit Function
 Hata:
-    mesaj = "Hata " & Err.Number & ": " & Err.Description
+    mesaj = "Hata " & Err.Number & ": " & Err.Description & " [" & adim & "]"
     On Error Resume Next
     If Not ses Is Nothing Then
         If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
