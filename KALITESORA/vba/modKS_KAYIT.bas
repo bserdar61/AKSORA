@@ -39,7 +39,8 @@ Public Sub KS_BaglamYukle()
         For i = 1 To UBound(aSevk, 1)
             dSevk(KS_Anahtar(aSevk(i, S_NO))) = i
             k = KS_Anahtar(aSevk(i, S_IRS))
-            If Len(k) > 0 Then dIrs(k & "|" & KS_Anahtar(aSevk(i, S_KOD))) = KS_Metin(aSevk(i, S_NO))
+            If Len(k) > 0 Then dIrs(k & "|" & KS_Anahtar(aSevk(i, S_KOD)) & "|" & KS_TarihAnahtar(aSevk(i, S_PLAN))) = _
+                KS_Metin(aSevk(i, S_NO))
         Next i
     End If
     Set dKodSevk = KS_KodSevkleri(aSevk)
@@ -49,6 +50,12 @@ Public Sub KS_BaglamYukle()
     mArizaSayac = KS_EnBuyukNo(KS_LOZ(T_ARIZA), "ARZ-")
     mOtoTanim = False
 End Sub
+
+' Ayný sipariþ kaleminin farklý teslim tarihli parçalarý ayrý sevkiyattýr.
+Private Function KS_TarihAnahtar(ByVal v As Variant) As String
+    Dim d As Date
+    If KS_Tarih(v, d) Then KS_TarihAnahtar = CStr(CLng(d))
+End Function
 
 Public Sub KS_OtoTanimAyarla(ByVal acik As Boolean)
     mOtoTanim = acik
@@ -240,9 +247,9 @@ Public Function KS_SevkHazirla(ByVal g As Variant, ByVal idx As Long, ByRef sati
 
     k = KS_Anahtar(g(9))
     If Len(k) > 0 Then
-        k = k & "|" & KS_Anahtar(g(2))
+        k = k & "|" & KS_Anahtar(g(2)) & "|" & KS_TarihAnahtar(satir(1, S_PLAN))
         If dIrs.Exists(k) Then
-            If dIrs(k) <> no Then uyari = "Ayný belge no ve malzeme ile kayýt var: " & dIrs(k)
+            If dIrs(k) <> no Then uyari = "Ayný belge no, malzeme ve planlanan teslim ile kayýt var: " & dIrs(k)
         Else
             dIrs(k) = no
         End If

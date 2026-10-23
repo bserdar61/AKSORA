@@ -394,3 +394,77 @@ End Function
 Public Function KS_DuzenMalz() As Variant
     KS_DuzenMalz = Array(M_KAT, M_BIRIM, M_GARANTI, M_NOT)
 End Function
+
+' SEVKÝYATLAR'da seçili (görünür) satýrlara gerçek geliþ tarihi yazar; dolu geliþ tarihleri deðiþmez.
+' "P" yazýlýrsa her satýra kendi planlanan teslim tarihi (bugünden ileri olmayanlar) yazýlýr.
+Public Sub KS_TOPLU_GELIS()
+    Dim lo As ListObject, govde As Range, sec As Range, ar As Range, r As Range, satirlar As Object, k As Variant
+    Dim a As Variant, s As String, d As Date, d2 As Date, plan As Boolean, i As Long, n As Long, atla As Long
+    On Error GoTo Hata
+    Set lo = KS_LOZ(T_SEVK)
+    Set govde = lo.DataBodyRange
+    If govde Is Nothing Then Exit Sub
+    If ActiveSheet.Name <> lo.Parent.Name Then lo.Parent.Activate
+    If TypeName(Selection) = "Range" Then Set sec = Intersect(Selection.EntireRow, govde)
+    If sec Is Nothing Then
+        MsgBox "Önce SEVKÝYATLAR tablosunda geliþ tarihi yazýlacak satýrlarý seçin." & vbCrLf & vbCrLf & _
+            "Ýpucu: tabloyu süzün (ARA, filtre düðmeleri veya sütun oklarý), ilk satýra týklayýp " & _
+            "Ctrl+Shift+Aþaðý ile görünen satýrlarý seçin.", vbInformation, KS_AD
+        Exit Sub
+    End If
+    Set satirlar = CreateObject("Scripting.Dictionary")
+    For Each ar In sec.Areas
+        For Each r In ar.Rows
+            If Not r.EntireRow.Hidden Then satirlar(r.Row - govde.Row + 1) = True
+        Next r
+    Next ar
+    If satirlar.Count = 0 Then Exit Sub
+    s = Trim$(InputBox(satirlar.Count & " sevkiyata gerçek geliþ tarihi yazýlacak." & vbCrLf & vbCrLf & _
+        "Tarih yazýn (gg.aa.yyyy)" & vbCrLf & _
+        "ya da P yazýn: her satýra kendi planlanan teslim tarihi yazýlýr." & vbCrLf & vbCrLf & _
+        "Geliþ tarihi dolu olan satýrlar deðiþtirilmez.", KS_AD, Format$(Date, "dd.mm.yyyy")))
+    If Len(s) = 0 Then Exit Sub
+    plan = (UCase$(s) = "P")
+    If Not plan Then
+        If Not KS_Tarih(s, d) Then
+            MsgBox "Tarih anlaþýlamadý: " & s, vbExclamation, KS_AD
+            Exit Sub
+        End If
+        If d > Date Then
+            MsgBox "Gerçek geliþ tarihi bugünden ileri olamaz.", vbExclamation, KS_AD
+            Exit Sub
+        End If
+    End If
+    a = KS_Veri(lo)
+    KS_Basla
+    KS_Ac lo.Parent
+    For Each k In satirlar.Keys
+        i = CLng(k)
+        If KS_Bos(a(i, S_GELIS)) Then
+            If plan Then
+                If KS_Tarih(a(i, S_PLAN), d2) And d2 <= Date Then
+                    govde.Cells(i, S_GELIS).Value = d2
+                    n = n + 1
+                Else
+                    atla = atla + 1
+                End If
+            Else
+                govde.Cells(i, S_GELIS).Value = d
+                n = n + 1
+            End If
+        Else
+            atla = atla + 1
+        End If
+    Next k
+    KS_Kapat lo.Parent
+    KS_Bitir
+    KS_Log "TOPLU GELÝÞ", "", n & " sevkiyat" & IIf(plan, " (planlanan teslim tarihi)", " (" & Format$(d, "dd.mm.yyyy") & ")")
+    KS_PanelYenile False
+    MsgBox n & " sevkiyata gerçek geliþ tarihi yazýldý; teslim ve garanti durumlarý yeniden hesaplandý." & _
+        IIf(atla > 0, vbCrLf & atla & " satýr atlandý (geliþ zaten dolu" & IIf(plan, " ya da planlanan tarih ileride", "") & ").", ""), _
+        vbInformation, KS_AD
+    Exit Sub
+Hata:
+    KS_Bitir True
+    MsgBox "Toplu geliþ yazýlamadý: " & Err.Description, vbExclamation, KS_AD
+End Sub

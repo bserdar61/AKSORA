@@ -5,7 +5,7 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
-Public Const KS_TASARIM_NO As Long = 23      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+Public Const KS_TASARIM_NO As Long = 24      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
 
 Private mSessiz As Boolean
 
@@ -23,9 +23,16 @@ End Function
 
 ' Açýlýþta eski tasarým bulunursa onaysýz onarým (yedek yine alýnýr).
 Public Sub KS_TasarimGuncelle()
+    Dim onceki As Long
+    onceki = KS_KuruluTasarim()
     mSessiz = True
     KALITESORA_KUR
     mSessiz = False
+    ' v2.4: yýllýk aktarýmda içeri alýnmýþ Fýrat bölgesi kayýtlarý için bir kez sorulur; eksik kurlar için TCMB önerilir.
+    If onceki < 24 Then
+        KS_BolgeDisiTemizle True
+        KS_KurGuncelle True
+    End If
 End Sub
 
 Public Sub KALITESORA_KUR()
@@ -454,8 +461,8 @@ Private Sub KS_VeriSayfalariKur()
     KS_DurumRenkleri lo, S_GDURUM, Array("DEVAM", "BÝTTÝ", "BÝTÝYOR")
     KS_GrupBandi lo, Array(Array("SEVKÝYAT", 1, 5, gLac), Array("MÝKTAR / TUTAR", 6, 9, gCelik), _
         Array("TESLÝMAT", 10, 13, gTeal), Array("GARANTÝ", 14, 16, gYesil), Array("BELGE / DÝÐER", 17, 22, gGri))
-    KS_VeriSayfaUst ws, "SEVKÝYATLAR", "Gerçek geliþ, garanti, belge, seri ve not doðrudan yazýlabilir.", _
-        Array("YILLIK EXCEL YÜKLE", "KS_SAP_AKTAR", "yesil", "GARANTÝSÝ BÝTECEK", "KS_F_SEVK_GARBITIYOR", "turuncu", _
+    KS_VeriSayfaUst ws, "SEVKÝYATLAR", "Satýrlarý seçip GELÝÞ GÝR ile toplu geliþ.", _
+        Array("YILLIK EXCEL YÜKLE", "KS_SAP_AKTAR", "yesil", "GELÝÞ GÝR", "KS_TOPLU_GELIS", "yesil", "GARANTÝSÝ BÝTECEK", "KS_F_SEVK_GARBITIYOR", "turuncu", _
             "GECÝKENLER", "KS_F_SEVK_GECIKEN", "turuncu", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_SEVK_GARYOK", "teal", _
             "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", "ARA", "KS_ARA", "koyu", "", "", "")
     KS_GorunumDugmesi ws
@@ -545,6 +552,7 @@ Private Sub KS_TanimlarKur()
         lo.ListColumns(3).DataBodyRange.Value = Application.Transpose( _
             Array("Trabzon", "Rize", "Artvin", "Giresun", "Gümüþhane"))
     End If
+    KS_YerTamamla lo
     ws.Columns("L").ColumnWidth = 2
     Set lo = KS_TabloKur(ws, T_KAT, ws.Range("M3"), Array("Kategori"), Array(20), Array("@"), yeni)
     If yeni Then KS_Tohum lo, Array("Kablo", "Trafo", "Sayaç", "Kesici / Ayýrýcý", "Direk / Travers", _
@@ -609,6 +617,8 @@ Private Sub KS_TanimlarKur()
     KS_Yazi ws, "ksArac_B", "YÖNETÝM ARAÇLARI", ws.Range("Z12").Left, ws.Range("Z12").Top, 300, 18, 10.5, True, _
         C_LAC(), msoAlignLeft
     v = Array("TEDARÝKÇÝ LÝSTESÝNÝ YÜKLE", "KS_TEDARIKCI_YUKLE", "koyu", _
+        "KURLARI GÜNCELLE (TCMB)", "KS_KUR_GUNCELLE", "teal", _
+        "BÖLGE DIÞI KAYITLARI TEMÝZLE", "KS_BOLGE_DISI_TEMIZLE", "turuncu", _
         "TÜMÜNÜ YENÝDEN HESAPLA", "KS_YENIDEN_HESAPLA", "koyu", _
         "SAYFA KORUMASI AÇ / KAPAT", "KS_KORUMA_DEGISTIR", "koyu", _
         "TASARIMI YENÝLE (ONARIM)", "KALITESORA_KUR", "teal", _

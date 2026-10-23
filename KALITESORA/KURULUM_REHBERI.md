@@ -1,4 +1,4 @@
-# KALİTESORA v2.3 — Kurulum ve Kullanım
+# KALİTESORA v2.4 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -103,3 +103,10 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 - **ÜRETİCİYE MAİL**: KAYIT > Arıza ekranından Outlook taslağı hazırlanır (Outlook yoksa metin alana yazılır); bildirim tarihi boşsa bugün yazılır.
 - Mail dosyası **AÇ** düğmesi; eklenen mail/sohbet dosyası doğrudan açılır.
 - Tarih ve sayı sütunlarına giriş denetimi; hesaplanan sütunlar ve tablo altı kilitli.
+
+## v2.4 yenilikleri
+- **Bölge filtresi:** Yıllık aktarımda Fırat bölgesi üretim yerleri (FEDAŞ 720x, Fırat Aksa 710x) ve TANIMLAR'da ili Çoruh dışı olan sevk yerleri kendiliğinden atlanır. Sevk yeri, SAP üretim yeri koduyla eşleştirilir.
+- **BÖLGE DIŞI KAYITLARI TEMİZLE** (YÖNETİM): Daha önce içeri alınmış Çoruh dışı sevkiyatları ve yalnız onlar için açılmış malzeme kartlarını siler. Önce yedek alınır; arızaya bağlı sevkiyat korunur. v2.4'e geçişte bir kez sorulur.
+- **Aynı sipariş kaleminin farklı teslim tarihli parçaları** artık ayrı sevkiyat olarak alınır (yineleme anahtarı: SAS + kalem + malzeme + planlanan teslim).
+- **KURLARI GÜNCELLE (TCMB)** (YÖNETİM): Günlük döviz satış kurlarını çeker ve TL tutarları yeniden hesaplar. Kur eksikse aktarım sonunda önerilir.
+- **GELİŞ GİR** (SEVKİYATLAR): Seçili satırlara toplu gerçek geliş tarihi yazar. **P** yazılırsa her satıra kendi planlanan teslim tarihi yazılır. Dolu geliş tarihleri değişmez.
