@@ -212,6 +212,9 @@ Public Sub KS_AKTAR_CALISTIR()
 
     adim = "Yedek"
     KS_YedekKopya "AKTARIM_ONCESI"
+    KS_SuzgecTemizle T_SEVK
+    KS_SuzgecTemizle T_MALZ
+    KS_SuzgecTemizle T_ARIZA
     adim = "Hazýrlýk"
     KS_Basla
     KS_BaglamYukle

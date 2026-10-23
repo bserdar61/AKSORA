@@ -522,6 +522,15 @@ End Sub
 ' ================================================================ hazýr süzgeçler
 
 ' Tabloyu açar, önceki süzgeçleri kaldýrýr, verilen sütuna ölçüt uygular.
+Private Function KS_GorunenSatir(ByVal lo As ListObject) As Long
+    Dim r As Range
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    On Error Resume Next
+    Set r = lo.ListColumns(1).DataBodyRange.SpecialCells(xlCellTypeVisible)
+    On Error GoTo 0
+    If Not r Is Nothing Then KS_GorunenSatir = r.Count
+End Function
+
 Private Sub KS_Suz(ByVal tablo As String, ByVal kolon As Long, ByVal olcut As Variant, Optional ByVal coklu As Boolean = False)
     Dim lo As ListObject, ws As Worksheet, korumali As Boolean
     On Error GoTo Hata
@@ -539,6 +548,13 @@ Private Sub KS_Suz(ByVal tablo As String, ByVal kolon As Long, ByVal olcut As Va
             lo.Range.AutoFilter Field:=kolon, Criteria1:=olcut, Operator:=xlFilterValues
         Else
             lo.Range.AutoFilter Field:=kolon, Criteria1:=olcut
+        End If
+        If KS_GorunenSatir(lo) = 0 Then
+            lo.AutoFilter.ShowAllData
+            If korumali Then KS_Kapat ws
+            ws.Activate
+            MsgBox "Bu süzgece uyan kayýt yok; tüm liste gösteriliyor.", vbInformation, KS_AD
+            Exit Sub
         End If
     End If
     If korumali Then KS_Kapat ws

@@ -312,3 +312,18 @@ Private Function KS_OrnekSil(ByVal tablo As String, ByVal kolon As Long) As Long
     Next i
     KS_Kapat lo.Parent
 End Function
+
+' "Ýçeriði Etkinleþtir" uyarýsýnýn nedeni ve kalýcý çözüm adýmlarý (bilgi).
+Public Sub KS_MAKRO_UYARISI()
+    MsgBox "Neden her yeni dosyada 'Ýçeriði Etkinleþtir' soruluyor?" & vbCrLf & _
+        "Ýnternetten, e-postadan ya da ZIP içinden gelen dosyalara Windows 'internetten geldi' iþareti koyar; " & _
+        "Excel de güvenlik için makrolarý durdurur. Her yeni sürüm yeni bir indirme olduðu için tekrar sorar." & vbCrLf & vbCrLf & _
+        "Kalýcý çözüm (bir kez yapýlýr):" & vbCrLf & _
+        "1) Dosya > Seçenekler > Güven Merkezi > Güven Merkezi Ayarlarý > Güvenilir Konumlar" & vbCrLf & _
+        "2) 'Yeni konum ekle' > bu klasörü seçin:" & vbCrLf & "     " & ThisWorkbook.Path & vbCrLf & _
+        "3) 'Bu konumun alt klasörleri de güvenilir' kutusunu iþaretleyin > Tamam" & vbCrLf & vbCrLf & _
+        "Sonra yeni sürümleri hep bu klasöre (eskisinin üzerine) çýkarýn; uyarý bir daha çýkmaz." & vbCrLf & vbCrLf & _
+        "Ek yol: ZIP'i açmadan önce sað týk > Özellikler > 'Engellemeyi kaldýr' iþaretleyip Tamam deyin." & vbCrLf & _
+        "Kurum bilgisayarýnda BT ilkesi güvenilir konumlarý kapattýysa BT'den bu klasörün eklenmesini isteyin.", _
+        vbInformation, KS_AD
+End Sub

@@ -4,7 +4,7 @@ Option Explicit
 ' KALÝTESORA çekirdek modülü: sabitler, renkler ve tüm modüllerin ortak yardýmcýlarý.
 
 Public Const KS_AD As String = "KALÝTESORA"
-Public Const KS_SURUM As String = "2.5"
+Public Const KS_SURUM As String = "2.6"
 Public Const KS_SIFRE As String = "KS2026"
 Public Const KS_ORNEK As String = "ÖRNEK VERÝ"
 
@@ -321,21 +321,84 @@ Public Function KS_BosSatir(ByVal kolon As Long) As Variant
     KS_BosSatir = b
 End Function
 
+' ---------------------------------------------------------------- süzgeç güvenliði
+' Süzülmüþ (gizli satýrlý) tabloya dizi yazýlýrsa Excel deðerleri yalnýz görünür hücrelere kaydýrarak yazar
+' ve satýrlar karýþýr. Bu yüzden her toplu yazmadan önce süzgeç kaldýrýlýr, sonra aynen geri uygulanýr.
+
+' Etkin süzgeçleri kaydeder ve kaldýrýr. Süzgeç yoksa Empty döner.
+Public Function KS_SuzgecKaldir(ByVal lo As ListObject) As Variant
+    Dim s() As Variant, f As Long, vardi As Boolean
+    If lo Is Nothing Then Exit Function
+    If Not lo.ShowAutoFilter Then Exit Function
+    If Not lo.AutoFilter.FilterMode Then Exit Function
+    ReDim s(1 To lo.ListColumns.Count, 1 To 4)
+    On Error Resume Next
+    For f = 1 To lo.AutoFilter.Filters.Count
+        If f > UBound(s, 1) Then Exit For
+        With lo.AutoFilter.Filters(f)
+            If .On Then
+                vardi = True
+                s(f, 1) = True
+                s(f, 2) = .Criteria1
+                s(f, 3) = .Operator
+                If .Operator = xlAnd Or .Operator = xlOr Then s(f, 4) = .Criteria2
+            End If
+        End With
+    Next f
+    lo.AutoFilter.ShowAllData
+    On Error GoTo 0
+    If vardi Then KS_SuzgecKaldir = s
+End Function
+
+' Aktarým öncesi: süzgeç kalýcý olarak kaldýrýlýr (yeni satýrlar görünür olsun).
+Public Sub KS_SuzgecTemizle(ByVal tablo As String)
+    Dim lo As ListObject, korumali As Boolean
+    Set lo = KS_LO(tablo)
+    If lo Is Nothing Then Exit Sub
+    korumali = lo.Parent.ProtectContents
+    KS_Ac lo.Parent
+    KS_SuzgecKaldir lo
+    If korumali Then KS_Kapat lo.Parent
+End Sub
+
+Public Sub KS_SuzgecGeri(ByVal lo As ListObject, ByVal s As Variant)
+    Dim f As Long
+    If Not IsArray(s) Then Exit Sub
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+    On Error Resume Next
+    For f = 1 To UBound(s, 1)
+        If s(f, 1) = True Then
+            If Not IsEmpty(s(f, 4)) Then
+                lo.Range.AutoFilter Field:=f, Criteria1:=s(f, 2), Operator:=s(f, 3), Criteria2:=s(f, 4)
+            ElseIf CLng(s(f, 3)) = 0 Then
+                lo.Range.AutoFilter Field:=f, Criteria1:=s(f, 2)
+            Else
+                lo.Range.AutoFilter Field:=f, Criteria1:=s(f, 2), Operator:=s(f, 3)
+            End If
+        End If
+    Next f
+    On Error GoTo 0
+End Sub
+
 ' satir = 0 ise sona yeni satýr ekler. Yazýlan ListRow sýrasýný döndürür.
 Public Function KS_SatirYaz(ByVal lo As ListObject, ByVal satir As Long, ByRef v As Variant) As Long
+    Dim sz As Variant
+    sz = KS_SuzgecKaldir(lo)
     If satir = 0 Then
         lo.ListRows.Add
         satir = lo.ListRows.Count
     End If
     lo.ListRows(satir).Range.Value = v
+    KS_SuzgecGeri lo, sz
     KS_SatirYaz = satir
 End Function
 
 ' Çok satýrý tek seferde tablonun sonuna ekler (toplu aktarým ve örnek veri için).
 Public Sub KS_TopluEkle(ByVal lo As ListObject, ByRef v As Variant, ByVal adet As Long)
     Dim w() As Variant, i As Long, j As Long, c As Long, ilk As Long
-    Dim ws As Worksheet, bas As Range
+    Dim ws As Worksheet, bas As Range, sz As Variant
     If adet <= 0 Then Exit Sub
+    sz = KS_SuzgecKaldir(lo)
     c = lo.ListColumns.Count
     ReDim w(1 To adet, 1 To c)
     For i = 1 To adet
@@ -348,6 +411,7 @@ Public Sub KS_TopluEkle(ByVal lo As ListObject, ByRef v As Variant, ByVal adet A
     ilk = bas.Row + lo.ListRows.Count + 1
     ws.Cells(ilk, bas.Column).Resize(adet, c).Value = w
     lo.Resize ws.Range(bas, ws.Cells(ilk + adet - 1, bas.Column + c - 1))
+    KS_SuzgecGeri lo, sz
 End Sub
 
 Public Function KS_SatirBul(ByVal lo As ListObject, ByVal kolon As Long, ByVal anahtar As Variant) As Long

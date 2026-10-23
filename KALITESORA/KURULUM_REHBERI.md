@@ -1,4 +1,4 @@
-# KALİTESORA v2.5 — Kurulum ve Kullanım
+# KALİTESORA v2.6 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -119,3 +119,17 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 - Görseller `KALITESORA_GORSEL` klasöründe (.jpg / .png). Klasör dosyanın yanında olmalı; yoksa önceki banner korunur ve sekmeler şekille çizilir.
 - **Yıllık aktarım - devreden siparişler:** Başlangıç tarihinden önce teslim tarihli ama teslimatı tamamlanmamış siparişler sorulur ve istenirse alınır.
 - **Bölge dışı kalemler:** Aktarımda sorulur; varsayılan atlamaktır.
+
+## v2.6 düzeltmeleri
+- **Süzgeç hatası giderildi:** Liste süzülmüşken (ör. GARANTİSİ BİTECEK) yapılan aktarım ya da hesaplama, Excel'in görünür hücrelere yazması yüzünden yeni satırları karıştırıyordu. Artık her toplu yazmadan önce süzgeç kaldırılıyor ve sonra geri uygulanıyor. Aktarım başında süzgeçler kapatılıyor.
+- **Otomatik onarım:** Açılışta aynı Sevk No'lu ya da #N/A içeren bozuk satırlar silinir (önce yedek alınır). Ardından yıllık listenin yeniden yüklenmesi önerilir; yalnız eksik satırlar eklenir. YÖNETİM > SEVKİYAT TABLOSUNU ONAR ile elle de çalıştırılabilir.
+- **Boş süzgeç:** Uyan kaydı olmayan süzgeç düğmesi tabloyu boş göstermez; "uyan kayıt yok" der ve tüm liste görünür kalır.
+
+## "İçeriği Etkinleştir" neden her seferinde çıkıyor?
+İnternetten, e-postadan ya da ZIP içinden gelen dosyalara Windows "internetten geldi" işareti koyar ve Excel bu dosyalarda makroları durdurur. Her yeni sürüm yeni bir indirme olduğu için uyarı yeniden çıkar. Kalıcı çözüm bir kez yapılır:
+1. Excel'de **Dosya > Seçenekler > Güven Merkezi > Güven Merkezi Ayarları > Güvenilir Konumlar**.
+2. **Yeni konum ekle** > KALİTESORA klasörünü seçin (ör. `C:\Users\...\Desktop\KALİTESORA`).
+3. **Bu konumun alt klasörleri de güvenilir** kutusunu işaretleyin > Tamam.
+4. Yeni sürümleri hep bu klasöre, eskisinin üzerine çıkarın.
+
+Ek yol: ZIP'i açmadan önce sağ tık > Özellikler > **Engellemeyi kaldır** > Tamam. Kurum bilgisayarında BT ilkesi güvenilir konumları kapattıysa, klasörün eklenmesini BT'den isteyin. Aynı adımlar YÖNETİM > MAKRO UYARISI NASIL KALKAR? düğmesinde de yazılı.

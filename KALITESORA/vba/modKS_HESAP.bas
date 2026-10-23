@@ -334,11 +334,15 @@ Public Sub KS_HesaplaTumu()
 End Sub
 
 Private Sub KS_DiziGeriYaz(ByVal lo As ListObject, ByRef a As Variant)
-    Dim korumali As Boolean
+    Dim korumali As Boolean, sz As Variant
     If Not IsArray(a) Then Exit Sub
     korumali = lo.Parent.ProtectContents
     KS_Ac lo.Parent
-    lo.DataBodyRange.Value = a
+    sz = KS_SuzgecKaldir(lo)
+    If UBound(a, 1) = lo.DataBodyRange.Rows.Count And UBound(a, 2) = lo.DataBodyRange.Columns.Count Then
+        lo.DataBodyRange.Value = a
+    End If
+    KS_SuzgecGeri lo, sz
     If korumali Then KS_Kapat lo.Parent
 End Sub
 

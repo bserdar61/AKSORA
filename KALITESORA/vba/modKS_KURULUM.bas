@@ -5,7 +5,7 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
-Public Const KS_TASARIM_NO As Long = 25      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+Public Const KS_TASARIM_NO As Long = 26      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
 
 Private mSessiz As Boolean
 
@@ -33,6 +33,8 @@ Public Sub KS_TasarimGuncelle()
         KS_BolgeDisiTemizle True
         KS_KurGuncelle True
     End If
+    ' v2.6: süzgeç açýkken yapýlan aktarýmda karýþan sevkiyat satýrlarý temizlenir.
+    If onceki < 26 Then KS_SevkOnar True
 End Sub
 
 Public Sub KALITESORA_KUR()
@@ -619,13 +621,15 @@ Private Sub KS_TanimlarKur()
     v = Array("TEDARÝKÇÝ LÝSTESÝNÝ YÜKLE", "KS_TEDARIKCI_YUKLE", "koyu", _
         "KURLARI GÜNCELLE (TCMB)", "KS_KUR_GUNCELLE", "teal", _
         "BÖLGE DIÞI KAYITLARI TEMÝZLE", "KS_BOLGE_DISI_TEMIZLE", "turuncu", _
+        "SEVKÝYAT TABLOSUNU ONAR", "KS_SEVK_ONAR", "koyu", _
         "TÜMÜNÜ YENÝDEN HESAPLA", "KS_YENIDEN_HESAPLA", "koyu", _
         "SAYFA KORUMASI AÇ / KAPAT", "KS_KORUMA_DEGISTIR", "koyu", _
         "TASARIMI YENÝLE (ONARIM)", "KALITESORA_KUR", "teal", _
         "UYGULAMA / EXCEL GÖRÜNÜMÜ", "KS_UYGULAMA_MODU_DEGISTIR", "teal", _
         "ÖRNEK VERÝ YÜKLE (deneme)", "KS_ORNEK_VERI_YUKLE", "cizgi", _
         "ÖRNEK VERÝYÝ SÝL", "KS_ORNEK_VERI_SIL", "cizgi", _
-        "VBA KODUNU DIÞA AKTAR", "KS_VBA_DISARI_AKTAR", "gri")
+        "VBA KODUNU DIÞA AKTAR", "KS_VBA_DISARI_AKTAR", "gri", _
+        "MAKRO UYARISI NASIL KALKAR?", "KS_MAKRO_UYARISI", "cizgi")
     For i = 0 To UBound(v) \ 3
         KS_Buton ws, "ksArac_" & i, CStr(v(i * 3)), ws.Range("Z13").Left, ws.Range("Z12").Top + 24 + i * 30, _
             ws.Range("Z13").Width + ws.Range("AA13").Width, 24, CStr(v(i * 3 + 1)), CStr(v(i * 3 + 2))

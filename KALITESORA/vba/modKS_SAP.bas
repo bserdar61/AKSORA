@@ -59,6 +59,8 @@ Public Sub KS_SAP_AKTAR()
     adim = "Yedek"
     KS_YedekKopya "SAP_ONCESI"
     KS_Basla
+    KS_SuzgecTemizle T_SEVK
+    KS_SuzgecTemizle T_MALZ
     KS_Ac KS_WS(SH_TANIM)
     KS_YerTamamla KS_LOZ(T_YER)
     Set dYer = KS_Sozluk(T_YER)
@@ -626,3 +628,71 @@ Private Function KS_XmlOznitelik(ByVal xml As String, ByVal bas As String) As St
     q = InStr(p, xml, """")
     If q > p Then KS_XmlOznitelik = Mid$(xml, p, q - p)
 End Function
+
+Public Sub KS_SEVK_ONAR()
+    KS_SevkOnar False
+End Sub
+
+' Sevkiyat tablosu bütünlük onarýmý: ayný Sevk No ikinci kez geçen ya da hata deðeri (#N/A vb.) içeren
+' satýrlar bozuk sayýlýr ve silinir; ilk (özgün) kayýt korunur. Önce yedek alýnýr.
+Public Sub KS_SevkOnar(ByVal otomatik As Boolean)
+    Dim lo As ListObject, a As Variant, i As Long, j As Long, d As Object, tut() As Boolean
+    Dim n As Long, bozuk As Long, k As String, hatali As Boolean, bos As Boolean, korumali As Boolean
+    On Error GoTo Hata
+    Set lo = KS_LOZ(T_SEVK)
+    korumali = lo.Parent.ProtectContents
+    KS_Ac lo.Parent
+    KS_SuzgecKaldir lo
+    a = KS_Veri(lo)
+    If Not IsArray(a) Then GoTo Bitti
+    ReDim tut(1 To UBound(a, 1))
+    Set d = CreateObject("Scripting.Dictionary")
+    For i = 1 To UBound(a, 1)
+        hatali = False
+        bos = True
+        For j = 1 To UBound(a, 2)
+            If IsError(a(i, j)) Then
+                hatali = True
+            ElseIf Not KS_Bos(a(i, j)) Then
+                bos = False
+            End If
+        Next j
+        k = ""
+        If Not IsError(a(i, S_NO)) Then k = KS_Anahtar(a(i, S_NO))
+        If bos Then
+            tut(i) = False
+        ElseIf hatali Or Len(k) = 0 Or d.Exists(k) Then
+            tut(i) = False
+            bozuk = bozuk + 1
+        Else
+            tut(i) = True
+            n = n + 1
+            d(k) = True
+        End If
+    Next i
+    If bozuk = 0 Then
+        If Not otomatik Then MsgBox "Sevkiyat tablosunda bozuk satýr bulunmadý (" & n & " kayýt saðlam).", vbInformation, KS_AD
+        GoTo Bitti
+    End If
+    KS_YedekKopya "SEVK_ONARIM_ONCESI"
+    KS_Basla
+    KS_TabloSikistir lo, a, tut, n
+    KS_Bitir
+    If korumali Then KS_Kapat lo.Parent
+    KS_Log "SEVKÝYAT ONARIM", "", bozuk & " bozuk satýr silindi, " & n & " kayýt saðlam"
+    KS_PanelYenile False
+    If MsgBox(bozuk & " bozuk sevkiyat satýrý bulundu ve silindi; " & n & " kayýt saðlam." & vbCrLf & vbCrLf & _
+        "Neden: liste süzülmüþken (ör. GARANTÝSÝ BÝTECEK) yapýlan yýllýk aktarýmda yeni satýrlar karýþmýþtý. " & _
+        "Bu sürümde aktarým ve hesaplama öncesi süzgeç kendiliðinden kaldýrýlýyor." & vbCrLf & vbCrLf & _
+        "Silinen kalemleri geri almak için yýllýk liste þimdi yeniden yüklensin mi? " & _
+        "(Var olan kayýtlar atlanýr, yalnýz eksikler eklenir.)", vbQuestion + vbYesNo, KS_AD) = vbYes Then
+        KS_SAP_AKTAR
+    End If
+    Exit Sub
+Bitti:
+    If korumali Then KS_Kapat lo.Parent
+    Exit Sub
+Hata:
+    KS_Bitir True
+    MsgBox "Sevkiyat onarýmý durdu: " & Err.Description, vbExclamation, KS_AD
+End Sub
