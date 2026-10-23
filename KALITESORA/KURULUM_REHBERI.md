@@ -110,3 +110,6 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 - **Aynı sipariş kaleminin farklı teslim tarihli parçaları** artık ayrı sevkiyat olarak alınır (yineleme anahtarı: SAS + kalem + malzeme + planlanan teslim).
 - **KURLARI GÜNCELLE (TCMB)** (YÖNETİM): Günlük döviz satış kurlarını çeker ve TL tutarları yeniden hesaplar. Kur eksikse aktarım sonunda önerilir.
 - **GELİŞ GİR** (SEVKİYATLAR): Seçili satırlara toplu gerçek geliş tarihi yazar. **P** yazılırsa her satıra kendi planlanan teslim tarihi yazılır. Dolu geliş tarihleri değişmez.
+- **GARANTİ GİR** (MALZEMELER): Seçili malzemelere toplu garanti süresi (ay) yazar. Bu süre, garantisi girilmemiş sevkiyatlarına uygulanır. Dolu değerler değişmez.
+- **Firma birleştirme:** Aynı firma farklı SAP satıcı koduyla gelse de (ör. HALİÇ 1300000329 / 1300001389) KARNE ve tedarikçi sıralamasında tek firma sayılır.
+- **PANEL il bazında özet:** ÇEDAŞ ve Çoruh Aksa sevk yerleri il altında birleşir; 5 Çoruh ili her zaman görünür.

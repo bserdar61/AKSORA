@@ -468,3 +468,63 @@ Hata:
     KS_Bitir True
     MsgBox "Toplu geliþ yazýlamadý: " & Err.Description, vbExclamation, KS_AD
 End Sub
+
+' MALZEMELER'de seçili (görünür) satýrlara garanti süresi (ay) yazar; dolu garanti deðerleri deðiþmez.
+' Malzemenin garantisi, garanti girilmemiþ sevkiyatlarýna kendiliðinden uygulanýr.
+Public Sub KS_TOPLU_GARANTI()
+    Dim lo As ListObject, govde As Range, sec As Range, ar As Range, r As Range, satirlar As Object, k As Variant
+    Dim a As Variant, s As String, ay As Double, i As Long, n As Long, atla As Long
+    On Error GoTo Hata
+    Set lo = KS_LOZ(T_MALZ)
+    Set govde = lo.DataBodyRange
+    If govde Is Nothing Then Exit Sub
+    If ActiveSheet.Name <> lo.Parent.Name Then lo.Parent.Activate
+    If TypeName(Selection) = "Range" Then Set sec = Intersect(Selection.EntireRow, govde)
+    If sec Is Nothing Then
+        MsgBox "Önce MALZEMELER tablosunda garanti süresi yazýlacak satýrlarý seçin." & vbCrLf & vbCrLf & _
+            "Ýpucu: GARANTÝSÝ GÝRÝLMEMÝÞ ya da sütun oklarýyla süzün (ör. ayný üretici), " & _
+            "ilk satýra týklayýp Ctrl+Shift+Aþaðý ile görünen satýrlarý seçin.", vbInformation, KS_AD
+        Exit Sub
+    End If
+    Set satirlar = CreateObject("Scripting.Dictionary")
+    For Each ar In sec.Areas
+        For Each r In ar.Rows
+            If Not r.EntireRow.Hidden Then satirlar(r.Row - govde.Row + 1) = True
+        Next r
+    Next ar
+    If satirlar.Count = 0 Then Exit Sub
+    s = Trim$(InputBox(satirlar.Count & " malzemeye garanti süresi yazýlacak." & vbCrLf & vbCrLf & _
+        "Garanti süresini ay olarak yazýn (ör. 24). Garantisi olmayan için 0." & vbCrLf & vbCrLf & _
+        "Garantisi dolu olan malzemeler deðiþtirilmez.", KS_AD, "24"))
+    If Len(s) = 0 Then Exit Sub
+    If Not KS_Sayi(s, ay) Then
+        MsgBox "Sayý anlaþýlamadý: " & s, vbExclamation, KS_AD
+        Exit Sub
+    End If
+    If ay < 0 Or ay > 240 Or ay <> Int(ay) Then
+        MsgBox "Garanti süresi 0 - 240 arasý tam ay olmalý.", vbExclamation, KS_AD
+        Exit Sub
+    End If
+    a = KS_Veri(lo)
+    KS_Basla
+    KS_Ac lo.Parent
+    For Each k In satirlar.Keys
+        i = CLng(k)
+        If KS_Bos(a(i, M_GARANTI)) Then
+            govde.Cells(i, M_GARANTI).Value = ay
+            n = n + 1
+        Else
+            atla = atla + 1
+        End If
+    Next k
+    KS_Kapat lo.Parent
+    KS_Bitir
+    KS_Log "TOPLU GARANTÝ", "", n & " malzeme (" & ay & " ay)"
+    KS_PanelYenile False
+    MsgBox n & " malzemeye " & ay & " ay garanti yazýldý; garanti girilmemiþ sevkiyatlarýna uygulandý." & _
+        IIf(atla > 0, vbCrLf & atla & " satýr atlandý (garanti zaten dolu).", ""), vbInformation, KS_AD
+    Exit Sub
+Hata:
+    KS_Bitir True
+    MsgBox "Toplu garanti yazýlamadý: " & Err.Description, vbExclamation, KS_AD
+End Sub

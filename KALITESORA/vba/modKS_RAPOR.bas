@@ -514,9 +514,9 @@ Private Function KS_UreticiAdaylari(ByVal metin As String) As Collection
     If IsArray(a) Then
         For i = 1 To UBound(a, 1)
             v = KS_Metin(a(i, 1))
-            k = KS_Anahtar(v)
+            k = KS_FirmaAnahtar(v)
             If Len(k) > 0 And Not d.Exists(k) Then
-                If InStr(1, k, ara, vbBinaryCompare) > 0 Or KS_Anahtar(a(i, 2)) = ara Then
+                If InStr(1, KS_Anahtar(v), ara, vbBinaryCompare) > 0 Or KS_Anahtar(a(i, 2)) = ara Then
                     d(k) = v
                     c.Add v
                 End If
@@ -527,8 +527,8 @@ Private Function KS_UreticiAdaylari(ByVal metin As String) As Collection
     If IsArray(a) Then
         For i = 1 To UBound(a, 1)
             v = KS_Metin(a(i, S_SEVKCI))
-            k = KS_Anahtar(v)
-            If Len(k) > 0 And Not d.Exists(k) And InStr(1, k, ara, vbBinaryCompare) > 0 Then
+            k = KS_FirmaAnahtar(v)
+            If Len(k) > 0 And Not d.Exists(k) And InStr(1, KS_Anahtar(v), ara, vbBinaryCompare) > 0 Then
                 d(k) = v
                 c.Add v
             End If
@@ -538,8 +538,8 @@ Private Function KS_UreticiAdaylari(ByVal metin As String) As Collection
     If IsArray(a) Then
         For i = 1 To UBound(a, 1)
             v = KS_Metin(a(i, M_URETICI))
-            k = KS_Anahtar(v)
-            If Len(k) > 0 And Not d.Exists(k) And InStr(1, k, ara, vbBinaryCompare) > 0 Then
+            k = KS_FirmaAnahtar(v)
+            If Len(k) > 0 And Not d.Exists(k) And InStr(1, KS_Anahtar(v), ara, vbBinaryCompare) > 0 Then
                 d(k) = v
                 c.Add v
             End If
@@ -741,7 +741,7 @@ Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
     Dim gecTop As Double, arzN As Long, arzMik As Double, sevkMik As Double, donTop As Double, donN As Long, mal As Double
     Dim acik As Long, skor As Double, oran As Double, gec As Double, don As Double, tr As String, kk As String
     tr = KS_FmtTarih()
-    k = KS_Anahtar(ad)
+    k = KS_FirmaAnahtar(ad)
     aM = KS_Veri(KS_LOZ(T_MALZ))
     arS = KS_Veri(KS_LOZ(T_SEVK))
     aA = KS_Veri(KS_LOZ(T_ARIZA))
@@ -758,7 +758,7 @@ Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
     If IsArray(arS) Then
         For i = 1 To UBound(arS, 1)
             kk = KS_Anahtar(arS(i, S_KOD))
-            If KS_Anahtar(arS(i, S_SEVKCI)) = k Or KS_UreticiMi(aM, dM, kk, k) Then
+            If KS_FirmaAnahtar(arS(i, S_SEVKCI)) = k Or KS_UreticiMi(aM, dM, kk, k) Then
                 If Not dSec.Exists(kk) Then
                     n = n + 1
                     dSec(kk) = n
@@ -784,7 +784,7 @@ Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
     If IsArray(aA) Then
         For i = 1 To UBound(aA, 1)
             kk = KS_Anahtar(aA(i, A_KOD))
-            If KS_Anahtar(aA(i, A_SEVKCI)) = k Or KS_Anahtar(aA(i, A_URETICI)) = k Then
+            If KS_FirmaAnahtar(aA(i, A_SEVKCI)) = k Or KS_FirmaAnahtar(aA(i, A_URETICI)) = k Then
                 If Not dSec.Exists(kk) Then
                     n = n + 1
                     dSec(kk) = n
@@ -807,7 +807,7 @@ Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
         If liste(j, 4) > 0 Then liste(j, 8) = liste(j, 7) / liste(j, 4) Else liste(j, 8) = Empty
     Next j
 
-    KS_KarneBaslik ws, "ÜRETÝCÝ / SEVKÇÝ   " & ad, "Bu üreticinin sevk ettiði ya da ürettiði " & n & " malzeme, " & kalem & _
+    KS_KarneBaslik ws, "ÜRETÝCÝ / SEVKÇÝ   " & KS_FirmaAd(ad), "Bu üreticinin sevk ettiði ya da ürettiði " & n & " malzeme, " & kalem & _
         " sevkiyat kalemi, " & arzN & " arýza kaydý."
     r = K_ILK + 7
     KS_ListeTablo ws, r, "MALZEMELERÝ  (arýza sayýsýna göre)", Array("Malzeme Kodu", "Malzeme Adý", "Sevk Kalemi", _
@@ -818,7 +818,7 @@ Private Sub KS_UreticiKarnesi(ByVal ws As Worksheet, ByVal ad As String)
     If IsArray(aA) Then
         ReDim liste(1 To UBound(aA, 1), 1 To 10)
         For i = 1 To UBound(aA, 1)
-            If KS_Anahtar(aA(i, A_SEVKCI)) = k Or KS_Anahtar(aA(i, A_URETICI)) = k Then
+            If KS_FirmaAnahtar(aA(i, A_SEVKCI)) = k Or KS_FirmaAnahtar(aA(i, A_URETICI)) = k Then
                 n = n + 1
                 liste(n, 1) = aA(i, A_NO): liste(n, 2) = aA(i, A_TARIH): liste(n, 3) = aA(i, A_KOD)
                 liste(n, 4) = aA(i, A_AD): liste(n, 5) = aA(i, A_SERI): liste(n, 6) = aA(i, A_KAPSAM)
@@ -853,7 +853,7 @@ Private Function KS_UreticiMi(ByRef aM As Variant, ByVal dM As Object, ByVal kod
     Dim mi As Long
     If dM.Exists(kod) Then
         mi = dM(kod)
-        KS_UreticiMi = (KS_Anahtar(aM(mi, M_URETICI)) = k)
+        KS_UreticiMi = (KS_FirmaAnahtar(aM(mi, M_URETICI)) = k)
     End If
 End Function
 
@@ -1004,11 +1004,11 @@ End Sub
 Private Function KS_GrupNo(ByVal d As Object, ByRef t() As Variant, ByRef n As Long, ByVal ad As String) As Long
     Dim k As String, j As Long
     If Len(ad) = 0 Then ad = "(Belirtilmemiþ)"
-    k = KS_Anahtar(ad)
+    k = KS_FirmaAnahtar(ad)
     If Not d.Exists(k) Then
         n = n + 1
         d(k) = n
-        t(n, 1) = ad
+        t(n, 1) = KS_FirmaAd(ad)
         For j = 2 To 16
             t(n, j) = 0
         Next j

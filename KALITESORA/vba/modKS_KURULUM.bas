@@ -433,8 +433,8 @@ Private Sub KS_VeriSayfalariKur()
     KS_SutunDogrulama lo, M_GARANTI, "sayi"
     KS_GrupBandi lo, Array(Array("MALZEME TANIMI", 1, 5, gLac), Array("FÝYAT VE GARANTÝ", 6, 8, gYesil), _
         Array("KALÝTE PERFORMANSI", 9, 12, gTeal), Array("DÝÐER", 13, 14, gGri))
-    KS_VeriSayfaUst ws, "MALZEMELER", "Kategori, birim, garanti ve not doðrudan yazýlabilir; garanti boþ sevkiyatlara uygulanýr.", _
-        Array("+ YENÝ MALZEME", "KS_GIT_KAYIT_MALZ", "ana", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_MALZ_GARYOK", "turuncu", _
+    KS_VeriSayfaUst ws, "MALZEMELER", "Garanti boþ sevkiyatlara uygulanýr. Toplu: satýrlarý seçip GARANTÝ GÝR.", _
+        Array("+ YENÝ MALZEME", "KS_GIT_KAYIT_MALZ", "ana", "GARANTÝ GÝR", "KS_TOPLU_GARANTI", "yesil", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_MALZ_GARYOK", "turuncu", _
             "ARIZA VERENLER", "KS_F_MALZ_ARIZALI", "teal", "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", _
             "ARA", "KS_ARA", "koyu", "", "", "")
     KS_GorunumDugmesi ws

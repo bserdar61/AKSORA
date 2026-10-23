@@ -476,6 +476,22 @@ Public Function KS_Anahtar(ByVal v As Variant) As String
     KS_Anahtar = UCase$(Trim$(CStr(v)))
 End Function
 
+' SAP sevkçi biçimi "1300000329 HALÝÇ TEKNÝK ..." -> "HALÝÇ TEKNÝK ...". Ayný firma bölge þirketine göre
+' farklý satýcý koduyla gelebilir; karne ve sýralamada firma adý birleþtirir.
+Public Function KS_FirmaAd(ByVal v As Variant) As String
+    Dim s As String, p As Long
+    s = Application.WorksheetFunction.Trim(KS_Metin(v))
+    p = InStr(1, s, " ")
+    If p > 1 Then
+        If IsNumeric(Left$(s, p - 1)) Then s = Mid$(s, p + 1)
+    End If
+    KS_FirmaAd = s
+End Function
+
+Public Function KS_FirmaAnahtar(ByVal v As Variant) As String
+    KS_FirmaAnahtar = KS_Anahtar(KS_FirmaAd(v))
+End Function
+
 Public Function KS_Bos(ByVal v As Variant) As Boolean
     If IsError(v) Then Exit Function
     If IsEmpty(v) Or IsNull(v) Then

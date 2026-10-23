@@ -111,10 +111,10 @@ Public Sub KS_PanelKur()
     ws.Rows(P_DONEM + 1).RowHeight = 8
 
     ' Tablo iskeletleri
-    KS_Bolum ws.Range("B" & P_BOLUM & ":G" & P_BOLUM), "SEVK YERÝNE GÖRE ÖZET"
+    KS_Bolum ws.Range("B" & P_BOLUM & ":G" & P_BOLUM), "ÝL BAZINDA ÖZET  (sevk yerleri ile birleþik)"
     KS_Bolum ws.Range("I" & P_BOLUM & ":M" & P_BOLUM), "DURUM ÖZETÝ  (kalem / tutar)"
     KS_TabloBaslik ws.Range("B" & P_TABLO & ":G" & P_TABLO), _
-        Array("Sevk Yeri", "Sevk Kalemi", "Sevk Tutarý (TL)", "Arýza", "Açýk Arýza", "Garantisi Bitiyor")
+        Array("Ýl / Sevk Yeri", "Sevk Kalemi", "Sevk Tutarý (TL)", "Arýza", "Açýk Arýza", "Garantisi Bitiyor")
     KS_TabloBaslik ws.Range("I" & P_TABLO & ":M" & P_TABLO), _
         Array("Durum", "Kalem", "Tutar / Maliyet (TL)", "Pay", "Açýklama")
     KS_ZeminUygula ws, True
@@ -253,29 +253,42 @@ Private Sub KS_SatirTemizle(ByVal ws As Worksheet, ByVal ilk As Long, ByVal sonK
     End With
 End Sub
 
-' Sevk yerine göre özet + toplam satýrý.
+' Ýl bazýnda özet + toplam satýrý. Ayný ildeki sevk yerleri (ör. ÇEDAÞ TRABZON ve Çoruh Aksa- Trabzon ÜY) birleþir;
+' ili girilmemiþ sevk yeri kendi adýyla ayrý satýrdýr. Çoruh illeri her zaman, diðerleri kaydý varsa görünür.
 Private Sub KS_YerTablosu(ByVal ws As Worksheet, ByRef arS As Variant, ByRef aA As Variant, ByVal y1 As Long, ByVal y2 As Long)
-    Dim yer As Variant, d As Object, i As Long, j As Long, n As Long, k As String, r As Long, x As Double, dt As Date
-    Dim v() As Variant
+    Dim yer As Variant, d As Object, dYer As Object, i As Long, j As Long, n As Long, k As String, r As Long
+    Dim x As Double, dt As Date, v() As Variant, ad() As String, grup As String, il As Variant
+    Const SABIT As Long = 5
     KS_SatirTemizle ws, P_TABLO + 1, "G", "B"
     Set d = CreateObject("Scripting.Dictionary")
+    Set dYer = CreateObject("Scripting.Dictionary")
     yer = KS_Veri(KS_LOZ(T_YER))
+    ReDim ad(1 To KS_Satir(yer) + SABIT + 2)
+    For Each il In Array("Artvin", "Giresun", "Gümüþhane", "Rize", "Trabzon")
+        n = n + 1
+        d(KS_Anahtar(il)) = n
+        ad(n) = CStr(il)
+    Next il
     If IsArray(yer) Then
         For i = 1 To UBound(yer, 1)
             k = KS_Anahtar(yer(i, 1))
-            If Len(k) > 0 And Not d.Exists(k) Then
-                n = n + 1
-                d(k) = n
+            If Len(k) > 0 Then
+                grup = Trim$(KS_Metin(yer(i, 3)))
+                If Len(grup) = 0 Then grup = KS_Metin(yer(i, 1))
+                If Not d.Exists(KS_Anahtar(grup)) Then
+                    n = n + 1
+                    d(KS_Anahtar(grup)) = n
+                    ad(n) = grup
+                End If
+                dYer(k) = d(KS_Anahtar(grup))
             End If
         Next i
     End If
+    Set d = dYer
     ReDim v(1 To n + 2, 1 To 6)
-    If IsArray(yer) Then
-        For i = 1 To UBound(yer, 1)
-            k = KS_Anahtar(yer(i, 1))
-            If d.Exists(k) Then v(d(k), 1) = KS_Metin(yer(i, 1))
-        Next i
-    End If
+    For i = 1 To n
+        v(i, 1) = ad(i)
+    Next i
     v(n + 1, 1) = "Diðer / tanýmsýz"
     For i = 1 To n + 1
         For j = 2 To 6
@@ -317,7 +330,7 @@ Private Sub KS_YerTablosu(ByVal ws As Worksheet, ByRef arS As Variant, ByRef aA 
     Next j
     r = P_TABLO + 1
     For i = 1 To n + 2
-        If i <> n + 1 Or v(n + 1, 2) + v(n + 1, 4) + v(n + 1, 5) + v(n + 1, 6) > 0 Then
+        If i <= SABIT Or i = n + 2 Or v(i, 2) + v(i, 4) + v(i, 5) + v(i, 6) > 0 Then
             For j = 1 To 6
                 ws.Cells(r, 1 + j).Value = v(i, j)
             Next j
