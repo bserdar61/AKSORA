@@ -660,11 +660,15 @@ Public Sub KS_SekmeGoster(ByVal blok As Long)
     For i = 0 To 2
         Set sekme = ws.Shapes("ksT_" & i)
         If i + 1 = blok Then
+            sekme.Fill.Solid
             sekme.Fill.ForeColor.RGB = C_LAC()
+            KS_ButonParlat sekme, C_LAC()
             sekme.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbWhite
             sekme.Line.Visible = msoFalse
         Else
+            sekme.Fill.Solid
             sekme.Fill.ForeColor.RGB = vbWhite
+            sekme.Shadow.Visible = msoFalse
             sekme.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = C_LAC()
             sekme.Line.Visible = msoTrue
         End If

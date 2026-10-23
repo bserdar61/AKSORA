@@ -494,11 +494,15 @@ Private Sub KS_KarneSekme(ByVal ws As Worksheet, ByVal aktif As Long)
     For i = 0 To 2
         Set s = ws.Shapes("ksK_" & i)
         If i = aktif Then
+            s.Fill.Solid
             s.Fill.ForeColor.RGB = C_LAC()
+            KS_ButonParlat s, C_LAC()
             s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbWhite
             s.Line.Visible = msoFalse
         Else
+            s.Fill.Solid
             s.Fill.ForeColor.RGB = vbWhite
+            s.Shadow.Visible = msoFalse
             s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = C_LAC()
             s.Line.Visible = msoTrue
         End If

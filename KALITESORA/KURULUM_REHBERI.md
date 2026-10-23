@@ -1,4 +1,4 @@
-# KALİTESORA v2.4 — Kurulum ve Kullanım
+# KALİTESORA v2.5 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -113,3 +113,9 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 - **GARANTİ GİR** (MALZEMELER): Seçili malzemelere toplu garanti süresi (ay) yazar. Bu süre, garantisi girilmemiş sevkiyatlarına uygulanır. Dolu değerler değişmez.
 - **Firma birleştirme:** Aynı firma farklı SAP satıcı koduyla gelse de (ör. HALİÇ 1300000329 / 1300001389) KARNE ve tedarikçi sıralamasında tek firma sayılır.
 - **PANEL il bazında özet:** ÇEDAŞ ve Çoruh Aksa sevk yerleri il altında birleşir; 5 Çoruh ili her zaman görünür.
+
+## v2.5 yenilikleri
+- **Yeni görsel dil:** Karadeniz dağları, orman, enerji hattı ve ışıklı Çoruh bölge haritası içeren banner; ikonlu koyu sekme bandı (aktif sekme degrade); her sayfada ikon rozeti; panel kartlarında ikonlar; degrade ve gölgeli düğmeler; dağ silüetli açık zemin.
+- Görseller `KALITESORA_GORSEL` klasöründe (.jpg / .png). Klasör dosyanın yanında olmalı; yoksa önceki banner korunur ve sekmeler şekille çizilir.
+- **Yıllık aktarım - devreden siparişler:** Başlangıç tarihinden önce teslim tarihli ama teslimatı tamamlanmamış siparişler sorulur ve istenirse alınır.
+- **Bölge dışı kalemler:** Aktarımda sorulur; varsayılan atlamaktır.

@@ -53,25 +53,25 @@ Public Sub KS_PanelKur()
     ' Özet kartlarý
     gen = (KS_GENISLIK - 3 * 14) / 4
     kpi = Array( _
-        Array("SEVKÝYAT", C_MAVI(), "KS_GIT_SEVK"), _
-        Array("ARIZA", C_KIRMIZI(), "KS_GIT_ARIZA"), _
-        Array("GARANTÝ", C_YESIL2(), "KS_F_SEVK_GARDEVAM"), _
-        Array("ÜRETÝCÝ DÖNÜÞÜ", C_TEAL(), "KS_GIT_KARNE"))
+        Array("SEVKÝYAT", C_MAVI(), "KS_GIT_SEVK", "SEVK"), _
+        Array("ARIZA", C_KIRMIZI(), "KS_GIT_ARIZA", "ARIZA"), _
+        Array("GARANTÝ", C_YESIL2(), "KS_F_SEVK_GARDEVAM", "GARANTI"), _
+        Array("ÜRETÝCÝ DÖNÜÞÜ", C_TEAL(), "KS_GIT_KARNE", "DONUS"))
     For i = 0 To 3
         KS_PanelKart ws, "ksP_K" & i, sol + i * (gen + 14), ust + 84, gen, 100, CStr(kpi(i)(0)), CLng(kpi(i)(1)), _
-            CStr(kpi(i)(2)), False
+            CStr(kpi(i)(2)), False, CStr(kpi(i)(3))
     Next i
 
     ' Uyarý kartlarý
     KS_Yazi ws, "ksP_UyBaslik", "UYARI MERKEZÝ", sol, ust + 200, 300, 16, 10, True, C_LAC(), msoAlignLeft
     uy = Array( _
-        Array("GARANTÝSÝ BÝTECEK", RGB(214, 120, 10), "KS_F_SEVK_GARBITIYOR"), _
-        Array("TESLÝMATI GECÝKEN", C_KIRMIZI(), "KS_F_SEVK_GECIKEN"), _
-        Array("ÜRETÝCÝDE BEKLEYEN ARIZA", C_TEAL(), "KS_F_ARIZA_URETICIDE"), _
-        Array("GARANTÝSÝ GÝRÝLMEMÝÞ", C_MAVI(), "KS_F_SEVK_GARYOK"))
+        Array("GARANTÝSÝ BÝTECEK", RGB(214, 120, 10), "KS_F_SEVK_GARBITIYOR", "BITECEK"), _
+        Array("TESLÝMATI GECÝKEN", C_KIRMIZI(), "KS_F_SEVK_GECIKEN", "GECIKEN"), _
+        Array("ÜRETÝCÝDE BEKLEYEN ARIZA", C_TEAL(), "KS_F_ARIZA_URETICIDE", "URETICI"), _
+        Array("GARANTÝSÝ GÝRÝLMEMÝÞ", C_MAVI(), "KS_F_SEVK_GARYOK", "GARYOK"))
     For i = 0 To 3
         KS_PanelKart ws, "ksP_U" & i, sol + i * (gen + 14), ust + 222, gen, 96, CStr(uy(i)(0)), CLng(uy(i)(1)), _
-            CStr(uy(i)(2)), True
+            CStr(uy(i)(2)), True, CStr(uy(i)(3))
     Next i
 
     ' Dönem seçimi
@@ -124,8 +124,8 @@ End Sub
 ' Kart: beyaz gövde, solda renkli þerit, etiket / büyük deðer / alt satýr; týklanabilir.
 Private Sub KS_PanelKart(ByVal ws As Worksheet, ByVal ad As String, ByVal sol As Double, ByVal ust As Double, _
         ByVal gen As Double, ByVal yuk As Double, ByVal etiket As String, ByVal renk As Long, _
-        ByVal makro As String, ByVal uyari As Boolean)
-    Dim s As Shape
+        ByVal makro As String, ByVal uyari As Boolean, Optional ByVal ikon As String = "")
+    Dim s As Shape, p As String, sag As Double
     Set s = KS_KartSekil(ws, ad, sol, ust, gen, yuk)
     s.OnAction = makro
     Set s = KS_Serit(ws, ad & "_S", sol, ust + 12, 4, yuk - 24, renk)
@@ -134,7 +134,15 @@ Private Sub KS_PanelKart(ByVal ws As Worksheet, ByVal ad As String, ByVal sol As
     s.OnAction = makro
     Set s = KS_Yazi(ws, ad & "_D", "-", sol + 18, ust + 28, gen - 30, 34, 22, True, C_LAC(), msoAlignLeft)
     s.OnAction = makro
-    Set s = KS_Yazi(ws, ad & "_A", "", sol + 18, ust + yuk - 30, gen - 30, 28, 8.5, False, C_GRI(), msoAlignLeft)
+    If Len(ikon) > 0 Then p = KS_Gorsel("KALITESORA_KART_" & ikon)
+    If Len(p) > 0 Then
+        sag = 54
+        Set s = ws.Shapes.AddPicture(p, msoFalse, msoTrue, sol + gen - 54, ust + IIf(uyari, 34, 16), 40, 40)
+        s.Name = ad & "_I"
+        s.Placement = xlFreeFloating
+        s.OnAction = makro
+    End If
+    Set s = KS_Yazi(ws, ad & "_A", "", sol + 18, ust + yuk - 30, gen - 30 - sag, 28, 8.5, False, C_GRI(), msoAlignLeft)
     s.OnAction = makro
     If uyari Then
         Set s = KS_Yazi(ws, ad & "_G", "Listeyi aç  " & ChrW(8594), sol + gen - 110, ust + 14, 96, 14, 8.5, True, _

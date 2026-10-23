@@ -4,7 +4,7 @@ Option Explicit
 ' KALÝTESORA çekirdek modülü: sabitler, renkler ve tüm modüllerin ortak yardýmcýlarý.
 
 Public Const KS_AD As String = "KALÝTESORA"
-Public Const KS_SURUM As String = "2.4"
+Public Const KS_SURUM As String = "2.5"
 Public Const KS_SIFRE As String = "KS2026"
 Public Const KS_ORNEK As String = "ÖRNEK VERÝ"
 

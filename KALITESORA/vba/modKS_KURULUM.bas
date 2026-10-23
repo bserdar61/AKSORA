@@ -5,7 +5,7 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
-Public Const KS_TASARIM_NO As Long = 24      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+Public Const KS_TASARIM_NO As Long = 25      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
 
 Private mSessiz As Boolean
 
@@ -49,7 +49,7 @@ Public Sub KALITESORA_KUR()
         MsgBox "Dosya salt okunur açýk. Yazýlabilir kopyada çalýþtýrýn.", vbExclamation, KS_AD
         Exit Sub
     End If
-    gorselYok = (Len(KS_GorselYol("KALITESORA_BANNER.png")) = 0)
+    gorselYok = (Len(KS_Gorsel("KALITESORA_BANNER")) = 0)
 
     ilk = Not KS_Kurulu()
     If ilk Then

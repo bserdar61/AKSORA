@@ -45,12 +45,18 @@ Public Function KS_GorselYol(ByVal ad As String) As String
     If Len(Dir$(p)) > 0 Then KS_GorselYol = p
 End Function
 
+' Görsel adý uzantýsýz: önce .jpg (v2.5 görselleri), yoksa .png aranýr.
+Public Function KS_Gorsel(ByVal ad As String) As String
+    KS_Gorsel = KS_GorselYol(ad & ".jpg")
+    If Len(KS_Gorsel) = 0 Then KS_Gorsel = KS_GorselYol(ad & ".png")
+End Function
+
 Public Sub KS_ZeminUygula(ByVal ws As Worksheet, ByVal acik As Boolean)
     Dim p As String
     On Error Resume Next
     ws.SetBackgroundPicture Filename:=""
     If acik Then
-        p = KS_GorselYol("KALITESORA_ZEMIN.png")
+        p = KS_Gorsel("KALITESORA_ZEMIN")
         If Len(p) > 0 Then ws.SetBackgroundPicture Filename:=p
     End If
     On Error GoTo 0
@@ -63,10 +69,10 @@ Public Function KS_SayfaCerceve(ByVal ws As Worksheet, ByVal tam As Boolean) As 
     Dim sol As Double, ust As Double, yuk As Double, p As String, s As Shape, alt As Double
     sol = ws.Cells(1, 2).Left
     If tam Then
-        p = KS_GorselYol("KALITESORA_BANNER.png")
+        p = KS_Gorsel("KALITESORA_BANNER")
         yuk = KS_GENISLIK * 250 / 2400
     Else
-        p = KS_GorselYol("KALITESORA_BANNER_INCE.png")
+        p = KS_Gorsel("KALITESORA_BANNER_INCE")
         yuk = KS_GENISLIK * 170 / 2400
     End If
     ' Görsel klasörü yoksa daha önce gömülmüþ banner korunur.
@@ -102,11 +108,50 @@ Public Function KS_SayfaCerceve(ByVal ws As Worksheet, ByVal tam As Boolean) As 
     s.Name = "ksC_Banner"
     s.Placement = xlFreeFloating
     s.Locked = True
-    alt = KS_SekmeCubugu(ws, sol, yuk + 6)
+    alt = KS_NavBandi(ws, sol, yuk)
+    If alt = 0 Then alt = KS_SekmeCubugu(ws, sol, yuk + 6)
     KS_SayfaCerceve = alt
 End Function
 
-' Sekme çubuðu: 8 eþit sekme; aktif sekme lacivert, diðerleri beyaz.
+Private Function KS_AktifSekme(ByVal ws As Worksheet) As Long
+    Dim hedef As Variant, i As Long
+    hedef = Array(SH_PANEL, SH_KAYIT, SH_SEVK, SH_ARIZA, SH_MALZ, SH_KARNE, SH_RAPOR, SH_TANIM)
+    KS_AktifSekme = 7
+    For i = 0 To 6
+        If StrComp(CStr(hedef(i)), ws.Name, vbTextCompare) = 0 Then KS_AktifSekme = i
+    Next i
+End Function
+
+' Koyu sekme bandý (v2.5): aktif sekmesi iþaretli hazýr görsel + üstünde 8 saydam týklama alaný.
+' Görsel yoksa 0 döner ve þekil sekmeler kullanýlýr. Bandýn alt kenarýný (pt) döndürür.
+Private Function KS_NavBandi(ByVal ws As Worksheet, ByVal sol As Double, ByVal ust As Double) As Double
+    Dim p As String, s As Shape, yuk As Double, gen As Double, i As Long, hedef As Variant
+    p = KS_Gorsel("KALITESORA_NAV_" & KS_AktifSekme(ws))
+    If Len(p) = 0 Then Exit Function
+    hedef = Array(SH_PANEL, SH_KAYIT, SH_SEVK, SH_ARIZA, SH_MALZ, SH_KARNE, SH_RAPOR, SH_TANIM)
+    yuk = KS_GENISLIK * 72 / 2400
+    Set s = ws.Shapes.AddPicture(p, msoFalse, msoTrue, sol, ust, KS_GENISLIK, yuk)
+    s.Name = "ksC_Nav"
+    s.Placement = xlFreeFloating
+    s.Locked = True
+    gen = KS_GENISLIK / 8
+    For i = 0 To 7
+        Set s = ws.Shapes.AddShape(msoShapeRectangle, sol + i * gen, ust, gen, yuk)
+        s.Name = "ksC_Sekme" & i
+        s.AlternativeText = CStr(hedef(i))
+        s.Fill.Visible = msoTrue
+        s.Fill.Solid
+        s.Fill.ForeColor.RGB = vbWhite
+        s.Fill.Transparency = 0.99
+        s.Line.Visible = msoFalse
+        s.Shadow.Visible = msoFalse
+        s.Placement = xlFreeFloating
+        s.OnAction = "KS_NAV"
+    Next i
+    KS_NavBandi = ust + yuk
+End Function
+
+' Sekme çubuðu (görselsiz yedek): 8 eþit sekme; aktif sekme lacivert, diðerleri beyaz.
 Private Function KS_SekmeCubugu(ByVal ws As Worksheet, ByVal sol As Double, ByVal ust As Double) As Double
     Dim et As Variant, hedef As Variant, i As Long, gen As Double, s As Shape, aktif As Boolean, yuk As Double
     et = Array("PANEL", "KAYIT", "SEVKÝYATLAR", "ARIZALAR", "MALZEMELER", "KARNE", "RAPORLAR", "YÖNETÝM")
@@ -152,10 +197,34 @@ End Sub
 Public Sub KS_SayfaBaslik(ByVal ws As Worksheet, ByVal ust As Double, ByVal baslik As String, ByVal aciklama As String, _
         Optional ByVal aciklamaGen As Double = 620)
     Dim sol As Double
+    Dim p As String, s As Shape, girinti As Double
     sol = ws.Cells(1, 2).Left
-    KS_Yazi ws, "ksC_Baslik", baslik, sol, ust, aciklamaGen, 24, 15, True, C_LAC(), msoAlignLeft
-    KS_Yazi ws, "ksC_Aciklama", aciklama, sol, ust + 22, aciklamaGen, 16, 8, False, C_GRI(), msoAlignLeft
+    p = KS_Gorsel("KALITESORA_IKON_" & KS_SayfaIkonu(ws))
+    If Len(p) > 0 Then
+        Set s = ws.Shapes.AddPicture(p, msoFalse, msoTrue, sol, ust + 1, 36, 36)
+        s.Name = "ksC_Ikon"
+        s.Placement = xlFreeFloating
+        girinti = 44
+    End If
+    KS_Yazi ws, "ksC_Baslik", baslik, sol + girinti, ust, aciklamaGen - girinti, 24, 15, True, C_LAC(), msoAlignLeft
+    KS_Yazi ws, "ksC_Aciklama", aciklama, sol + girinti, ust + 22, aciklamaGen - girinti, 16, 8, False, C_GRI(), msoAlignLeft
 End Sub
+
+Private Function KS_SayfaIkonu(ByVal ws As Worksheet) As String
+    Select Case ws.Name
+        Case SH_KAYIT: KS_SayfaIkonu = "KAYIT"
+        Case SH_SEVK: KS_SayfaIkonu = "SEVK"
+        Case SH_ARIZA: KS_SayfaIkonu = "ARIZA"
+        Case SH_MALZ: KS_SayfaIkonu = "MALZ"
+        Case SH_KARNE: KS_SayfaIkonu = "KARNE"
+        Case SH_RAPOR: KS_SayfaIkonu = "RAPOR"
+        Case SH_TANIM: KS_SayfaIkonu = "YONETIM"
+        Case SH_AKTAR: KS_SayfaIkonu = "AKTAR"
+        Case SH_LOG: KS_SayfaIkonu = "GUNLUK"
+        Case Else: KS_SayfaIkonu = "PANEL"
+    End Select
+End Function
+
 
 ' ---------------------------------------------------------------- þekil yardýmcýlarý
 
@@ -268,8 +337,44 @@ Public Function KS_Buton(ByVal ws As Worksheet, ByVal ad As String, ByVal metin 
             s.Line.Weight = 1
         Case Else: KS_SekilBicim s, metin, RGB(232, 237, 244), C_METIN(), 9
     End Select
+    Select Case tur
+        Case "ana": KS_ButonParlat s, C_MAVI()
+        Case "yesil": KS_ButonParlat s, C_YESIL2()
+        Case "teal": KS_ButonParlat s, C_TEAL()
+        Case "koyu": KS_ButonParlat s, C_LAC()
+        Case "turuncu": KS_ButonParlat s, RGB(214, 120, 10)
+        Case "cizgi": KS_ButonParlat s, RGB(150, 170, 195), True
+    End Select
     s.OnAction = makro
     Set KS_Buton = s
+End Function
+
+' Düðmeye üstten açýk tona dikey degrade ve yumuþak renkli gölge (v2.5).
+Public Sub KS_ButonParlat(ByVal s As Shape, ByVal renk As Long, Optional ByVal yalnizGolge As Boolean = False)
+    On Error Resume Next
+    If Not yalnizGolge Then
+        s.Fill.TwoColorGradient msoGradientHorizontal, 1
+        s.Fill.ForeColor.RGB = KS_Karisim(renk, vbWhite, 0.22)
+        s.Fill.BackColor.RGB = renk
+    End If
+    With s.Shadow
+        .Visible = msoTrue
+        .ForeColor.RGB = renk
+        .Transparency = IIf(yalnizGolge, 0.8, 0.65)
+        .Blur = 6
+        .OffsetX = 0
+        .OffsetY = 2
+    End With
+    On Error GoTo 0
+End Sub
+
+' Ýki rengin karýþýmý (oran: ikinci rengin payý).
+Public Function KS_Karisim(ByVal c1 As Long, ByVal c2 As Long, ByVal oran As Double) As Long
+    Dim r As Long, g As Long, b As Long
+    r = (c1 Mod 256) * (1 - oran) + (c2 Mod 256) * oran
+    g = ((c1 \ 256) Mod 256) * (1 - oran) + ((c2 \ 256) Mod 256) * oran
+    b = ((c1 \ 65536) Mod 256) * (1 - oran) + ((c2 \ 65536) Mod 256) * oran
+    KS_Karisim = RGB(r, g, b)
 End Function
 
 Public Sub KS_SekilBicim(ByVal s As Shape, ByVal metin As String, ByVal zemin As Long, _

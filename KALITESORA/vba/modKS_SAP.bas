@@ -1,9 +1,14 @@
 Attribute VB_Name = "modKS_SAP"
 Option Explicit
 
+Private mAcikAl As Boolean     ' baþlangýçtan önce teslim tarihli ama teslimatý bitmemiþ sipariþler de alýnsýn
+Private mDisAl As Boolean      ' bölge dýþý (Fýrat) kalemler de alýnsýn
+Private mCAcik As Long         ' "Teslimatý yapýlacak (miktar)" sütunu (sayfa baþýna)
+
 ' Yýllýk SAP satýnalma listesi (ME2N biçimi; "ÖRNEK.xlsx" / "TEDARÝKÇÝ ÝSÝM.xlsx") aktarýmý.
 ' Baþlýklar adla bulunur. Ayný SAS belgesi + kalem + malzeme + teslimat tarihi ikinci kez aktarýlmaz;
-' aktarým tekrar çalýþtýrýlabilir. Çoruh dýþý üretim yerleri (Fýrat bölgesi) atlanýr.
+' aktarým tekrar çalýþtýrýlabilir. Çoruh dýþý üretim yerleri (Fýrat bölgesi) sorulur, varsayýlan atlanýr.
+' Baþlangýç tarihinden önce teslim tarihli ama teslimatý bitmemiþ (devreden) sipariþler de istenirse alýnýr.
 ' SAP listesinde mal giriþ tarihi ve garanti süresi yoktur: garanti MALZEMELER / SEVKÝYATLAR sayfasýnda elle girilir.
 
 Private Function KS_Norm(ByVal v As Variant) As String
@@ -30,6 +35,7 @@ Public Sub KS_SAP_AKTAR()
     Dim g(0 To 11) As Variant, satir As Variant, hata As String, uyari As String, x As Double, mik As Double
     Dim nTarih As Long, nBolge As Long, nSil As Long, nVar As Long, nHata As Long, ilkHata As String
     Dim kod As String, pb As String, lo As ListObject, yerEkle As Boolean, sevkci As String, k As Variant, liste As String
+    Dim nAcikOnce As Long, nDisSay As Long, soru As String
     Dim gecis As Long, toplamSatir As Long, sonSatir As Long, cUy As Long, dKodYer As Object, dDis As Object, yerAd As String
     On Error GoTo Hata
 
@@ -69,8 +75,26 @@ Public Sub KS_SAP_AKTAR()
     ReDim sSat(1 To toplamSatir, 1 To S_KOLON)
     KS_BaglamYukle
 
-    ' 0: tanýmsýz üretim yerleri, 1: yeni malzemeler, 2: sevkiyatlar
+    ' 0: tanýmsýz üretim yerleri ve sayýmlar, 1: yeni malzemeler, 2: sevkiyatlar
+    mAcikAl = False
+    mDisAl = False
     For gecis = 0 To 2
+        If gecis = 1 And nAcikOnce > 0 Then
+            KS_Bitir True
+            mAcikAl = (MsgBox("Teslim tarihi " & Format$(baslangic, "dd.mm.yyyy") & " öncesinde olan ama teslimatý henüz " & _
+                "tamamlanmamýþ " & nAcikOnce & " açýk sipariþ kalemi var (önceki yýllardan devreden sipariþler)." & vbCrLf & vbCrLf & _
+                "EVET: bunlar da aktarýlýr (önerilen; kapsam tam olur)." & vbCrLf & _
+                "HAYIR: yalnýz baþlangýç tarihinden sonrakiler aktarýlýr.", vbQuestion + vbYesNo, KS_AD) = vbYes)
+            KS_Basla
+        End If
+        If gecis = 1 And nDisSay > 0 Then
+            KS_Bitir True
+            mDisAl = (MsgBox("Dosyada Çoruh bölgesi dýþýna (Fýrat bölgesi: FEDAÞ, Fýrat Aksa vb.) ait " & nDisSay & _
+                " kalem var." & vbCrLf & vbCrLf & _
+                "HAYIR: bölge dýþý kalemler atlanýr (önerilen)." & vbCrLf & _
+                "EVET: bunlar da aktarýlýr.", vbQuestion + vbYesNo + vbDefaultButton2, KS_AD) = vbYes)
+            KS_Basla
+        End If
         If gecis = 1 And dYeniYer.Count > 0 Then
             liste = ""
             For Each k In dYeniYer.Keys
@@ -80,7 +104,7 @@ Public Sub KS_SAP_AKTAR()
             yerEkle = (MsgBox("Dosyada TANIMLAR'da olmayan " & dYeniYer.Count & " üretim yeri var:" & liste & vbCrLf & vbCrLf & _
                 "Çoruh bölgesindeyse EVET: sevk yeri olarak eklenir ve kalemleri aktarýlýr." & vbCrLf & _
                 "Bölge dýþýysa HAYIR: bu üretim yerlerinin kalemleri atlanýr." & vbCrLf & vbCrLf & _
-                "(Fýrat bölgesi üretim yerleri - FEDAÞ, Fýrat Aksa - her zaman kendiliðinden atlanýr.)", _
+                "(Bilinen Fýrat bölgesi üretim yerleri bu listede yer almaz; onlar için ayrýca soruldu.)", _
                 vbQuestion + vbYesNo + vbDefaultButton2, KS_AD) = vbYes)
             KS_Basla
         End If
@@ -105,6 +129,7 @@ Public Sub KS_SAP_AKTAR()
                 cT = KS_SapKolon(bas, "Teslimat tarihi")
                 cYer = KS_SapKolon(bas, "Üretim Yeri Adý")
                 cUy = KS_SapKolon(bas, "Üretim yeri")
+                mCAcik = KS_SapKolon(bas, "Teslimatý yapýlacak (miktar)")
                 If (cSat > 0 Or cTed > 0) And cM > 0 And cT > 0 And cYer > 0 Then
                     cK = KS_SapKolon(bas, "Kýsa metin")
                     cMik = KS_SapKolon(bas, "Miktar (depo ÖB)")
@@ -124,6 +149,8 @@ Public Sub KS_SAP_AKTAR()
                             If Len(KS_Anahtar(yerAd)) > 0 And Not dYer.Exists(KS_Anahtar(yerAd)) And Not KS_SapDisi(v, i, cUy) Then
                                 dYeniYer(KS_Anahtar(yerAd)) = yerAd
                             End If
+                            KS_SapSay v, i, cT, cSil, baslangic, KS_SapDisi(v, i, cUy) Or dDis.Exists(KS_Anahtar(yerAd)), _
+                                nAcikOnce, nDisSay
                         ElseIf KS_SapSatirUygun(v, i, cT, yerAd, cSil, baslangic, dYer, dDis, KS_SapDisi(v, i, cUy), yerEkle, _
                                 gecis = 2, nTarih, nBolge, nSil) Then
                             kod = KS_Metin(v(i, cM))
@@ -242,6 +269,29 @@ Private Function KS_SapDisi(ByRef v As Variant, ByVal i As Long, ByVal cUy As Lo
     If cUy > 0 Then KS_SapDisi = KS_BolgeDisiKod(v(i, cUy))
 End Function
 
+' Teslimatý tamamlanmamýþ kalem: "Teslimatý yapýlacak (miktar)" > 0.
+Private Function KS_SapAcik(ByRef v As Variant, ByVal i As Long) As Boolean
+    Dim x As Double
+    If mCAcik > 0 Then
+        If KS_Sayi(v(i, mCAcik), x) Then KS_SapAcik = (x > 0)
+    End If
+End Function
+
+' Ýlk geçiþte soru için sayým: baþlangýçtan önceki açýk sipariþler (bölge içi) ve bölge dýþý kalemler.
+Private Sub KS_SapSay(ByRef v As Variant, ByVal i As Long, ByVal cT As Long, ByVal cSil As Long, ByVal baslangic As Date, _
+        ByVal disi As Boolean, ByRef nAcikOnce As Long, ByRef nDisSay As Long)
+    Dim d As Date
+    If cSil > 0 Then
+        If Len(KS_Metin(v(i, cSil))) > 0 Then Exit Sub
+    End If
+    If Not KS_Tarih(v(i, cT), d) Then Exit Sub
+    If disi Then
+        If d >= baslangic Or KS_SapAcik(v, i) Then nDisSay = nDisSay + 1
+    ElseIf d < baslangic And KS_SapAcik(v, i) Then
+        nAcikOnce = nAcikOnce + 1
+    End If
+End Sub
+
 Private Function KS_SapSatirUygun(ByRef v As Variant, ByVal i As Long, ByVal cT As Long, ByVal yerAd As String, _
         ByVal cSil As Long, ByVal baslangic As Date, ByVal dYer As Object, ByVal dDis As Object, ByVal disKod As Boolean, _
         ByVal yerEkle As Boolean, ByVal say As Boolean, _
@@ -258,10 +308,12 @@ Private Function KS_SapSatirUygun(ByRef v As Variant, ByVal i As Long, ByVal cT 
         Exit Function
     End If
     If d < baslangic Then
-        If say Then nTarih = nTarih + 1
-        Exit Function
+        If Not (mAcikAl And KS_SapAcik(v, i)) Then
+            If say Then nTarih = nTarih + 1
+            Exit Function
+        End If
     End If
-    If disKod Or dDis.Exists(KS_Anahtar(yerAd)) Then
+    If (disKod Or dDis.Exists(KS_Anahtar(yerAd))) And Not mDisAl Then
         If say Then nBolge = nBolge + 1
         Exit Function
     End If
