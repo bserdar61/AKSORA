@@ -587,19 +587,24 @@ Private Sub KS_FormBlok(ByVal ws As Worksheet, ByVal blok As Long, ByVal ilk As 
     ElseIf blok = 2 Then
         bb = Array("KAYDET", "KS_KAYIT_SEVK", "ana", "TEMÝZLE", "KS_TEMIZLE_SEVK", "cizgi", "SEVKÝYATLARI AÇ", "KS_GIT_SEVK", "teal")
     Else
-        bb = Array("KAYDET", "KS_KAYIT_ARIZA", "ana", "TEMÝZLE", "KS_TEMIZLE_ARIZA", "cizgi", "ARIZALARI AÇ", "KS_GIT_ARIZA", "teal")
+        bb = Array("KAYDET", "KS_KAYIT_ARIZA", "ana", "TEMÝZLE", "KS_TEMIZLE_ARIZA", "cizgi", "ARIZALARI AÇ", "KS_GIT_ARIZA", "teal", _
+            "ÜRETÝCÝYE MAÝL", "KS_MAIL_TASLAK", "koyu")
     End If
     ust = ws.Rows(son - 1).Top + (ws.Rows(son - 1).RowHeight - 26) / 2
     x = ws.Cells(1, 4).Left
-    For b = 0 To 2
+    For b = 0 To (UBound(bb) + 1) \ 3 - 1
         With KS_Buton(ws, onek & b, CStr(bb(b * 3)), x + b * 136, ust, 128, 26, CStr(bb(b * 3 + 1)), CStr(bb(b * 3 + 2)))
             .Placement = xlMove
         End With
     Next b
     If blok = 3 Then
         r = KS_F("fA_MAILDOSYA").Row
-        With KS_Buton(ws, onek & "Mail", "DOSYA EKLE", ws.Cells(1, 8).Left - 120, ws.Rows(r).Top + 1, 116, 22, _
+        With KS_Buton(ws, onek & "Mail", "DOSYA EKLE", ws.Cells(1, 8).Left - 150, ws.Rows(r).Top + 1, 82, 22, _
                 "KS_MAIL_EKLE", "koyu")
+            .Placement = xlMove
+        End With
+        With KS_Buton(ws, onek & "MailAc", "AÇ", ws.Cells(1, 8).Left - 64, ws.Rows(r).Top + 1, 60, 22, _
+                "KS_MAIL_AC", "cizgi")
             .Placement = xlMove
         End With
         ws.Range(ws.Cells(r, 4), ws.Cells(r, 7)).UnMerge
@@ -1226,3 +1231,73 @@ Private Function KS_MailTasi(ByVal kaynak As String, ByVal no As String) As Stri
     fso.CopyFile kaynak, hedef, True
     KS_MailTasi = hedef
 End Function
+
+Public Sub KS_MAIL_AC()
+    Dim yol As String
+    yol = KS_Metin(KS_FV("fA_MAILDOSYA"))
+    If Len(yol) = 0 Then
+        MsgBox "Bu arýzaya eklenmiþ mail dosyasý yok.", vbInformation, KS_AD
+        Exit Sub
+    End If
+    If Len(Dir$(yol)) = 0 Then
+        MsgBox "Dosya bulunamadý:" & vbCrLf & yol, vbExclamation, KS_AD
+        Exit Sub
+    End If
+    On Error GoTo Hata
+    ThisWorkbook.FollowHyperlink yol
+    Exit Sub
+Hata:
+    MsgBox "Dosya açýlamadý: " & Err.Description, vbExclamation, KS_AD
+End Sub
+
+' Formdaki arýza bilgileriyle üreticiye Outlook mail taslaðý hazýrlar; bildirim tarihi boþsa bugün yazýlýr.
+Public Sub KS_MAIL_TASLAK()
+    Dim ol As Object, m As Object, konu As String, govde As String, t As Date, satirlar As String, kayit As String
+    If KS_Bos(KS_FV("fA_KOD")) Then
+        MsgBox "Önce arýzalý malzemeyi seçin.", vbExclamation, KS_AD
+        Exit Sub
+    End If
+    konu = "Arýza Bildirimi - " & KS_Metin(KS_FV("fA_KOD")) & " " & KS_Metin(KS_FV("fA_AD"))
+    If Not KS_Bos(KS_FV("fA_NO")) Then konu = konu & "  (" & KS_Metin(KS_FV("fA_NO")) & ")"
+    satirlar = "Malzeme kodu      : " & KS_Metin(KS_FV("fA_KOD")) & vbCrLf & _
+        "Malzeme adý       : " & KS_Metin(KS_FV("fA_AD")) & vbCrLf
+    If Not KS_Bos(KS_FV("fA_SERI")) Then satirlar = satirlar & "Seri no           : " & KS_Metin(KS_FV("fA_SERI")) & vbCrLf
+    If KS_Tarih(KS_FV("fA_TARIH"), t) Then satirlar = satirlar & "Arýza tarihi      : " & Format$(t, "dd.mm.yyyy") & vbCrLf
+    If Not KS_Bos(KS_FV("fA_ADET")) Then satirlar = satirlar & "Arýzalý adet      : " & KS_Metin(KS_FV("fA_ADET")) & vbCrLf
+    If Not KS_Bos(KS_FV("fA_YER")) Then satirlar = satirlar & "Sevk yeri / sevkçi: " & KS_Metin(KS_FV("fA_YER")) & vbCrLf
+    If Not KS_Bos(KS_FV("fA_SEVK")) Then satirlar = satirlar & "Ýlgili sevkiyat   : " & KS_Metin(KS_FV("fA_SEVK")) & vbCrLf
+    If KS_Tarih(KS_FV("fA_GARBIT"), t) Then satirlar = satirlar & "Garanti bitiþi    : " & Format$(t, "dd.mm.yyyy") & vbCrLf
+    If Not KS_Bos(KS_FV("fA_TIP")) Then satirlar = satirlar & "Arýza tipi        : " & KS_Metin(KS_FV("fA_TIP")) & vbCrLf
+    govde = "Sayýn Yetkili," & vbCrLf & vbCrLf & _
+        "Firmanýzca tedarik edilen aþaðýdaki malzemede arýza tespit edilmiþtir." & vbCrLf & vbCrLf & satirlar & vbCrLf & _
+        "Arýza açýklamasý:" & vbCrLf & KS_Metin(KS_FV("fA_ACIK")) & vbCrLf & vbCrLf & _
+        IIf(KS_Metin(KS_FV("fA_KAPSAM")) = "EVET", "Malzeme garanti süresi içindedir; garanti kapsamýnda deðerlendirilmesini rica ederiz." & vbCrLf, "") & _
+        "En kýsa sürede dönüþ yapmanýzý rica ederiz." & vbCrLf & vbCrLf & "Saygýlarýmýzla," & vbCrLf & _
+        "Çoruh Elektrik Daðýtým A.Þ."
+    On Error Resume Next
+    Set ol = CreateObject("Outlook.Application")
+    On Error GoTo Hata
+    Application.EnableEvents = False
+    If KS_Bos(KS_FV("fA_BILDIRIM")) Then KS_Yaz1 "fA_BILDIRIM", Date
+    kayit = Format$(Now, "dd.mm.yyyy hh:nn") & " - Üreticiye arýza bildirimi hazýrlandý."
+    If KS_Bos(KS_FV("fA_MAIL")) Then KS_Yaz1 "fA_MAIL", kayit Else KS_Yaz1 "fA_MAIL", KS_Metin(KS_FV("fA_MAIL")) & vbLf & kayit
+    Application.EnableEvents = True
+    If ol Is Nothing Then
+        KS_Yaz1 "fA_MAIL", KS_Metin(KS_FV("fA_MAIL")) & vbLf & vbLf & konu & vbLf & govde
+        MsgBox "Outlook bulunamadý. Mail metni 'Üretici ile Mail Yazýþmasý' alanýna yazýldý; kopyalayýp gönderebilirsiniz.", _
+            vbInformation, KS_AD
+        Exit Sub
+    End If
+    Set m = ol.CreateItem(0)
+    m.Subject = konu
+    m.Body = govde
+    If Len(KS_Metin(KS_FV("fA_MAILDOSYA"))) > 0 Then
+        If Len(Dir$(KS_Metin(KS_FV("fA_MAILDOSYA")))) > 0 Then m.Attachments.Add KS_Metin(KS_FV("fA_MAILDOSYA"))
+    End If
+    m.Display
+    KS_Bilgi 3, "Outlook taslaðý açýldý; alýcýyý ekleyip gönderin. Bildirim tarihi yazýldý, KAYDET'e basmayý unutmayýn."
+    Exit Sub
+Hata:
+    Application.EnableEvents = True
+    MsgBox "Mail taslaðý hazýrlanamadý: " & Err.Description, vbExclamation, KS_AD
+End Sub

@@ -165,6 +165,7 @@ Public Sub KS_RaporKur()
     KS_AdHucre "rYil", ws.Range("C3")
     KS_Liste ws.Range("C3"), "lstYilSayi", True
     KS_Buton ws, "ksR_Hesapla", "HESAPLA", ws.Range("D3").Left + 8, ws.Rows(3).Top + 2, 100, 24, "KS_RAPOR_HESAPLA", "ana"
+    KS_Buton ws, "ksR_Pdf", "PDF OLARAK KAYDET", ws.Range("D3").Left + 116, ws.Rows(3).Top + 2, 140, 24, "KS_PDF_KAYDET", "cizgi"
 
     KS_Bolum ws.Range("B5:I5"), "5 YILLIK KARÞILAÞTIRMA"
     KS_TabloBaslik ws.Range("B" & R_YIL_SATIR & ":I" & R_YIL_SATIR), Array("GÖSTERGE", "", "", "", "", "", "5 YIL", "DEÐÝÞÝM")
@@ -453,6 +454,7 @@ Public Sub KS_KarneKur()
     End With
     KS_AdHucre "kYil", ws.Range("J3")
     KS_Liste ws.Range("J3"), "lstYil", True
+    KS_Buton ws, "ksK_Pdf", "PDF OLARAK KAYDET", ws.Range("L3").Left + 8, ws.Rows(3).Top + 4, 140, 24, "KS_PDF_KAYDET", "cizgi"
     ws.Rows(4).RowHeight = 10
     With ws.Range("B" & K_ILK)
         .Value = "Arama kutusuna malzeme ya da üretici yazýn. Örnek: 1000006162, REDRESOR, 1300001416, LUNA ELEKTRÝK."

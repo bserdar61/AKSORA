@@ -1,4 +1,4 @@
-# KALİTESORA v2.1 — Kurulum ve Kullanım
+# KALİTESORA v2.3 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -95,3 +95,11 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 4. Alt+F8 ile `KALITESORA_YUKLE` makrosunu çalıştırın.
 
 `.bas` dosyaları Windows-1254 (Türkçe) kodlamasındadır.
+
+## v2.3 yenilikleri
+- Açılışta tasarım güncellemesi kendiliğinden uygulanır (önce yedek alınır, kayıtlar korunur).
+- **ARA** düğmesi: SEVKİYATLAR / ARIZALAR / MALZEMELER tablolarında kod, ad, seri veya üreticiye göre hızlı süzme.
+- **PDF**: RAPORLAR ve KARNE sayfaları tek tıkla `KALITESORA_RAPOR` klasörüne yatay PDF olarak kaydedilir.
+- **ÜRETİCİYE MAİL**: KAYIT > Arıza ekranından Outlook taslağı hazırlanır (Outlook yoksa metin alana yazılır); bildirim tarihi boşsa bugün yazılır.
+- Mail dosyası **AÇ** düğmesi; eklenen mail/sohbet dosyası doğrudan açılır.
+- Tarih ve sayı sütunlarına giriş denetimi; hesaplanan sütunlar ve tablo altı kilitli.

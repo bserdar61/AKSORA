@@ -593,3 +593,51 @@ End Sub
 Public Sub KS_EKRANA_SIGDIR()
     KS_EkranSigdir ActiveSheet
 End Sub
+
+' Aktif sayfayý (karne / rapor) yatay, tek sayfa geniþliðinde PDF olarak kaydeder ve açar.
+Public Sub KS_PDF_KAYDET()
+    Dim ws As Worksheet, klasor As String, dosya As String, son As Long, sonKol As Long, korumali As Boolean, h As Range
+    On Error GoTo Hata
+    Set ws = ActiveSheet
+    If Len(ThisWorkbook.Path) = 0 Or LCase$(Left$(ThisWorkbook.Path, 4)) = "http" Then
+        MsgBox "PDF için dosyayý bilgisayardaki bir klasörden açýn.", vbExclamation, KS_AD
+        Exit Sub
+    End If
+    klasor = ThisWorkbook.Path & Application.PathSeparator & "KALITESORA_RAPOR"
+    If Len(Dir$(klasor, vbDirectory)) = 0 Then MkDir klasor
+    dosya = klasor & Application.PathSeparator & Replace(ws.Name, " ", "_") & "_" & Format$(Now, "yyyymmdd_hhnn") & ".pdf"
+    Set h = ws.Cells.Find(What:="*", LookIn:=xlFormulas, SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
+    If h Is Nothing Then son = 40 Else son = h.Row + 2
+    sonKol = 2
+    Do While ws.Columns(sonKol).Left + ws.Columns(sonKol).Width < ws.Cells(1, 2).Left + KS_GENISLIK And sonKol < 60
+        sonKol = sonKol + 1
+    Loop
+    korumali = ws.ProtectContents
+    KS_Ac ws
+    Application.PrintCommunication = False
+    With ws.PageSetup
+        .PrintArea = ws.Range(ws.Cells(1, 1), ws.Cells(son, sonKol)).Address
+        .Orientation = xlLandscape
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+        .LeftMargin = Application.CentimetersToPoints(0.8)
+        .RightMargin = Application.CentimetersToPoints(0.8)
+        .TopMargin = Application.CentimetersToPoints(0.8)
+        .BottomMargin = Application.CentimetersToPoints(1)
+        .CenterFooter = KS_AD & "  ·  " & ws.Name & "  ·  &D  ·  Sayfa &P / &N"
+    End With
+    Application.PrintCommunication = True
+    If korumali Then KS_Kapat ws
+    ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=dosya, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=True
+    KS_Log "PDF", ws.Name, dosya
+    Exit Sub
+Hata:
+    Dim mesaj As String
+    mesaj = Err.Description
+    On Error Resume Next
+    Application.PrintCommunication = True
+    If korumali Then KS_Kapat ws
+    MsgBox "PDF oluþturulamadý: " & mesaj, vbExclamation, KS_AD
+End Sub

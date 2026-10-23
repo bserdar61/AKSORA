@@ -579,3 +579,42 @@ End Sub
 Public Sub KS_F_MALZ_ARIZALI()
     KS_Suz T_MALZ, M_ARIZAMIK, ">0"
 End Sub
+
+' ================================================================ arama
+
+' Aktif listede metni sýrayla aday sütunlarda arar; ilk eþleþen sütuna "*metin*" süzgeci uygular.
+Public Sub KS_ARA()
+    Dim lo As ListObject, aday As Variant, k As Variant, a As Variant, i As Long, ara As String, bulunan As Long
+    Select Case ActiveSheet.Name
+        Case SH_SEVK
+            Set lo = KS_LOZ(T_SEVK)
+            aday = Array(S_KOD, S_AD, S_NO, S_SEVKCI, S_YER, S_SERI, S_IRS)
+        Case SH_ARIZA
+            Set lo = KS_LOZ(T_ARIZA)
+            aday = Array(A_KOD, A_AD, A_NO, A_SERI, A_URETICI, A_YER, A_ACIK)
+        Case SH_MALZ
+            Set lo = KS_LOZ(T_MALZ)
+            aday = Array(M_KOD, M_AD, M_URETICI, M_KAT)
+        Case Else
+            Exit Sub
+    End Select
+    ara = Trim$(InputBox("Aranacak metin (malzeme kodu / adý, numara, sevkçi, seri no ...):", KS_AD))
+    If Len(ara) = 0 Then Exit Sub
+    a = KS_Veri(lo)
+    If IsArray(a) Then
+        For Each k In aday
+            For i = 1 To UBound(a, 1)
+                If InStr(1, KS_Anahtar(a(i, k)), KS_Anahtar(ara), vbBinaryCompare) > 0 Then
+                    bulunan = k
+                    Exit For
+                End If
+            Next i
+            If bulunan > 0 Then Exit For
+        Next k
+    End If
+    If bulunan = 0 Then
+        MsgBox "Eþleþen kayýt bulunamadý: " & ara, vbInformation, KS_AD
+        Exit Sub
+    End If
+    KS_Suz lo.Name, bulunan, "*" & ara & "*"
+End Sub

@@ -328,6 +328,8 @@ Public Sub KS_HesaplaTumu()
     KS_DiziGeriYaz loS, arS
     KS_DiziGeriYaz loA, aA
     KS_MailBaglantilari loA
+    KS_KilitAyarla loS, KS_DuzenSevk()
+    KS_KilitAyarla loM, KS_DuzenMalz()
     KS_Bitir
 End Sub
 
@@ -370,3 +372,25 @@ Hata:
     KS_Bitir True
     MsgBox "Hesaplama durdu: " & Err.Description, vbExclamation, KS_AD
 End Sub
+
+' Elle düzenlenebilir sütunlar yalnýz tablo satýrlarýnda açýktýr; tablonun altýna yazýlarak yarým satýr oluþmaz.
+Public Sub KS_KilitAyarla(ByVal lo As ListObject, ByVal kolonlar As Variant)
+    Dim ws As Worksheet, k As Variant, c As Long, korumali As Boolean
+    Set ws = lo.Parent
+    korumali = ws.ProtectContents
+    KS_Ac ws
+    For Each k In kolonlar
+        c = lo.HeaderRowRange.Cells(1, CLng(k)).Column
+        ws.Range(ws.Cells(lo.HeaderRowRange.Row + 1, c), ws.Cells(ws.Rows.Count, c)).Locked = True
+        If Not lo.DataBodyRange Is Nothing Then lo.ListColumns(CLng(k)).DataBodyRange.Locked = False
+    Next k
+    If korumali Then KS_Kapat ws
+End Sub
+
+Public Function KS_DuzenSevk() As Variant
+    KS_DuzenSevk = Array(S_GELIS, S_GARAY, S_IRS, S_SERI, S_NOT)
+End Function
+
+Public Function KS_DuzenMalz() As Variant
+    KS_DuzenMalz = Array(M_KAT, M_BIRIM, M_GARANTI, M_NOT)
+End Function

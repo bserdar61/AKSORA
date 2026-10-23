@@ -5,7 +5,7 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
-Public Const KS_TASARIM_NO As Long = 22      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+Public Const KS_TASARIM_NO As Long = 23      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
 
 Private mSessiz As Boolean
 
@@ -246,16 +246,23 @@ End Sub
 
 ' Elle düzenlenebilir sütunlar: kilit açýk, açýk sarý zemin.
 Private Sub KS_DuzenlenebilirSutun(ByVal lo As ListObject, ByVal kolonlar As Variant)
-    Dim k As Variant, ws As Worksheet, c As Long
-    Set ws = lo.Parent
+    Dim k As Variant
     For Each k In kolonlar
-        c = lo.HeaderRowRange.Cells(1, CLng(k)).Column
-        ws.Range(ws.Cells(lo.HeaderRowRange.Row + 1, c), ws.Cells(ws.Rows.Count, c)).Locked = False
         With lo.HeaderRowRange.Cells(1, CLng(k))
             .Interior.Pattern = xlNone
             .Font.Color = vbWhite
         End With
     Next k
+    KS_KilitAyarla lo, kolonlar
+End Sub
+
+' Elle yazýlan tablo sütunlarýna giriþ doðrulamasý (tarih / sayý).
+Private Sub KS_SutunDogrulama(ByVal lo As ListObject, ByVal kolon As Long, ByVal tur As String)
+    Dim ws As Worksheet, c As Long, r As Range
+    Set ws = lo.Parent
+    c = lo.HeaderRowRange.Cells(1, kolon).Column
+    Set r = ws.Range(ws.Cells(lo.HeaderRowRange.Row + 1, c), ws.Cells(lo.HeaderRowRange.Row + 100000, c))
+    If tur = "tarih" Then KS_TarihDogrulama r Else KS_SayiDogrulama r
 End Sub
 
 Private Sub KS_VeriSayfaGenel(ByVal ws As Worksheet, ByVal ilkVeri As Long)
@@ -365,8 +372,8 @@ End Sub
 
 Private Sub KS_GorunumDugmesi(ByVal ws As Worksheet)
     Dim x As Double
-    x = ws.Cells(1, 2).Left + KS_GENISLIK - 118
-    KS_Buton ws, "ksB_Gorunum", "TÜM SÜTUNLAR", x, ws.Rows(2).Top + 9, 118, 26, "KS_SUTUN_GORUNUM", "koyu"
+    x = ws.Cells(1, 2).Left + KS_GENISLIK - 112
+    KS_Buton ws, "ksB_Gorunum", "TÜM SÜTUNLAR", x, ws.Rows(2).Top + 9, 112, 26, "KS_SUTUN_GORUNUM", "cizgi"
 End Sub
 
 Public Sub KS_VeriSayfaUst(ByVal ws As Worksheet, ByVal baslik As String, ByVal aciklama As String, ByVal dugmeler As Variant)
@@ -379,7 +386,7 @@ Public Sub KS_VeriSayfaUst(ByVal ws As Worksheet, ByVal baslik As String, ByVal 
     x = sol + KS_GENISLIK
     If IsArray(dugmeler) Then
         n = (UBound(dugmeler) + 1) \ 3
-        gen = 118
+        gen = 112
         x = sol + KS_GENISLIK - n * gen - (n - 1) * 6
     End If
     KS_SayfaBaslik ws, ws.Rows(2).Top + 4, baslik, aciklama, x - sol - 12
@@ -415,13 +422,14 @@ Private Sub KS_VeriSayfalariKur()
         Array(15, 44, 16, 8, 40, 12, 8, 9, 10, 9, 9, 11, 30, 12), _
         Array("@", "@", "@", "@", "@", tl, "@", "0", "#,##0", "#,##0", "0.0%", tr, "@", tr), yeni)
     KS_BaslikRenk lo, Array(M_SEVKMIK, M_ARIZAMIK, M_ORAN, M_SONARIZA, M_KAYIT), 0
-    KS_DuzenlenebilirSutun lo, Array(M_KAT, M_BIRIM, M_GARANTI, M_NOT)
+    KS_DuzenlenebilirSutun lo, KS_DuzenMalz()
+    KS_SutunDogrulama lo, M_GARANTI, "sayi"
     KS_GrupBandi lo, Array(Array("MALZEME TANIMI", 1, 5, gLac), Array("FÝYAT VE GARANTÝ", 6, 8, gYesil), _
         Array("KALÝTE PERFORMANSI", 9, 12, gTeal), Array("DÝÐER", 13, 14, gGri))
     KS_VeriSayfaUst ws, "MALZEMELER", "Kategori, birim, garanti ve not doðrudan yazýlabilir; garanti boþ sevkiyatlara uygulanýr.", _
         Array("+ YENÝ MALZEME", "KS_GIT_KAYIT_MALZ", "ana", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_MALZ_GARYOK", "turuncu", _
             "ARIZA VERENLER", "KS_F_MALZ_ARIZALI", "teal", "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", _
-            "", "", "")
+            "ARA", "KS_ARA", "koyu", "", "", "")
     KS_GorunumDugmesi ws
     KS_OzetGorunum lo, KS_GizliSutunlar(T_MALZ), True
     KS_Pencere ws, 90, 4
@@ -439,7 +447,9 @@ Private Sub KS_VeriSayfalariKur()
         Array("@", "@", "@", "@", "@", "General", tl, "@", tl, tr, tr, "0", "@", "0", tr, "@", "@", "@", _
             "General", "@", "dd.mm.yyyy hh:mm", "@"), yeni)
     KS_BaslikRenk lo, Array(S_NO, S_AD, S_TUTAR, S_GECIKME, S_TDURUM, S_GARBIT, S_GDURUM, S_ARIZA, S_ZAMAN, S_KULL), 0
-    KS_DuzenlenebilirSutun lo, Array(S_GELIS, S_GARAY, S_IRS, S_SERI, S_NOT)
+    KS_DuzenlenebilirSutun lo, KS_DuzenSevk()
+    KS_SutunDogrulama lo, S_GELIS, "tarih"
+    KS_SutunDogrulama lo, S_GARAY, "sayi"
     KS_DurumRenkleri lo, S_TDURUM, Array("ZAMANINDA", "GECÝKMELÝ", "GECÝKÝYOR")
     KS_DurumRenkleri lo, S_GDURUM, Array("DEVAM", "BÝTTÝ", "BÝTÝYOR")
     KS_GrupBandi lo, Array(Array("SEVKÝYAT", 1, 5, gLac), Array("MÝKTAR / TUTAR", 6, 9, gCelik), _
@@ -447,7 +457,7 @@ Private Sub KS_VeriSayfalariKur()
     KS_VeriSayfaUst ws, "SEVKÝYATLAR", "Gerçek geliþ, garanti, belge, seri ve not doðrudan yazýlabilir.", _
         Array("YILLIK EXCEL YÜKLE", "KS_SAP_AKTAR", "yesil", "GARANTÝSÝ BÝTECEK", "KS_F_SEVK_GARBITIYOR", "turuncu", _
             "GECÝKENLER", "KS_F_SEVK_GECIKEN", "turuncu", "GARANTÝSÝ GÝRÝLMEMÝÞ", "KS_F_SEVK_GARYOK", "teal", _
-            "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", "", "", "")
+            "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", "ARA", "KS_ARA", "koyu", "", "", "")
     KS_GorunumDugmesi ws
     KS_OzetGorunum lo, KS_GizliSutunlar(T_SEVK), True
     KS_Pencere ws, 90, 4
@@ -478,7 +488,7 @@ Private Sub KS_VeriSayfalariKur()
     KS_VeriSayfaUst ws, "ARIZALAR", "Düzeltme için KAYIT > ARIZA sekmesinde arýza numarasýný yazýn.", _
         Array("+ YENÝ ARIZA", "KS_GIT_KAYIT_ARIZA", "ana", "DEVAM EDENLER", "KS_F_ARIZA_ACIK", "turuncu", _
             "ÜRETÝCÝDE", "KS_F_ARIZA_URETICIDE", "turuncu", "ÇÖZÜLENLER", "KS_F_ARIZA_COZULEN", "yesil", _
-            "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", "", "", "")
+            "TÜMÜNÜ GÖSTER", "KS_F_TEMIZLE", "cizgi", "ARA", "KS_ARA", "koyu", "", "", "")
     KS_GorunumDugmesi ws
     KS_OzetGorunum lo, KS_GizliSutunlar(T_ARIZA), True
     KS_Pencere ws, 90, 4
