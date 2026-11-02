@@ -1671,6 +1671,8 @@ Private Sub MS_Yaz(ByVal ws As Worksheet, ByRef a As Variant)
     ws.AutoFilterMode = False
     ws.Range("A7:N" & application.Max(son, n + 6)).ClearContents
     If n > 0 Then
+        ' Stok sayfasi malzeme adina gore A-Z (sonra malzeme kodu, depo, seri no).
+        If n > 1 Then a = AKSORA_STOK_DIZI_AZ(a, Array(6, 5, 2, 10))
         ws.Range("A7:F" & n + 6).NumberFormat = "@"
         ws.Range("H7:J" & n + 6).NumberFormat = "@"
         ws.Range("A7").Resize(n, 14).Value2 = a
@@ -2454,6 +2456,8 @@ Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
         ws.Range("A7:N" & son).ClearContents
         ws.Range("C2").MergeArea.ClearContents
         If n(i) > 0 Then
+            ' Stok sayfasi malzeme adina gore A-Z (sonra malzeme kodu, depo, seri no).
+            If n(i) > 1 Then veri(i) = AKSORA_STOK_DIZI_AZ(veri(i), Array(6, 5, 2, 10))
             ws.Range("A7:F" & n(i) + 6).NumberFormat = "@"
             ws.Range("H7:J" & n(i) + 6).NumberFormat = "@"
             ws.Range("A7").Resize(n(i), 14).Value2 = veri(i)

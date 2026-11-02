@@ -517,6 +517,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   dizi hesabı, olmazsa Rows().Hidden. Kullanan: T_CiktiSayim, T_CiktiListe, AKSORA_MUSTERI_BANT (zebra).
   YENİ KOD YAZARKEN stok sayfalarında SpecialCells(xlCellTypeVisible).Areas KULLANMA.
   AKSORA_STOK_AZ oturum önbelleği (mAzImza: satır sayısı, C2, A5, ilk/orta/son satır).
+- Müşteri sayfa açılışı donması: AKSORA_STOK_AZ sayfa açılışında 5000+ satırlı sayfaları sıralamaz (18k satır 3-5 sn
+  kartsız bekletiyordu). Müşteri sayfaları yazılırken sıralanır: MS_Yaz ve il kaydından yükleme (AKSORA_STOK_DIZI_AZ,
+  4096 satırda bir AKSORA_BEKLE_NABIZ). Anahtarda Replace yalnız Türkçe harf varsa.
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
 ## Sıradaki işler

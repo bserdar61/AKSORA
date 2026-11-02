@@ -1573,6 +1573,7 @@ Public Function AKSORA_STOK_DIZI_AZ(ByVal a As Variant, ByVal sutunlar As Varian
     For i = 1 To n
         anah(i) = T_AzAnahtar(a, i, sutunlar)
         idx(i) = i
+        If (i And 4095) = 0 Then AKSORA_BEKLE_NABIZ
         If i > 1 Then If anah(i) < anah(i - 1) Then sirali = False
     Next i
     If sirali Then Exit Function
@@ -1606,8 +1607,10 @@ Private Function T_AzAnahtar(ByVal a As Variant, ByVal r As Long, ByVal sutunlar
             v = a(r, c)
             If Not IsError(v) Then t = UCase$(Trim$(CStr(v)))
         End If
-        t = Replace(Replace(Replace(Replace(t, "Ç", "C~"), "Ð", "G~"), "Ý", "I"), "ý", "I")
-        t = Replace(Replace(Replace(t, "Ö", "O~"), "Þ", "S~"), "Ü", "U~")
+        If t Like "*[ÇÐÝýÖÞÜ]*" Then
+            t = Replace(Replace(Replace(Replace(t, "Ç", "C~"), "Ð", "G~"), "Ý", "I"), "ý", "I")
+            t = Replace(Replace(Replace(t, "Ö", "O~"), "Þ", "S~"), "Ü", "U~")
+        End If
         T_AzAnahtar = T_AzAnahtar & t & Chr$(1)
     Next i
 End Function
@@ -1648,6 +1651,8 @@ Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
     End If
     son = AKSORA_SON_SATIR(ws, cM)
     If son < 8 Then Exit Sub
+    ' Buyuk sayfalar (musteri seri no) yazilirken siralanir; sayfa acilisinda bekletilmez.
+    If son - 6 > 5000 Then Exit Sub
     ' Ayni oturumda degismemis sayfa yeniden taranmaz (buyuk musteri sayfalarinda gecis hizli kalir).
     If mAzImza Is Nothing Then Set mAzImza = CreateObject("Scripting.Dictionary")
     imza = T_AzImza(ws, son, cM, cT)
