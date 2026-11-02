@@ -203,9 +203,18 @@ Cikis:
     application.ScreenUpdating = oldScreen
     Exit Sub
 Hata:
-    application.EnableEvents = True
-    application.ScreenUpdating = True
-    MsgBox "Kapak koruma hatasi (" & Err.Number & "): " & Err.Description, vbExclamation, "AKSORA"
+    Dim hNo As Long, hMetin As String
+    hNo = Err.Number: hMetin = Err.Description
+    ' KAPAK korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    ws.Protect DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+    application.EnableEvents = oldEvents
+    application.ScreenUpdating = oldScreen
+    On Error GoTo 0
+    ' Acilista (Excel gizliyken) mesaj kutusu gorunmez kalip acilisi dondurmesin.
+    If AKSORA_V13_ACILIS Then Exit Sub
+    MsgBox "Kapak koruma hatasi (" & hNo & "): " & hMetin, vbExclamation, "AKSORA"
 End Sub
 
 ' Gerektiginde tasarim duzenlemek icin.

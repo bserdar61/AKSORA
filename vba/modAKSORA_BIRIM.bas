@@ -443,6 +443,7 @@ Hata:
     AKSORA_HATA_GOSTER "Müþteri birimi", Err.Number, Err.Description
 End Sub
 Private Sub MUSTERI_KAPAK_AC()
+    Dim yeniKopya As Boolean
     Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape
     Dim yol As String, ev As Boolean, sc As Boolean, no As Long, metin As String
     Dim i As Long, h As Double, kaynakGorunum As XlSheetVisibility
@@ -465,6 +466,7 @@ Private Sub MUSTERI_KAPAK_AC()
         kaynak.Copy after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
         Set ws = ActiveSheet
         ws.Name = MUK
+        yeniKopya = True
         kaynak.Visible = kaynakGorunum
         ws.Unprotect pw
         ws.Range("BX1").Value2 = tag
@@ -482,6 +484,7 @@ Private Sub MUSTERI_KAPAK_AC()
         ws.Shapes("AKSORA_V4_ENTER").OnAction = BIRIM_MAKRO("AKSORA_MUSTERI_GIRIS")
         AKSORA_BIRIM_KAPAK_GERI MUK
         ws.Range("BX2").Value2 = 0
+        yeniKopya = False
     End If
     ws.Unprotect pw
     If Val(CStr(ws.Range("BX2").Value2)) < 7 Then
@@ -523,6 +526,14 @@ Hata:
     On Error Resume Next
     If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
     If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
+    ' Yarim kalan kopya silinir (dugmeleri baglanmamis sayfa kalici olarak olu kalmasin); sonraki giriste yeniden kurulur.
+    If yeniKopya And Not ws Is Nothing Then
+        application.DisplayAlerts = False
+        ws.Visible = xlSheetVisible
+        ws.Delete
+        application.DisplayAlerts = True
+        Set ws = Nothing
+    End If
     On Error GoTo 0
     Resume Cikis
 End Sub
@@ -651,6 +662,7 @@ End Sub
 
 ' Il secim ekrani: yatirim (YAK) ve ilce yonetim (ILCE_KAPAK) ayni KAPAK kopyasini kullanir.
 Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
+    Dim yeniKopya As Boolean
     Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape
     Dim yol As String, ev As Boolean, sc As Boolean, no As Long, metin As String
     Dim i As Long, h As Double, kaynakGorunum As XlSheetVisibility, ad As String, bantVar As Boolean
@@ -680,6 +692,7 @@ Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
         kaynak.Copy after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
         Set ws = ActiveSheet
         ws.Name = ad
+        yeniKopya = True
         kaynak.Visible = kaynakGorunum
         ws.Unprotect pw
         ws.Range("BX1").Value2 = tag
@@ -697,6 +710,7 @@ Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
         ws.Shapes("AKSORA_V4_ENTER").OnAction = BIRIM_MAKRO(IIf(ilce, "AKSORA_ILCE_GIRIS", "AKSORA_YATIRIM_GIRIS"))
         AKSORA_BIRIM_KAPAK_GERI ad
         ws.Range("BX2").Value2 = 0
+        yeniKopya = False
     End If
     ws.Unprotect pw
     If Val(CStr(ws.Range("BX2").Value2)) < 7 And bantVar Then
@@ -738,6 +752,14 @@ Hata:
     On Error Resume Next
     If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
     If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
+    ' Yarim kalan kopya silinir (dugmeleri baglanmamis sayfa kalici olarak olu kalmasin); sonraki giriste yeniden kurulur.
+    If yeniKopya And Not ws Is Nothing Then
+        application.DisplayAlerts = False
+        ws.Visible = xlSheetVisible
+        ws.Delete
+        application.DisplayAlerts = True
+        Set ws = Nothing
+    End If
     On Error GoTo 0
     Resume Cikis
 End Sub
@@ -3672,8 +3694,14 @@ Public Sub AKSORA_YATIRIM_HAKEDIS_SEC()
     application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:
-    application.EnableEvents = True: application.ScreenUpdating = True
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
 End Sub
 
 ' Tablo boyu degisince: tasarim karti tablonun altina alinir, yazdirma alani tabloyu kapsar.
@@ -5238,12 +5266,13 @@ End Function
 ' Ilce karnesi (kritik malzemeler): depo -> Array(kritik kullanilan TL, fire TL, kullanilan kalem, eksik kalem,
 '   kablo eksik, direk eksik, pano eksik, hucre eksik, trafo eksik, armatur eksik, uyum %). Yalniz kritik kullanimi olan depolar.
 Private Function I_KARNE(ByVal dD As Object, ByVal dX As Object) As Object
-    Dim d As Object, k As Variant, t As Variant, o As Variant, p() As String, kat As String, s As Long
+    Dim d As Object, k As Variant, t As Variant, o As Variant, p() As String, kat As String, s As Long, br As Object, b0 As String
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     For Each k In dD.keys
         t = dD(k)
         If t(10) > 0 Then d(CStr(k)) = Array(t(8), t(9), t(10), t(11), 0#, 0#, 0#, 0#, 0#, 0#, I_UYUM_K(t))
     Next k
+    Set br = CreateObject("Scripting.Dictionary"): br.CompareMode = vbTextCompare
     For Each k In dX.keys
         p = Split(CStr(k), "|")
         If d.Exists(p(0)) Then
@@ -5251,7 +5280,16 @@ Private Function I_KARNE(ByVal dD As Object, ByVal dX As Object) As Object
             s = I_KAT_SIRA(kat)
             If s <= 6 Then
                 t = dX(k): o = d(p(0))
-                o(3 + s) = o(3 + s) + t(2)
+                If t(2) > 0.0005 Then
+                    ' Ayni kategoride farkli birimler (M / KG ...) toplanmaz: -1 = "farkli birim".
+                    b0 = UCase$(Trim$(CStr(I_MAL_BILGI(p(1))(2))))
+                    If br.Exists(p(0) & "|" & s) Then
+                        If br(p(0) & "|" & s) <> b0 Then o(3 + s) = -1
+                    Else
+                        br(p(0) & "|" & s) = b0
+                    End If
+                    If o(3 + s) >= 0 Then o(3 + s) = o(3 + s) + t(2)
+                End If
                 d(p(0)) = o
             End If
         End If
@@ -5315,6 +5353,9 @@ Private Sub ILCE_AY_SEC_ASIL()
     Exit Sub
 Hata:
     no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    On Error GoTo 0
     application.EnableEvents = ev: application.ScreenUpdating = True
     Err.Raise no, , metin
 End Sub
@@ -5501,8 +5542,13 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
             ws.Cells(r, 3).NumberFormat = "@": ws.Cells(r, 3).Value2 = CStr(k)
             ws.Cells(r, 4).Value2 = Round(t(10), 1)
             For j = 0 To 5
-                ws.Cells(r, 5 + j).Value2 = t(4 + j)
-                If t(4 + j) > 0.0005 Then ws.Cells(r, 5 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 5 + j).Font.bold = True
+                If t(4 + j) < 0 Then
+                    ws.Cells(r, 5 + j).Value2 = "farklý birim"
+                    ws.Cells(r, 5 + j).Font.Color = RGB(185, 28, 28)
+                Else
+                    ws.Cells(r, 5 + j).Value2 = t(4 + j)
+                    If t(4 + j) > 0.0005 Then ws.Cells(r, 5 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 5 + j).Font.bold = True
+                End If
             Next j
             ws.Cells(r, 11).Value2 = Round(t(1), 2)
             If i = 1 And ayrim Then
@@ -5757,8 +5803,8 @@ Private Sub ADM_AYLIK_CIZ(ByVal ws As Worksheet, ByRef r As Long, ByVal aylik As
                     If depolar.Exists(k) Then ad = I_DEPO_KISA(CStr(depolar(k)))
                     tum(il & "|" & k) = Array(il, CStr(k), ad, t)
                     For j = 0 To 5
-                        o(j) = o(j) + t(4 + j)
-                        If t(4 + j) > 0.0005 Then fireli(j & "|" & il & "|" & k) = True
+                        If t(4 + j) > 0 Then o(j) = o(j) + t(4 + j)
+                        If t(4 + j) > 0.0005 Or t(4 + j) < 0 Then fireli(j & "|" & il & "|" & k) = True
                     Next j
                 Next k
             End If
@@ -5900,8 +5946,12 @@ Private Sub ADM_AYLIK_CIZ(ByVal ws As Worksheet, ByRef r As Long, ByVal aylik As
                 ws.Cells(r, 4).NumberFormat = "@": ws.Cells(r, 4).Value2 = IIf(Len(ilE(2)) > 0, ilE(2), ilE(1)): ws.Cells(r, 4).Font.bold = True
                 ws.Cells(r, 5).Value2 = Round(t(10), 1)
                 For j = 0 To 5
-                    ws.Cells(r, 6 + j).Value2 = t(4 + j)
-                    If t(4 + j) > 0.0005 Then ws.Cells(r, 6 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 6 + j).Font.bold = True
+                    If t(4 + j) < 0 Then
+                        ws.Cells(r, 6 + j).Value2 = "farklý birim": ws.Cells(r, 6 + j).Font.Color = RGB(185, 28, 28)
+                    Else
+                        ws.Cells(r, 6 + j).Value2 = t(4 + j)
+                        If t(4 + j) > 0.0005 Then ws.Cells(r, 6 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 6 + j).Font.bold = True
+                    End If
                 Next j
                 ws.Cells(r, 12).Value2 = Round(t(1), 2)
                 If x = 1 And ayrim Then
@@ -6110,8 +6160,14 @@ Private Sub ILCE_KARS_LISTE_ASIL()
     Y_TEMINAT_KAL ws
     Exit Sub
 Hata:
-    application.EnableEvents = True: application.ScreenUpdating = True
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
 End Sub
 
 Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
@@ -6593,8 +6649,14 @@ Private Sub ILCE_KARS_SEC_ASIL()
     Y_TEMINAT_KAL ws
     Exit Sub
 Hata:
-    application.EnableEvents = True: application.ScreenUpdating = True
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
 End Sub
 
 Public Sub AKSORA_ILCE_KARS_YENILE()
@@ -6623,8 +6685,14 @@ Private Sub ILCE_KARS_YENILE_ASIL()
     Y_TEMINAT_KAL ws
     Exit Sub
 Hata:
-    application.EnableEvents = True: application.ScreenUpdating = True
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
 End Sub
 
 ' Ilce ISG malzemeleri (docs/isg/ISG_ISLEM.csv): kod + Z (kisisel zimmet) / M (manuel sarf).
@@ -7441,6 +7509,16 @@ End Function
 '   ozet: Array(satir, deger, eksi, fiyatsiz, hurda kalem, hurda TL, cikma kalem)
 '   depolar: UY|depo -> Array(ad, satir, deger)
 '   isg (yalniz ilce): depo -> Array(ad, zimmet kalem, zimmet adet, sarf kalem, sarf adet)
+' Uretim yeri ile ait degilse False (bilinmeyen uretim yeri: True, eski davranis).
+Private Function ADM_IL_UYGUN(ByVal uy As String, ByVal il As String) As Boolean
+    Static onb As Object
+    Dim t As String
+    If onb Is Nothing Then Set onb = CreateObject("Scripting.Dictionary")
+    If Not onb.Exists(uy) Then onb(uy) = ATIL_TESIS_IL(uy)
+    t = onb(uy)
+    ADM_IL_UYGUN = (Len(t) = 0 Or t = il)
+End Function
+
 Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
     Dim imza As String, canli As Boolean, kx As Variant, sh As Worksheet, son As Long, t As Variant, k As String
     Dim v As Variant, satirlar() As String, n As Long, tarih As Date, ozet(0 To 6) As Double, depolar As Object, isg As Object
@@ -7511,6 +7589,8 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
             For i = 1 To UBound(v, 1)
                 If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
                 mal = Y_KOD_NORM(v(i, cM))
+                ' Baska ilin uretim yerine ait satir (il degisiminde yenilenmemis sayfa) bu ile sayilmaz.
+                If Len(mal) > 0 Then If Not ADM_IL_UYGUN(I_TEMIZ(v(i, cU)), il) Then mal = vbNullString
                 If Len(mal) > 0 Then
                     n = n + 1
                     x = I_SAYI(v(i, cQ)): d = I_SAYI(v(i, cV)): parti = I_TEMIZ(v(i, cP))
@@ -9106,7 +9186,7 @@ End Function
 Private Function ATIL_STOK_OKU(ByVal il As String, ByRef tarih As Date) As Object
     Dim d As Object, gorulen As Object, kaynaklar As Variant, kx As Variant, sh As Worksheet, canli As Boolean, t As Variant
     Dim v As Variant, son As Long, i As Long, uy As String, depo As String, mal As String, k As String, x As Double, dg As Double
-    Dim o As Variant, dp As Object, ka As String, sira As Long, p As Variant
+    Dim o As Variant, dp As Object, ka As String, sira As Long, p As Variant, tMin As Date
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set gorulen = CreateObject("Scripting.Dictionary"): gorulen.CompareMode = vbTextCompare
     tarih = 0
@@ -9121,10 +9201,13 @@ Private Function ATIL_STOK_OKU(ByVal il As String, ByRef tarih As Date) As Objec
         Set sh = ADM_WS(CStr(kx))
         If Not sh Is Nothing Then
             If canli Then t = sh.Range("C2").Value Else t = sh.Range("A3").Value
-            If Not IsError(t) Then
-                If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
-            End If
             son = AKSORA_SON_SATIR(sh, 7)
+            If Not IsError(t) Then
+                If IsDate(t) Then
+                    If CDate(t) > tarih Then tarih = CDate(t)
+                    If son >= 7 Then If tMin = 0 Or CDate(t) < tMin Then tMin = CDate(t)
+                End If
+            End If
             v = Empty
             If son >= 7 Then v = sh.Range(sh.Cells(7, 1), sh.Cells(son, 14)).Value2
             If IsArray(v) Then
@@ -9165,6 +9248,10 @@ Private Function ATIL_STOK_OKU(ByVal il As String, ByRef tarih As Date) As Objec
             End If
         End If
     Next kx
+    ' Ilin stok sayfalari ayri zamanlarda yenilendiyse (yalniz biri guncellendi) karsilastirma yapilmaz:
+    ' depolar arasi transfer sahte "yeni giris" katmani olusturup eski atil stogu yeni gosterirdi.
+    ' Tarih en eski kaynagin tarihi olur; butun sayfalar yenilenince karsilastirma yapilir.
+    If tMin > 0 And tarih - tMin > TimeSerial(1, 0, 0) Then tarih = tMin
     Set ATIL_STOK_OKU = d
 End Function
 

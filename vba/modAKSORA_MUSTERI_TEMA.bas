@@ -794,7 +794,8 @@ Cikis:
     End If
     Exit Sub
 Hata:
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    ' Acilista (Excel gizliyken) mesaj kutusu gorunmez kalip acilisi dondurmesin.
+    If Not AKSORA_V13_ACILIS Then MsgBox Err.Description, vbExclamation, "AKSORA"
     Resume Cikis
 End Sub
 
@@ -828,7 +829,8 @@ Cikis:
     application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    ' Acilista (Excel gizliyken) mesaj kutusu gorunmez kalip acilisi dondurmesin.
+    If Not AKSORA_V13_ACILIS Then MsgBox Err.Description, vbExclamation, "AKSORA"
     Resume Cikis
 End Sub
 
@@ -882,7 +884,8 @@ Cikis:
     On Error GoTo 0
     Exit Sub
 Hata:
-    MsgBox Err.Description, vbExclamation, "AKSORA"
+    ' Acilista (Excel gizliyken) mesaj kutusu gorunmez kalip acilisi dondurmesin.
+    If Not AKSORA_V13_ACILIS Then MsgBox Err.Description, vbExclamation, "AKSORA"
     Resume Cikis
 End Sub
 

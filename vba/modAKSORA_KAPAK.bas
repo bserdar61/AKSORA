@@ -612,6 +612,9 @@ Private Sub AKSORA_GIRIS_AC()
     Dim scr As Boolean
 
 
+    ev = application.EnableEvents
+    scr = application.ScreenUpdating
+
     On Error GoTo Hata
 
 
@@ -713,15 +716,22 @@ Private Sub AKSORA_GIRIS_AC()
 
 Hata:
 
-    application.EnableEvents = True
+    Dim hNo As Long, hMetin As String
+    hNo = Err.Number: hMetin = Err.Description
 
-    application.ScreenUpdating = True
+    On Error Resume Next
+
+    application.EnableEvents = ev
+
+    application.ScreenUpdating = scr
+
+    On Error GoTo 0
 
 
     MsgBox _
         "Giris hatasi (" & _
-        Err.Number & "): " & _
-        Err.Description, _
+        hNo & "): " & _
+        hMetin, _
         vbCritical, _
         "AKSORA"
 
@@ -836,14 +846,23 @@ Public Sub AKSORA_KAPAK_KILITLE()
 
 Hata:
 
-    application.EnableEvents = True
+    Dim hMetin As String
+    hMetin = Err.Description
 
-    application.ScreenUpdating = True
+    On Error Resume Next
 
+    application.EnableEvents = ev
+
+    application.ScreenUpdating = scr
+
+    On Error GoTo 0
+
+    ' Acilista (Excel gizliyken) mesaj kutusu gorunmez kalip acilisi dondurmesin; acilis kendi uyarisini verir.
+    If AKSORA_V13_ACILIS Then Err.Raise vbObjectError + 1801, "AKSORA_KAPAK_KILITLE", "Giriþ kilidi: " & hMetin
 
     MsgBox _
         "Giris kilidi hatasi: " & _
-        Err.Description, _
+        hMetin, _
         vbCritical, _
         "AKSORA"
 

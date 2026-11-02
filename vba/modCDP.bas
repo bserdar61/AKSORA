@@ -154,6 +154,9 @@ Option Explicit
     CORE_DURUM _
     "CDP stok verileri Excel'e yazýlýyor..."
 
+    ' Tarih ve ozet hucreleri yedeklenir: hata olursa eski veriyle birlikte geri yazilir.
+    Dim eskiMeta As Variant, n0 As Long
+    eskiMeta = Array(wsStok.Range("C2").Formula, wsStok.Range("C3").Formula, wsStok.Range("C4").Formula)
     yazmaBasladi = True
 
     CDP_V2_BASLIKLARI_YAZ wsStok
@@ -254,6 +257,20 @@ Hata:
 
     End If
 
+    End If
+
+    If yazmaBasladi And IsArray(eskiMeta) Then
+        ' Yeni tarih / ozet eski verinin ustunde kalmasin; rapor eski veriden yeniden kurulur.
+            n0 = 0
+            If YedekVar Then If IsArray(EskiVeri) Then n0 = UBound(EskiVeri, 1)
+            If n0 > 0 Then
+                CDP_V2_STOK_OZET_GUNCELLE wsStok, n0
+                CDP_V2_RAPOR_OLUSTUR wsStok, wsRapor, n0
+                CDP_V2_DEPO_LISTESI wsStok
+            End If
+        wsStok.Range("C2").Formula = eskiMeta(0)
+        wsStok.Range("C3").Formula = eskiMeta(1)
+        wsStok.Range("C4").Formula = eskiMeta(2)
     End If
 
     On Error GoTo 0

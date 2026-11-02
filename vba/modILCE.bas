@@ -291,6 +291,9 @@ Option Explicit
             "Birlesik ilce stok dizisi gecersiz. Mevcut stoklar korunuyor."
     End If
 
+    ' Tarih ve ozet hucreleri yedeklenir: hata olursa eski veriyle birlikte geri yazilir.
+    Dim eskiMeta As Variant, n0 As Long
+    eskiMeta = Array(wsStok.Range("C2").Formula, wsStok.Range("C3").Formula, wsStok.Range("C4").Formula)
     yazmaBasladi = True
 
     ILCE_V2_BASLIKLARI_YAZ wsStok
@@ -396,6 +399,13 @@ Hata:
     End If
 
     ToplamSure = CORE_ISLEM_BITIR()
+
+    If yazmaBasladi And IsArray(eskiMeta) Then
+        ' Yeni tarih / ozet eski verinin ustunde kalmasin; rapor eski veriden yeniden kurulur.
+        wsStok.Range("C2").Formula = eskiMeta(0)
+        wsStok.Range("C3").Formula = eskiMeta(1)
+        wsStok.Range("C4").Formula = eskiMeta(2)
+    End If
 
     On Error GoTo 0
 

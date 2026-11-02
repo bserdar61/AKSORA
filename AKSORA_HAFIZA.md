@@ -542,10 +542,18 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Workbook_Open: yardımcı adımlar ayrı korumalı, hata olursa AKSORA_BIRIM_ACILIS; SheetActivate birim hatası yakalanır;
   gizli KAPAK yerine birim seçimi; mUygApp dönüşte seçim ekranı görünümü. AKG_KOPYALA sonrası ApplyFilter.
   Müşteri bant (BW) eski fazla satırları silinir (dosya şişmesi). Excel'e aktar kod sütunları metin (baştaki sıfır korunur).
-- ŞİMDİLİK YAPILMADI (bilinçli): stok güncelleme geri alımında C2/C3/C4 ve raporun da geri alınması; ATIL'de kısmi
-  sayfa yenilemesinin sahte giriş katmanı; il geçişinde yeni arşivin eski canlı veriyle ezilmesi koruması; AKHZ_SAYI
-  1,234.56 SAP biçimi; boş kategori (0 satır) toplu güncellemede red; ADM_VERI il filtresi; I_KARNE farklı birim toplama;
-  BeforeClose iptalinde uygulama modu.
+- Kalan maddeler de düzeltildi (aynı gün, ikinci tur):
+  * Stok güncellemesi hata verirse (CDP/EPP/İLÇE/YÜKLENİCİ/STOKLAR) C2/C3/C4 eski haline döner, rapor eski veriden yeniden kurulur (eskiMeta).
+  * ATIL_STOK_OKU: ilin kaynak sayfaları arasında 1 saatten fazla fark varsa tarih = en eski kaynak (kısmi yenilemede karşılaştırma yapılmaz).
+  * AKG_KOPYALA: arşiv canlı sayfadan yeniyse canlı→arşiv kopyası atlanır (yeni SAP verisi korunur).
+  * AKHZ_SAYI: tek nokta + 3 hane değilse ondalık nokta (1234.56); çok noktalı binlik.
+  * ADM_VERI: başka ilin üretim yerine ait satır sayılmaz (ADM_IL_UYGUN, önbellekli).
+  * I_KARNE: aynı kategoride farklı birim → -1 ("farklı birim"), toplanmaz.
+  * BeforeClose: kaydetme sorusu AKSORA sorar; İptal'de uygulama modu kapanmaz.
+  * Hata işleyicileri: Y_KORU + önceki EnableEvents (4 yer + I_AYLIK); KAPAK_KORU / KILITLE / GIRIS_AC önceki durum,
+    açılışta MsgBox yerine Err.Raise / sessiz; yarım il seçim kopyası silinir (yeniKopya).
+  * BİLİNÇLİ OLARAK AÇIK: boş kategori (0 satır) toplu güncellemede reddedilir; boş SAP okumasının veriyi silmemesi için
+    korumadır. Gerçek boş kategori şu an hiçbir ilde yok.
 - ed.py düzeltildi: önce kodla sonra yaz (cp1254 dışı karakter dosyayı 0 bayta indiriyordu).
 
 ## Sıradaki işler

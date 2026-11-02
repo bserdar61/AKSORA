@@ -234,6 +234,26 @@ Private Sub Workbook_BeforeClose( _
 
     On Error Resume Next
 
+    ' Kaydetme sorusu burada sorulur: Iptal secilirse uygulama modu kapatilmadan AKSORA acik kalir
+    ' (Excel'in kendi sorusu uygulama modu kapandiktan sonra geldiginden Iptal'de serit/basliklar acik kaliyordu).
+    If Not ThisWorkbook.Saved Then
+        Select Case MsgBox("AKSORA'daki deðiþiklikler kaydedilsin mi?", vbYesNoCancel + vbQuestion, "AKSORA")
+            Case vbCancel
+                Cancel = True
+                Exit Sub
+            Case vbYes
+                Err.Clear
+                ThisWorkbook.Save
+                If Err.Number <> 0 Or Not ThisWorkbook.Saved Then
+                    MsgBox "Dosya kaydedilemedi; kapatma iptal edildi." & vbCrLf & Err.Description, vbExclamation, "AKSORA"
+                    Cancel = True
+                    Exit Sub
+                End If
+            Case Else
+                ThisWorkbook.Saved = True
+        End Select
+    End If
+
     Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
 
     UYGULAMA_MODU_KAPAT

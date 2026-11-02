@@ -266,6 +266,11 @@ Private Sub AKG_KOPYALA(ByVal src As Worksheet, ByVal dst As Worksheet)
         End If
 
         bilgi = src.Range("C2:C4").Value2
+        ' Arsiv canli sayfadan daha yeniyse (toplu guncelleme arsive yazdi, canli sayfa yenilenemedi) eski
+        ' canli veriyle ezilmez; yeni SAP verisi korunur.
+        If IsDate(dst.Range("A3").Value) And IsDate(src.Range("C2").Value) Then
+            If CDate(dst.Range("A3").Value) > CDate(src.Range("C2").Value) + TimeSerial(0, 1, 0) Then Exit Sub
+        End If
     End If
 
     cdp = AKSORA_IL_TESIS(il, "CDP")

@@ -1269,9 +1269,11 @@ Private Function AKHZ_SAYI(ByVal v As Variant) As Double
     ElseIf t Like "*#.###" And Not t Like "*.*.*" Then
         ' Yalniz binlik ayirac (1.234) Turkce gosterimde tam sayidir.
         t = Replace(t, ".", "")
-    Else
+    ElseIf t Like "*.*.*" Then
+        ' Birden cok nokta: binlik ayiraclari (1.234.567).
         t = Replace(t, ".", "")
     End If
+    ' Tek nokta ve ardinda 3 hane degilse (1234.56) ondalik noktasidir: Val dogru okur (eskiden 123456 olurdu).
     If Not IsNumeric(Replace(t, ".", "")) Then Err.Raise vbObjectError + 1990, , "Sayý okunamadý: " & CStr(v)
     AKHZ_SAYI = Val(t)
     If eksi Then AKHZ_SAYI = -AKHZ_SAYI

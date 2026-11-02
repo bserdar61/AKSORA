@@ -156,6 +156,9 @@ Option Explicit
     CORE_DURUM _
     "Birleþik stok STOKLAR sayfasýna yazýlýyor..."
 
+    ' Tarih ve ozet hucreleri yedeklenir: hata olursa eski veriyle birlikte geri yazilir.
+    Dim eskiMeta As Variant, n0 As Long
+    eskiMeta = Array(wsStoklar.Range("C2").Formula, wsStoklar.Range("C3").Formula, wsStoklar.Range("C4").Formula)
     yazmaBasladi = True
 
     BIR_V2_STOK_BASLIKLARI wsStoklar
@@ -246,6 +249,14 @@ Hata:
 
     End If
 
+    End If
+
+    If yazmaBasladi And IsArray(eskiMeta) Then
+        ' Yeni tarih / ozet eski verinin ustunde kalmasin; rapor eski veriden yeniden kurulur.
+            If YedekVar Then If IsArray(EskiStok) Then BIR_V2_RAPOR_OLUSTUR wsRaporlar, EskiStok
+        wsStoklar.Range("C2").Formula = eskiMeta(0)
+        wsStoklar.Range("C3").Formula = eskiMeta(1)
+        wsStoklar.Range("C4").Formula = eskiMeta(2)
     End If
 
     On Error GoTo 0
