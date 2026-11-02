@@ -6477,7 +6477,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     Set c = wb.Worksheets(1)
     AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adý", "Zimmet Kalem", "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", _
         "ÝSG Stok Deðeri", "Durum"), veri, n, Array(8, 26, 12, 13, 14, 15, 18, 26), _
-        Array("@", "@", "General", "General", "General", "General", "#,##0.00", "@"), _
+        Array("@", "@", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
         "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr", "Ýlçe Durumu", Empty
     ' TOPLAM satiri ve durum renkleri (ekrandaki gibi)
@@ -6517,7 +6517,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     ust = "ÝSG ZÝMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  Malzeme listesi – yapýlacak iþlem"
     AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adý", "Sistem", "Mal Grubu", "Malzeme", "Malzeme Tanýmý", "Miktar", "Birim", _
         "Stok Deðeri", "Yapýlacak Ýþlem"), veri, n, Array(8, 22, 9, 12, 13, 44, 10, 8, 15, 22), _
-        Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00", "@"), _
+        Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00 ""TL""", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter), ust, _
         "Kýrmýzý: kiþiye ZÝMMET yapýlacak  |  Mavi: MANUEL SARF yapýlacak", "Malzeme Listesi", Empty
     For r = 1 To n
@@ -6643,7 +6643,7 @@ Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
     bas = Array("Depo", "Ýlçe", "Malzeme", "Malzeme kýsa metni", "Kategori", "Kullanýlan (azalan)", "Demontajý girilen", _
         "Eksik", "Birim", "Eksik deðer (TL)", "Durum", "Açýklama")
     gen = Array(8, 18, 13, 44, 11, 12, 12, 10, 8, 14, 13, 30)
-    bicim = Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00", "@", "@")
+    bicim = Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00 ""TL""", "@", "@")
     hiza = Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlCenter, xlLeft)
     ReDim kodlar(1 To gruplar.Count)
     For Each k In gruplar.keys

@@ -565,6 +565,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   filtre / ilçe seçimine uyar; miktar ve birim ayrı). İlçe seçiliyse yalnız o ilçe. Masaüstü: "<il|ilçe> - İSG Zimmet Kontrolü - <tarih>".
 - TASARIM: AKSORA_EXCEL_SAYFA (sayfa düzeyi tablo) + AKSORA_EXCEL_BITIR (çok sayfalı kitap kaydet); AKSORA_EXCEL_TABLO bunları kullanır.
 
+## 02.11.2026 – ALTIN KURAL: tutarlar "#.##0,00 TL"
+- Kullanıcı kuralı (tüm sistemler, tüm Excel çıktıları): binlik nokta, kuruş virgül, sonda TL. VBA NumberFormat: "#,##0.00 ""TL""".
+- AKSORA_EXCEL_SAYFA → T_ExcelBicim: "0" kod sütunu metin; "0.00" içeren TL'siz biçime otomatik " ""TL""" eklenir.
+- İSG (2 sayfa) ve demontaj eksik değer sütunları TL; STOK_HAFIZA delta değer/özet TL (delta 12-13 miktar "#,##0.###").
+- Taban: up34 (kullanıcının 02.11 dosyası, kod aynı).
+- YENİ KOD YAZARKEN: her tutar hücresi/sütunu ve mesaj metni TL ile biter.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

@@ -153,7 +153,9 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
             Next d
             wsDelta.Cells(deltaIlk, 1).Resize(DegisimSayisi, 15).Value = deltaCikti
             wsDelta.Cells(deltaIlk, 2).Resize(DegisimSayisi, 1).NumberFormat = "dd.mm.yyyy hh:mm:ss"
-            wsDelta.Cells(deltaIlk, 12).Resize(DegisimSayisi, 4).NumberFormat = "#,##0.00"
+            ' 12-13 miktar, 14-15 deger (TL).
+            wsDelta.Cells(deltaIlk, 12).Resize(DegisimSayisi, 2).NumberFormat = "#,##0.###"
+            wsDelta.Cells(deltaIlk, 14).Resize(DegisimSayisi, 2).NumberFormat = "#,##0.00 ""TL"""
         End If
 
     Else
@@ -178,7 +180,7 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
     End If
 
     wsIndex.Cells(IndexSatir, 2).NumberFormat = "dd.mm.yyyy hh:mm:ss"
-    wsIndex.Cells(IndexSatir, 5).NumberFormat = "#,##0.00"
+    wsIndex.Cells(IndexSatir, 5).NumberFormat = "#,##0.00 ""TL"""
 
     STOK_HAFIZA_ESKI_KAYITLARI_TEMIZLE
     mHafizaIl = ""
@@ -256,7 +258,7 @@ Public Sub STOK_HAFIZA_TEMIZ_BASLAT()
         STOK_HAFIZA_DOUBLE(wsKaynak.Range("C4").Value2)
 
     wsIndex.Cells(IndexSatir, 2).NumberFormat = "dd.mm.yyyy hh:mm:ss"
-    wsIndex.Cells(IndexSatir, 5).NumberFormat = "#,##0.00"
+    wsIndex.Cells(IndexSatir, 5).NumberFormat = "#,##0.00 ""TL"""
 
     wsIndex.Visible = xlSheetVeryHidden
     wsDelta.Visible = xlSheetVeryHidden

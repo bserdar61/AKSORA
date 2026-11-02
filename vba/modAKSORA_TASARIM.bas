@@ -2420,7 +2420,8 @@ Public Function AKSORA_KLASOR_HAZIRLA(ByVal yol As String) As Boolean
 End Function
 
 ' Excel'e aktarilan tablo icin genel kitap (demontaj eksikleri vb.): 1. satir baslik, 2. satir bilgi, 4. satir sutunlar.
-' bicim: sutun bicimleri ("@", "General", "0", "#,##0.00"); hiza: xlLeft / xlCenter / xlRight; sira: A-Z sutunlari.
+' bicim: sutun bicimleri ("@", "General", "0", "#,##0.00 ""TL"""); hiza: xlLeft / xlCenter / xlRight; sira: A-Z sutunlari.
+' Altin kural: tutar sutunlari her zaman binlik nokta, kurus virgul ve sonda TL (TL'siz tutar bicimi verilse de eklenir).
 ' Donus: kaydedilen dosya yolu.
 Public Function AKSORA_EXCEL_TABLO(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, ByVal gen As Variant, _
     ByVal bicim As Variant, ByVal hiza As Variant, ByVal ust As String, ByVal bilgi As String, ByVal sayfaAd As String, _
@@ -2453,7 +2454,7 @@ Public Sub AKSORA_EXCEL_SAYFA(ByVal c As Worksheet, ByVal bas As Variant, ByRef 
         c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
         c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
         ' "0" (kod) sutunu metin bicimli yazilir; sade rakamlar asagida sayiya cevrilir (bastaki sifir korunur).
-        c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = IIf(bicim(LBound(bicim) + j - 1) = "0", "@", bicim(LBound(bicim) + j - 1))
+        c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = T_ExcelBicim(CStr(bicim(LBound(bicim) + j - 1)))
         c.Range(c.Cells(5, j), c.Cells(n + 4, j)).HorizontalAlignment = hiza(LBound(hiza) + j - 1)
         If bicim(LBound(bicim) + j - 1) <> "@" Then
             For i = 1 To n
@@ -2511,6 +2512,13 @@ Public Function AKSORA_EXCEL_BITIR(ByVal wb As Workbook, ByVal yol As String, By
     T_ExcelBitir wb, wb.Worksheets(1), 5
     AKSORA_EXCEL_BITIR = mExcelSonuc
     mExcelYol = vbNullString: mExcelKapat = False
+End Function
+
+' Excel sutun bicimi: kod sutunu ("0") metin yazilir (bastaki sifir korunur); tutar bicimi daima TL ile biter.
+Private Function T_ExcelBicim(ByVal b As String) As String
+    If b = "0" Then T_ExcelBicim = "@": Exit Function
+    If InStr(b, "0.00") > 0 And InStr(b, "TL") = 0 Then b = b & " ""TL"""
+    T_ExcelBicim = b
 End Function
 
 ' Sayfa basligi (cikti / Excel): birim adiyla, "I_" / "M_" / "Y_" onekleri olmadan.
