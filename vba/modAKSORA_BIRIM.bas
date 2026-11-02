@@ -6436,6 +6436,119 @@ Public Sub AKSORA_ILCE_KF_AZALAN(): I_KARS_FILTRE "AZALDI": End Sub
 Public Sub AKSORA_ILCE_KF_ARTAN(): I_KARS_FILTRE "ARTTI": End Sub
 Public Sub AKSORA_ILCE_KF_DEMONTAJ(): I_KARS_FILTRE "DEMONTAJ GÝRÝÞ": End Sub
 
+' ISG zimmet kontrolu Excel'e: 1. sayfa ilce bazinda ISG durumu (ekrandaki renklerle), 2. sayfa malzeme listesi
+' (zimmet kirmizi, manuel sarf mavi). Ilce secili ise yalniz o ilce; malzeme listesi ekrandaki filtreye uyar.
+' Masaustune "<il / ilce> - ÝSG Zimmet Kontrolü - <tarih>.xlsx" olarak kaydedilir ve acik kalir.
+Public Sub AKSORA_ILCE_ISG_AKTAR()
+    Dim ws As Worksheet, wb As Workbook, c As Worksheet, a1 As Long, b1 As Long, a2 As Long, b2 As Long, p() As String
+    Dim secim As String, il As String, v As Variant, r As Long, n As Long, i As Long, j As Long, veri() As Variant
+    Dim gorV As Variant, t As String, ev As Boolean, ust As String, ad As String, sonuc As String, no As Long, metin As String
+    Dim top(1 To 5) As Double, tarih As String, durum As String, hz As Range
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    p = Split(CStr(ws.Range("BX27").Value2), "|")
+    If UBound(p) < 1 Then MsgBox "Önce ÝSG sayfasý oluþturulmalý (ilçe stoklarýný güncelleyin).", vbInformation, "AKSORA": Exit Sub
+    a2 = CLng(Val(p(0))): b2 = CLng(Val(p(1))): a1 = 10: b1 = a2 - 7
+    secim = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    tarih = Format$(Date, "dd.mm.yyyy")
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    application.Cursor = xlWait
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    wb.Worksheets.Add After:=wb.Worksheets(1)
+    '--- 1. sayfa: ilce bazinda ISG durumu
+    v = ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9)).Value2
+    ReDim veri(1 To b1 - a1 + 2, 1 To 8)
+    For r = 1 To b1 - a1 + 1
+        If Len(CStr(v(r, 1))) > 0 And (Len(secim) = 0 Or UCase$(CStr(v(r, 1))) = secim) Then
+            n = n + 1
+            veri(n, 1) = v(r, 1): veri(n, 2) = v(r, 2)
+            For j = 3 To 6: veri(n, j) = v(r, j): top(j - 2) = top(j - 2) + I_SAYI(v(r, j)): Next j
+            veri(n, 7) = v(r, 8): top(5) = top(5) + I_SAYI(v(r, 8))
+            veri(n, 8) = v(r, 9)
+        End If
+    Next r
+    If n = 0 Then Err.Raise vbObjectError + 9711, , "Ýlçe listesi boþ (ilçe stoklarýný güncelleyin)."
+    n = n + 1
+    veri(n, 2) = "TOPLAM": veri(n, 3) = top(1): veri(n, 4) = top(2): veri(n, 5) = top(3): veri(n, 6) = top(4): veri(n, 7) = Round(top(5), 2)
+    If Len(secim) > 0 Then ad = I_DEPO_KISA(CStr(veri(1, 2))) Else ad = Y_IL_ADI(il)
+    ust = "ÝSG ZÝMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  Ýlçe bazýnda ÝSG durumu"
+    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adý", "Zimmet Kalem", "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", _
+        "ÝSG Stok Deðeri", "Durum"), veri, n, Array(8, 26, 12, 13, 14, 15, 18, 26), _
+        Array("@", "@", "General", "General", "General", "General", "#,##0.00", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
+        "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr", "Ýlçe Durumu", Empty
+    ' TOPLAM satiri ve durum renkleri (ekrandaki gibi)
+    With c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 8))
+        .Interior.Color = RGB(226, 236, 247): .Font.bold = True
+    End With
+    For r = 1 To n - 1
+        Set hz = c.Cells(r + 4, 8)
+        Select Case CStr(hz.Value2)
+            Case "ZÝMMET + SARF BEKLÝYOR", "ZÝMMET BEKLÝYOR": hz.Interior.Color = RGB(254, 226, 226): hz.Font.Color = RGB(185, 28, 28)
+            Case "SARF BEKLÝYOR": hz.Interior.Color = RGB(219, 234, 254): hz.Font.Color = RGB(29, 78, 216)
+            Case "TEMÝZ": hz.Interior.Color = RGB(220, 252, 231): hz.Font.Color = RGB(21, 128, 61)
+        End Select
+        hz.Font.bold = True
+    Next r
+    '--- 2. sayfa: malzeme listesi (ekrandaki filtreye gore gorunur satirlar)
+    n = 0
+    If b2 >= a2 And Len(CStr(ws.Cells(a2, 1).Value2)) > 0 Then
+        v = ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9)).Value2
+        gorV = AKSORA_GORUNUR(ws, a2, b2, 9)
+        ReDim veri(1 To b2 - a2 + 1, 1 To 10)
+        For r = 1 To b2 - a2 + 1
+            If gorV(r) = 1 And Len(CStr(v(r, 1))) > 0 Then
+                n = n + 1
+                For j = 1 To 6: veri(n, j) = v(r, j): Next j
+                veri(n, 7) = Round(I_SAYI(v(r, 7)), 3)
+                t = Trim$(ws.Cells(a2 + r - 1, 7).Text)
+                If InStrRev(t, " ") > 0 Then veri(n, 8) = Mid$(t, InStrRev(t, " ") + 1)
+                veri(n, 9) = v(r, 8): veri(n, 10) = v(r, 9)
+            End If
+        Next r
+    End If
+    Set c = wb.Worksheets(2)
+    If n = 0 Then
+        ReDim veri(1 To 1, 1 To 10): veri(1, 6) = "ÝSG malzemesi yok.": n = 1
+    End If
+    ust = "ÝSG ZÝMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  Malzeme listesi – yapýlacak iþlem"
+    AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adý", "Sistem", "Mal Grubu", "Malzeme", "Malzeme Tanýmý", "Miktar", "Birim", _
+        "Stok Deðeri", "Yapýlacak Ýþlem"), veri, n, Array(8, 22, 9, 12, 13, 44, 10, 8, 15, 22), _
+        Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter), ust, _
+        "Kýrmýzý: kiþiye ZÝMMET yapýlacak  |  Mavi: MANUEL SARF yapýlacak", "Malzeme Listesi", Empty
+    For r = 1 To n
+        Set hz = c.Cells(r + 4, 10)
+        Select Case CStr(hz.Value2)
+            Case "ZÝMMET YAPIN": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
+            Case "MANUEL SARF YAPIN": hz.Interior.Color = RGB(29, 78, 216): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
+        End Select
+    Next r
+    wb.Worksheets(1).Activate
+    sonuc = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI(ad & " - ÝSG Zimmet Kontrolü - " & tarih) & ".xlsx", False)
+    application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Len(sonuc) = 0 Then
+        MsgBox "Liste açýldý ancak masaüstüne kaydedilemedi; Farklý Kaydet ile kaydediniz.", vbExclamation, "AKSORA"
+    Else
+        application.StatusBar = "Masaüstüne kaydedildi: " & sonuc
+    End If
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.Cursor = xlDefault
+    application.EnableEvents = True: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox "ÝSG listesi Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
 ' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla ayni kural, yalniz kritik malzemeler
 ' (trafo, pano, armatur, kablo, direk, hucre). Grup: depo + uretim yeri + malzeme.
 ' Donus: Collection of Array(depo, ilce, malzeme, tanim, kategori, kullanilan, girilen, eksik, birim, eksik TL, durum, uretim yeri)

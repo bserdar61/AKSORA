@@ -1513,7 +1513,7 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
         x = a.Left
         For Each b In ws.Shapes
             If b.Visible = msoTrue And b.Name <> a.Name And b.Name <> "btnCiktiAl" And b.Name <> "btnExcelAktar" And _
-                b.Name <> "btnTopluAktar" And b.Name <> "btnDemontajAktar" Then
+                b.Name <> "btnTopluAktar" And b.Name <> "btnDemontajAktar" And b.Name <> "btnIsgAktar" Then
                 t = vbNullString
                 On Error Resume Next
                 t = b.OnAction
@@ -1529,7 +1529,8 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     If Not s Is Nothing Then yerinde = (Abs(s.Left - x) < 1 And Abs(s.Top - y) < 1)
     If yerinde And (T_CiktiTur(ws.Name) <> 1 Or Not T_Sekil(ws, "btnExcelAktar") Is Nothing) And _
         (Not T_TopluSayfa(ws.Name) Or Not T_Sekil(ws, "btnTopluAktar") Is Nothing) And _
-        (ws.Name <> "I_STOK_KARÞILAÞTIRMA" Or Not T_Sekil(ws, "btnDemontajAktar") Is Nothing) Then Exit Sub
+        (ws.Name <> "I_STOK_KARÞILAÞTIRMA" Or Not T_Sekil(ws, "btnDemontajAktar") Is Nothing) And _
+        (ws.Name <> "I_ÝSG_MALZEMELERÝ" Or Not T_Sekil(ws, "btnIsgAktar") Is Nothing) Then Exit Sub
     T_KorumaAc ws, p, koruma
     If s Is Nothing Then
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, application.Max(a.Width, 90), a.Height)
@@ -1551,6 +1552,10 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     If T_TopluSayfa(ws.Name) Then
         T_EkDugme ws, "btnTopluAktar", "TÜM DEPOLARI AKTAR", RGB(21, 87, 52), "AKSORA_EXCEL_TOPLU_AKTAR", _
             x - 12 - 110 - 130, y, 130, a.Height
+    End If
+    ' Ilce ISG zimmet kontrolu: iki sayfali Excel (CIKTI AL'in solunda).
+    If ws.Name = "I_ÝSG_MALZEMELERÝ" Then
+        T_EkDugme ws, "btnIsgAktar", "EXCEL'E AKTAR", RGB(33, 115, 70), "AKSORA_ILCE_ISG_AKTAR", x - 6 - 110, y, 110, a.Height
     End If
     ' Ilce stok karsilastirma: demontaj eksikleri her ilce icin ayri Excel (CIKTI AL'in saginda).
     If ws.Name = "I_STOK_KARÞILAÞTIRMA" Then
@@ -2420,10 +2425,21 @@ End Function
 Public Function AKSORA_EXCEL_TABLO(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, ByVal gen As Variant, _
     ByVal bicim As Variant, ByVal hiza As Variant, ByVal ust As String, ByVal bilgi As String, ByVal sayfaAd As String, _
     ByVal yol As String, ByVal kapat As Boolean, ByVal sira As Variant) As String
-    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range, alan As Range, i As Long
-    k = UBound(bas) - LBound(bas) + 1
+    Dim wb As Workbook
     Set wb = Workbooks.Add(xlWBATWorksheet)
-    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA wb.Worksheets(1), bas, veri, n, gen, bicim, hiza, ust, bilgi, sayfaAd, sira
+    mExcelYol = yol: mExcelKapat = kapat
+    T_ExcelBitir wb, wb.Worksheets(1), 5
+    AKSORA_EXCEL_TABLO = mExcelSonuc
+    mExcelYol = vbNullString: mExcelKapat = False
+End Function
+
+' Verilen sayfaya Excel tablosu: 1. satir baslik, 2. satir bilgi, 4. satir sutunlar, 5. satirdan veri.
+Public Sub AKSORA_EXCEL_SAYFA(ByVal c As Worksheet, ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, _
+    ByVal gen As Variant, ByVal bicim As Variant, ByVal hiza As Variant, ByVal ust As String, ByVal bilgi As String, _
+    ByVal sayfaAd As String, ByVal sira As Variant)
+    Dim k As Long, j As Long, r As Range, alan As Range, i As Long
+    k = UBound(bas) - LBound(bas) + 1
     On Error Resume Next
     c.Name = Left$(AKSORA_DOSYA_ADI(Replace(Replace(sayfaAd, "[", "("), "]", ")")), 31)
     On Error GoTo 0
@@ -2472,9 +2488,28 @@ Public Function AKSORA_EXCEL_TABLO(ByVal bas As Variant, ByRef veri() As Variant
     T_CiktiSayfa c.PageSetup, ust, False
     application.PrintCommunication = True
     On Error GoTo 0
+End Sub
+
+' Cok sayfali kitap: her sayfada basliklar dondurulur, ilk sayfa acik kaydedilir (masaustu). Donus: kaydedilen yol.
+Public Function AKSORA_EXCEL_BITIR(ByVal wb As Workbook, ByVal yol As String, ByVal kapat As Boolean) As String
+    Dim i As Long
+    wb.Windows(1).Visible = True
+    wb.Activate
+    On Error Resume Next
+    For i = wb.Worksheets.Count To 2 Step -1
+        wb.Worksheets(i).Activate
+        With wb.Windows(1)
+            .ScrollRow = 1: .ScrollColumn = 1
+            .FreezePanes = False
+            wb.Worksheets(i).Cells(5, 1).Select
+            .FreezePanes = True
+            .Zoom = 100
+        End With
+    Next i
+    On Error GoTo 0
     mExcelYol = yol: mExcelKapat = kapat
-    T_ExcelBitir wb, c, 5
-    AKSORA_EXCEL_TABLO = mExcelSonuc
+    T_ExcelBitir wb, wb.Worksheets(1), 5
+    AKSORA_EXCEL_BITIR = mExcelSonuc
     mExcelYol = vbNullString: mExcelKapat = False
 End Function
 

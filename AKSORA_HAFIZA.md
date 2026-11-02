@@ -556,6 +556,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
     korumadır. Gerçek boş kategori şu an hiçbir ilde yok.
 - ed.py düzeltildi: önce kodla sonra yaz (cp1254 dışı karakter dosyayı 0 bayta indiriyordu).
 
+## 02.11.2026 – İSG Zimmet Kontrolü Excel'e aktar
+- Taban: up33 (kullanıcının 02.11 dosyası; yeni sayfa modülleri Sayfa96/97 = Y_KUR'un kurduğu I_BİRLEŞİK_* sayfaları).
+- DİKKAT: build.sh artık `set -e -o pipefail`; yeni dosyada raw'da olmayan modül varsa build_bin hata verip durur
+  (eskiden sessizce eski new_vbaProject.bin ile paketliyordu). Yeniden temel almada u*/src'de olup raw'da olmayanlar kopyalanmalı.
+- I_İSG_MALZEMELERİ'nde "EXCEL'E AKTAR" (btnIsgAktar, ÇIKTI AL'ın solu) → AKSORA_ILCE_ISG_AKTAR: 1. sayfa "İlçe Durumu"
+  (ekrandaki durum renkleri + TOPLAM), 2. sayfa "Malzeme Listesi" (ZİMMET YAPIN kırmızı, MANUEL SARF YAPIN mavi; ekrandaki
+  filtre / ilçe seçimine uyar; miktar ve birim ayrı). İlçe seçiliyse yalnız o ilçe. Masaüstü: "<il|ilçe> - İSG Zimmet Kontrolü - <tarih>".
+- TASARIM: AKSORA_EXCEL_SAYFA (sayfa düzeyi tablo) + AKSORA_EXCEL_BITIR (çok sayfalı kitap kaydet); AKSORA_EXCEL_TABLO bunları kullanır.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
