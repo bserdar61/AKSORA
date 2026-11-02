@@ -1741,7 +1741,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
                 i = r - 6
                 If Len(T_CiktiMetin(kaynak(i, cM))) > 0 Then
                     parti = T_CiktiMetin(kaynak(i, cP))
-                    If Not T_CiktiDisi(parti) Then
+                    If T_CiktiDahil(parti, kaynak(i, 4), kaynak(i, cT)) Then
                         n = n + 1
                         veri(n, 1) = T_CiktiMetin(kaynak(i, 1))
                         veri(n, 2) = T_CiktiMetin(kaynak(i, 3))
@@ -1763,13 +1763,13 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
             Next r
         Next ar
     End If
-    If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler çýktýya alýnmaz)."
+    If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler alýnmaz; ÇIKMA/BDSZ trafo, hücre, pano ve direk alýnýr)."
     ' Baslikta depo: ciktiya giren depolarin tanimlari; sayfadaki tum depolar ise TUMU.
     Set tum = CreateObject("Scripting.Dictionary"): tum.CompareMode = vbTextCompare
     Set sec = CreateObject("Scripting.Dictionary"): sec.CompareMode = vbTextCompare
     For i = 1 To UBound(kaynak, 1)
         If Len(T_CiktiMetin(kaynak(i, cM))) > 0 Then
-            If Not T_CiktiDisi(T_CiktiMetin(kaynak(i, cP))) Then tum(T_CiktiMetin(kaynak(i, 2))) = True
+            If T_CiktiDahil(T_CiktiMetin(kaynak(i, cP)), kaynak(i, 4), kaynak(i, cT)) Then tum(T_CiktiMetin(kaynak(i, 2))) = True
         End If
     Next i
     For i = 1 To n
@@ -2199,6 +2199,29 @@ Private Function T_CiktiMetin(ByVal v As Variant) As String
 End Function
 
 ' HURDA ve CIKMA/BEDELSIZ (CIKMA/BDSZ) partiler sayima girmez.
+' Cikti / Excel'e aktar satiri: HURDA hic alinmaz; CIKMA/BDSZ yalniz trafo, hucre, pano ve direkte alinir.
+Private Function T_CiktiDahil(ByVal parti As String, ByVal malGrubu As Variant, ByVal tanim As Variant) As Boolean
+    Dim t As String
+    If Not T_CiktiDisi(parti) Then T_CiktiDahil = True: Exit Function
+    t = UCase$(parti)
+    If InStr(t, "HURDA") > 0 Then Exit Function
+    T_CiktiDahil = T_CikmaKritik(T_CiktiMetin(malGrubu), T_CiktiMetin(tanim))
+End Function
+
+' Trafo (M0340), hucre (M0314), pano (M0327), direk (M0308); mal grubu yoksa tanimin basi.
+Private Function T_CikmaKritik(ByVal mg As String, ByVal tn As String) As Boolean
+    mg = UCase$(Trim$(mg)): tn = UCase$(Trim$(tn))
+    If Left$(tn, 6) = "IPTAL." Then tn = Trim$(Mid$(tn, 7))
+    Select Case True
+        Case Left$(mg, 5) = "M0340", Left$(mg, 5) = "M0314", Left$(mg, 5) = "M0327", Left$(mg, 5) = "M0308"
+            T_CikmaKritik = True
+        Case Len(mg) > 0
+            T_CikmaKritik = False
+        Case Left$(tn, 6) = "TRAFO ", Left$(tn, 6) = "HUCRE ", Left$(tn, 5) = "PANO ", Left$(tn, 6) = "DIREK "
+            T_CikmaKritik = True
+    End Select
+End Function
+
 Private Function T_CiktiDisi(ByVal parti As String) As Boolean
     Dim t As String, x As Variant
     t = UCase$(parti)

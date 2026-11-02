@@ -506,6 +506,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - EXCEL'E AKTAR düzeltme: miktar/SAYILAN/FARK Genel biçim (binlik ayraç yok, küsurat virgülle), üretim yeri ve
   malzeme kodu sayı (yeşil uyarı yok); yeni kitap açılınca UYGULAMA_MODU_KAPAT + şerit/formül çubuğu açılır (olaylar kapalı
   olduğundan Workbook_Deactivate çalışmıyordu). AKSORA'ya dönünce Workbook_Activate uygulama modunu açar.
+- Çıktı al + Excel'e aktar: HURDA hiç alınmaz; ÇIKMA/BDSZ partide yalnız TRAFO (M0340), HÜCRE (M0314), PANO (M0327),
+  DİREK (M0308) alınır (`T_CiktiDahil` / `T_CikmaKritik`; mal grubu yoksa tanımın başı).
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
 ## Sıradaki işler
