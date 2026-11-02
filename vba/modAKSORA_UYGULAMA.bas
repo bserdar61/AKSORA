@@ -31,9 +31,9 @@ Private mSplashYuzde As Double
 '==========================================================
 Public Sub UYGULAMA_MODU_AC()
 
-    AKSORA_SAYI_AYIRACLARI
-
     On Error Resume Next
+
+    AKSORA_SAYI_AYIRACLARI
 
 
     If Not mDurumKaydedildi Then
@@ -105,6 +105,18 @@ End Sub
 '==========================================================
 ' UYGULAMA MODUNU KAPAT
 '==========================================================
+' Baska kitap (Excel'e aktarilan liste vb.) etkinken: serit, formul cubugu ve sistem ayraclari acik.
+' AKSORA penceresine dokunulmaz; AKSORA'ya donulunce uygulama modu yeniden acilir.
+Public Sub AKSORA_EXCEL_GORUNUM()
+    On Error Resume Next
+    If ANA_SESSIZ_MOD Then Exit Sub
+    If ActiveWorkbook Is ThisWorkbook Then Exit Sub
+    application.UseSystemSeparators = True
+    application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",True)"
+    application.DisplayFormulaBar = True
+    application.DisplayStatusBar = True
+End Sub
+
 Public Sub UYGULAMA_MODU_KAPAT()
 
     On Error Resume Next

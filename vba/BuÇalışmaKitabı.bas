@@ -8,6 +8,24 @@ Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
 Option Explicit
 
+' Excel'e aktarilan kitap acikken pencere gecislerini izler: AKSORA'ya donulunce uygulama modu, digerinde Excel gorunumu.
+Private WithEvents mUygApp As Application
+
+Public Sub AKSORA_UYG_IZLE()
+    Set mUygApp = application
+End Sub
+
+Private Sub mUygApp_WindowActivate(ByVal Wb As Workbook, ByVal Wn As Window)
+    On Error Resume Next
+    If Wb Is ThisWorkbook Then
+        If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Then Exit Sub
+        If AKSORA_PENCERE_KUCUK(Wn) Then Exit Sub
+        UYGULAMA_MODU_AC
+    Else
+        AKSORA_EXCEL_GORUNUM
+    End If
+End Sub
+
 Private Sub Workbook_Open()
 
     Dim adim As String

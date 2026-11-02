@@ -508,6 +508,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   olduğundan Workbook_Deactivate çalışmıyordu). AKSORA'ya dönünce Workbook_Activate uygulama modunu açar.
 - Çıktı al + Excel'e aktar: HURDA hiç alınmaz; ÇIKMA/BDSZ partide yalnız TRAFO (M0340), HÜCRE (M0314), PANO (M0327),
   DİREK (M0308) alınır (`T_CiktiDahil` / `T_CikmaKritik`; mal grubu yoksa tanımın başı).
+- Excel'e aktar görünüm düzeltmesi: T_ExcelYaz artık AKSORA penceresine dokunmaz (UYGULAMA_MODU_KAPAT çağrılmaz);
+  `AKSORA_EXCEL_GORUNUM` (UYGULAMA) yalnız şerit/formül çubuğu/sistem ayraçlarını açar. ThisWorkbook'ta
+  `Private WithEvents mUygApp As Application` + `AKSORA_UYG_IZLE` (CallByName ile kurulur): AKSORA penceresi etkinleşince
+  UYGULAMA_MODU_AC, başka kitapta AKSORA_EXCEL_GORUNUM. UYGULAMA_MODU_AC'de On Error en başa alındı.
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
 ## Sıradaki işler

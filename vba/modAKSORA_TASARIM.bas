@@ -2154,13 +2154,11 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     wb.Windows(1).Visible = True
     wb.Activate
     c.Activate
-    ' Yeni kitap normal Excel gorunumunde: AKSORA uygulama modu (serit, formul cubugu, ayraclar) kapatilir.
-    ' AKSORA'ya donulunce Workbook_Activate uygulama modunu yeniden acar.
+    ' Yeni kitap normal Excel gorunumunde (serit, formul cubugu, sistem ayraclari); AKSORA penceresine dokunulmaz.
+    ' Pencere gecisleri izlenir: AKSORA'ya donulunce uygulama modu yeniden acilir.
     On Error Resume Next
-    UYGULAMA_MODU_KAPAT
-    application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",True)"
-    application.DisplayFormulaBar = True
-    application.DisplayStatusBar = True
+    CallByName ThisWorkbook, "AKSORA_UYG_IZLE", VbMethod
+    AKSORA_EXCEL_GORUNUM
     With wb.Windows(1)
         .DisplayHeadings = True: .DisplayGridlines = True: .DisplayWorkbookTabs = True
         .DisplayHorizontalScrollBar = True: .DisplayVerticalScrollBar = True
