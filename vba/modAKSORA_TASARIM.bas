@@ -2103,7 +2103,17 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     For j = 1 To k
         c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
         c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
-        If j < mk Or j = mk + 1 Then c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "@"
+        ' Uretim yeri ve malzeme kodu sayi olarak yazilir (yesil "metin olarak sayi" uyarisi cikmaz).
+        If j = 1 Or j = 4 Then
+            c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "0"
+        ElseIf j < mk Or j = mk + 1 Then
+            c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "@"
+        End If
+    Next j
+    For j = 1 To n
+        If T_SadeSayi(veri(j, 1)) Then veri(j, 1) = CDbl(veri(j, 1))
+        If T_SadeSayi(veri(j, 4)) Then veri(j, 4) = CDbl(veri(j, 4))
+        If IsNumeric(veri(j, mk)) Then veri(j, mk) = Round(CDbl(veri(j, mk)), 3)
     Next j
     c.Range("A5").Resize(n, k).Value2 = veri
     Set r = c.Range(c.Cells(5, 1), c.Cells(n + 4, k))
@@ -2111,9 +2121,11 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
         r.Sort Key1:=r.Columns(5), Order1:=xlAscending, Key2:=r.Columns(4), Order2:=xlAscending, _
             Key3:=r.Columns(2), Order3:=xlAscending, Header:=xlNo, MatchCase:=False, Orientation:=xlTopToBottom
     End If
-    c.Range(c.Cells(5, mk), c.Cells(n + 4, mk)).NumberFormat = "#,##0.###"
+    ' Miktar: binlik ayraci yok; kusurat varsa virgulle (Genel bicim).
+    c.Range(c.Cells(5, mk), c.Cells(n + 4, mk)).NumberFormat = "General"
     c.Range(c.Cells(5, mk + 3), c.Cells(n + 4, mk + 3)).FormulaR1C1 = "=IF(RC[-1]="""","""",RC[-1]-RC[-3])"
-    c.Range(c.Cells(5, mk + 2), c.Cells(n + 4, mk + 3)).NumberFormat = "#,##0.###"
+    c.Range(c.Cells(5, mk + 2), c.Cells(n + 4, mk + 3)).NumberFormat = "General"
+    c.Range(c.Cells(5, mk), c.Cells(n + 4, mk)).HorizontalAlignment = xlRight
     Set alan = c.Range(c.Cells(4, 1), c.Cells(n + 4, k))
     With alan
         .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
@@ -2142,12 +2154,33 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     wb.Windows(1).Visible = True
     wb.Activate
     c.Activate
+    ' Yeni kitap normal Excel gorunumunde: AKSORA uygulama modu (serit, formul cubugu, ayraclar) kapatilir.
+    ' AKSORA'ya donulunce Workbook_Activate uygulama modunu yeniden acar.
+    On Error Resume Next
+    UYGULAMA_MODU_KAPAT
+    application.ExecuteExcel4Macro "SHOW.TOOLBAR(""Ribbon"",True)"
+    application.DisplayFormulaBar = True
+    application.DisplayStatusBar = True
+    With wb.Windows(1)
+        .DisplayHeadings = True: .DisplayGridlines = True: .DisplayWorkbookTabs = True
+        .DisplayHorizontalScrollBar = True: .DisplayVerticalScrollBar = True
+    End With
+    On Error GoTo 0
     application.ScreenUpdating = True
     c.Range("A5").Select
     ActiveWindow.FreezePanes = False
     ActiveWindow.FreezePanes = True
     ActiveWindow.Zoom = 100
 End Sub
+
+' Yalniz rakamdan olusan, 0 ile baslamayan, 15 haneyi gecmeyen metin sayiya cevrilebilir.
+Private Function T_SadeSayi(ByVal v As Variant) As Boolean
+    Dim s As String
+    If IsError(v) Then Exit Function
+    s = CStr(v)
+    If Len(s) = 0 Or Len(s) > 15 Or Left$(s, 1) = "0" Then Exit Function
+    T_SadeSayi = Not (s Like "*[!0-9]*")
+End Function
 
 Private Function T_CiktiDosya(ByVal ad As String) As String
     Dim k As String, x As Variant

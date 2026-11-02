@@ -503,6 +503,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   → `T_ExcelYaz`: yeni görünür kitap, 1. satır başlık (sayfa | il | depo | stok tarihi), 2. satır hazırlama,
   4. satır sütunlar; miktar sayı + Birim ayrı, SAYILAN boş, FARK formülü; A-Z, çerçeveli, filtre, başlık dondurulmuş,
   A4 yatay sayfa düzeni (imza bandı yok). HURDA ve ÇIKMA/BEDELSİZ partiler çıktıdaki gibi alınmaz.
+- EXCEL'E AKTAR düzeltme: miktar/SAYILAN/FARK Genel biçim (binlik ayraç yok, küsurat virgülle), üretim yeri ve
+  malzeme kodu sayı (yeşil uyarı yok); yeni kitap açılınca UYGULAMA_MODU_KAPAT + şerit/formül çubuğu açılır (olaylar kapalı
+  olduğundan Workbook_Deactivate çalışmıyordu). AKSORA'ya dönünce Workbook_Activate uygulama modunu açar.
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
 ## Sıradaki işler
