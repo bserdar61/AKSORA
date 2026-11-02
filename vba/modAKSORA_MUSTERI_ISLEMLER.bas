@@ -1543,7 +1543,7 @@ End Sub
 
 Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
     Static mesgul As Boolean
-    Dim ilk As Long, son As Long, v() As Variant, eski As Variant, alan As Range, ar As Range
+    Dim ilk As Long, son As Long, v() As Variant, eski As Variant, gorV As Variant
     Dim r As Long, n As Long, korumali As Boolean, ev As Boolean, farkli As Boolean
     If mesgul Then Exit Sub
     If AKSORA_V11_MESGUL Then Exit Sub
@@ -1563,16 +1563,15 @@ Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
     If korumali Then ws.Unprotect ""
     ReDim v(1 To son - ilk + 1, 1 To 1)
     For r = 1 To son - ilk + 1: v(r, 1) = 0: Next r
-    On Error Resume Next
-    Set alan = ws.Range(ws.Cells(ilk, 5), ws.Cells(son, 5)).SpecialCells(xlCellTypeVisible)
-    On Error GoTo Hata
-    If Not alan Is Nothing Then
-        For Each ar In alan.Areas
-            For r = ar.Row To ar.Row + ar.Rows.Count - 1
+    ' Gorunur satirlar tek seferde: A-Z siralamada depo filtresi binlerce parca uretir (SpecialCells kilitlenir).
+    gorV = AKSORA_GORUNUR(ws, ilk, son, 14)
+    If IsArray(gorV) Then
+        For r = 1 To son - ilk + 1
+            If gorV(r) = 1 Then
                 n = n + 1
-                If n Mod 2 = 0 Then v(r - ilk + 1, 1) = 1
-            Next r
-        Next ar
+                If n Mod 2 = 0 Then v(r, 1) = 1
+            End If
+        Next r
     End If
     eski = ws.Range(ws.Cells(ilk, 75), ws.Cells(son, 75)).Value2
     If Not IsArray(eski) Then

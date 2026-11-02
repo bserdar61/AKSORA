@@ -512,6 +512,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   `AKSORA_EXCEL_GORUNUM` (UYGULAMA) yalnız şerit/formül çubuğu/sistem ayraçlarını açar. ThisWorkbook'ta
   `Private WithEvents mUygApp As Application` + `AKSORA_UYG_IZLE` (CallByName ile kurulur): AKSORA penceresi etkinleşince
   UYGULAMA_MODU_AC, başka kitapta AKSORA_EXCEL_GORUNUM. UYGULAMA_MODU_AC'de On Error en başa alındı.
+- DONMA düzeltmesi (müşteri seri no): A-Z sonrası depo filtresi binlerce görünür parça üretir; SpecialCells(xlCellTypeVisible)
+  + Areas Excel'i kilitliyordu. `AKSORA_GORUNUR(ws, ilk, son, sonKol)` (SISTEM): tek `SUBTOTAL(103,OFFSET(satır,ROW()-ilk,0))`
+  dizi hesabı, olmazsa Rows().Hidden. Kullanan: T_CiktiSayim, T_CiktiListe, AKSORA_MUSTERI_BANT (zebra).
+  YENİ KOD YAZARKEN stok sayfalarında SpecialCells(xlCellTypeVisible).Areas KULLANMA.
+  AKSORA_STOK_AZ oturum önbelleği (mAzImza: satır sayısı, C2, A5, ilk/orta/son satır).
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
 ## Sıradaki işler

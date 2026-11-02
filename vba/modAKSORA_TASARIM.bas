@@ -6,6 +6,7 @@ Private Const AKT_PREFIX As String = "AKT1_"
 Private mCalisiyor As Boolean
 Private mKurulum As Boolean
 Private mExcelAktar As Boolean
+Private mAzImza As Object
 
 Public Function AKSORA_TASARIM_AKTIF() As Boolean
     Dim n As Name, ad As String
@@ -1586,6 +1587,16 @@ Public Function AKSORA_STOK_DIZI_AZ(ByVal a As Variant, ByVal sutunlar As Varian
     AKSORA_STOK_DIZI_AZ = s
 End Function
 
+' Sayfa imzasi: satir sayisi, guncelleme tarihi, il ve ilk / orta / son satirin malzeme ve tanimi.
+Private Function T_AzImza(ByVal ws As Worksheet, ByVal son As Long, ByVal cM As Long, ByVal cT As Long) As String
+    Dim r As Variant
+    On Error Resume Next
+    T_AzImza = son & "|" & CStr(ws.Range("C2").Value2) & "|" & CStr(ws.Range("A5").Value2)
+    For Each r In Array(7, (7 + son) \ 2, son)
+        T_AzImza = T_AzImza & "|" & CStr(ws.Cells(r, cM).Value2) & "|" & CStr(ws.Cells(r, cT).Value2)
+    Next r
+End Function
+
 Private Function T_AzAnahtar(ByVal a As Variant, ByVal r As Long, ByVal sutunlar As Variant) As String
     Dim i As Long, c As Long, v As Variant, t As String
     For i = 0 To UBound(sutunlar)
@@ -1627,7 +1638,7 @@ End Sub
 ' Stok sayfasindaki liste A-Z siralanir (zaten siraliysa dokunulmaz). Filtre varsa yeniden uygulanir.
 Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cS As Long, k As Long, son As Long, v As Variant, yeni As Variant, degisti As Boolean
-    Dim p As Variant, koruma As Boolean, sc As Boolean, ev As Boolean, durum As Boolean
+    Dim p As Variant, koruma As Boolean, sc As Boolean, ev As Boolean, durum As Boolean, imza As String
     On Error GoTo Son
     If T_CiktiTur(ws.Name) <> 1 Then Exit Sub
     If T_Stok(ws) Then
@@ -1637,9 +1648,15 @@ Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
     End If
     son = AKSORA_SON_SATIR(ws, cM)
     If son < 8 Then Exit Sub
+    ' Ayni oturumda degismemis sayfa yeniden taranmaz (buyuk musteri sayfalarinda gecis hizli kalir).
+    If mAzImza Is Nothing Then Set mAzImza = CreateObject("Scripting.Dictionary")
+    imza = T_AzImza(ws, son, cM, cT)
+    If mAzImza.Exists(ws.Name) Then
+        If mAzImza(ws.Name) = imza Then Exit Sub
+    End If
     v = ws.Range(ws.Cells(7, 1), ws.Cells(son, k)).Value2
     yeni = AKSORA_STOK_DIZI_AZ(v, Array(cT, cM, 2, cS), degisti)
-    If Not degisti Then Exit Sub
+    If Not degisti Then mAzImza(ws.Name) = imza: Exit Sub
     sc = application.ScreenUpdating: ev = application.EnableEvents: durum = True
     application.ScreenUpdating = False: application.EnableEvents = False
     T_KorumaAc ws, p, koruma
@@ -1647,6 +1664,7 @@ Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
     If ws.FilterMode Then ws.AutoFilter.ApplyFilter
     If koruma Then T_KorumaKapat ws, p
     application.ScreenUpdating = sc: application.EnableEvents = ev
+    mAzImza(ws.Name) = T_AzImza(ws, son, cM, cT)
     Exit Sub
 Son:
     On Error Resume Next
@@ -1718,27 +1736,21 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
     Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
     Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
-    Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant
+    Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant, gorV As Variant
     If T_Stok(ws) Then
         cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
     Else
         cM = 5: cT = 6: cP = 9: cQ = 7: cB = 8: cS = 10
     End If
     son = AKSORA_SON_SATIR(ws, cM)
-    If son >= 7 Then
-        On Error Resume Next
-        ' Tek hucrede SpecialCells tum kullanilan alani dondurur: tablo araligiyla kesistirilir.
-        Set gor = ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)).SpecialCells(xlCellTypeVisible)
-        If Not gor Is Nothing Then Set gor = Intersect(gor, ws.Range(ws.Cells(7, cM), ws.Cells(son, cM)))
-        On Error GoTo 0
-    End If
-    If Not gor Is Nothing Then
+    ' Gorunur satirlar tek seferde (A-Z siralamada depo filtresi binlerce parca uretir).
+    If son >= 7 Then gorV = AKSORA_GORUNUR(ws, 7, son, IIf(T_Stok(ws), 12, 14))
+    If IsArray(gorV) Then
         kaynak = ws.Range(ws.Cells(7, 1), ws.Cells(son, 12)).Value2
         ' 1 UY, 2 depo yeri tanimi, 3 malzeme, 4 tanim, 5 parti, 6 birim, 7 seri, 8 depo kodu
         ReDim veri(1 To son - 6, 1 To 8): ReDim adet(1 To son - 6)
-        For Each ar In gor.Areas
-            For r = ar.Row To ar.Row + ar.Rows.Count - 1
-                i = r - 6
+        For i = 1 To son - 6
+            If gorV(i) = 1 Then
                 If Len(T_CiktiMetin(kaynak(i, cM))) > 0 Then
                     parti = T_CiktiMetin(kaynak(i, cP))
                     If T_CiktiDahil(parti, kaynak(i, 4), kaynak(i, cT)) Then
@@ -1760,8 +1772,8 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
                         End If
                     End If
                 End If
-            Next r
-        Next ar
+            End If
+        Next i
     End If
     If n = 0 Then Err.Raise vbObjectError + 9601, , "Çýktý alýnacak stok satýrý yok (HURDA ve ÇIKMA/BEDELSÝZ partiler alýnmaz; ÇIKMA/BDSZ trafo, hücre, pano ve direk alýnýr)."
     ' Baslikta depo: ciktiya giren depolarin tanimlari; sayfadaki tum depolar ise TUMU.
@@ -1848,7 +1860,7 @@ End Function
 Private Sub T_CiktiListe(ByVal ws As Worksheet)
     Dim hdr As Long, c1 As Long, c2 As Long, son As Long, j As Long, k As Long, n As Long, r As Long, i As Long
     Dim kol() As Long, bas() As Variant, gen() As Variant, fmt() As Variant, hiz() As Variant
-    Dim kaynak As Variant, veri() As Variant, gor As Range, ar As Range, bos As Boolean, ust As String, kars As Boolean
+    Dim kaynak As Variant, veri() As Variant, gorV As Variant, bos As Boolean, ust As String, kars As Boolean
     kars = (InStr(AKFIX_NORMAL(ws.Name), "KARSILASTIRMA") > 0)
     If ws.AutoFilterMode Then
         hdr = ws.AutoFilter.Range.Row: c1 = ws.AutoFilter.Range.Column
@@ -1865,18 +1877,13 @@ Private Sub T_CiktiListe(ByVal ws As Worksheet)
         r = AKSORA_SON_SATIR(ws, kol(j))
         If r > son Then son = r
     Next j
-    If son > hdr Then
-        On Error Resume Next
-        Set gor = ws.Range(ws.Cells(hdr + 1, c1), ws.Cells(son, c1)).SpecialCells(xlCellTypeVisible)
-        If Not gor Is Nothing Then Set gor = Intersect(gor, ws.Range(ws.Cells(hdr + 1, c1), ws.Cells(son, c1)))
-        On Error GoTo 0
-    End If
-    If Not gor Is Nothing Then
+    If son > hdr Then gorV = AKSORA_GORUNUR(ws, hdr + 1, son, kol(k))
+    If IsArray(gorV) Then
         kaynak = ws.Range(ws.Cells(hdr + 1, 1), ws.Cells(son, kol(k))).Value2
         ReDim veri(1 To son - hdr, 1 To k)
-        For Each ar In gor.Areas
-            For r = ar.Row To ar.Row + ar.Rows.Count - 1
-                i = r - hdr: bos = True
+        For i = 1 To son - hdr
+            If gorV(i) = 1 Then
+                bos = True
                 For j = 1 To k
                     If IsError(kaynak(i, kol(j))) Then
                         veri(n + 1, j) = "#HATA"
@@ -1886,8 +1893,8 @@ Private Sub T_CiktiListe(ByVal ws As Worksheet)
                     If Len(Trim$(CStr(veri(n + 1, j)))) > 0 Then bos = False
                 Next j
                 If Not bos Then n = n + 1
-            Next r
-        Next ar
+            End If
+        Next i
     End If
     If n = 0 Then Err.Raise vbObjectError + 9603, , "Çýktý alýnacak satýr yok."
     ReDim bas(0 To k - 1): ReDim gen(0 To k - 1): ReDim fmt(0 To k - 1): ReDim hiz(0 To k - 1)
