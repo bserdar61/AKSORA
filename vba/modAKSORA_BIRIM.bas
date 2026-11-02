@@ -1833,6 +1833,8 @@ End Sub
 Private Sub Y_STOK_YAZ(ByVal ws As Worksheet, ByVal a As Variant, ByVal il As String, ByVal tarih As Variant)
     Dim son As Long, n As Long
     If IsEmpty(a) Then n = 0 Else n = UBound(a, 1)
+    ' Stok sayfalari malzeme adina gore A-Z (sonra malzeme kodu, depo, seri no).
+    If n > 1 Then a = AKSORA_STOK_DIZI_AZ(a, Array(6, 5, 2, 10))
     son = application.Max(7, AKSORA_M_SON(ws))
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData

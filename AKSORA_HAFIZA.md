@@ -494,6 +494,17 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   I_ADLAR/I_TUR/Y_BASLIK eklendi; sayfalar birime girişte Y_KUR ile kurulur (güncelleme önce gelirse I_STOK_YAZ kurar).
   Panel hızlı erişim 6 düğme (IP_V5).
 
+## 02.11.2026 – Stok sayfaları A-Z + EXCEL'E AKTAR
+- Tüm stok sayfaları (Malzeme CDP/EPP/STOKLAR/İLÇE/YÜKLENİCİ, M_/Y_/I_ *_STOK) malzeme tanımına göre A-Z
+  (sonra malzeme kodu, depo, seri no; Türkçe harf sırası). `AKSORA_STOK_DIZI_AZ` (TASARIM, Public) dizi sıralar;
+  `Y_STOK_YAZ` yazmadan önce sıralar; `AKSORA_STOK_AZ ws` sayfa açılışında (AKSORA_CIKTI_DUGME) ve T_StokYap'ta
+  sıralı değilse yerinde sıralar, filtre varsa `AutoFilter.ApplyFilter` ile yeniden uygular.
+- "EXCEL'E AKTAR" düğmesi (btnExcelAktar, yeşil) ÇIKTI AL'ın solunda: `AKSORA_EXCEL_AKTAR` → T_CiktiSayim (mExcelAktar)
+  → `T_ExcelYaz`: yeni görünür kitap, 1. satır başlık (sayfa | il | depo | stok tarihi), 2. satır hazırlama,
+  4. satır sütunlar; miktar sayı + Birim ayrı, SAYILAN boş, FARK formülü; A-Z, çerçeveli, filtre, başlık dondurulmuş,
+  A4 yatay sayfa düzeni (imza bandı yok). HURDA ve ÇIKMA/BEDELSİZ partiler çıktıdaki gibi alınmaz.
+- Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

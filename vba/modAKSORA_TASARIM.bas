@@ -5,6 +5,7 @@ Private Const etiket As String = "_AKSORA_TASARIM_P1S2R1"
 Private Const AKT_PREFIX As String = "AKT1_"
 Private mCalisiyor As Boolean
 Private mKurulum As Boolean
+Private mExcelAktar As Boolean
 
 Public Function AKSORA_TASARIM_AKTIF() As Boolean
     Dim n As Name, ad As String
@@ -443,6 +444,9 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     s.TextFrame2.TextRange.Text = "ÇIKTI AL"
     s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_CIKTI_AL"
     sag = sag - 96 - 5
+    Set s = T_ExcelDugme(ws, sag - 110, ws.Rows(1).Top + 5, 110, 22)
+    sag = sag - 110 - 5
+    AKSORA_STOK_AZ ws
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")
     If sag > 280 Then s.Width = sag - 270 Else s.Visible = msoFalse
     ' Ust satirlar disinda gizli veri satirlari ve filtreler degistirilmez.
@@ -1481,10 +1485,14 @@ Private Function T_CiktiTur(ByVal ad As String) As Long
 End Function
 
 ' Sayfa acilirken CIKTI AL dugmesi (yoksa) kurulur: ANA PANEL dugmesi ve yanindaki dugmelerin solunda.
+' Stok sayfalarinda solunda EXCEL'E AKTAR dugmesi de kurulur ve liste A-Z siralanir.
 Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     Dim a As Shape, s As Shape, b As Shape, x As Double, y As Double, t As String, p As Variant, koruma As Boolean
+    Dim yerinde As Boolean
     On Error GoTo Son
-    If T_CiktiTur(ws.Name) = 0 Or T_Stok(ws) Then Exit Sub
+    If T_CiktiTur(ws.Name) = 0 Then Exit Sub
+    If T_CiktiTur(ws.Name) = 1 Then AKSORA_STOK_AZ ws
+    If T_Stok(ws) Then Exit Sub
     If Not T_Sekil(ws, "btnStokCikti") Is Nothing Then Exit Sub
     Set a = T_Sekil(ws, "btnAnaPanelDon")
     If a Is Nothing Then Exit Sub
@@ -1494,7 +1502,7 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     Else
         x = a.Left
         For Each b In ws.Shapes
-            If b.Visible = msoTrue And b.Name <> a.Name And b.Name <> "btnCiktiAl" Then
+            If b.Visible = msoTrue And b.Name <> a.Name And b.Name <> "btnCiktiAl" And b.Name <> "btnExcelAktar" Then
                 t = vbNullString
                 On Error Resume Next
                 t = b.OnAction
@@ -1507,9 +1515,8 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
         x = x - 6 - application.Max(a.Width, 90): y = a.Top
     End If
     Set s = T_Sekil(ws, "btnCiktiAl")
-    If Not s Is Nothing Then
-        If Abs(s.Left - x) < 1 And Abs(s.Top - y) < 1 Then Exit Sub
-    End If
+    If Not s Is Nothing Then yerinde = (Abs(s.Left - x) < 1 And Abs(s.Top - y) < 1)
+    If yerinde And (T_CiktiTur(ws.Name) <> 1 Or Not T_Sekil(ws, "btnExcelAktar") Is Nothing) Then Exit Sub
     T_KorumaAc ws, p, koruma
     If s Is Nothing Then
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, application.Max(a.Width, 90), a.Height)
@@ -1527,8 +1534,124 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     End If
     s.Left = x: s.Top = y: s.Width = application.Max(a.Width, 90): s.Height = a.Height
     s.Placement = xlFreeFloating
+    If T_CiktiTur(ws.Name) = 1 Then T_ExcelDugme ws, x - 6 - 110, y, 110, a.Height
     If koruma Then T_KorumaKapat ws, p
 Son:
+End Sub
+
+' EXCEL'E AKTAR dugmesi (yoksa olusturulur) verilen konuma yerlestirilir.
+Private Function T_ExcelDugme(ByVal ws As Worksheet, ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double) As Shape
+    Dim s As Shape
+    Set s = T_Sekil(ws, "btnExcelAktar")
+    If s Is Nothing Then
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+        s.Name = "btnExcelAktar"
+    End If
+    T_Buton s, RGB(33, 115, 70), vbWhite, 8
+    s.TextFrame2.TextRange.Text = "EXCEL'E AKTAR"
+    s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_EXCEL_AKTAR"
+    s.Left = x: s.Top = y: s.Width = w: s.Height = h
+    s.Placement = xlFreeFloating
+    On Error Resume Next
+    s.DrawingObject.PrintObject = False
+    On Error GoTo 0
+    Set T_ExcelDugme = s
+End Function
+
+' Stok dizisi malzeme adina gore A-Z (Turkce harf sirasi), sonra malzeme kodu, depo ve seri no.
+' sutunlar: Array(tanim, malzeme, depo, seri) (0 = yok). Sirali ise ayni dizi doner.
+Public Function AKSORA_STOK_DIZI_AZ(ByVal a As Variant, ByVal sutunlar As Variant, Optional ByRef degisti As Boolean) As Variant
+    Dim n As Long, k As Long, i As Long, j As Long, anah() As String, idx() As Long, s() As Variant, sirali As Boolean
+    degisti = False
+    AKSORA_STOK_DIZI_AZ = a
+    If Not IsArray(a) Then Exit Function
+    n = UBound(a, 1): k = UBound(a, 2)
+    If n < 2 Then Exit Function
+    ReDim anah(1 To n): ReDim idx(1 To n)
+    sirali = True
+    For i = 1 To n
+        anah(i) = T_AzAnahtar(a, i, sutunlar)
+        idx(i) = i
+        If i > 1 Then If anah(i) < anah(i - 1) Then sirali = False
+    Next i
+    If sirali Then Exit Function
+    T_AzSirala anah, idx, 1, n
+    ReDim s(1 To n, 1 To k)
+    For i = 1 To n
+        For j = 1 To k
+            s(i, j) = a(idx(i), j)
+        Next j
+    Next i
+    degisti = True
+    AKSORA_STOK_DIZI_AZ = s
+End Function
+
+Private Function T_AzAnahtar(ByVal a As Variant, ByVal r As Long, ByVal sutunlar As Variant) As String
+    Dim i As Long, c As Long, v As Variant, t As String
+    For i = 0 To UBound(sutunlar)
+        c = sutunlar(i)
+        t = vbNullString
+        If c > 0 Then
+            v = a(r, c)
+            If Not IsError(v) Then t = UCase$(Trim$(CStr(v)))
+        End If
+        t = Replace(Replace(Replace(Replace(t, "Ç", "C~"), "Ð", "G~"), "Ý", "I"), "ý", "I")
+        t = Replace(Replace(Replace(t, "Ö", "O~"), "Þ", "S~"), "Ü", "U~")
+        T_AzAnahtar = T_AzAnahtar & t & Chr$(1)
+    Next i
+End Function
+
+Private Sub T_AzSirala(ByRef anah() As String, ByRef idx() As Long, ByVal ilkI As Long, ByVal sonI As Long)
+    Dim i As Long, j As Long, p As String, t As String, x As Long
+    Do While ilkI < sonI
+        i = ilkI: j = sonI: p = anah((ilkI + sonI) \ 2)
+        Do While i <= j
+            Do While anah(i) < p: i = i + 1: Loop
+            Do While anah(j) > p: j = j - 1: Loop
+            If i <= j Then
+                t = anah(i): anah(i) = anah(j): anah(j) = t
+                x = idx(i): idx(i) = idx(j): idx(j) = x
+                i = i + 1: j = j - 1
+            End If
+        Loop
+        If j - ilkI < sonI - i Then
+            If ilkI < j Then T_AzSirala anah, idx, ilkI, j
+            ilkI = i
+        Else
+            If i < sonI Then T_AzSirala anah, idx, i, sonI
+            sonI = j
+        End If
+    Loop
+End Sub
+
+' Stok sayfasindaki liste A-Z siralanir (zaten siraliysa dokunulmaz). Filtre varsa yeniden uygulanir.
+Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
+    Dim cM As Long, cT As Long, cS As Long, k As Long, son As Long, v As Variant, yeni As Variant, degisti As Boolean
+    Dim p As Variant, koruma As Boolean, sc As Boolean, ev As Boolean, durum As Boolean
+    On Error GoTo Son
+    If T_CiktiTur(ws.Name) <> 1 Then Exit Sub
+    If T_Stok(ws) Then
+        cM = 7: cT = 8: cS = 0: k = 12
+    Else
+        cM = 5: cT = 6: cS = 10: k = 14
+    End If
+    son = AKSORA_SON_SATIR(ws, cM)
+    If son < 8 Then Exit Sub
+    v = ws.Range(ws.Cells(7, 1), ws.Cells(son, k)).Value2
+    yeni = AKSORA_STOK_DIZI_AZ(v, Array(cT, cM, 2, cS), degisti)
+    If Not degisti Then Exit Sub
+    sc = application.ScreenUpdating: ev = application.EnableEvents: durum = True
+    application.ScreenUpdating = False: application.EnableEvents = False
+    T_KorumaAc ws, p, koruma
+    ws.Range(ws.Cells(7, 1), ws.Cells(son, k)).Value2 = yeni
+    If ws.FilterMode Then ws.AutoFilter.ApplyFilter
+    If koruma Then T_KorumaKapat ws, p
+    application.ScreenUpdating = sc: application.EnableEvents = ev
+    Exit Sub
+Son:
+    On Error Resume Next
+    If koruma Then T_KorumaKapat ws, p
+    If durum Then application.ScreenUpdating = sc: application.EnableEvents = ev
 End Sub
 
 ' Disaridan (yonetim merkezi vb.) sayfa gorunumu ciktisi.
@@ -1545,6 +1668,26 @@ End Sub
 
 Public Sub AKSORA_STOK_CIKTI()
     AKSORA_CIKTI_AL
+End Sub
+
+' Secili depo(lar)in stok listesi yeni bir Excel kitabina: cikti tablosu (imzasiz), A-Z, stok tarihiyle.
+Public Sub AKSORA_EXCEL_AKTAR()
+    Dim ws As Worksheet, ev As Boolean, no As Long, metin As String
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    Set ws = ActiveSheet
+    If T_CiktiTur(ws.Name) <> 1 Then Exit Sub
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    application.Cursor = xlWait
+    mExcelAktar = True
+    On Error Resume Next
+    T_CiktiSayim ws
+    no = Err.Number: metin = Err.Description
+    mExcelAktar = False
+    application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If no <> 0 Then MsgBox "Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
 
 Public Sub AKSORA_CIKTI_AL()
@@ -1656,6 +1799,28 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     tarih = ws.Range("C2").Value
     If Not IsError(tarih) Then
         If IsDate(tarih) Then ust = ust & "  |  Stok tarihi: " & Format$(CDate(tarih), "dd.mm.yyyy hh:nn")
+    End If
+    If mExcelAktar Then
+        ' Excel: miktar sayi, birim ayri sutun; FARK = SAYILAN - miktar (SAYILAN girilince).
+        k = IIf(seriVar, 11, 10)
+        ReDim cikis(1 To n, 1 To k)
+        For i = 1 To n
+            cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
+            cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+            x = 6
+            If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
+            cikis(i, x) = veri(i, 5)
+            cikis(i, x + 1) = adet(i)
+            cikis(i, x + 2) = veri(i, 6)
+        Next i
+        If seriVar Then
+            T_ExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), cikis, n, Array(11, 8, 18, 13, 46, 18, 9, 14, 8, 14, 12), 8, ust, depo
+        Else
+            T_ExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), cikis, n, Array(11, 8, 18, 13, 46, 9, 14, 8, 14, 12), 7, ust, depo
+        End If
+        Exit Sub
     End If
     If seriVar Then
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
@@ -1913,6 +2078,75 @@ Hata:
     wb.Close SaveChanges:=False
     On Error GoTo 0
     Err.Raise no, , metin
+End Sub
+
+' Yeni (gorunur, kaydedilmemis) kitapta tablo: 1. satir baslik, 2. satir hazirlama tarihi, 4. satir sutun basliklari.
+' Satirlar malzeme adina gore A-Z (sonra malzeme kodu, depo). mk = miktar sutunu.
+Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, ByVal gen As Variant, _
+    ByVal mk As Long, ByVal ust As String, ByVal depo As String)
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range, alan As Range, ad As String, x As Variant
+    k = UBound(bas) - LBound(bas) + 1
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Set c = wb.Worksheets(1)
+    ad = Left$(depo, 28)
+    For Each x In Array("/", "\", ":", "*", "?", "[", "]")
+        ad = Replace(ad, CStr(x), "-")
+    Next x
+    On Error Resume Next
+    c.Name = IIf(Len(ad) > 0, ad, "STOK")
+    On Error GoTo 0
+    c.Cells.Font.Name = "Aptos": c.Cells.Font.Size = 10
+    c.Range("A1").Value2 = ust
+    c.Range("A1").Font.bold = True: c.Range("A1").Font.Size = 12
+    c.Range("A2").Value2 = "Hazýrlama: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  " & n & " kalem  |  AKSORA"
+    c.Range("A2").Font.Size = 9: c.Range("A2").Font.Color = RGB(89, 89, 89)
+    For j = 1 To k
+        c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
+        c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
+        If j < mk Or j = mk + 1 Then c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "@"
+    Next j
+    c.Range("A5").Resize(n, k).Value2 = veri
+    Set r = c.Range(c.Cells(5, 1), c.Cells(n + 4, k))
+    If n > 1 Then
+        r.Sort Key1:=r.Columns(5), Order1:=xlAscending, Key2:=r.Columns(4), Order2:=xlAscending, _
+            Key3:=r.Columns(2), Order3:=xlAscending, Header:=xlNo, MatchCase:=False, Orientation:=xlTopToBottom
+    End If
+    c.Range(c.Cells(5, mk), c.Cells(n + 4, mk)).NumberFormat = "#,##0.###"
+    c.Range(c.Cells(5, mk + 3), c.Cells(n + 4, mk + 3)).FormulaR1C1 = "=IF(RC[-1]="""","""",RC[-1]-RC[-3])"
+    c.Range(c.Cells(5, mk + 2), c.Cells(n + 4, mk + 3)).NumberFormat = "#,##0.###"
+    Set alan = c.Range(c.Cells(4, 1), c.Cells(n + 4, k))
+    With alan
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
+        .VerticalAlignment = xlCenter
+    End With
+    With c.Range(c.Cells(4, 1), c.Cells(4, k))
+        .Interior.Color = RGB(217, 217, 217): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .WrapText = True
+    End With
+    c.Rows(4).RowHeight = 30
+    c.Range(c.Cells(5, 1), c.Cells(n + 4, 4)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, 3), c.Cells(n + 4, 3)).HorizontalAlignment = xlLeft
+    c.Range(c.Cells(5, mk - 1), c.Cells(n + 4, mk - 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, mk + 1), c.Cells(n + 4, mk + 1)).HorizontalAlignment = xlCenter
+    alan.AutoFilter
+    On Error Resume Next
+    application.PrintCommunication = False
+    With c.PageSetup
+        .PrintArea = alan.Address
+        .PrintTitleRows = "$4:$4"
+        .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+    End With
+    T_CiktiSayfa c.PageSetup, ust, False
+    application.PrintCommunication = True
+    On Error GoTo 0
+    wb.Windows(1).Visible = True
+    wb.Activate
+    c.Activate
+    application.ScreenUpdating = True
+    c.Range("A5").Select
+    ActiveWindow.FreezePanes = False
+    ActiveWindow.FreezePanes = True
+    ActiveWindow.Zoom = 100
 End Sub
 
 Private Function T_CiktiDosya(ByVal ad As String) As String
