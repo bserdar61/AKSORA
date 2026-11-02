@@ -135,6 +135,7 @@ Public Sub AKSORA_V8_DUZENLE()
 
 
 Cikis:
+    On Error Resume Next
 
     application.EnableEvents = ev
     application.ScreenUpdating = sc

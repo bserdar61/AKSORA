@@ -66,7 +66,14 @@ Public Sub AKSORA_IL_CANLI_ARSIV_KAYDET()
         hedef.Range("B1").Value2 = il
         hedef.Range("C1").Value2 = CStr(tip(i))
         hedef.Range("D1").Value = Now
-        hedef.Range("A3:A5").Value2 = ws.Range("C2:C4").Value2
+        ' Satir sayisi ve deger filtreden bagimsiz (C3/C4 SUBTOTAL; filtreli sayfada eksik yazilirdi).
+        hedef.Range("A3").Value2 = ws.Range("C2").Value2
+        If son >= 7 Then
+            hedef.Range("A4").Value2 = application.WorksheetFunction.CountA(ws.Range("G7:G" & son))
+            hedef.Range("A5").Value2 = application.WorksheetFunction.Sum(ws.Range("K7:K" & son))
+        Else
+            hedef.Range("A4").Value2 = 0: hedef.Range("A5").Value2 = 0
+        End If
         hedef.Range("A7:L" & son).Value2 = ws.Range("A7:L" & son).Value2
         hedef.Visible = xlSheetVeryHidden
         sayac = sayac + 1

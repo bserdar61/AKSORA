@@ -75,7 +75,10 @@ Public Sub AKSORA_V13_ARAMA_OZET(ByVal ws As Worksheet)
     ws.Range("F10").MergeArea.HorizontalAlignment = xlCenter
     ws.Range("I10").MergeArea.HorizontalAlignment = xlCenter
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     application.EnableEvents = ev
+    On Error GoTo 0
     If hataNo <> 0 Then Err.Raise hataNo, "AKSORA_V13_ARAMA_OZET", hataMetni
     Exit Sub
 Hata:

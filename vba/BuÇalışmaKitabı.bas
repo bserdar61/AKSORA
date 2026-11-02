@@ -9,18 +9,23 @@ Attribute VB_Customizable = True
 Option Explicit
 
 ' Excel'e aktarilan kitap acikken pencere gecislerini izler: AKSORA'ya donulunce uygulama modu, digerinde Excel gorunumu.
-Private WithEvents mUygApp As Application
+Private WithEvents mUygApp As application
+Attribute mUygApp.VB_VarHelpID = -1
 
 Public Sub AKSORA_UYG_IZLE()
     Set mUygApp = application
 End Sub
 
-Private Sub mUygApp_WindowActivate(ByVal Wb As Workbook, ByVal Wn As Window)
+Private Sub mUygApp_WindowActivate(ByVal wb As Workbook, ByVal wn As Window)
     On Error Resume Next
-    If Wb Is ThisWorkbook Then
+    If wb Is ThisWorkbook Then
         If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Then Exit Sub
-        If AKSORA_PENCERE_KUCUK(Wn) Then Exit Sub
+        If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
         UYGULAMA_MODU_AC
+        ' Uygulama olayi kitap olayindan sonra gelir: secim ekranlarinin gorunumu yeniden uygulanir.
+        If Not AKSORA_BIRIM_AKTIF_GORUNUM() Then
+            If Not AKSORA_GIRIS_ACIK Then AKSORA_V8_KAPAK_GORUNUM
+        End If
     Else
         AKSORA_EXCEL_GORUNUM
     End If
@@ -52,14 +57,24 @@ Private Sub Workbook_Open()
 
     adim = "Makro korumalarý"
 
+    ' Yardimci adimlar tek tek korunur: biri basarisiz olursa acilis durmaz (birim secimi her zaman gelir).
+    On Error Resume Next
     AKSORA_HAFIF_KORUMALARI_YENILE
+    Err.Clear
+    On Error GoTo Hata
     AKSORA_IMZA_DOGRULA
+    On Error Resume Next
     AKSORA_SAYI_BICIMLERINI_YENILE
     AKSORA_MUSTERI_ARAMA_KPI_YENILE
+    Err.Clear
+    On Error GoTo Hata
 
     adim = "Ýl butonlarý"
 
+    On Error Resume Next
     AKSORA_V13_BUTONLARI_BAGLA
+    Err.Clear
+    On Error GoTo Hata
 
     SPLASH_DURUM 0.4, "Ýl seçimi hazýrlanýyor..."
 
@@ -90,11 +105,17 @@ Private Sub Workbook_Open()
     AKSORA_V8_KAPAK_GORUNUM
 
     adim = "Fiyat listesi"
+    On Error Resume Next
     AKSORA_MUSTERI_FIYAT_KONTROL
+    Err.Clear
+    On Error GoTo Hata
 
     adim = "Kayýt bakýmý"
     SPLASH_DURUM 0.85, "Kayýtlar kontrol ediliyor..."
+    On Error Resume Next
     AKSORA_ARSIV_BAKIM
+    Err.Clear
+    On Error GoTo Hata
 
     ' AKSORA_BIRIM_HOOK_OPEN
     AKSORA_BIRIM_ACILIS
@@ -104,6 +125,9 @@ Private Sub Workbook_Open()
 Cikis:
 
     On Error Resume Next
+
+    ' Acilis yarida kaldiysa da yalniz birim secim ekrani gorunur kalir (baska birimin sayfalari acik kalmaz).
+    If Len(Hata) > 0 Then AKSORA_BIRIM_ACILIS
 
     AKSORA_V13_ACILIS = False
 
@@ -187,12 +211,12 @@ End Sub
 
 
 'Yatirim teminat / hakedis girisleri aninda kaydedilir.
-Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
     If AKSORA_V13_ACILIS Then Exit Sub
-    If Sh.Name = "ADMIN PANEL" Then AKSORA_ADMIN_DEGISIM Target: Exit Sub
-    If Left$(Sh.Name, 2) <> "Y_" And Left$(Sh.Name, 2) <> "I_" Then Exit Sub
+    If sh.Name = "ADMIN PANEL" Then AKSORA_ADMIN_DEGISIM Target: Exit Sub
+    If Left$(sh.Name, 2) <> "Y_" And Left$(sh.Name, 2) <> "I_" Then Exit Sub
     On Error Resume Next
-    If Left$(Sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM Sh, Target Else AKSORA_YATIRIM_DEGISIM Sh, Target
+    If Left$(sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM sh, Target Else AKSORA_YATIRIM_DEGISIM sh, Target
 End Sub
 
 ' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
@@ -223,10 +247,16 @@ Private Sub Workbook_SheetActivate( _
     Dim ev As Boolean
     Dim sc As Boolean
     Dim Hata As String
+    Dim birimOlay As Boolean
 
 
     ' AKSORA_BIRIM_HOOK_SHEET
-    If AKSORA_BIRIM_OLAY(sh) Then Exit Sub
+    ' Birim gorunumundeki bir hata calisma zamani penceresi acip tum durumu sifirlamasin.
+    On Error Resume Next
+    birimOlay = AKSORA_BIRIM_OLAY(sh)
+    If Err.Number <> 0 Then birimOlay = True: Err.Clear
+    On Error GoTo 0
+    If birimOlay Then Exit Sub
     If AKSORA_V13_ACILIS _
        Or AKSORA_V13_GECIS Then
 
@@ -259,7 +289,7 @@ Private Sub Workbook_SheetActivate( _
 
         AKSORA_V13_GORUNUM sh
 
-    Else
+    ElseIf ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVisible Then
 
         ThisWorkbook.Worksheets("KAPAK").Activate
 
@@ -267,10 +297,18 @@ Private Sub Workbook_SheetActivate( _
 
         AKSORA_V8_KAPAK_GORUNUM
 
+    Else
+
+        ' Birim baglaminda KAPAK cok gizli: taninmayan sayfadan birim secimine donulur.
+        application.EnableEvents = ev
+        AKSORA_BIRIM_ANA_MENU
+        Exit Sub
+
     End If
 
 
 Cikis:
+    On Error Resume Next
 
     application.EnableEvents = ev
 

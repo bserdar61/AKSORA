@@ -1793,6 +1793,7 @@ Private Function MS_CEKIRDEK(ByVal sessiz As Boolean, ByRef bilgi As String) As 
         "Fiyatý bulunamayan satýr: " & AKSORA_SAYI_METNI(eksik, "#,##0") & mFiyatsiz & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(MS_Gecen(mBas), "0.00") & " sn", vbInformation, "AKSORA | Müþteri " & MS_Tesis()
 Cikis:
+    On Error Resume Next
     MS_OleUyariAc
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
     application.StatusBar = False: AKSORA_V11_MESGUL = mesgulOnce: mCalisiyor = False: mSessiz = False
@@ -2018,6 +2019,7 @@ Public Sub AKSORA_MUSTERI_FIYATLARI_UYGULA(Optional ByVal sessiz As Boolean = Tr
     wsF.Range("J4").Value2 = wsF.Range("J3").Value2
     wsF.Range("J4").NumberFormat = "dd.mm.yyyy hh:mm:ss"
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = sc
     Exit Sub
 Hata:
@@ -2358,7 +2360,10 @@ Public Sub AKSORA_MUSTERI_ARSIV_KAYDET(ByVal il As String)
         End If
     Next i
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     application.EnableEvents = ev
+    On Error GoTo 0
     If hataNo <> 0 Then Err.Raise hataNo, "AKSORA_MUSTERI_ARSIV_KAYDET", il & " kaydý yazýlamadý: " & hataMetni
     Exit Sub
 Hata:
@@ -2471,6 +2476,8 @@ Public Sub AKSORA_MUSTERI_ARSIV_YUKLE(ByVal il As String)
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     Next i
 Cikis:
+    On Error Resume Next
+    On Error GoTo 0
     If hataNo <> 0 Then
         On Error Resume Next
         For i = 1 To 3
@@ -2753,6 +2760,7 @@ Public Sub AKSORA_ARSIV_BAKIM()
     ev = application.EnableEvents
     application.EnableEvents = False
     For Each ws In ThisWorkbook.Worksheets
+        AKSORA_BEKLE_NABIZ
         ad = ws.Name
         If Left$(ad, 4) = "_MA_" Or Left$(ad, 4) = "_YA_" Or Left$(ad, 4) = "_IA_" Then
             If CStr(ws.Range("C1").Value2) <> "PAKET2" Then

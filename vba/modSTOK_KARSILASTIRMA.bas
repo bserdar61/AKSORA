@@ -36,6 +36,7 @@ Public Sub STOK_KARSILASTIRMA_KUR()
     ws.Range("A1").Select
 
 Cikis:
+    On Error Resume Next
     application.EnableEvents = True
     application.ScreenUpdating = True
     Exit Sub
@@ -258,6 +259,7 @@ ws.Range("A12,D12,G12").NumberFormat = "#,##0.00 ""TL"""
     AKSORA_V11_KARS_UYARI ws
 
 Cikis:
+    On Error Resume Next
     application.ScreenUpdating = oncekiEkran
     Exit Sub
 
@@ -336,10 +338,17 @@ Public Sub STOK_KARS_KPI_GUNCELLE()
     Set ws = ThisWorkbook.Worksheets(KARS_SAYFA)
     sonSatir = AKSORA_SON_SATIR(ws, "D")
 
+    ' Gorunur satirlar tek seferde (satir satir okuma on binlerce satirda Excel'i kilitliyordu).
+    Dim gorV As Variant, aV As Variant
+    If sonSatir >= 16 Then
+        gorV = AKSORA_GORUNUR(ws, 16, sonSatir, 14)
+        aV = ws.Range("A16:A" & sonSatir).Value2
+        If Not IsArray(aV) Then ReDim aV(1 To 1, 1 To 1): aV(1, 1) = ws.Range("A16").Value2
+    End If
     For r = 16 To sonSatir
-        If Not ws.Rows(r).Hidden Then
+        If gorV(r - 15) = 1 Then
 
-            durum = UCase$(Trim$(CStr(ws.Cells(r, 1).Value2)))
+            durum = UCase$(Trim$(CStr(aV(r - 15, 1))))
             toplamDegisim = toplamDegisim + 1
             durum = Replace(durum, "Ý", "I")
 

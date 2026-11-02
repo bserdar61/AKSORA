@@ -96,6 +96,7 @@ Public Sub AKSORA_KARS_IL_KUR()
     AKSKV5_SABITLE w, sec
     ActiveWindow.DisplayGridlines = False
 Cikis:
+    On Error Resume Next
     application.EnableEvents = olay: application.ScreenUpdating = eski
     Exit Sub
 Hata:

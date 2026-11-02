@@ -184,6 +184,7 @@ Public Sub AKSORA_RAPOR_GORSEL_ONAR()
         AKSORA_RAPOR_AMBLEM_HIZALA CStr(ad)
     Next ad
 Cikis:
+    On Error Resume Next
     application.EnableEvents = olay
     application.ScreenUpdating = ekran
     If Len(hataMetni) > 0 Then

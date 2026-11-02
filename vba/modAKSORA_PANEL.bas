@@ -44,6 +44,7 @@ Public Sub PANEL_KUR()
     PANEL_GORUNUM_AYARLA ws
 
 Cikis:
+    On Error Resume Next
     application.EnableEvents = True
     application.ScreenUpdating = True
     Exit Sub
@@ -178,9 +179,12 @@ Public Sub PANEL_CANLI_DURUM(ByVal mesaj As String)
     DoEvents
 
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     application.EnableEvents = eskiOlay
     application.ScreenUpdating = eskiEkran
 
+    On Error GoTo 0
     If hataNo <> 0 Then
         Err.Raise hataNo, "PANEL_CANLI_DURUM", hataMetni
     End If
@@ -890,8 +894,16 @@ ByVal SAPKontrol As Boolean)
     Set ws = ThisWorkbook.Worksheets(StokSayfa)
 
     tarih = ws.Range("C2").Value
-    satir = PANEL_LONG(ws.Range("C3").Value2)
-    deger = PANEL_DOUBLE(ws.Range("C4").Value2)
+    ' C3/C4 filtreye duyarli (SUBTOTAL): kart, sayfada depo secili olsa da tum stogu gosterir.
+    Dim sonG As Long
+    sonG = AKSORA_SON_SATIR(ws, "G")
+    If sonG >= 7 Then
+        satir = application.WorksheetFunction.CountA(ws.Range("G7:G" & sonG))
+        deger = application.WorksheetFunction.Sum(ws.Range("K7:K" & sonG))
+    Else
+        satir = PANEL_LONG(ws.Range("C3").Value2)
+        deger = PANEL_DOUBLE(ws.Range("C4").Value2)
+    End If
 
     If IsDate(tarih) Then
 

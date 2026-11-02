@@ -898,6 +898,7 @@ Public Sub AKSORA_MUSTERI_DEPO_SEC()
     ws.Calculate
     AKFIX_EN_USTE ws
 Cikis:
+    On Error Resume Next
     If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
         UserInterfaceOnly:=True, AllowFiltering:=True
     Exit Sub
@@ -1582,6 +1583,9 @@ Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
         Next r
     End If
     If farkli Then ws.Range(ws.Cells(ilk, 75), ws.Cells(son, 75)).Value2 = v
+    ' Onceki (daha uzun) listeden kalan bant hucreleri silinir (dosya sisiyordu).
+    r = AKSORA_SON_SATIR(ws, 75)
+    If r > son Then ws.Range(ws.Cells(son + 1, 75), ws.Cells(r, 75)).ClearContents
 Cikis:
     On Error Resume Next
     If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _

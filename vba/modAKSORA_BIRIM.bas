@@ -293,8 +293,11 @@ Public Sub AKSORA_BIRIM_ACILIS()
     Next diger
     BIRIM_GORUNUM ws
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
+    On Error GoTo 0
     If no <> 0 Then Err.Raise no, "AKSORA_BIRIM_ACILIS", metin
     Exit Sub
 Hata:
@@ -391,6 +394,7 @@ Private Sub BIRIM_MALZEME_ASIL()
     AKSORA_BIRIM_KAPAK_GERI
     BIRIM_DIGERLERINI_GIZLE "KAPAK"
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
@@ -509,6 +513,7 @@ Private Sub MUSTERI_KAPAK_AC()
     Next k
     MUSTERI_KAPAK_GORUNUM ws
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
@@ -723,6 +728,7 @@ Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
     Next yk
     YATIRIM_KAPAK_GORUNUM ws
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
@@ -861,6 +867,7 @@ Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
     BIRIM_DIGERLERINI_GIZLE ad
     BIRIM_GORUNUM ws
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
@@ -922,11 +929,14 @@ Public Sub AKSORA_BIRIM_KAPAK_GERI(Optional ByVal hedef As String = "KAPAK")
         End With
     End With
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     If cizim Or icerik Or senaryo Then
         ws.Protect Password:="", DrawingObjects:=cizim, Contents:=icerik, _
             Scenarios:=senaryo, UserInterfaceOnly:=True
     End If
     ws.EnableSelection = secim
+    On Error GoTo 0
     If no <> 0 Then Err.Raise no, "AKSORA_BIRIM_KAPAK_GERI", metin
     Exit Sub
 Hata:
@@ -1688,6 +1698,7 @@ Private Sub Y_GIRIS(ByVal kod As String)
     Next k
     AKSORA_YATIRIM_GORUNUM panel
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = True
     If no <> 0 Then MsgBox "Yatýrým birimi açýlamadý." & vbCrLf & metin & vbCrLf & "(Hata " & no & ")", vbExclamation, "AKSORA"
@@ -1944,6 +1955,7 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     Dim vC As Variant, vE As Variant, mesaj As String, i As Long, a As Variant, tarih As Date
     Dim bas As Double, sure As Double, adet(1 To 4) As Long, ev As Boolean, sc As Boolean, hesap As XlCalculation
     Dim ekran As Boolean, ozet As String, adlar As Variant, mesgulOnce As Boolean, hMesaj As String
+    Dim aa(1 To 4) As Variant, arK As Worksheet
     If mYCalisiyor Then Exit Function
     mYCalisiyor = True: bas = Timer
     mesgulOnce = AKSORA_V11_MESGUL
@@ -1973,9 +1985,23 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     application.ScreenUpdating = False
     tarih = Now
     adlar = Y_STOK_ADLARI()
+    ' Once dort sonuc hazirlanir: kayitli stogu olan bir kisim SAP'den bos gelirse hicbiri yazilmaz (onceki kayit korunur).
     For i = 1 To 4
         If InStr(kapsam, CStr(i)) > 0 Then
-            If i Mod 2 = 1 Then a = Y_DONUSTUR(vC, il, i) Else a = Y_DONUSTUR(vE, il, i)
+            If i Mod 2 = 1 Then aa(i) = Y_DONUSTUR(vC, il, i) Else aa(i) = Y_DONUSTUR(vE, il, i)
+            If IsEmpty(aa(i)) Then
+                Set arK = Y_ARSIV_SAYFA(il, i, False)
+                If Not arK Is Nothing Then
+                    If AKSORA_PAKET_ADET(arK) > 0 Then Err.Raise vbObjectError + 2103, , _
+                        Choose(i, "CDP yatýrým", "EPP yatýrým", "CDP yüklenici", "EPP yüklenici") & _
+                        ": SAP'den satýr gelmedi; önceki kayýt korundu."
+                End If
+            End If
+        End If
+    Next i
+    For i = 1 To 4
+        If InStr(kapsam, CStr(i)) > 0 Then
+            a = aa(i)
             If IsEmpty(a) Then adet(i) = 0 Else adet(i) = UBound(a, 1)
             Y_ARSIV_KAYDET il, i, a, tarih
             If ekran Then Y_STOK_YAZ ThisWorkbook.Worksheets(CStr(adlar(i - 1))), a, il, tarih
@@ -2007,6 +2033,7 @@ Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
         "Yüklenici depolarý: " & Join(AKSORA_IL_YUKLENICI(il), ", ") & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(sure, "0.00") & " sn", vbInformation, "AKSORA | Yatýrým Birimi"
 Cikis:
+    On Error Resume Next
     AKSORA_V11_MESGUL = mesgulOnce
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
     application.StatusBar = False
@@ -2446,11 +2473,12 @@ End Sub
 ' Bes ilin yatirim ve yuklenici stoklari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
 Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
     Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
-    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long, kart As Boolean
     If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
     If Not AKSORA_ADMIN_TOPLU Then
         If MsgBox("Beþ ilin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) yatýrým ve yüklenici stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
             vbYesNo + vbQuestion, "AKSORA | Yatýrým Birimi") <> vbYes Then Exit Sub
+        kart = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM  |  BÜTÜN ÝLLER", "Beþ ilin yatýrým ve yüklenici stoklarý güncelleniyor...", 0.03)
     End If
     sc = application.ScreenUpdating
     If TypeOf ActiveSheet Is Worksheet Then Set baslangic = ActiveSheet
@@ -2479,6 +2507,7 @@ Bitir:
     Y_PANEL_GOSTER
     application.ScreenUpdating = sc
     On Error GoTo 0
+    If kart Then AKSORA_BEKLE_KAPAT
     If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "YATIRIM:" & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, hataMetni & vbCrLf, ""): Exit Sub
     MsgBox "Yatýrým birimi | Bütün iller" & vbCrLf & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, vbCrLf & hataMetni & vbCrLf, "") & vbCrLf & _
         "Toplam süre: " & AKSORA_SURE_METNI(sure), IIf(adet = 5, vbInformation, vbExclamation), "AKSORA | Yatýrým Birimi"
@@ -2838,6 +2867,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     Dim s As Shape, r As Long, i As Long, n As Long, sh As Worksheet, son As Long, v As Variant, dp As String, mk As String
     Dim det As Object, dk As Variant, a1 As Long, b1 As Long, a3 As Long, b3 As Long
     Dim satirlar() As Variant, sira() As Long, j As Long, tmp As Long, rr As Range, db As Databar, liste As Shape, x As Variant
+    Dim anahT() As String
     Dim tarih As Variant, nD As Long, nL As Long, sis As String, blok() As Variant
     Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
     il = UCase$(Trim$(il))
@@ -2898,15 +2928,12 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
         For Each dk In det.keys
             i = i + 1: satirlar(i) = det(dk): sira(i) = i
         Next dk
-        For i = 2 To nL
-            tmp = sira(i): j = i - 1
-            Do While j >= 1
-                If StrComp(satirlar(sira(j))(0), satirlar(tmp)(0), vbTextCompare) < 0 Then Exit Do
-                If StrComp(satirlar(sira(j))(0), satirlar(tmp)(0), vbTextCompare) = 0 And satirlar(sira(j))(5) >= satirlar(tmp)(5) Then Exit Do
-                sira(j + 1) = sira(j): j = j - 1
-            Loop
-            sira(j + 1) = tmp
+        ' Depo, sonra tutar azalan (hizli siralama; stok sayfasi A-Z oldugundan depolar karisik gelir).
+        ReDim anahT(1 To nL)
+        For i = 1 To nL
+            anahT(i) = UCase$(CStr(satirlar(i)(0))) & "|" & I_SIRA_ANAHTAR(CDbl(satirlar(i)(5)))
         Next i
+        Y_SIRALA anahT, sira, 1, nL
         ReDim blok(1 To nL, 1 To 13)
         For i = 1 To nL
             t = satirlar(sira(i))
@@ -2931,6 +2958,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
         ws.Range(ws.Cells(a3, 11), ws.Cells(b3, 11)).FormulaR1C1 = "=IF(OR(RC7=""Depoda"",N(RC13)=0),"""",TODAY()-INT(RC13))"
         ws.Range(ws.Cells(a3, 14), ws.Cells(b3, 14)).FormulaR1C1 = "=RC3&"" ""&RC4"
         For r = a3 To b3
+            If (r And 255) = 0 Then AKSORA_BEKLE_NABIZ
             Y_MIKTAR_BICIM ws.Cells(r, 5), CStr(satirlar(sira(r - a3 + 1))(3))
         Next r
     Else
@@ -4061,6 +4089,7 @@ Private Sub I_GIRIS(ByVal kod As String)
     Next k
     AKSORA_YATIRIM_GORUNUM panel
 Cikis:
+    On Error Resume Next
     mYonlendirme = False
     application.EnableEvents = ev: application.ScreenUpdating = True
     If no <> 0 Then MsgBox "Ýlçe Yönetim birimi açýlamadý." & vbCrLf & metin & vbCrLf & "(Hata " & no & ")", vbExclamation, "AKSORA"
@@ -4393,6 +4422,7 @@ Private Function I_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
         "Depolar: K001 - K999" & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(sure, "0.00") & " sn", vbInformation, "AKSORA | Ýlçe Yönetim Birimi"
 Cikis:
+    On Error Resume Next
     AKSORA_V11_MESGUL = mesgulOnce
     application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
     application.StatusBar = False
@@ -4413,11 +4443,12 @@ End Function
 ' Bes ilin ilce depolari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
 Public Sub AKSORA_ILCE_BUTUN_ILLER()
     Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
-    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long, kart As Boolean
     If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
     If Not AKSORA_ADMIN_TOPLU Then
         If MsgBox("Beþ ilin (Artvin, Trabzon, Gümüþhane, Giresun, Rize) CDP ve EPP ilçe depo stoklarý SAP'den güncellenecek. Devam edilsin mi?", _
             vbYesNo + vbQuestion, "AKSORA | Ýlçe Yönetim Birimi") <> vbYes Then Exit Sub
+        kart = AKSORA_BEKLE_AC("AKSORA  |  ÝLÇE  |  BÜTÜN ÝLLER", "Beþ ilin ilçe depo stoklarý güncelleniyor...", 0.03)
     End If
     sc = application.ScreenUpdating
     If TypeOf ActiveSheet Is Worksheet Then Set baslangic = ActiveSheet
@@ -4446,6 +4477,7 @@ Bitir:
     Y_PANEL_GOSTER "I_ANA PANEL"
     application.ScreenUpdating = sc
     On Error GoTo 0
+    If kart Then AKSORA_BEKLE_KAPAT
     If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "ÝLÇE:" & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, hataMetni & vbCrLf, ""): Exit Sub
     MsgBox "Ýlçe Yönetim birimi | Bütün iller" & vbCrLf & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, vbCrLf & hataMetni & vbCrLf, "") & vbCrLf & _
         "Toplam süre: " & AKSORA_SURE_METNI(sure), IIf(adet = 5, vbInformation, vbExclamation), "AKSORA | Ýlçe Yönetim Birimi"
@@ -5006,7 +5038,7 @@ End Sub
 Private Function I_KATEGORI(ByVal mal As String) As String
     Dim b As Variant, mg As String, tn As String
     b = I_MAL_BILGI(mal)
-    mg = UCase$(Trim$(CStr(b(0)))): tn = UCase$(Trim$(CStr(b(1))))
+    mg = UCase$(Trim$(CStr(b(0)))): tn = Y_NORM(CStr(b(1)))
     If Left$(tn, 6) = "IPTAL." Then tn = Trim$(Mid$(tn, 7))
     Select Case True
         Case Left$(mg, 5) = "M0316": I_KATEGORI = "KABLO"
@@ -5554,6 +5586,7 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
         ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
         r = a1 + n - 1
         For i = 1 To n
+            If (i And 255) = 0 Then AKSORA_BEKLE_NABIZ
             For j = 6 To 8
                 Y_MIKTAR_BICIM ws.Cells(a1 + i - 1, j), br(i)
             Next j
@@ -6260,6 +6293,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
         ws.Range("A16:A" & n + 15).Font.bold = True
         ws.Range("N16:N" & n + 15).HorizontalAlignment = xlCenter
         For r = 16 To n + 15
+            If (r And 255) = 0 Then AKSORA_BEKLE_NABIZ
             For j = 8 To 10
                 Y_MIKTAR_BICIM ws.Cells(r, j), birimler(r - 15)
             Next j
@@ -6345,6 +6379,155 @@ Public Sub AKSORA_ILCE_KF_TUMU(): I_KARS_FILTRE "": End Sub
 Public Sub AKSORA_ILCE_KF_AZALAN(): I_KARS_FILTRE "AZALDI": End Sub
 Public Sub AKSORA_ILCE_KF_ARTAN(): I_KARS_FILTRE "ARTTI": End Sub
 Public Sub AKSORA_ILCE_KF_DEMONTAJ(): I_KARS_FILTRE "DEMONTAJ GÝRÝÞ": End Sub
+
+' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla ayni kural, yalniz kritik malzemeler
+' (trafo, pano, armatur, kablo, direk, hucre). Grup: depo + uretim yeri + malzeme.
+' Donus: Collection of Array(depo, ilce, malzeme, tanim, kategori, kullanilan, girilen, eksik, birim, eksik TL, durum, uretim yeri)
+Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal yeniT As String) As Collection
+    Dim dE As Object, dY As Object, anahtar As Object, grup As Object, bilgi As Object, disi As Object, isgL As Object
+    Dim depolar As Object, k As Variant, x As Variant, p() As String, gk As String, g As Variant, t As Variant
+    Dim mEs As Double, mYe As Double, vEs As Double, i As Long, eksik As Double, b As Variant, ad As String
+    Set I_DEM_EKSIK = New Collection
+    Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
+    Set isgL = I_ISG_LISTE()
+    Set depolar = I_DEPOLAR(il)
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    Set bilgi = CreateObject("Scripting.Dictionary"): bilgi.CompareMode = vbTextCompare
+    Set disi = CreateObject("Scripting.Dictionary"): disi.CompareMode = vbTextCompare
+    For Each x In Array(dE, dY)
+        For Each k In x.keys
+            anahtar(k) = True
+        Next k
+    Next x
+    For Each k In anahtar.keys
+        i = i + 1: If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            gk = p(0) & "|" & p(1) & "|" & p(2)
+            If Not disi.Exists(p(2)) Then
+                If dY.Exists(k) Then t = dY(k) Else t = dE(k)
+                I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
+                disi(p(2)) = (Len(I_DEM_DISI(p(2), isgL)) > 0)
+            End If
+            If Not disi(p(2)) Then
+                mEs = 0: mYe = 0: vEs = 0
+                If dE.Exists(k) Then t = dE(k): mEs = t(3): vEs = t(4): bilgi(gk) = Array(t(0), t(1), t(2))
+                If dY.Exists(k) Then t = dY(k): mYe = t(3): If Not bilgi.Exists(gk) Then bilgi(gk) = Array(t(0), t(1), t(2))
+                If grup.Exists(gk) Then g = grup(gk) Else g = Array(0#, 0#, 0#)
+                If I_DEMONTAJ_MI(p(3)) Then
+                    If mYe > mEs Then g(1) = g(1) + (mYe - mEs)
+                ElseIf mYe + 0.0005 < mEs Then
+                    g(0) = g(0) + (mEs - mYe)
+                    If mEs > 0 Then g(2) = g(2) + (mEs - mYe) * vEs / mEs
+                End If
+                grup(gk) = g
+            End If
+        End If
+    Next k
+    For Each k In grup.keys
+        g = grup(k)
+        If g(0) > 0.0005 And g(1) + 0.0005 < g(0) Then
+            p = Split(CStr(k), "|"): b = bilgi(k)
+            eksik = g(0) - g(1)
+            If depolar.Exists(p(0)) Then ad = I_DEPO_KISA(CStr(depolar(p(0)))) Else ad = I_DEPO_KISA(CStr(b(0)))
+            I_DEM_EKSIK.Add Array(p(0), ad, p(2), CStr(b(1)), I_KATEGORI(p(2)), g(0), g(1), eksik, CStr(b(2)), _
+                Round(g(2) * eksik / g(0), 2), IIf(g(1) <= 0.0005, "GÝRÝÞ YOK", "EKSÝK GÝRÝÞ"), p(1))
+        End If
+    Next k
+End Function
+
+' STOK / DEMONTAJ KONTROLU ekranindaki iki tarih icin demontaj eksikleri: her ilce ayri Excel (ilce adiyla)
+' ve tum ilceler tek dosya; masaustunde tek klasore kaydedilir (mail ile gonderilmeye hazir).
+Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
+    Dim ws As Worksheet, il As String, eskiT As String, yeniT As String, liste As Collection, ac As Boolean, ev As Boolean
+    Dim gruplar As Object, k As Variant, c As Collection, x As Variant, veri() As Variant, i As Long, j As Long, n As Long
+    Dim klasor As String, ust As String, ok As Long, hata As String, toplam As Double, no As Long, metin As String
+    Dim bas As Variant, gen As Variant, bicim As Variant, hiza As Variant, sonuc As String, sira As Long, kodlar() As String, t As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    eskiT = Trim$(CStr(ws.Range("B6").Value2)): yeniT = Trim$(CStr(ws.Range("I6").Value2))
+    If Len(il) = 0 Or Len(eskiT) = 0 Or Len(yeniT) = 0 Or eskiT = yeniT Then
+        MsgBox "Karþýlaþtýrma için iki farklý tarih seçiniz (en az iki farklý günde ilçe stok güncellemesi gerekir).", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    ac = AKSORA_BEKLE_AC("AKSORA  |  DEMONTAJ EKSÝKLERÝ", Y_IL_ADI(il) & "  •  demontaj eksikleri hesaplanýyor...", 0.05)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set liste = I_DEM_EKSIK(il, eskiT, yeniT)
+    If liste.Count = 0 Then
+        application.EnableEvents = ev: application.ScreenUpdating = True
+        If ac Then AKSORA_BEKLE_KAPAT
+        MsgBox "Seçilen tarihler arasýnda (" & eskiT & " - " & yeniT & ") demontaj giriþi eksik kritik malzeme yok.", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    Set gruplar = CreateObject("Scripting.Dictionary"): gruplar.CompareMode = vbTextCompare
+    For Each x In liste
+        If Not gruplar.Exists(x(0)) Then gruplar.Add x(0), New Collection
+        gruplar(x(0)).Add x
+        toplam = toplam + x(9)
+    Next x
+    klasor = AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("AKSORA - " & Y_IL_ADI(il) & " - Demontaj Eksikleri - " & Left$(yeniT, 10))
+    If Not AKSORA_KLASOR_HAZIRLA(klasor) Then Err.Raise vbObjectError + 9701, , "Klasör oluþturulamadý: " & klasor
+    bas = Array("Depo", "Ýlçe", "Malzeme", "Malzeme kýsa metni", "Kategori", "Kullanýlan (azalan)", "Demontajý girilen", _
+        "Eksik", "Birim", "Eksik deðer (TL)", "Durum", "Açýklama")
+    gen = Array(8, 18, 13, 44, 11, 12, 12, 10, 8, 14, 13, 30)
+    bicim = Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00", "@", "@")
+    hiza = Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlCenter, xlLeft)
+    ReDim kodlar(1 To gruplar.Count)
+    For Each k In gruplar.keys
+        n = n + 1: kodlar(n) = CStr(k)
+    Next k
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If kodlar(j) < kodlar(i) Then t = kodlar(i): kodlar(i) = kodlar(j): kodlar(j) = t
+        Next j
+    Next i
+    ' her ilce ayri dosya; sonra tum ilceler
+    For sira = 1 To n + 1
+        If sira <= n Then Set c = gruplar(kodlar(sira)) Else Set c = liste
+        ReDim veri(1 To c.Count, 1 To 12)
+        i = 0
+        For Each x In c
+            i = i + 1
+            veri(i, 1) = x(0): veri(i, 2) = x(1): veri(i, 3) = x(2): veri(i, 4) = x(3): veri(i, 5) = x(4)
+            veri(i, 6) = Round(x(5), 3): veri(i, 7) = Round(x(6), 3): veri(i, 8) = Round(x(7), 3)
+            veri(i, 9) = x(8): veri(i, 10) = x(9): veri(i, 11) = x(10)
+        Next x
+        If sira <= n Then
+            t = c(1)(1)
+            AKSORA_BEKLE_ILERLE 0.1 + 0.85 * (sira - 1) / (n + 1), sira & " / " & n & "  •  " & t
+            ust = "DEMONTAJ GÝRÝÞÝ YAPILMAYAN MALZEMELER  |  " & Y_IL_ADI(il) & "  |  " & t & " (" & kodlar(sira) & ")  |  " & eskiT & "  -  " & yeniT
+            sonuc = AKSORA_EXCEL_TABLO(bas, veri, c.Count, gen, bicim, hiza, ust, "Kritik: trafo, pano, armatür, kablo, direk, hücre", _
+                t, klasor & application.PathSeparator & AKSORA_DOSYA_ADI(t) & ".xlsx", True, Array(4, 3, 1))
+        Else
+            AKSORA_BEKLE_ILERLE 0.96, "Tüm ilçeler tek dosya..."
+            ust = "DEMONTAJ GÝRÝÞÝ YAPILMAYAN MALZEMELER  |  " & Y_IL_ADI(il) & "  |  Tüm ilçeler  |  " & eskiT & "  -  " & yeniT
+            sonuc = AKSORA_EXCEL_TABLO(bas, veri, c.Count, gen, bicim, hiza, ust, "Toplam eksik deðer: " & Y_TL(toplam), _
+                "Tüm ilçeler", klasor & application.PathSeparator & "00 - Tüm Ýlçeler.xlsx", True, Array(2, 4, 3))
+        End If
+        If Len(sonuc) > 0 Then ok = ok + 1 Else hata = hata & vbCrLf & IIf(sira <= n, t, "Tüm Ýlçeler")
+        ThisWorkbook.Activate: ws.Activate
+    Next sira
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    MsgBox n & " ilçe için demontaj eksikleri Excel'e aktarýldý (" & liste.Count & " kalem, " & Y_TL(toplam) & ")." & vbCrLf & _
+        "Ayrýca tüm ilçeler tek dosyada: 00 - Tüm Ýlçeler." & _
+        IIf(Len(hata) > 0, vbCrLf & vbCrLf & "Kaydedilemeyenler:" & hata, "") & vbCrLf & vbCrLf & "Klasör: " & klasor, _
+        IIf(Len(hata) > 0, vbExclamation, vbInformation), "AKSORA  |  DEMONTAJ EKSÝKLERÝ"
+    If ok > 0 Then AKSORA_KLASOR_AC klasor
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    ThisWorkbook.Activate: ws.Activate
+    application.EnableEvents = True: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Demontaj eksikleri aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
 Public Sub AKSORA_ILCE_KF_EKSIK(): I_KARS_FILTRE "EKSIK": End Sub
 
 ' Depo kodlari artan sirada (sozluk yeniden kurulur).
@@ -6855,6 +7038,11 @@ Private Sub ADM_AC()
     BIRIM_DIGERLERINI_GIZLE ADM
     ADM_GORUNUM ws
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        If Not ws.ProtectContents Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    End If
     AKSORA_BEKLE_KAPAT
     mAdmMesgul = False
     mYonlendirme = False
@@ -7002,8 +7190,16 @@ End Sub
 ' Uzun dongulerde cagrilir: kart acikken yarim saniyede bir mesaj kuyrugunu bosaltir (yazilar degismez).
 Public Sub AKSORA_BEKLE_NABIZ()
     Dim iv As Boolean
-    If Not mAdmYukleme Then Exit Sub
     If Abs(Timer - mAdmYukSon) <= 0.5 Then Exit Sub
+    ' Kart acilamadiysa da (simge durumu, acilis vb.) Windows "Yanit vermiyor" demesin.
+    If Not mAdmYukleme Then
+        On Error Resume Next
+        iv = application.Interactive: application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+        mAdmYukSon = Timer
+        Exit Sub
+    End If
     On Error Resume Next
     iv = application.Interactive
     application.Interactive = False
@@ -7474,7 +7670,7 @@ Private Function ADM_DEMONTAJ(ByVal il As String) As Variant
         Next i
     End If
     If Len(eskiT) = 0 Then ADM_DEMONTAJ = Array(eskiT, yeniT, depolar, eksik): Exit Function
-    imza = "DEM6|" & il & "|" & eskiT & "|" & yeniT
+    imza = "DEM6|" & il & "|" & eskiT & "|" & yeniT & "|" & I_MAL_HARITA().Count
     If mAdmOnbellek.Exists(imza) Then ADM_DEMONTAJ = mAdmOnbellek(imza): Exit Function
     application.StatusBar = "AKSORA Yönetim Merkezi  •  " & Y_IL_ADI(il) & " demontaj kontrolü..."
     Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
@@ -7483,9 +7679,11 @@ Private Function ADM_DEMONTAJ(ByVal il As String) As Variant
     ' ISG malzemeleri demontaj kontrolune girmez (zimmet / manuel sarf ile cikar).
     Set isgL = I_ISG_LISTE()
     For Each k In dE.keys
+        I_MAL_NOT ADM_KOD3(k), CStr(dE(k)(1)), CStr(dE(k)(2))
         If Len(I_DEM_DISI(ADM_KOD3(k), isgL)) = 0 Then anahtar(k) = True
     Next k
     For Each k In dY.keys
+        I_MAL_NOT ADM_KOD3(k), CStr(dY(k)(1)), CStr(dY(k)(2))
         If Len(I_DEM_DISI(ADM_KOD3(k), isgL)) = 0 Then anahtar(k) = True
     Next k
     For Each k In anahtar.keys
@@ -7578,7 +7776,8 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
             If veri(2) > 0 Then
                 ilDeger(p, u) = veri(3)(1)
                 If u = 0 Then ilHurda(p) = veri(3)(4)
-                ilEksi(p) = ilEksi(p) + veri(3)(2)
+                ' Ilce (K) depolari uc birimde birden bulunur: toplanmaz, en yuksek birim degeri alinir.
+                If veri(3)(2) > ilEksi(p) Then ilEksi(p) = veri(3)(2)
                 For Each k In veri(4).keys
                     kx = il & "|" & k
                     If Not tekil.Exists(kx) Then
@@ -8369,6 +8568,8 @@ Public Sub AKSORA_ADMIN_ARA()
                             If Not (alanMetin Like desen(w)) Then uy = False: Exit For
                         Next w
                         If Val(parca(6)) = 0 Then uy = False: seriEsles = False
+                        ' Metin eslesmesi ortak anahtarla gruplanir (birimler arasi ortak depolar tek sayilir).
+                        If uy Then seriEsles = False
                         If seriEsles Or uy Then
                             k = il & "|" & parca(0) & "|" & parca(1) & "|" & parca(3) & IIf(seriEsles, "|" & parca(9), "")
                             If Not grup.Exists(k) Then
@@ -8539,6 +8740,8 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     ADM_EKRAN_KILIT True
     ' Calisirken Excel'e tiklama / yazma / baska dosyaya gecme engellenir (kart ve SAP pencereleri etkilenmez).
     application.Interactive = False
+    ' Esc / Ctrl+Break makroyu yarida kesip Excel'i kilitli birakmasin (durdurma karttaki DURDUR ile).
+    application.EnableCancelKey = xlDisabled
     ' Yatirim ve Ilce, Malzemenin ayni SAP okumasini kullanir (hazirsa); Musteri ayri rapor (IQ09) oldugundan sonda.
     ADM_BIRIM_CALISTIR 0, "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE"
     AKSORA_ORTAK_AKTIF = AKSORA_ORTAK_HAZIR()
@@ -8548,6 +8751,7 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     AKSORA_ORTAK_BIRAK
     ADM_BIRIM_CALISTIR 3, "MÜÞTERÝ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
     On Error Resume Next
+    application.EnableCancelKey = xlInterrupt
     application.Interactive = True
     AKSORA_ARKA_PLAN_BITIR
     AKSORA_ORTAK_BIRAK
@@ -9937,9 +10141,12 @@ Private Sub ATIL_GOSTER(ByVal il As String, Optional ByVal gorunum As String = "
     mYonlendirme = False
     AKSORA_YATIRIM_GORUNUM ws
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     mYonlendirme = False
     application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
     If no <> 0 Then Err.Raise no, "ATIL_GOSTER", metin
     Exit Sub
 Hata:

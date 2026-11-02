@@ -522,6 +522,32 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   4096 satırda bir AKSORA_BEKLE_NABIZ). Anahtarda Replace yalnız Türkçe harf varsa.
 - Not: fx/audit_vba.py `anah()` gibi dizi parametreli imzalarda parametreleri kaçırır (yanlış "unknown").
 
+## 02.11.2026 – Tam analiz (4 paralel inceleme) + Excel'e aktar masaüstü / toplu / demontaj
+- Taban: up32 (kullanıcının 02.11 07:15 dosyası; kod aynı).
+- YENİ: Excel'e aktar dosyayı masaüstüne "<depo> - <birim sayfa> - <stok tarihi>.xlsx" olarak kaydeder (AKSORA_MASAUSTU:
+  WScript.Shell Desktop, OneDrive dahil; T_Kaydet ayni ad açıksa "(2)"). Başlık "I_" yerine "İLÇE YÖNETİM | ...".
+- YENİ: "TÜM DEPOLARI AKTAR" (btnTopluAktar; yalnız I_*_STOK ve M_*_STOK): her depo ayrı dosya (depo adıyla) masaüstünde
+  "AKSORA - <İl> - <sayfa> - <tarih>" klasörüne; yükleme kartı, sonunda klasör açılır (AKSORA_EXCEL_TOPLU_AKTAR,
+  mDepoFiltre ile T_CiktiSayim).
+- YENİ: İlçe STOK/DEMONTAJ ekranında "DEMONTAJ EKSİKLERİ EXCEL'E AKTAR" (ÇIKTI AL'ın sağı): B6/I6 tarihleri için
+  I_DEM_EKSIK (ekranla aynı kural, yalnız 6 kritik) → her ilçe ayrı dosya + "00 - Tüm İlçeler" (AKSORA_EXCEL_TABLO, genel).
+  Artvin 23.10→02.11 doğrulama: 9 ilçe, 22 kalem, 63.562 TL.
+- DÜZELTMELER (analiz): 43 prosedürde "Resume Cikis + Cikis'te hata → sonsuz döngü" (Cikis başına On Error Resume Next,
+  Err.Raise öncesi On Error GoTo 0; fx/resume_fix*.py). AKSORA_BEKLE_NABIZ kart yokken de DoEvents. Yatırım: SAP boş
+  gelirse kayıt silinmez (2103). Teminat detay sıralaması Y_SIRALA (A-Z sonrası O(n²) donma). Admin arama çift sayım,
+  eksi stok üçlü sayım (il için en yüksek birim). ADM_DEMONTAJ önce I_MAL_NOT + önbellek imzasına harita sayısı.
+  I_KATEGORI tanım Y_NORM (DİREK/HÜCRE/ARMATÜR). Tüm birimler: EnableCancelKey kapalı. Bütün iller (ilçe/yatırım) kartla.
+  Satır döngülerine NABIZ. ADM_AC hata sonrası koruma. Panel kartı ve canlı arşiv filtreden bağımsız sayı/değer.
+  STOK_KARS KPI ve TEMA_GORUNUR_DEPO_SAYISI AKSORA_GORUNUR. İlçe yedek MB52 okuması K001..PB999 (PB depoları) + ilçe dışı atla.
+  Workbook_Open: yardımcı adımlar ayrı korumalı, hata olursa AKSORA_BIRIM_ACILIS; SheetActivate birim hatası yakalanır;
+  gizli KAPAK yerine birim seçimi; mUygApp dönüşte seçim ekranı görünümü. AKG_KOPYALA sonrası ApplyFilter.
+  Müşteri bant (BW) eski fazla satırları silinir (dosya şişmesi). Excel'e aktar kod sütunları metin (baştaki sıfır korunur).
+- ŞİMDİLİK YAPILMADI (bilinçli): stok güncelleme geri alımında C2/C3/C4 ve raporun da geri alınması; ATIL'de kısmi
+  sayfa yenilemesinin sahte giriş katmanı; il geçişinde yeni arşivin eski canlı veriyle ezilmesi koruması; AKHZ_SAYI
+  1,234.56 SAP biçimi; boş kategori (0 satır) toplu güncellemede red; ADM_VERI il filtresi; I_KARNE farklı birim toplama;
+  BeforeClose iptalinde uygulama modu.
+- ed.py düzeltildi: önce kodla sonra yaz (cp1254 dışı karakter dosyayı 0 bayta indiriyordu).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

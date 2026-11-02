@@ -139,6 +139,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
         ActiveWindow.DisplayWorkbookTabs = True
     End If
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = scr
     Exit Sub
 Hata:

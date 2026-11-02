@@ -143,6 +143,7 @@ Public Sub AKSORA_IL_ARAMA_KUR()
     ws.Activate
     ActiveWindow.DisplayGridlines = False
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = scr
     Exit Sub
 Hata:
@@ -199,6 +200,7 @@ Private Sub AKSORA_V4_SEC(ByVal secim As String)
     End If
     AKSORA_V13_GORUNUM ws
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If Len(Hata) > 0 Then MsgBox Hata, vbExclamation, "AKSORA"
     Exit Sub

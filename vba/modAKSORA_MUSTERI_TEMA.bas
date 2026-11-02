@@ -100,6 +100,7 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
     mAsama = "Ana panel görünümü"
     AKSORA_MUSTERI_TEMA_GORUNUM ActiveSheet
 Cikis:
+    On Error Resume Next
     application.CutCopyMode = False
     mTemaMesgul = False
     application.EnableEvents = ev: application.ScreenUpdating = sc
@@ -785,6 +786,7 @@ Public Sub AKSORA_MUSTERI_ARAMA_KPI_YENILE()
     End If
     TEMA_ARAMA_KPI_FORMULLER ws
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = sc
     If Not ws Is Nothing Then
         ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
@@ -1211,7 +1213,10 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         If .ScrollColumn <> 1 Then .ScrollColumn = 1
     End With
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     application.ScreenUpdating = sc
+    On Error GoTo 0
     If no <> 0 Then Err.Raise no, "AKSORA_MUSTERI_TEMA_GORUNUM", metin
     Exit Sub
 Hata:
@@ -1220,24 +1225,19 @@ Hata:
 End Sub
 
 Private Function TEMA_GORUNUR_DEPO_SAYISI(ByVal ws As Worksheet, ByVal son As Long) As Long
-    Dim veri As Variant, gorunen As Range, parca As Range, d As Object
+    Dim veri As Variant, gorunen As Range, parca As Range, d As Object, gorV As Variant
     Dim i As Long, ilk As Long, bitis As Long, anahtar As String, a As String, b As String, il As String
     Dim hataNo As Long, hataMetni As String
     If son < 13 Then Exit Function
     veri = ws.Range("A13:M" & son).Value2
-    On Error Resume Next
-    Set gorunen = ws.Range("E13:E" & son).SpecialCells(xlCellTypeVisible)
-    hataNo = Err.Number: hataMetni = Err.Description
-    On Error GoTo 0
-    If hataNo <> 0 And hataNo <> 1004 Then Err.Raise hataNo, , hataMetni
-    If gorunen Is Nothing Then Exit Function
-    Set gorunen = application.Intersect(gorunen, ws.Range("E13:E" & son))
-    If gorunen Is Nothing Then Exit Function
+    ' Gorunur satirlar tek seferde (filtreli buyuk aramada SpecialCells/Areas Excel'i kilitliyordu).
+    gorV = AKSORA_GORUNUR(ws, 13, son, 13)
+    If Not IsArray(gorV) Then Exit Function
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = vbTextCompare
-    For Each parca In gorunen.Areas
-        ilk = parca.Row - 12: bitis = ilk + parca.Rows.Count - 1
-        For i = ilk To bitis
+    For ilk = 1 To 1
+        For i = 1 To son - 12
+            If gorV(i) = 0 Then GoTo Sonraki
             If Not IsError(veri(i, 5)) Then
                 If Len(Trim$(CStr(veri(i, 5)))) > 0 Then
                     If IsError(veri(i, 1)) Or IsError(veri(i, 2)) Or IsError(veri(i, 13)) Then _
@@ -1248,8 +1248,9 @@ Private Function TEMA_GORUNUR_DEPO_SAYISI(ByVal ws As Worksheet, ByVal son As Lo
                     d(anahtar) = True
                 End If
             End If
+Sonraki:
         Next i
-    Next parca
+    Next ilk
     TEMA_GORUNUR_DEPO_SAYISI = d.Count
 End Function
 
@@ -1362,6 +1363,7 @@ Public Sub AKSORA_MUSTERI_BUTON_GUNCELLE()
     ws.Unprotect ""
     TEMA_MUSTERI_TOPLU_BUTON ws
 Cikis:
+    On Error Resume Next
     If Not ws Is Nothing And korumali Then ws.Protect Password:="", DrawingObjects:=True, _
         Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     If Len(hataMetni) > 0 Then MsgBox hataMetni, vbExclamation, "AKSORA"

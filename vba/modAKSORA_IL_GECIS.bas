@@ -340,6 +340,10 @@ Private Sub AKG_KOPYALA(ByVal src As Worksheet, ByVal dst As Worksheet)
         dst.Range("C2").Value2 = bilgi(1, 1)
         dst.Range("C3").Formula = "=SUBTOTAL(103,A" & FIRST_DATA & ":A" & application.Max(FIRST_DATA, son) & ")"
         dst.Range("C4").Formula = "=SUBTOTAL(109,K" & FIRST_DATA & ":K" & application.Max(FIRST_DATA, son) & ")"
+        ' Onceki filtrenin gizledigi satirlar yeni veriye gore yeniden hesaplanir (ayni satir sayisinda yanlis satirlar gizli kalmasin).
+        On Error Resume Next
+        If dst.FilterMode Then dst.AutoFilter.ApplyFilter
+        On Error GoTo 0
     End If
 
     Exit Sub
@@ -689,7 +693,10 @@ Public Sub AKSORA_CANLI_ARSIV_BILGISINI_ONAR()
     Next i
     AKG_HEDEF_ARSIV_KONTROL il
 Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
     application.EnableEvents = ev: application.ScreenUpdating = sc
+    On Error GoTo 0
     If no <> 0 Then Err.Raise no, "AKSORA_CANLI_ARSIV_BILGISINI_ONAR", aciklama
     Exit Sub
 Hata:

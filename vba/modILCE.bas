@@ -1279,8 +1279,9 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
     ses.StartTransaction "MB52"
     AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
+    ' K001..PB999: ilce (K) ve planli bakim (PB) depolari; aradaki diger depolar asagida atlanir.
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = "K001"
-    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "K999"
+    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "PB999"
     ses.FindById("wnd[0]").SendVKey 8
     ILCE_CDP_BLOK_BEKLE 0.4
     ses.FindById("wnd[0]/tbar[1]/btn[33]").Press
@@ -1403,19 +1404,19 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
             Err.Raise vbObjectError + 875, , "Satir dogrulanamadi: " & (i + 1)
 KAYDET:
             depo = UCase$(Trim$(CStr(ham(i + 1, 2))))
-            If Not AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
-                Err.Raise vbObjectError + 876, , "Beklenmeyen depo: " & depo
-            End If
-            stok = stok + 1
-            For j = 1 To 12
-                temiz(stok, j) = ham(i + 1, j)
-            Next j
-            temiz(stok, 9) = ILCE_V2_EPP_SAYI(temiz(stok, 9))
-            temiz(stok, 11) = ILCE_V2_EPP_SAYI(temiz(stok, 11))
-            If IsNumeric(temiz(stok, 9)) And CDbl(temiz(stok, 9)) <> 0 Then
-                temiz(stok, 12) = CDbl(temiz(stok, 11)) / CDbl(temiz(stok, 9))
-            Else
-                temiz(stok, 12) = 0#
+            ' Aralikta kalan ilce disi depolar (L.., M.. vb.) alinmaz.
+            If AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
+                stok = stok + 1
+                For j = 1 To 12
+                    temiz(stok, j) = ham(i + 1, j)
+                Next j
+                temiz(stok, 9) = ILCE_V2_EPP_SAYI(temiz(stok, 9))
+                temiz(stok, 11) = ILCE_V2_EPP_SAYI(temiz(stok, 11))
+                If IsNumeric(temiz(stok, 9)) And CDbl(temiz(stok, 9)) <> 0 Then
+                    temiz(stok, 12) = CDbl(temiz(stok, 11)) / CDbl(temiz(stok, 9))
+                Else
+                    temiz(stok, 12) = 0#
+                End If
             End If
         Next i
     Next b
@@ -1492,8 +1493,9 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
     ses.StartTransaction "MB52"
     AKSORA_SAP_MALZEME_TEMIZLE ses
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
+    ' K001..PB999: ilce (K) ve planli bakim (PB) depolari; aradaki diger depolar asagida atlanir.
     ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = "K001"
-    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "K999"
+    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = "PB999"
     ses.FindById("wnd[0]").SendVKey 8
     ILCE_EPP_BLOK_BEKLE 0.4
     ses.FindById("wnd[0]/tbar[1]/btn[33]").Press
@@ -1616,19 +1618,19 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
             Err.Raise vbObjectError + 875, , "Satir dogrulanamadi: " & (i + 1)
 KAYDET:
             depo = UCase$(Trim$(CStr(ham(i + 1, 2))))
-            If Not AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
-                Err.Raise vbObjectError + 876, , "Beklenmeyen depo: " & depo
-            End If
-            stok = stok + 1
-            For j = 1 To 12
-                temiz(stok, j) = ham(i + 1, j)
-            Next j
-            temiz(stok, 9) = ILCE_V2_EPP_SAYI(temiz(stok, 9))
-            temiz(stok, 11) = ILCE_V2_EPP_SAYI(temiz(stok, 11))
-            If IsNumeric(temiz(stok, 9)) And CDbl(temiz(stok, 9)) <> 0 Then
-                temiz(stok, 12) = CDbl(temiz(stok, 11)) / CDbl(temiz(stok, 9))
-            Else
-                temiz(stok, 12) = 0#
+            ' Aralikta kalan ilce disi depolar (L.., M.. vb.) alinmaz.
+            If AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then
+                stok = stok + 1
+                For j = 1 To 12
+                    temiz(stok, j) = ham(i + 1, j)
+                Next j
+                temiz(stok, 9) = ILCE_V2_EPP_SAYI(temiz(stok, 9))
+                temiz(stok, 11) = ILCE_V2_EPP_SAYI(temiz(stok, 11))
+                If IsNumeric(temiz(stok, 9)) And CDbl(temiz(stok, 9)) <> 0 Then
+                    temiz(stok, 12) = CDbl(temiz(stok, 11)) / CDbl(temiz(stok, 9))
+                Else
+                    temiz(stok, 12) = 0#
+                End If
             End If
         Next i
     Next b

@@ -7,6 +7,14 @@ Private mCalisiyor As Boolean
 Private mKurulum As Boolean
 Private mExcelAktar As Boolean
 Private mAzImza As Object
+' Excel'e aktar: hedef dosya, toplu mod (klasor + tek depo filtresi), kaydedilen dosya.
+Private mExcelYol As String
+Private mExcelKapat As Boolean
+Private mExcelToplu As Boolean
+Private mExcelKlasor As String
+Private mDepoFiltre As String
+Private mExcelSonuc As String
+Private mTopluAdlar As Object
 
 Public Function AKSORA_TASARIM_AKTIF() As Boolean
     Dim n As Name, ad As String
@@ -1367,6 +1375,7 @@ Public Sub AKSORA_DEPO_KART_SEC()
     AKFIX_STOK_SECIM ws
     ws.Range("G1").Select
 Cikis:
+    On Error Resume Next
     application.EnableEvents = ev
     If no <> 0 Then MsgBox "Depo filtresi: " & metin, vbExclamation, "AKSORA"
     Exit Sub
@@ -1503,7 +1512,8 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     Else
         x = a.Left
         For Each b In ws.Shapes
-            If b.Visible = msoTrue And b.Name <> a.Name And b.Name <> "btnCiktiAl" And b.Name <> "btnExcelAktar" Then
+            If b.Visible = msoTrue And b.Name <> a.Name And b.Name <> "btnCiktiAl" And b.Name <> "btnExcelAktar" And _
+                b.Name <> "btnTopluAktar" And b.Name <> "btnDemontajAktar" Then
                 t = vbNullString
                 On Error Resume Next
                 t = b.OnAction
@@ -1517,7 +1527,9 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     End If
     Set s = T_Sekil(ws, "btnCiktiAl")
     If Not s Is Nothing Then yerinde = (Abs(s.Left - x) < 1 And Abs(s.Top - y) < 1)
-    If yerinde And (T_CiktiTur(ws.Name) <> 1 Or Not T_Sekil(ws, "btnExcelAktar") Is Nothing) Then Exit Sub
+    If yerinde And (T_CiktiTur(ws.Name) <> 1 Or Not T_Sekil(ws, "btnExcelAktar") Is Nothing) And _
+        (Not T_TopluSayfa(ws.Name) Or Not T_Sekil(ws, "btnTopluAktar") Is Nothing) And _
+        (ws.Name <> "I_STOK_KARÞILAÞTIRMA" Or Not T_Sekil(ws, "btnDemontajAktar") Is Nothing) Then Exit Sub
     T_KorumaAc ws, p, koruma
     If s Is Nothing Then
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, application.Max(a.Width, 90), a.Height)
@@ -1536,8 +1548,41 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     s.Left = x: s.Top = y: s.Width = application.Max(a.Width, 90): s.Height = a.Height
     s.Placement = xlFreeFloating
     If T_CiktiTur(ws.Name) = 1 Then T_ExcelDugme ws, x - 6 - 110, y, 110, a.Height
+    If T_TopluSayfa(ws.Name) Then
+        T_EkDugme ws, "btnTopluAktar", "TÜM DEPOLARI AKTAR", RGB(21, 87, 52), "AKSORA_EXCEL_TOPLU_AKTAR", _
+            x - 12 - 110 - 130, y, 130, a.Height
+    End If
+    ' Ilce stok karsilastirma: demontaj eksikleri her ilce icin ayri Excel (CIKTI AL'in saginda).
+    If ws.Name = "I_STOK_KARÞILAÞTIRMA" Then
+        T_EkDugme ws, "btnDemontajAktar", "DEMONTAJ EKSÝKLERÝ" & vbLf & "EXCEL'E AKTAR", RGB(185, 28, 28), _
+            "AKSORA_ILCE_DEMONTAJ_AKTAR", x + application.Max(a.Width, 90) + 6, y, application.Max(a.Width, 90), a.Height
+    End If
     If koruma Then T_KorumaKapat ws, p
 Son:
+End Sub
+
+' Ek dugme (yoksa olusturulur) verilen konuma yerlestirilir; kagida basilmaz.
+Private Sub T_EkDugme(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal renk As Long, _
+    ByVal makro As String, ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double)
+    Dim s As Shape
+    Set s = T_Sekil(ws, ad)
+    If s Is Nothing Then
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+        s.Name = ad
+    End If
+    T_Buton s, renk, vbWhite, IIf(InStr(metin, vbLf) > 0, 7, 8)
+    s.TextFrame2.TextRange.Text = metin
+    On Error Resume Next
+    s.TextFrame2.MarginTop = 0: s.TextFrame2.MarginBottom = 0
+    s.TextFrame2.MarginLeft = 2: s.TextFrame2.MarginRight = 2
+    s.TextFrame2.WordWrap = msoTrue
+    On Error GoTo 0
+    s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & makro
+    s.Left = x: s.Top = y: s.Width = w: s.Height = h
+    s.Placement = xlFreeFloating
+    On Error Resume Next
+    s.DrawingObject.PrintObject = False
+    On Error GoTo 0
 End Sub
 
 ' EXCEL'E AKTAR dugmesi (yoksa olusturulur) verilen konuma yerlestirilir.
@@ -1702,15 +1747,114 @@ Public Sub AKSORA_EXCEL_AKTAR()
     ev = application.EnableEvents
     application.EnableEvents = False: application.ScreenUpdating = False
     application.Cursor = xlWait
-    mExcelAktar = True
+    mExcelAktar = True: mExcelToplu = False: mExcelKapat = False: mDepoFiltre = vbNullString
     On Error Resume Next
     T_CiktiSayim ws
     no = Err.Number: metin = Err.Description
-    mExcelAktar = False
+    mExcelAktar = False: mExcelYol = vbNullString
     application.Cursor = xlDefault
     application.EnableEvents = ev: application.ScreenUpdating = True
     On Error GoTo 0
-    If no <> 0 Then MsgBox "Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+    If no <> 0 Then
+        MsgBox "Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+    ElseIf Len(mExcelSonuc) = 0 Then
+        MsgBox "Liste açýldý ancak masaüstüne kaydedilemedi; Farklý Kaydet ile kaydediniz.", vbExclamation, "AKSORA"
+    Else
+        application.StatusBar = "Masaüstüne kaydedildi: " & mExcelSonuc
+    End If
+End Sub
+
+' Sayfadaki her depo ayri Excel dosyasina (depo adiyla) masaustunde tek klasore kaydedilir.
+Public Sub AKSORA_EXCEL_TOPLU_AKTAR()
+    Dim ws As Worksheet, son As Long, v As Variant, i As Long, depolar As Object, k As Variant, kodlar() As String
+    Dim ac As Boolean, ev As Boolean, klasor As String, tarihMetin As String, tarih As Variant, ok As Long, bos As Long
+    Dim hata As String, n As Long, j As Long, t As String, no As Long, metin As String, ad As String
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    Set ws = ActiveSheet
+    If Not T_TopluSayfa(ws.Name) Then Exit Sub
+    son = AKSORA_SON_SATIR(ws, 5)
+    If son < 7 Then MsgBox "Aktarýlacak stok bulunamadý.", vbInformation, "AKSORA": Exit Sub
+    v = ws.Range(ws.Cells(7, 1), ws.Cells(son, 3)).Value2
+    Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
+    For i = 1 To UBound(v, 1)
+        t = UCase$(T_CiktiMetin(v(i, 2)))
+        If Len(t) > 0 And Len(T_CiktiMetin(v(i, 1))) > 0 Then
+            If Not depolar.Exists(t) Then depolar(t) = T_CiktiMetin(v(i, 3))
+        End If
+    Next i
+    n = depolar.Count
+    If n = 0 Then MsgBox "Aktarýlacak stok bulunamadý.", vbInformation, "AKSORA": Exit Sub
+    ReDim kodlar(1 To n)
+    For Each k In depolar.keys
+        j = j + 1: kodlar(j) = CStr(k)
+    Next k
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If kodlar(j) < kodlar(i) Then t = kodlar(i): kodlar(i) = kodlar(j): kodlar(j) = t
+        Next j
+    Next i
+    tarih = ws.Range("C2").Value
+    tarihMetin = Format$(Date, "dd.mm.yyyy")
+    If Not IsError(tarih) Then If IsDate(tarih) Then tarihMetin = Format$(CDate(tarih), "dd.mm.yyyy")
+    klasor = AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("AKSORA - " & T_IlAdi(ws) & " - " & T_SayfaKisa(ws.Name) & " - " & tarihMetin)
+    If MsgBox(n & " depo ayrý ayrý Excel dosyasý olarak (depo adýyla) masaüstündeki þu klasöre kaydedilecek:" & vbCrLf & vbCrLf & _
+        klasor & vbCrLf & vbCrLf & "Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA  |  TÜM DEPOLARI AKTAR") <> vbYes Then Exit Sub
+    If Not AKSORA_KLASOR_HAZIRLA(klasor) Then MsgBox "Klasör oluþturulamadý:" & vbCrLf & klasor, vbExclamation, "AKSORA": Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  TÜM DEPOLARI EXCEL'E AKTAR", "Hazýrlanýyor...", 0.03)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    application.Cursor = xlWait
+    mExcelAktar = True: mExcelToplu = True: mExcelKapat = True: mExcelKlasor = klasor
+    Set mTopluAdlar = CreateObject("Scripting.Dictionary")
+    On Error GoTo Hata
+    For i = 1 To n
+        ad = CStr(depolar(kodlar(i)))
+        If Len(ad) = 0 Then ad = kodlar(i)
+        AKSORA_BEKLE_ILERLE 0.03 + 0.95 * (i - 1) / n, i & " / " & n & "  •  " & ad
+        mDepoFiltre = UCase$(kodlar(i))
+        On Error Resume Next
+        T_CiktiSayim ws
+        no = Err.Number: metin = Err.Description
+        On Error GoTo Hata
+        If no = 0 And Len(mExcelSonuc) > 0 Then
+            ok = ok + 1
+        ElseIf no = vbObjectError + 9601 Then
+            bos = bos + 1
+        Else
+            hata = hata & vbCrLf & ad & ": " & IIf(no = 0, "kaydedilemedi", metin)
+        End If
+        ThisWorkbook.Activate: ws.Activate
+    Next i
+Cikis:
+    On Error Resume Next
+    mExcelAktar = False: mExcelToplu = False: mExcelKapat = False: mExcelKlasor = vbNullString
+    mDepoFiltre = vbNullString: mExcelYol = vbNullString: Set mTopluAdlar = Nothing
+    ThisWorkbook.Activate: ws.Activate
+    application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    If no <> 0 And ok = 0 And bos = 0 And Len(hata) = 0 Then
+        MsgBox "Aktarým yapýlamadý." & vbCrLf & vbCrLf & metin, vbExclamation, "AKSORA"
+        Exit Sub
+    End If
+    MsgBox ok & " depo Excel dosyasý olarak kaydedildi." & _
+        IIf(bos > 0, vbCrLf & bos & " depoda aktarýlacak satýr yok (yalnýz hurda / çýkma)." , "") & _
+        IIf(Len(hata) > 0, vbCrLf & vbCrLf & "Kaydedilemeyenler:" & hata, "") & vbCrLf & vbCrLf & "Klasör: " & klasor, _
+        IIf(Len(hata) > 0, vbExclamation, vbInformation), "AKSORA  |  TÜM DEPOLARI AKTAR"
+    If ok > 0 Then AKSORA_KLASOR_AC klasor
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    hata = hata & vbCrLf & metin
+    Resume Cikis
+End Sub
+
+' Klasor Windows Gezgini'nde acilir.
+Public Sub AKSORA_KLASOR_AC(ByVal klasor As String)
+    On Error Resume Next
+    Shell "explorer.exe """ & klasor & """", vbNormalFocus
 End Sub
 
 Public Sub AKSORA_CIKTI_AL()
@@ -1741,7 +1885,8 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
     Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
     Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
-    Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant, gorV As Variant
+    Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant, gorV As Variant, gor1 As Boolean
+    Dim depoAd As String, tarihMetin As String
     If T_Stok(ws) Then
         cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
     Else
@@ -1749,13 +1894,19 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     son = AKSORA_SON_SATIR(ws, cM)
     ' Gorunur satirlar tek seferde (A-Z siralamada depo filtresi binlerce parca uretir).
-    If son >= 7 Then gorV = AKSORA_GORUNUR(ws, 7, son, IIf(T_Stok(ws), 12, 14))
-    If IsArray(gorV) Then
+    ' Toplu aktarimda filtre yerine tek depo (mDepoFiltre) alinir.
+    If son >= 7 And Len(mDepoFiltre) = 0 Then gorV = AKSORA_GORUNUR(ws, 7, son, IIf(T_Stok(ws), 12, 14))
+    If son >= 7 And (IsArray(gorV) Or Len(mDepoFiltre) > 0) Then
         kaynak = ws.Range(ws.Cells(7, 1), ws.Cells(son, 12)).Value2
         ' 1 UY, 2 depo yeri tanimi, 3 malzeme, 4 tanim, 5 parti, 6 birim, 7 seri, 8 depo kodu
         ReDim veri(1 To son - 6, 1 To 8): ReDim adet(1 To son - 6)
         For i = 1 To son - 6
-            If gorV(i) = 1 Then
+            If Len(mDepoFiltre) > 0 Then
+                gor1 = (UCase$(T_CiktiMetin(kaynak(i, 2))) = mDepoFiltre)
+            Else
+                gor1 = (gorV(i) = 1)
+            End If
+            If gor1 Then
                 If Len(T_CiktiMetin(kaynak(i, cM))) > 0 Then
                     parti = T_CiktiMetin(kaynak(i, cP))
                     If T_CiktiDahil(parti, kaynak(i, 4), kaynak(i, cT)) Then
@@ -1792,7 +1943,7 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     For i = 1 To n
         If Not sec.Exists(veri(i, 8)) Then sec(veri(i, 8)) = veri(i, 2)
     Next i
-    If sec.Count >= tum.Count Then
+    If sec.Count >= tum.Count And Len(mDepoFiltre) = 0 Then
         depo = "TÜMÜ"
     Else
         depo = vbNullString
@@ -1812,12 +1963,29 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         cikis(i, x) = veri(i, 5)
         cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
     Next i
-    ust = Replace(ws.Name, "_", " ") & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
+    ust = T_SayfaBaslik(ws.Name) & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
     tarih = ws.Range("C2").Value
+    tarihMetin = Format$(Date, "dd.mm.yyyy")
     If Not IsError(tarih) Then
-        If IsDate(tarih) Then ust = ust & "  |  Stok tarihi: " & Format$(CDate(tarih), "dd.mm.yyyy hh:nn")
+        If IsDate(tarih) Then
+            ust = ust & "  |  Stok tarihi: " & Format$(CDate(tarih), "dd.mm.yyyy hh:nn")
+            tarihMetin = Format$(CDate(tarih), "dd.mm.yyyy")
+        End If
     End If
     If mExcelAktar Then
+        ' Dosya adi depo adi: tek aktarimda masaustune "<depo> - <sayfa> - <tarih>", toplu aktarimda klasore "<depo>".
+        depoAd = depo
+        If depoAd = "TÜMÜ" Then depoAd = T_IlAdi(ws) & " Tüm Depolar"
+        If mExcelToplu Then
+            depoAd = AKSORA_DOSYA_ADI(depoAd)
+            If mTopluAdlar Is Nothing Then Set mTopluAdlar = CreateObject("Scripting.Dictionary")
+            If mTopluAdlar.Exists(UCase$(depoAd)) Then depoAd = depoAd & " (" & mDepoFiltre & ")"
+            mTopluAdlar(UCase$(depoAd)) = True
+            mExcelYol = mExcelKlasor & application.PathSeparator & depoAd & ".xlsx"
+        Else
+            mExcelYol = AKSORA_MASAUSTU() & application.PathSeparator & _
+                AKSORA_DOSYA_ADI(depoAd & " - " & T_SayfaKisa(ws.Name) & " - " & tarihMetin) & ".xlsx"
+        End If
         ' Excel: miktar sayi, birim ayri sutun; FARK = SAYILAN - miktar (SAYILAN girilince).
         k = IIf(seriVar, 11, 10)
         ReDim cikis(1 To n, 1 To k)
@@ -2115,10 +2283,9 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     For j = 1 To k
         c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
         c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
-        ' Uretim yeri ve malzeme kodu sayi olarak yazilir (yesil "metin olarak sayi" uyarisi cikmaz).
-        If j = 1 Or j = 4 Then
-            c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "0"
-        ElseIf j < mk Or j = mk + 1 Then
+        ' Uretim yeri ve malzeme kodu: sade rakamlar sayi olarak yazilir (yesil uyari cikmaz); bastaki sifirli
+        ' veya uzun kodlar metin kalir (sutun metin bicimli; sayiya donusmez, kod bozulmaz).
+        If j < mk Or j = mk + 1 Then
             c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = "@"
         End If
     Next j
@@ -2163,25 +2330,188 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     T_CiktiSayfa c.PageSetup, ust, False
     application.PrintCommunication = True
     On Error GoTo 0
+    T_ExcelBitir wb, c, 5
+End Sub
+
+' Yeni kitap: basliklar dondurulur, masaustune / klasore kaydedilir (mExcelYol); toplu aktarimda kapatilir,
+' tek aktarimda normal Excel gorunumunde acik kalir.
+Private Sub T_ExcelBitir(ByVal wb As Workbook, ByVal c As Worksheet, ByVal ilkSatir As Long)
     wb.Windows(1).Visible = True
     wb.Activate
     c.Activate
+    On Error Resume Next
+    With wb.Windows(1)
+        .DisplayHeadings = True: .DisplayGridlines = True: .DisplayWorkbookTabs = True
+        .DisplayHorizontalScrollBar = True: .DisplayVerticalScrollBar = True
+        .ScrollRow = 1: .ScrollColumn = 1
+        .FreezePanes = False
+        c.Cells(ilkSatir, 1).Select
+        .FreezePanes = True
+        .Zoom = 100
+    End With
+    On Error GoTo 0
+    mExcelSonuc = vbNullString
+    If Len(mExcelYol) > 0 Then mExcelSonuc = T_Kaydet(wb, mExcelYol)
+    If mExcelKapat Then
+        wb.Close SaveChanges:=False
+        Exit Sub
+    End If
     ' Yeni kitap normal Excel gorunumunde (serit, formul cubugu, sistem ayraclari); AKSORA penceresine dokunulmaz.
     ' Pencere gecisleri izlenir: AKSORA'ya donulunce uygulama modu yeniden acilir.
     On Error Resume Next
     CallByName ThisWorkbook, "AKSORA_UYG_IZLE", VbMethod
     AKSORA_EXCEL_GORUNUM
-    With wb.Windows(1)
-        .DisplayHeadings = True: .DisplayGridlines = True: .DisplayWorkbookTabs = True
-        .DisplayHorizontalScrollBar = True: .DisplayVerticalScrollBar = True
-    End With
     On Error GoTo 0
     application.ScreenUpdating = True
-    c.Range("A5").Select
-    ActiveWindow.FreezePanes = False
-    ActiveWindow.FreezePanes = True
-    ActiveWindow.Zoom = 100
 End Sub
+
+' Kitap .xlsx olarak kaydedilir; ayni adli dosya acik / kilitliyse "(2)", "(3)" ... denenir. Donus: kaydedilen yol.
+Private Function T_Kaydet(ByVal wb As Workbook, ByVal yol As String) As String
+    Dim da As Boolean, i As Long, deneme As String, kok As String
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    kok = Left$(yol, Len(yol) - 5)
+    deneme = yol
+    On Error Resume Next
+    For i = 1 To 20
+        Err.Clear
+        wb.SaveAs Filename:=deneme, FileFormat:=51
+        If Err.Number = 0 Then T_Kaydet = deneme: Exit For
+        deneme = kok & " (" & (i + 1) & ").xlsx"
+    Next i
+    On Error GoTo 0
+    application.DisplayAlerts = da
+End Function
+
+' Kullanicinin masaustu klasoru (OneDrive yonlendirmesi dahil).
+Public Function AKSORA_MASAUSTU() As String
+    On Error Resume Next
+    AKSORA_MASAUSTU = CreateObject("WScript.Shell").SpecialFolders("Desktop")
+    If Len(AKSORA_MASAUSTU) = 0 Then AKSORA_MASAUSTU = Environ$("USERPROFILE") & application.PathSeparator & "Desktop"
+    If Not CreateObject("Scripting.FileSystemObject").FolderExists(AKSORA_MASAUSTU) Then AKSORA_MASAUSTU = AKSORA_KAYIT_KLASORU()
+End Function
+
+' Dosya / klasor adinda kullanilamayan karakterler cikarilir.
+Public Function AKSORA_DOSYA_ADI(ByVal s As String) As String
+    Dim x As Variant
+    For Each x In Array("\", "/", ":", "*", "?", """", "<", ">", "|", vbTab, vbLf, vbCr)
+        s = Replace(s, CStr(x), "-")
+    Next x
+    s = Trim$(s)
+    Do While Right$(s, 1) = "." And Len(s) > 0
+        s = Left$(s, Len(s) - 1)
+    Loop
+    If Len(s) > 90 Then s = Trim$(Left$(s, 90))
+    If Len(s) = 0 Then s = "AKSORA"
+    AKSORA_DOSYA_ADI = s
+End Function
+
+' Klasor yoksa olusturulur. Donus: basarili mi.
+Public Function AKSORA_KLASOR_HAZIRLA(ByVal yol As String) As Boolean
+    Dim fso As Object
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(yol) Then fso.CreateFolder yol
+    AKSORA_KLASOR_HAZIRLA = fso.FolderExists(yol)
+End Function
+
+' Excel'e aktarilan tablo icin genel kitap (demontaj eksikleri vb.): 1. satir baslik, 2. satir bilgi, 4. satir sutunlar.
+' bicim: sutun bicimleri ("@", "General", "0", "#,##0.00"); hiza: xlLeft / xlCenter / xlRight; sira: A-Z sutunlari.
+' Donus: kaydedilen dosya yolu.
+Public Function AKSORA_EXCEL_TABLO(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, ByVal gen As Variant, _
+    ByVal bicim As Variant, ByVal hiza As Variant, ByVal ust As String, ByVal bilgi As String, ByVal sayfaAd As String, _
+    ByVal yol As String, ByVal kapat As Boolean, ByVal sira As Variant) As String
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range, alan As Range, i As Long
+    k = UBound(bas) - LBound(bas) + 1
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Set c = wb.Worksheets(1)
+    On Error Resume Next
+    c.Name = Left$(AKSORA_DOSYA_ADI(Replace(Replace(sayfaAd, "[", "("), "]", ")")), 31)
+    On Error GoTo 0
+    c.Cells.Font.Name = "Aptos": c.Cells.Font.Size = 10
+    c.Range("A1").Value2 = ust
+    c.Range("A1").Font.bold = True: c.Range("A1").Font.Size = 12
+    c.Range("A2").Value2 = "Hazýrlama: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  " & n & " kalem" & _
+        IIf(Len(bilgi) > 0, "  |  " & bilgi, "") & "  |  AKSORA"
+    c.Range("A2").Font.Size = 9: c.Range("A2").Font.Color = RGB(89, 89, 89)
+    For j = 1 To k
+        c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
+        c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
+        ' "0" (kod) sutunu metin bicimli yazilir; sade rakamlar asagida sayiya cevrilir (bastaki sifir korunur).
+        c.Range(c.Cells(5, j), c.Cells(n + 4, j)).NumberFormat = IIf(bicim(LBound(bicim) + j - 1) = "0", "@", bicim(LBound(bicim) + j - 1))
+        c.Range(c.Cells(5, j), c.Cells(n + 4, j)).HorizontalAlignment = hiza(LBound(hiza) + j - 1)
+        If bicim(LBound(bicim) + j - 1) <> "@" Then
+            For i = 1 To n
+                If T_SadeSayi(veri(i, j)) Then veri(i, j) = CDbl(veri(i, j))
+            Next i
+        End If
+    Next j
+    c.Range("A5").Resize(n, k).Value2 = veri
+    Set r = c.Range(c.Cells(5, 1), c.Cells(n + 4, k))
+    If n > 1 And IsArray(sira) Then
+        r.Sort Key1:=r.Columns(sira(0)), Order1:=xlAscending, Key2:=r.Columns(sira(1)), Order2:=xlAscending, _
+            Key3:=r.Columns(sira(2)), Order3:=xlAscending, Header:=xlNo, MatchCase:=False, Orientation:=xlTopToBottom
+    End If
+    Set alan = c.Range(c.Cells(4, 1), c.Cells(n + 4, k))
+    With alan
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
+        .VerticalAlignment = xlCenter
+    End With
+    With c.Range(c.Cells(4, 1), c.Cells(4, k))
+        .Interior.Color = RGB(217, 217, 217): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .WrapText = True
+    End With
+    c.Rows(4).RowHeight = 30
+    alan.AutoFilter
+    On Error Resume Next
+    application.PrintCommunication = False
+    With c.PageSetup
+        .PrintArea = alan.Address
+        .PrintTitleRows = "$4:$4"
+        .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+    End With
+    T_CiktiSayfa c.PageSetup, ust, False
+    application.PrintCommunication = True
+    On Error GoTo 0
+    mExcelYol = yol: mExcelKapat = kapat
+    T_ExcelBitir wb, c, 5
+    AKSORA_EXCEL_TABLO = mExcelSonuc
+    mExcelYol = vbNullString: mExcelKapat = False
+End Function
+
+' Sayfa basligi (cikti / Excel): birim adiyla, "I_" / "M_" / "Y_" onekleri olmadan.
+Private Function T_SayfaBaslik(ByVal ad As String) As String
+    Select Case Left$(ad, 2)
+        Case "I_": T_SayfaBaslik = "ÝLÇE YÖNETÝM  |  " & Replace(Mid$(ad, 3), "_", " ")
+        Case "M_": T_SayfaBaslik = "MÜÞTERÝ  |  " & Replace(Mid$(ad, 3), "_", " ")
+        Case "Y_": T_SayfaBaslik = "YATIRIM  |  " & Replace(Mid$(ad, 3), "_", " ")
+        Case Else: T_SayfaBaslik = Replace(ad, "_", " ")
+    End Select
+End Function
+
+' Dosya adi icin kisa sayfa adi: "Ýlçe BÝRLEÞÝK STOK", "Müþteri CDP STOK" ...
+Private Function T_SayfaKisa(ByVal ad As String) As String
+    Select Case Left$(ad, 2)
+        Case "I_": T_SayfaKisa = "Ýlçe " & Replace(Mid$(ad, 3), "_", " ")
+        Case "M_": T_SayfaKisa = "Müþteri " & Replace(Mid$(ad, 3), "_", " ")
+        Case "Y_": T_SayfaKisa = "Yatýrým " & Replace(Mid$(ad, 3), "_", " ")
+        Case Else: T_SayfaKisa = Replace(ad, "_", " ")
+    End Select
+End Function
+
+' Il adi (sayfanin A5 hucresi: "Artvin Ýl Müdürlüðü" -> "Artvin").
+Private Function T_IlAdi(ByVal ws As Worksheet) As String
+    Dim t As String
+    t = Trim$(CStr(ws.Range("A5").Value2))
+    If InStr(t, " ") > 0 Then t = Left$(t, InStr(t, " ") - 1)
+    If Len(t) = 0 Then t = "AKSORA"
+    T_IlAdi = t
+End Function
+
+' Tum depolari ayri dosyaya aktarma: ilce ve musteri birimlerinin stok sayfalari.
+Private Function T_TopluSayfa(ByVal ad As String) As Boolean
+    If Right$(ad, 5) <> "_STOK" Then Exit Function
+    T_TopluSayfa = (Left$(ad, 2) = "I_" Or Left$(ad, 2) = "M_")
+End Function
 
 ' Yalniz rakamdan olusan, 0 ile baslamayan, 15 haneyi gecmeyen metin sayiya cevrilebilir.
 Private Function T_SadeSayi(ByVal v As Variant) As Boolean
