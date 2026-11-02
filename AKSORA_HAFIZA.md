@@ -481,6 +481,19 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Doğru değerler (22.10 10:38 dosyası, çevrimdışı): Artvin İSG zimmet 1.042 adet/253 kalem, 5 il toplam 4.297; Artvin yatırım 119,99 mn TL; Yatırım toplam ≈1.073 mn; İlçe 9.911 satır/160 depo/39,4 mn; Müşteri 145.108 satır; atıl il sayıları ATIL sayfasıyla aynı (Artvin 259).
 - Katalog: katalog/AKSORA_Katalog.pdf (13 sayfa A4 yatay; HTML scratchpad/katalog → Chromium print-to-pdf). Yalnız doğrulanmış rakamlar; hatalı Admin ekranları kullanılmadı.
 
+## 02.11.2026 – Demontaj yalnız 6 kritik malzeme + İlçe birleşik stok/rapor
+- Taban: kullanıcının 02.11 dosyası (up31, kod aynı; yalnız veri yeni).
+- Demontaj kapsamı: yalnız TRAFO, PANO, ARMATÜR, KABLO, DİREK, HÜCRE. `I_DEM_DISI` kritik olmayan her malzemeyi
+  "Kritik değil (demontaj kontrolü dışı)" döndürür → günlük STOK/DEMONTAJ ekranı, Yönetim Merkezi günlük demontaj,
+  aylık defter (yeni kayıtlar) bu kurala uyar. `I_AY_HESAP` eski defterdeki kritik dışı kalemleri hesaba katmaz.
+- ARMATÜR yeni kategori: mal grubu `M030103*` (ARMATUR SODYUM/LED...); mal grubu yoksa tanım "ARMATUR " (BORUSU hariç).
+  Sıra 6, renk sarı-kahve. Karne dizisi: 4..9 kategori eksikleri, 10 = uyum (eskiden 9).
+- I_AYLIK_DEMONTAJ 12 sütun (kategori tablosunda "Fireli çeşit", fire listesinde "Kullanılan değer", karnede "Armatür eksik").
+  Admin karnesinde uyum tek sütun, 6 kategori sütunu; il özetinde "Pano / hücre / trafo / armatür eksik". Admin önbellek imzası DEM6.
+- İlçe birimi: `I_BİRLEŞİK_STOK` + `I_BİRLEŞİK_RAPOR` (CDP + EPP ilçe depoları tek tabloda, `I_BIRLESTIR`).
+  I_ADLAR/I_TUR/Y_BASLIK eklendi; sayfalar birime girişte Y_KUR ile kurulur (güncelleme önce gelirse I_STOK_YAZ kurar).
+  Panel hızlı erişim 6 düğme (IP_V5).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
