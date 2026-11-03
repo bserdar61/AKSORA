@@ -11269,7 +11269,7 @@ End Sub
 ' tanim: Array(Array(anahtar, "ID1|ID2", "BASLIK1|BASLIK2"), ...). Donus: anahtar -> kolon id (bulunamazsa "").
 Private Function SA_KOLONLAR(ByVal g As Object, ByVal tanim As Variant, ByVal etiket As String) As Object
     Dim d As Object, idler As Object, t As Variant, id As Variant, b As Variant, liste As String, nt As String, bul As String, nb As String
-    Dim co As Object, i As Long
+    Dim co As Object, i As Long, v As Variant
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     Set idler = CreateObject("Scripting.Dictionary"): idler.CompareMode = vbTextCompare
     Set co = g.ColumnOrder
@@ -11289,6 +11289,20 @@ Private Function SA_KOLONLAR(ByVal g As Object, ByVal tanim As Variant, ByVal et
             If Len(CStr(id)) > 0 Then If idler.Exists(CStr(id)) Then bul = CStr(id)
             If Len(bul) > 0 Then Exit For
         Next id
+        ' Gruplanmis sutun (ME2N: satinalma belgesi) ColumnOrder'da olmayabilir: id hucre okumasiyla denenir.
+        If Len(bul) = 0 Then
+            For Each id In Split(CStr(t(1)), "|")
+                If Len(CStr(id)) > 0 Then
+                    v = Empty
+                    On Error Resume Next
+                    v = g.GetCellValue(0, CStr(id))
+                    If Err.Number = 0 And Len(Trim$(CStr(v))) > 0 Then bul = CStr(id)
+                    Err.Clear
+                    On Error GoTo 0
+                End If
+                If Len(bul) > 0 Then Exit For
+            Next id
+        End If
         If Len(bul) = 0 Then
             For Each b In Split(CStr(t(2)), "|")
                 nb = Y_NORM(CStr(b))
@@ -11331,8 +11345,12 @@ Private Function SA_IZGARA_OKU(ByVal g As Object, ByVal kol As Object, ByVal ana
             a(j) = Trim$(CStr(v))
         Next j
         ' Ara toplam / grup satirlari ayni belge-kalemi tekrar dondurebilir: belge + kalem bir kez alinir.
-        If Len(a(0)) > 0 And Len(a(SA_IDX(anahtarlar, "MAL"))) > 0 Then
-            If Not gor.Exists(a(0) & "|" & a(1)) Then gor(a(0) & "|" & a(1)) = True: c.Add a
+        If Len(a(SA_IDX(anahtarlar, "MAL"))) > 0 Then
+            If Len(a(0)) = 0 Then
+                c.Add a
+            ElseIf Not gor.Exists(a(0) & "|" & a(1)) Then
+                gor(a(0) & "|" & a(1)) = True: c.Add a
+            End If
         End If
     Next i
     Set SA_IZGARA_OKU = c
@@ -11420,8 +11438,8 @@ Private Function SA_ME2N(ByVal ses As Object, ByVal ilk As String, ByVal son As 
         Array("KISI", "SUPERFIELD|NAME1|LIFNR", "SATICI/TESLIMAT YAPAN URT.YERI|SATICI"), _
         Array("MIKTAR", "MENGE", "SAS MIKTARI|SA SIPARISI MIKTARI"), Array("BIRIM", "MEINS", "SOB|SAS OLCU BIRIMI"), _
         Array("TARIH", "BEDAT", "BELGE TARIHI"), Array("FIYAT", "NETPR", "NET FIYAT"), _
-        Array("ACIK", "", "TSL.YAPILACAK|TESLIMATI YAPILACAK|TESLIM EDILECEK|TESLIMATI YAPILACAK (MIKTAR)"), _
-        Array("ACIKDEGER", "", "TSL.YPLC.|TESLIMATI YAPILACAK (DEGER)|TESLIM EDILECEK DEGER"), _
+        Array("ACIK", "MGLIEF", "TSL.YAPILACAK|TESLIMATI YAPILACAK|TESLIM EDILECEK"), _
+        Array("ACIKDEGER", "WTLIEF", "TESLIMATI YAPILACAK (DEGER)|TESLIM EDILECEK DEGER"), _
         Array("PB", "WAERS", "PB|PARA BIRIMI")), "ME2N " & sis)
     If Len(kol("MAL")) = 0 Or Len(kol("UY")) = 0 Or Len(kol("ACIK")) = 0 Then _
         Err.Raise vbObjectError + 9804, , "ME2N (" & sis & ") listesinde malzeme / üretim yeri / teslim edilecek miktar sütunu bulunamadý (teþhis dosyasýnda sütunlar yazýlý)."

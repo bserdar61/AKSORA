@@ -603,6 +603,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
 - DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.
+  ME2N sütunları (CDP): EMATN malzeme, WERKS, MENGE, MGLIEF açık miktar (TSL.YPLC.), WTLIEF açık değer, NETPR, SUPERFIELD;
+  EBELN gruplandığı için ColumnOrder'da yok → id doğrudan GetCellValue ile denenir; belge boşsa da satır alınır.
   build.sh artık fx/decl_check.py ile 'prosedürden sonra modül bildirimi' denetler (hata varsa durur).
 
 ## Sıradaki işler
