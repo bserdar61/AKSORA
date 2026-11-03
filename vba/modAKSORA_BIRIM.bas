@@ -1664,6 +1664,8 @@ Public Sub AKSORA_YATIRIM_SAYFA_AC()
     application.ScreenUpdating = False: application.EnableEvents = False
     hedef.Visible = xlSheetVisible
     hedef.Select Replace:=True
+    ' Olaylar kapali gecildiginden CIKTI AL / EXCEL'E AKTAR dugmeleri burada kurulur.
+    AKSORA_CIKTI_DUGME hedef
     AKSORA_YATIRIM_GORUNUM hedef
     application.EnableEvents = ev: application.ScreenUpdating = True
     Exit Sub
@@ -2243,6 +2245,7 @@ Private Sub Y_SAYFA_SEC(ByVal ws As Worksheet)
     ws.Select Replace:=True
     mYonlendirme = False
     application.EnableEvents = ev
+    AKSORA_CIKTI_DUGME ws
     AKSORA_YATIRIM_GORUNUM ws
     application.ScreenUpdating = sc
     On Error GoTo 0
@@ -5408,12 +5411,14 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
         secAy = 0
     End If
     ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il: ws.Range("BX30").Value2 = secAy
+    ws.Range("BX31:BX34").ClearContents
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 30: ws.Rows(9).RowHeight = 10: ws.Rows(10).RowHeight = 10
     If IsArray(liste) Then
         n = application.Min(12, UBound(liste))
-        bw = application.Min(130, (w - 11 * 6) / 12)
+        bw = application.Min(130, (w - 150 - 12 * 6) / 12)
         y = ws.Rows(8).Top + 1
+        Y_DUGME ws, "I_AY_EXCEL", "EXCEL'E AKTAR", w - 150, y, 150, 28, RGB(33, 115, 70), "AKSORA_ILCE_AY_AKTAR"
         For i = 1 To n
             Set s = Y_DUGME(ws, "I_AY_" & i, I_AY_ADI(CLng(liste(i))), (i - 1) * (bw + 6), y, bw, 28, _
                 IIf(liste(i) = secAy, RGB(79, 70, 160), RGB(148, 163, 184)), "AKSORA_ILCE_AY_SEC")
@@ -5516,6 +5521,7 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
             ws.Cells(r, 12).Value2 = "KULLANIM YOK"
         End If
     Next i
+    ws.Range("BX32").Value2 = a1 & "|" & r
     Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
     ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 24
     ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
@@ -5568,6 +5574,7 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
                 ws.Cells(r, 12).Value2 = I_DEGERLENDIR(t(10))
             End If
         Next i
+        ws.Range("BX31").Value2 = a1 & "|" & r
         Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
         ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 22
         If ayrim Then
@@ -5598,6 +5605,12 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
         r = r + 1
         ws.Cells(r, 2).Value2 = "Bu ay kritik malzeme kullanmayan ilçeler: " & bos
         ws.Cells(r, 2).Font.Size = 9: ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(100, 116, 139)
+    End If
+
+    '--- tum kayitli aylar: ilce siralamasi (toplam)
+    If IsArray(liste) Then
+        r = r + 2
+        r = I_AY_TOPLAM_CIZ(ws, r, aylar, depolar)
     End If
 
     '--- kritik fire listesi (yalniz eksik olanlar)
@@ -5640,6 +5653,7 @@ Private Sub I_AYLIK_KUR(ByVal il As String)
         ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 5)).NumberFormat = "@"
         ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
         r = a1 + n - 1
+        ws.Range("BX33").Value2 = a1 & "|" & r
         For i = 1 To n
             If (i And 255) = 0 Then AKSORA_BEKLE_NABIZ
             For j = 6 To 8
@@ -6502,6 +6516,8 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
         End Select
         hz.Font.bold = True
     Next r
+    ' Ilce siralamasi (tablonun sagina; tabloya dokunulmaz): en iyiden en kotuye.
+    I_ISG_SIRALAMA c, veri, n - 1, top(5)
     '--- 2. sayfa: malzeme listesi (ekrandaki filtreye gore gorunur satirlar)
     n = 0
     If b2 >= a2 And Len(CStr(ws.Cells(a2, 1).Value2)) > 0 Then
@@ -12997,4 +13013,387 @@ Hata:
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     MsgBox "Kritik stok Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+' Tum kayitli aylarin toplami: ilce siralamasi (en iyiden en kotuye; uyum yuksek once, esitlikte fire degeri az once).
+' Donus: siralanmis Collection of Array(0 depo, 1 ilce, 2 toplam uyum %, 3 kullanim olan ay, 4 fireli ay, 5 kullanilan deger,
+'   6 fire degeri, 7 kritik kalem, 8 fireli kalem, 9 en cok fire kategorisi metni, 10 en cok fire malzemesi metni, 11 en kotu ay metni,
+'   12 degerlendirme)
+Private Function I_AY_TOPLAM(ByVal aylar As Object, ByVal depolar As Object) As Collection
+    Dim acc As Object, kat As Object, mal As Object, enKotu As Object, ay As Variant, h As Variant, dD As Object, dX As Object
+    Dim k As Variant, t As Variant, o As Variant, p() As String, u As Double, n As Long, i As Long, anah() As String, idx() As Long
+    Dim kod() As String, enK As String, enKt As Double, enM As String, enMt As Double, top As Double, ad As String, tn As String
+    Dim kk As Variant, sonuc As Collection, ek As Variant, ayAd As String
+    Set I_AY_TOPLAM = New Collection
+    If aylar Is Nothing Then Exit Function
+    If aylar.Count = 0 Then Exit Function
+    Set acc = CreateObject("Scripting.Dictionary"): acc.CompareMode = vbTextCompare
+    Set kat = CreateObject("Scripting.Dictionary"): kat.CompareMode = vbTextCompare
+    Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
+    Set enKotu = CreateObject("Scripting.Dictionary"): enKotu.CompareMode = vbTextCompare
+    For Each ay In aylar.keys
+        AKSORA_BEKLE_NABIZ
+        h = I_AY_OZET(aylar, CLng(ay))
+        If IsArray(h) Then
+            Set dD = h(1): Set dX = h(3)
+            For Each k In dD.keys
+                t = dD(k)
+                If t(10) > 0 Then
+                    If acc.Exists(CStr(k)) Then o = acc(CStr(k)) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+                    o(8) = o(8) + t(8): o(9) = o(9) + t(9): o(10) = o(10) + t(10): o(11) = o(11) + t(11)
+                    o(12) = o(12) + 1
+                    If t(11) > 0 Or t(9) > 0.005 Then o(13) = o(13) + 1
+                    acc(CStr(k)) = o
+                    u = I_UYUM_K(t)
+                    If enKotu.Exists(CStr(k)) Then
+                        ek = enKotu(CStr(k))
+                        If u < ek(1) - 0.0001 Or (Abs(u - ek(1)) <= 0.0001 And t(9) > ek(2)) Then enKotu(CStr(k)) = Array(CLng(ay), u, t(9))
+                    Else
+                        enKotu(CStr(k)) = Array(CLng(ay), u, t(9))
+                    End If
+                End If
+            Next k
+            For Each k In dX.keys
+                t = dX(k)
+                If t(3) > 0.005 Then
+                    p = Split(CStr(k), "|")
+                    tn = I_KATEGORI(p(1))
+                    If Len(tn) > 0 Then
+                        kat(p(0) & "|" & tn) = I_DS(kat, p(0) & "|" & tn) + t(3)
+                        mal(p(0) & "|" & p(1)) = I_DS(mal, p(0) & "|" & p(1)) + t(3)
+                    End If
+                End If
+            Next k
+        End If
+    Next ay
+    n = acc.Count
+    If n = 0 Then Exit Function
+    ReDim anah(1 To n): ReDim idx(1 To n): ReDim kod(1 To n)
+    For Each k In acc.keys
+        i = i + 1: idx(i) = i: kod(i) = CStr(k): o = acc(k)
+        anah(i) = I_SIRA_ANAHTAR(I_UYUM_K(o)) & Format$(Round(o(9), 2) * 100, "0000000000000000")
+    Next k
+    Y_SIRALA anah, idx, 1, n
+    For i = 1 To n
+        k = kod(idx(i)): o = acc(k)
+        enK = vbNullString: enKt = 0: enM = vbNullString: enMt = 0
+        For Each kk In kat.keys
+            If Left$(CStr(kk), Len(k) + 1) = k & "|" Then
+                If kat(kk) > enKt Then enKt = kat(kk): enK = Mid$(CStr(kk), Len(k) + 2)
+            End If
+        Next kk
+        For Each kk In mal.keys
+            If Left$(CStr(kk), Len(k) + 1) = k & "|" Then
+                If mal(kk) > enMt Then enMt = mal(kk): enM = Mid$(CStr(kk), Len(k) + 2)
+            End If
+        Next kk
+        ad = vbNullString
+        If depolar.Exists(k) Then ad = I_DEPO_KISA(CStr(depolar(k)))
+        If enKt > 0 Then
+            If o(9) > 0.005 Then enK = enK & "  •  %" & AKSORA_SAYI_METNI(enKt / o(9) * 100, "0") & " (" & AKSORA_SAYI_METNI(enKt, "#,##0.00") & " TL)"
+        Else
+            enK = "-"
+        End If
+        If enMt > 0 Then
+            enM = enM & "  " & CStr(I_MAL_BILGI(enM)(1)) & "  •  " & AKSORA_SAYI_METNI(enMt, "#,##0.00") & " TL"
+        ElseIf o(11) > 0 Then
+            enM = "Fireli kalem var (deðersiz)"
+        Else
+            enM = "Fire yok: kritik demontaj tam"
+        End If
+        ayAd = "-"
+        If enKotu.Exists(k) Then
+            ek = enKotu(k)
+            If ek(1) < 99.95 Or ek(2) > 0.005 Then ayAd = I_AY_ADI(CLng(ek(0))) & "  •  %" & AKSORA_SAYI_METNI(ek(1), "0.0")
+        End If
+        I_AY_TOPLAM.Add Array(CStr(k), ad, Round(I_UYUM_K(o), 1), o(12), o(13), Round(o(8), 2), Round(o(9), 2), o(10), o(11), _
+            enK, enM, ayAd, I_DEGERLENDIR(I_UYUM_K(o)))
+    Next i
+End Function
+
+Private Function I_DS(ByVal d As Object, ByVal k As String) As Double
+    If d.Exists(k) Then I_DS = CDbl(d(k))
+End Function
+
+' Aylik demontaj sayfasi: tum aylar siralamasi tablosu. r: bolum basligi satiri; donus: son satir.
+Private Function I_AY_TOPLAM_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal aylar As Object, ByVal depolar As Object) As Long
+    Dim c As Collection, x As Variant, a1 As Long, i As Long, n As Long, sonuc() As Variant, ilkAy As Long, sonAy As Long, k As Variant
+    Set c = I_AY_TOPLAM(aylar, depolar)
+    For Each k In aylar.keys
+        If ilkAy = 0 Or CLng(k) < ilkAy Then ilkAy = CLng(k)
+        If CLng(k) > sonAy Then sonAy = CLng(k)
+    Next k
+    Y_BOLUM ws, r, "TÜM AYLAR ÝLÇE SIRALAMASI  –  " & aylar.Count & " ay (" & I_AY_ADI(ilkAy) & IIf(sonAy <> ilkAy, " – " & I_AY_ADI(sonAy), "") & ")  (en iyiden en kötüye)", _
+        "Kayýtlý bütün aylarýn toplamý. Neden: en çok fire veren malzeme ve kategori; en kötü ay.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Sýra", "Ýlçe", "Depo", "Neden: en çok fire veren malzeme", _
+        "Toplam uyum", "Kullaným olan ay", "Fireli ay", "Kullanýlan deðer", "Fire deðeri", "En çok fire kategorisi", "En kötü ay", "Deðerlendirme")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    n = c.Count
+    ws.Range("BX34").Value2 = a1 & "|" & (a1 + n - 1)
+    If n = 0 Then
+        r = r + 1
+        ws.Cells(r, 2).Value2 = "Kayýtlý aylarda ilçe depolarýnda kritik malzeme kullanýmý yok."
+        ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(100, 116, 139)
+        I_AY_TOPLAM_CIZ = r
+        Exit Function
+    End If
+    ReDim sonuc(1 To n, 1 To 12)
+    i = 0
+    For Each x In c
+        i = i + 1
+        sonuc(i, 1) = i: sonuc(i, 2) = x(1): sonuc(i, 3) = x(0): sonuc(i, 4) = x(10): sonuc(i, 5) = x(2)
+        sonuc(i, 6) = x(3): sonuc(i, 7) = x(4): sonuc(i, 8) = x(5): sonuc(i, 9) = x(6): sonuc(i, 10) = x(9)
+        sonuc(i, 11) = x(11): sonuc(i, 12) = x(12)
+        If n > 1 And i = 1 Then sonuc(i, 12) = ChrW(9733) & " EN ÝYÝ"
+        If n > 1 And i = n Then sonuc(i, 12) = ChrW(9660) & " EN KÖTÜ"
+    Next x
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 4)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 10), ws.Cells(a1 + n - 1, 11)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
+    r = a1 + n - 1
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+    ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 22
+    If n > 1 Then
+        ws.Range(ws.Cells(a1, 1), ws.Cells(a1, 11)).Interior.Color = RGB(240, 253, 244)
+        ws.Range(ws.Cells(r, 1), ws.Cells(r, 11)).Interior.Color = RGB(254, 242, 242)
+    End If
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 2)).Font.bold = True
+    ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).ShrinkToFit = True
+    ws.Range(ws.Cells(a1, 6), ws.Cells(r, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 6), ws.Cells(r, 7)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(a1, 8), ws.Cells(r, 9)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).Font.bold = True
+    ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).ShrinkToFit = True
+    I_UYUM_CUBUK ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5))
+    I_FIRE_ISI ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9))
+    I_DURUM_RENK ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12))
+    I_AY_TOPLAM_CIZ = r
+End Function
+
+' AYLIK DEMONTAJ: Excel (masaustu). Tum aylar siralamasi + secili ayin ilce karnesi, kritik malzemeleri ve fire listesi.
+Public Sub AKSORA_ILCE_AY_AKTAR()
+    Dim ws As Worksheet, wb As Workbook, c As Worksheet, il As String, secAy As Long, aylar As Object, depolar As Object
+    Dim liste As Collection, x As Variant, veri() As Variant, n As Long, i As Long, j As Long, ac As Boolean, ev As Boolean
+    Dim ust As String, sonuc As String, no As Long, metin As String, p() As String, a1 As Long, b1 As Long, v As Variant, hz As Range
+    Dim ayAd As String, j2 As Variant
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_AYLIK_DEMONTAJ")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    secAy = CLng(Val(CStr(ws.Range("BX30").Value2)))
+    If Len(il) = 0 Then MsgBox "Önce aylýk demontaj sayfasý oluþturulmalý (ilçe stoklarýný güncelleyin).", vbInformation, "AKSORA": Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  AYLIK DEMONTAJ", "Excel hazýrlanýyor...", 0.1)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set aylar = I_DEFTER_OKU(il)
+    Set depolar = I_DEPOLAR(il)
+    Set liste = I_AY_TOPLAM(aylar, depolar)
+    ayAd = I_AY_ADI(secAy)
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    For i = 2 To 4: wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count): Next i
+    '--- 1. Tum aylar siralamasi
+    n = liste.Count
+    If n = 0 Then
+        ReDim veri(1 To 1, 1 To 13): veri(1, 2) = "Kayýt yok.": n = 1
+    Else
+        ReDim veri(1 To n, 1 To 13)
+        i = 0
+        For Each x In liste
+            i = i + 1
+            veri(i, 1) = i: veri(i, 2) = x(1): veri(i, 3) = x(0): veri(i, 4) = x(2): veri(i, 5) = x(3): veri(i, 6) = x(4)
+            veri(i, 7) = x(5): veri(i, 8) = x(6): veri(i, 9) = x(7): veri(i, 10) = x(8): veri(i, 11) = x(9): veri(i, 12) = x(10)
+            veri(i, 13) = x(11)
+        Next x
+    End If
+    ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Tüm aylar ilçe sýralamasý (en iyiden en kötüye)"
+    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA c, Array("Sýra", "Ýlçe", "Depo", "Toplam uyum (%)", "Kullaným olan ay", "Fireli ay", "Kullanýlan deðer (TL)", _
+        "Fire deðeri (TL)", "Kritik kalem", "Fireli kalem", "En çok fire kategorisi", "Neden: en çok fire veren malzeme", "En kötü ay"), _
+        veri, n, Array(7, 18, 9, 12, 11, 9, 18, 17, 10, 10, 34, 60, 22), _
+        Array("General", "@", "@", "0.0", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "@", "@", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlRight, xlCenter, xlCenter, xlLeft, xlLeft, xlCenter), ust, _
+        "Kayýtlý " & aylar.Count & " ayýn toplamý  |  Sýra: kritik demontaj uyumu (deðer aðýrlýklý), eþitlikte fire deðeri az olan önde", _
+        "Tüm Aylar Sýralama", Empty
+    If liste.Count > 1 Then
+        c.Range(c.Cells(5, 1), c.Cells(5, 13)).Interior.Color = RGB(220, 252, 231)
+        c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 13)).Interior.Color = RGB(254, 226, 226)
+    End If
+    c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.Color = RGB(185, 28, 28)
+    c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.bold = True
+    '--- 2-4. Secili ay: sayfadaki tablolar (degerler)
+    For i = 2 To 4
+        Set c = wb.Worksheets(i)
+        p = Split(CStr(ws.Range("BX" & (29 + i)).Value2), "|")
+        a1 = 0: b1 = -1
+        If UBound(p) >= 1 Then a1 = CLng(Val(p(0))): b1 = CLng(Val(p(1)))
+        If a1 > 0 And b1 >= a1 Then
+            v = ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 12)).Value2
+            n = b1 - a1 + 1
+        Else
+            n = 0
+        End If
+        Select Case i
+            Case 2
+                If n = 0 Then ReDim veri(1 To 1, 1 To 12): veri(1, 2) = "Kayýt yok.": n = 1 Else ReDim veri(1 To n, 1 To 12)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        veri(j, 1) = v(j, 1): veri(j, 2) = v(j, 2): veri(j, 3) = v(j, 3): veri(j, 4) = v(j, 4)
+                        veri(j, 5) = v(j, 5): veri(j, 6) = v(j, 6): veri(j, 7) = v(j, 7): veri(j, 8) = v(j, 8)
+                        veri(j, 9) = v(j, 9): veri(j, 10) = v(j, 10): veri(j, 11) = v(j, 11): veri(j, 12) = v(j, 12)
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Ýlçe karnesi  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Sýra", "Ýlçe", "Depo", "Kritik demontaj uyumu (%)", "Kablo eksik (m)", "Direk eksik (adet)", _
+                    "Pano eksik (adet)", "Hücre eksik (adet)", "Trafo eksik (adet)", "Armatür eksik (adet)", "Fire deðeri (TL)", "Deðerlendirme"), _
+                    veri, n, Array(7, 18, 9, 14, 13, 13, 13, 13, 13, 14, 17, 16), _
+                    Array("General", "@", "@", "0.0", "General", "General", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
+                    Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
+                    "Sýra: kritik demontaj uyumu; eþitlikte fire deðeri az olan önde", "Ýlçe Karnesi " & ayAd, Empty
+                For Each j2 In Array(5, 6, 7, 8, 9, 10)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+            Case 3
+                If n = 0 Then ReDim veri(1 To 1, 1 To 11): veri(1, 1) = "Kayýt yok.": n = 1 Else ReDim veri(1 To n, 1 To 11)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        For Each j2 In Array(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+                            veri(j, j2 - 1) = v(j, j2)
+                        Next j2
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Kritik malzemeler  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Kategori", "Malzeme çeþidi", "Demontaj oraný (%)", "Kullanýlan", "Demontajý girilen", _
+                    "Eksik (fire)", "Fire deðeri (TL)", "Kullanýlan deðer (TL)", "Fireli çeþit", "Fireli ilçe", "Durum"), _
+                    veri, n, Array(34, 12, 14, 13, 14, 12, 17, 18, 11, 10, 15), _
+                    Array("@", "#,##0", "0.0", "General", "General", "General", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "@"), _
+                    Array(xlLeft, xlCenter, xlCenter, xlRight, xlRight, xlRight, xlRight, xlRight, xlCenter, xlCenter, xlCenter), ust, _
+                    "Kablo, direk, pano, hücre, trafo, armatür", "Kritik Malzemeler " & ayAd, Empty
+                For Each j2 In Array(4, 5, 6)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+            Case 4
+                If n = 0 Then ReDim veri(1 To 1, 1 To 13): veri(1, 4) = "Fire yok.": n = 1 Else ReDim veri(1 To n, 1 To 13)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        For Each j2 In Array(1, 2, 3, 4, 5, 6, 7, 8)
+                            veri(j, j2) = v(j, j2)
+                        Next j2
+                        veri(j, 9) = CStr(I_MAL_BILGI(CStr(v(j, 3)))(2))
+                        veri(j, 10) = v(j, 9): veri(j, 11) = v(j, 10): veri(j, 12) = v(j, 11): veri(j, 13) = v(j, 12)
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Kritik fire listesi  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Depo", "Ýlçe", "Malzeme", "Malzeme tanýmý", "Kategori", "Kullanýlan", "Demontajý girilen", _
+                    "Eksik (fire)", "Birim", "Fire deðeri (TL)", "Kullanýlan deðer (TL)", "Demontaj oraný (%)", "Durum"), _
+                    veri, n, Array(8, 18, 13, 40, 11, 12, 14, 12, 8, 16, 18, 14, 14), _
+                    Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "0.0", "@"), _
+                    Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlRight, xlCenter, xlCenter), ust, _
+                    "En yüksek fire deðeri üstte", "Fire Listesi " & ayAd, Empty
+                For Each j2 In Array(6, 7, 8)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+                c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.Color = RGB(185, 28, 28)
+                c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.bold = True
+        End Select
+        ' Durum / degerlendirme renkleri
+        For j = 1 To n
+            Set hz = c.Cells(j + 4, IIf(i = 2, 12, IIf(i = 3, 11, 13)))
+            Select Case CStr(hz.Value2)
+                Case "TAMAM", "ÇOK ÝYÝ", "ÝYÝ", ChrW(9733) & " EN ÝYÝ": hz.Interior.Color = RGB(220, 252, 231): hz.Font.Color = RGB(21, 128, 61): hz.Font.bold = True
+                Case "KRÝTÝK EKSÝK", "ZAYIF", "GÝRÝÞ YOK", ChrW(9660) & " EN KÖTÜ": hz.Interior.Color = RGB(254, 226, 226): hz.Font.Color = RGB(185, 28, 28): hz.Font.bold = True
+                Case "ORTA", "EKSÝK GÝRÝÞ", "DÝÐER EKSÝK": hz.Interior.Color = RGB(254, 243, 199): hz.Font.Color = RGB(180, 83, 9): hz.Font.bold = True
+            End Select
+        Next j
+    Next i
+    wb.Worksheets(1).Activate
+    sonuc = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI(Y_IL_ADI(il) & " - Aylýk Demontaj - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(sonuc) > 0 Then application.StatusBar = "Masaüstüne kaydedildi: " & sonuc
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Aylýk demontaj Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+' ISG Excel 1. sayfa: ilce siralamasi J sutunundan itibaren (ana tablo A:H oldugu gibi kalir).
+' Sira: depoda bekleyen ISG degeri az olan once; esitlikte bekleyen kalem az olan, sonra depo kodu.
+Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal n As Long, ByVal toplamDeger As Double)
+    Dim i As Long, j As Long, anah() As String, idx() As Long, s() As Variant, kalem As Double, mik As Double, deger As Double
+    Dim alan As Range, neden As String, x0 As Long
+    If n < 1 Then Exit Sub
+    x0 = 10
+    ReDim anah(1 To n): ReDim idx(1 To n)
+    For i = 1 To n
+        idx(i) = i
+        kalem = I_SAYI(veri(i, 3)) + I_SAYI(veri(i, 5)): deger = I_SAYI(veri(i, 7))
+        anah(i) = Format$(Round(deger, 2) * 100, "0000000000000000") & Format$(kalem, "000000") & CStr(veri(i, 1))
+    Next i
+    Y_SIRALA anah, idx, 1, n
+    ReDim s(1 To n, 1 To 8)
+    For i = 1 To n
+        j = idx(i)
+        kalem = I_SAYI(veri(j, 3)) + I_SAYI(veri(j, 5)): mik = I_SAYI(veri(j, 4)) + I_SAYI(veri(j, 6)): deger = I_SAYI(veri(j, 7))
+        If kalem <= 0 And deger <= 0.005 Then
+            neden = "Depoda ÝSG malzemesi yok"
+        Else
+            neden = vbNullString
+            If I_SAYI(veri(j, 3)) > 0 Then neden = "Zimmet: " & ADM_ADET(I_SAYI(veri(j, 3))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 4))) & " adet"
+            If I_SAYI(veri(j, 5)) > 0 Then neden = neden & IIf(Len(neden) > 0, "  •  ", "") & "Sarf: " & ADM_ADET(I_SAYI(veri(j, 5))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 6))) & " adet"
+        End If
+        s(i, 1) = i: s(i, 2) = CStr(veri(j, 1)): s(i, 3) = CStr(veri(j, 2)): s(i, 4) = kalem: s(i, 5) = mik
+        s(i, 6) = Round(deger, 2)
+        If toplamDeger > 0.005 Then s(i, 7) = Round(deger / toplamDeger, 4) Else s(i, 7) = 0
+        s(i, 8) = neden
+    Next i
+    c.Columns(x0 - 1).ColumnWidth = 3
+    c.Columns(x0).ColumnWidth = 6: c.Columns(x0 + 1).ColumnWidth = 8: c.Columns(x0 + 2).ColumnWidth = 24
+    c.Columns(x0 + 3).ColumnWidth = 12: c.Columns(x0 + 4).ColumnWidth = 13: c.Columns(x0 + 5).ColumnWidth = 17
+    c.Columns(x0 + 6).ColumnWidth = 9: c.Columns(x0 + 7).ColumnWidth = 44
+    c.Cells(3, x0).Value2 = "ÝLÇE SIRALAMASI  (en iyiden en kötüye)  •  depoda bekleyen ÝSG deðeri az olan önde"
+    c.Cells(3, x0).Font.bold = True: c.Cells(3, x0).Font.Size = 11: c.Cells(3, x0).Font.Color = RGB(12, 45, 79)
+    c.Range(c.Cells(4, x0), c.Cells(4, x0 + 7)).Value2 = Array("Sýra", "Depo", "Depo Adý", "Bekleyen Kalem", "Bekleyen Miktar", _
+        "ÝSG Stok Deðeri", "Pay", "Neden")
+    c.Range(c.Cells(5, x0 + 1), c.Cells(n + 4, x0 + 2)).NumberFormat = "@"
+    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0 + 7)).Value2 = s
+    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0 + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, x0 + 3), c.Cells(n + 4, x0 + 4)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, x0 + 3), c.Cells(n + 4, x0 + 4)).NumberFormat = "#,##0"
+    c.Range(c.Cells(5, x0 + 5), c.Cells(n + 4, x0 + 5)).NumberFormat = "#,##0.00 ""TL"""
+    c.Range(c.Cells(5, x0 + 6), c.Cells(n + 4, x0 + 6)).NumberFormat = "0.0%"
+    c.Range(c.Cells(5, x0 + 6), c.Cells(n + 4, x0 + 6)).HorizontalAlignment = xlCenter
+    Set alan = c.Range(c.Cells(4, x0), c.Cells(n + 4, x0 + 7))
+    With alan
+        .Font.Name = "Aptos": .Font.Size = 10
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
+        .VerticalAlignment = xlCenter
+    End With
+    With c.Range(c.Cells(4, x0), c.Cells(4, x0 + 7))
+        .Interior.Color = RGB(217, 217, 217): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .WrapText = True
+    End With
+    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0)).Font.bold = True
+    For i = 1 To n
+        If s(i, 6) <= 0.005 And s(i, 4) <= 0 Then
+            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Interior.Color = RGB(220, 252, 231)
+        ElseIf i = n And n > 1 Then
+            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Interior.Color = RGB(254, 226, 226)
+            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Font.Color = RGB(185, 28, 28)
+        End If
+    Next i
+    If n > 1 Then c.Cells(n + 4, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(n + 4, x0 + 7).Value2)
 End Sub

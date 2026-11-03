@@ -662,6 +662,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Aylık dağılım yokken de kesin kural: adetli birimde 6 ayda 3 adetten az sarf → DÜZENSİZ SARF (en fazla 2 ayda olabilir). ÇFT adetli listeye eklendi.
 - Kullanıcı Excel'i (fa18117c): 797 kritik+azalan, 75,4 mn TL; yeni kuralla ~608 / 69,5 mn TL. Tutarın çoğu DİREK G-10I / G-K1 (yatırım sarfı); MB51 yeniden okununca aylık ayrım devreye girer.
 
+## İlçe: hızlı buton çıktı düğmeleri, İSG sıralama, aylık demontaj toplam sıralama + Excel (03.11.2026, temel up38)
+- AKSORA_YATIRIM_SAYFA_AC ve Y_SAYFA_SEC (olaylar kapalı geçiş) artık AKSORA_CIKTI_DUGME çağırıyor: hızlı butonla gelince ÇIKTI AL / EXCEL'E AKTAR görünür.
+- İSG Excel 1. sayfa: I_ISG_SIRALAMA, J:Q sütunlarında ilçe sıralaması (bekleyen İSG değeri az → çok; eşitlikte kalem). Ana tablo A:H değişmedi.
+- I_AYLIK_DEMONTAJ: "TÜM AYLAR İLÇE SIRALAMASI" (I_AY_TOPLAM / I_AY_TOPLAM_CIZ): kayıtlı tüm ayların toplam uyumu, fireli ay, fire değeri, en çok fire malzemesi/kategorisi (neden), en kötü ay. İlçe karnesinden sonra.
+- EXCEL'E AKTAR (AKSORA_ILCE_AY_AKTAR): Tüm Aylar Sıralama + seçili ayın İlçe Karnesi / Kritik Malzemeler / Fire Listesi. Sayfa aralıkları BX31 karne, BX32 kritik, BX33 fire, BX34 toplam.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
