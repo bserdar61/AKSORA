@@ -11625,17 +11625,19 @@ Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
     Dim oIl As String, oMik As Double, il2 As Variant, uy2 As String, s2 As Double, karsi As Double, durum As String, nt As String
     Dim i As Long, tutar As Double, pb As String, y2 As Double, b2 As Double, tur As Variant, ihtiyac As Double, a1 As Double
     Dim al As Double, enIl As String, enMik As Double, sIl As String, sMik As Double, stBirim As String, k As String, o As Variant
+    Dim ilkHavuz As Object, atilTop As Double
     Set SA_ANALIZ = New Collection
     If kayit.Count = 0 Then Exit Function
     Set tum = ATIL_TUM_STOK()
     Set havuz = CreateObject("Scripting.Dictionary"): havuz.CompareMode = vbTextCompare
+    Set ilkHavuz = CreateObject("Scripting.Dictionary"): ilkHavuz.CompareMode = vbTextCompare
     If Not ADM_WS(ATIL_KAYIT) Is Nothing Then
         On Error Resume Next
         Set c = ATIL_HESAPLA(bilgi)
         On Error GoTo 0
         If Not c Is Nothing Then
             For Each x In c
-                If IsArray(x(20)) Then If x(20)(3) > 0.0005 Then havuz(CStr(x(2)) & "|" & CStr(x(3))) = CDbl(x(20)(3))
+                If IsArray(x(20)) Then If x(20)(3) > 0.0005 Then havuz(CStr(x(2)) & "|" & CStr(x(3))) = CDbl(x(20)(3)): ilkHavuz(CStr(x(2)) & "|" & CStr(x(3))) = CDbl(x(20)(3))
             Next x
         End If
     End If
@@ -11649,14 +11651,14 @@ Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
                 Else
                     miktar = SA_SAYI(r(15)): tutar = SA_SAYI(r(16)): pb = CStr(r(17))
                 End If
-                serbest = 0: yuk = 0: atil = 0: bd = 0: oIl = vbNullString: oMik = 0: nt = vbNullString: karsi = 0
+                serbest = 0: yuk = 0: atil = 0: atilTop = 0: bd = 0: oIl = vbNullString: oMik = 0: nt = vbNullString: karsi = 0
                 sIl = vbNullString: sMik = 0: stBirim = vbNullString
                 If Len(il) > 0 And Len(mal) > 0 And miktar > 0.0005 Then
                     k = uy & "|" & mal
                     SA_STOK tum, il, k, serbest, yuk, bd
                     stBirim = SA_STOK_BIRIM(tum, sis, mal)
                     If bd <= 0 Then bd = SA_BIRIM_DEGER(tum, sis, mal)
-                    If havuz.Exists(k) Then atil = havuz(k)
+                    If havuz.Exists(k) Then atil = havuz(k): atilTop = ilkHavuz(k)
                     If Len(stBirim) > 0 And UCase$(stBirim) <> UCase$(Trim$(CStr(r(12)))) Then
                         nt = "Birim farklý (talep " & CStr(r(12)) & ", stok " & stBirim & "): eþleþtirilmedi"
                     Else
@@ -11708,7 +11710,7 @@ Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
                     If Len(CStr(r(14))) > 0 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Kýsmen sipariþte: " & CStr(r(14)))
                 End If
                 SA_ANALIZ.Add Array(r(0), r(1), Y_IL_ADI(il), uy, r(5), r(2), r(3), r(13), r(10), r(8), r(9), miktar, r(12), _
-                    serbest, atil, oIl, oMik, karsi, Round(bd, 4), Round(karsi * bd, 2), tutar, pb, durum, nt)
+                    serbest, atilTop, oIl, oMik, karsi, Round(bd, 4), Round(karsi * bd, 2), tutar, pb, durum, nt)
             End If
         Next r
     Next tur
@@ -11765,7 +11767,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     Dim kayit As Collection, an As Collection, tarih As Date, bilgi As String, wb As Workbook, ac As Boolean, ev As Boolean
     Dim veri() As Variant, x As Variant, n As Long, i As Long, j As Long, anah() As String, idx() As Long, tur As Variant
     Dim ust As String, sonuc As String, no As Long, metin As String, c As Worksheet, hz As Range, oz As Object, il As Variant
-    Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 6) As Double, j2 As Variant
+    Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 10) As Double, j2 As Variant
     Set kayit = SA_KAYIT_OKU(tarih, bilgi)
     If kayit.Count = 0 Then MsgBox "Önce SATINALMA KONTROLÜ ile SAP'den okuyun.", vbInformation, "AKSORA": Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "Stok ve atýl stokla eþleþtiriliyor...", 0.1)
@@ -11779,33 +11781,41 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     wb.Worksheets.Add After:=wb.Worksheets(2)
     ' Ozet (il bazinda)
     Set oz = CreateObject("Scripting.Dictionary")
-    For Each il In ADM_ILLER(): oz(Y_IL_ADI(CStr(il))) = Array(0#, 0#, 0#, 0#, 0#, 0#): Next il
+    For Each il In ADM_ILLER(): oz(Y_IL_ADI(CStr(il))) = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#): Next il
     For Each x In an
         If oz.Exists(x(2)) Then
             t = oz(x(2))
             sira = IIf(x(0) = "T", 0, 3)
             t(sira) = t(sira) + 1
-            If x(17) > 0.0005 Then t(sira + 1) = t(sira + 1) + 1: t(sira + 2) = t(sira + 2) + x(19)
+            If x(17) > 0.0005 Then t(sira + 1) = t(sira + 1) + 1: t(sira + 2) = t(sira + 2) + x(19): t(6) = t(6) + x(19)
+            Select Case x(22)
+                Case "FAZLA TESLÝM ALINMIÞ": t(7) = t(7) + 1
+                Case "AYNI ÝLDE SERBEST STOK VAR", "BAÞKA ÝLDE SERBEST STOK VAR": t(8) = t(8) + 1
+                Case "STOK YOK": t(9) = t(9) + 1
+            End Select
             oz(x(2)) = t
         End If
     Next x
-    ReDim veri(1 To oz.Count + 1, 1 To 7)
+    ReDim veri(1 To oz.Count + 1, 1 To 11)
     i = 0
     For Each kk In oz.keys
         i = i + 1: t = oz(kk): veri(i, 1) = kk
-        For j = 0 To 5: veri(i, j + 2) = SA_YUVARLA(t(j), 2): toplam(j + 1) = toplam(j + 1) + t(j): Next j
+        For j = 0 To 9: veri(i, j + 2) = SA_YUVARLA(t(j), 2): toplam(j + 1) = toplam(j + 1) + t(j): Next j
     Next kk
     i = i + 1: veri(i, 1) = "TOPLAM"
-    For j = 1 To 6: veri(i, j + 1) = SA_YUVARLA(toplam(j), 2): Next j
+    For j = 1 To 10: veri(i, j + 1) = SA_YUVARLA(toplam(j), 2): Next j
     ust = "SATINALMA KONTROLÜ  |  Özet  |  SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn")
     Set c = wb.Worksheets(1)
     AKSORA_EXCEL_SAYFA c, Array("Ýl", "Açýk talep kalemi", "Atýl stoktan karþýlanabilir (talep)", "Talep tasarrufu (TL)", _
-        "Açýk sipariþ kalemi", "Atýl stoktan karþýlanabilir (sipariþ)", "Sipariþ tasarrufu (TL)"), veri, i, Array(14, 14, 18, 20, 14, 18, 20), _
-        Array("@", "General", "General", "#,##0.00 ""TL""", "General", "General", "#,##0.00 ""TL"""), _
-        Array(xlLeft, xlCenter, xlCenter, xlRight, xlCenter, xlCenter, xlRight), ust, _
+        "Açýk sipariþ kalemi", "Atýl stoktan karþýlanabilir (sipariþ)", "Sipariþ tasarrufu (TL)", "Toplam tasarruf (TL)", _
+        "Fazla teslim", "Serbest stok var (bilgi)", "Stok yok"), veri, i, Array(14, 14, 18, 20, 14, 18, 20, 20, 12, 16, 12), _
+        Array("@", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "#,##0"), _
+        Array(xlLeft, xlCenter, xlCenter, xlRight, xlCenter, xlCenter, xlRight, xlRight, xlCenter, xlCenter, xlCenter), ust, _
         "Tasarruf: atýl stoktan karþýlanabilen miktar (paylaþtýrmalý) x AKSORA stok birim deðeri", "Özet", Empty
-    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Font.bold = True
-    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Interior.Color = RGB(226, 236, 247)
+    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 11)).Font.bold = True
+    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 11)).Interior.Color = RGB(226, 236, 247)
+    c.Range(c.Cells(5, 8), c.Cells(i + 4, 8)).Font.bold = True
+    c.Range(c.Cells(5, 8), c.Cells(i + 4, 8)).Font.Color = RGB(21, 128, 61)
     ' Talepler ve siparisler (durum onceligi, sonra tasarruf buyukten kucuge)
     For Each tur In Array("T", "S")
         n = 0
@@ -12194,6 +12204,9 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_TOPLAM_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12))
     ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 22
     ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12)).HorizontalAlignment = xlCenter
+    For Each x In Array(2, 3, 5, 6, 9, 10, 11)
+        ws.Range(ws.Cells(a1, CLng(x)), ws.Cells(r, CLng(x))).NumberFormat = "#,##0"
+    Next x
     For Each x In Array(4, 7, 8)
         ws.Range(ws.Cells(a1, CLng(x)), ws.Cells(r, CLng(x))).NumberFormat = "#,##0.00 ""TL"""
     Next x
@@ -12246,6 +12259,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         ws.Range(ws.Cells(a1, 1), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 8), ws.Cells(r, 9)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).ShrinkToFit = True
         ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
         AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6))
         AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7))
@@ -12271,7 +12285,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     ws.Rows(r).RowHeight = 30
     r = r + 1
     Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Ýl", "ÜY", "Sipariþ no", "Kýsa metin", "Malzeme", "Fazla miktar", _
-        "Birim", "Belge tarihi", "Satýcý", "Kalem", "Açýk tutar", "PB")
+        "Birim", "Belge tarihi", "Satýcý", "Kalem", "Fazla tutar", "PB")
     ws.Rows(r).RowHeight = 30
     a1 = r + 1
     If n > 0 Then
@@ -12282,7 +12296,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
                 i = i + 1
                 sonuc(i, 1) = x(2): sonuc(i, 2) = x(3): sonuc(i, 3) = x(5): sonuc(i, 4) = x(10): sonuc(i, 5) = x(9)
                 sonuc(i, 6) = -x(11): sonuc(i, 7) = x(12): sonuc(i, 8) = x(7): sonuc(i, 9) = x(8): sonuc(i, 10) = x(6)
-                sonuc(i, 11) = x(20): sonuc(i, 12) = x(21)
+                sonuc(i, 11) = Abs(x(20)): sonuc(i, 12) = x(21)
             End If
         Next x
         ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 5)).NumberFormat = "@"
@@ -12295,6 +12309,8 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         ws.Range(ws.Cells(a1, 5), ws.Cells(r, 8)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 10), ws.Cells(r, 10)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).HorizontalAlignment = xlLeft
+        ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).ShrinkToFit = True
         ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
         AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6))
         ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6)).Font.Color = RGB(91, 33, 182)
