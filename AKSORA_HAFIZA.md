@@ -578,6 +578,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Bu sırada DoEvents olmadığından kartın ARKA PLANA AL / DURDUR düğmeleri tıklanamıyordu.
 - Çözüm: AKSORA_GORUNUR: FilterMode yoksa hepsi görünür (anında); filtre varsa Rows().Hidden döngüsü + 2048 satırda NABIZ.
   OFFSET/SUBTOTAL dizi Evaluate'i büyük sayfada KULLANMA.
+- ASIL SEBEP (2. teşhis, 327 sn sürdü): T_AzAnahtar(ByVal a As Variant ...) her satırda 18k×14 diziyi kopyalıyordu
+  (≈4,5 milyar kopya). ByRef yapıldı. KURAL: büyük diziyi döngü içinde çağrılan fonksiyona ASLA ByVal geçirme.
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

@@ -1648,7 +1648,8 @@ Private Function T_AzImza(ByVal ws As Worksheet, ByVal son As Long, ByVal cM As 
     Next r
 End Function
 
-Private Function T_AzAnahtar(ByVal a As Variant, ByVal r As Long, ByVal sutunlar As Variant) As String
+' a ByRef: ByVal her satirda tum tabloyu kopyaliyordu (18 bin satirda dakikalar).
+Private Function T_AzAnahtar(ByRef a As Variant, ByVal r As Long, ByVal sutunlar As Variant) As String
     Dim i As Long, c As Long, v As Variant, t As String
     For i = 0 To UBound(sutunlar)
         c = sutunlar(i)
