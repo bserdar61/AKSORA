@@ -668,6 +668,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - I_AYLIK_DEMONTAJ: "TÜM AYLAR İLÇE SIRALAMASI" (I_AY_TOPLAM / I_AY_TOPLAM_CIZ): kayıtlı tüm ayların toplam uyumu, fireli ay, fire değeri, en çok fire malzemesi/kategorisi (neden), en kötü ay. İlçe karnesinden sonra.
 - EXCEL'E AKTAR (AKSORA_ILCE_AY_AKTAR): Tüm Aylar Sıralama + seçili ayın İlçe Karnesi / Kritik Malzemeler / Fire Listesi. Sayfa aralıkları BX31 karne, BX32 kritik, BX33 fire, BX34 toplam.
 
+## İSG Excel sıralama konumu (03.11.2026)
+- Kullanıcı isteği: sıralama ana tablonun altında, aynı A:H sütunlarında (başlık TOPLAM'dan 4 satır aşağıda, sütun başlıkları bir alt satırda). Sütun genişliklerine dokunulmuyor.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

@@ -13330,13 +13330,15 @@ Hata:
     MsgBox "Aylýk demontaj Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
 
-' ISG Excel 1. sayfa: ilce siralamasi J sutunundan itibaren (ana tablo A:H oldugu gibi kalir).
+' ISG Excel 1. sayfa: ilce siralamasi ana tablonun altinda, ayni A:H sutunlarinda (ana tablo ve sutun genislikleri degismez).
 ' Sira: depoda bekleyen ISG degeri az olan once; esitlikte bekleyen kalem az olan, sonra depo kodu.
 Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal n As Long, ByVal toplamDeger As Double)
     Dim i As Long, j As Long, anah() As String, idx() As Long, s() As Variant, kalem As Double, mik As Double, deger As Double
-    Dim alan As Range, neden As String, x0 As Long
+    Dim alan As Range, neden As String, x0 As Long, b0 As Long
     If n < 1 Then Exit Sub
-    x0 = 10
+    x0 = 1
+    ' Ana tablonun (TOPLAM dahil) 3 satir altina: baslik b0 - 1, sutun basliklari b0, veriler b0 + 1.
+    b0 = n + 5 + 5
     ReDim anah(1 To n): ReDim idx(1 To n)
     For i = 1 To n
         idx(i) = i
@@ -13360,40 +13362,38 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
         If toplamDeger > 0.005 Then s(i, 7) = Round(deger / toplamDeger, 4) Else s(i, 7) = 0
         s(i, 8) = neden
     Next i
-    c.Columns(x0 - 1).ColumnWidth = 3
-    c.Columns(x0).ColumnWidth = 6: c.Columns(x0 + 1).ColumnWidth = 8: c.Columns(x0 + 2).ColumnWidth = 24
-    c.Columns(x0 + 3).ColumnWidth = 12: c.Columns(x0 + 4).ColumnWidth = 13: c.Columns(x0 + 5).ColumnWidth = 17
-    c.Columns(x0 + 6).ColumnWidth = 9: c.Columns(x0 + 7).ColumnWidth = 44
-    c.Cells(3, x0).Value2 = "ÝLÇE SIRALAMASI  (en iyiden en kötüye)  •  depoda bekleyen ÝSG deðeri az olan önde"
-    c.Cells(3, x0).Font.bold = True: c.Cells(3, x0).Font.Size = 11: c.Cells(3, x0).Font.Color = RGB(12, 45, 79)
-    c.Range(c.Cells(4, x0), c.Cells(4, x0 + 7)).Value2 = Array("Sýra", "Depo", "Depo Adý", "Bekleyen Kalem", "Bekleyen Miktar", _
+    c.Cells(b0 - 1, x0).Value2 = "ÝLÇE SIRALAMASI  (en iyiden en kötüye)  •  depoda bekleyen ÝSG deðeri az olan önde"
+    c.Cells(b0 - 1, x0).Font.bold = True: c.Cells(b0 - 1, x0).Font.Size = 11: c.Cells(b0 - 1, x0).Font.Color = RGB(12, 45, 79)
+    c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 7)).Value2 = Array("Sýra", "Depo", "Depo Adý", "Bekleyen Kalem", "Bekleyen Miktar", _
         "ÝSG Stok Deðeri", "Pay", "Neden")
-    c.Range(c.Cells(5, x0 + 1), c.Cells(n + 4, x0 + 2)).NumberFormat = "@"
-    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0 + 7)).Value2 = s
-    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0 + 1)).HorizontalAlignment = xlCenter
-    c.Range(c.Cells(5, x0 + 3), c.Cells(n + 4, x0 + 4)).HorizontalAlignment = xlCenter
-    c.Range(c.Cells(5, x0 + 3), c.Cells(n + 4, x0 + 4)).NumberFormat = "#,##0"
-    c.Range(c.Cells(5, x0 + 5), c.Cells(n + 4, x0 + 5)).NumberFormat = "#,##0.00 ""TL"""
-    c.Range(c.Cells(5, x0 + 6), c.Cells(n + 4, x0 + 6)).NumberFormat = "0.0%"
-    c.Range(c.Cells(5, x0 + 6), c.Cells(n + 4, x0 + 6)).HorizontalAlignment = xlCenter
-    Set alan = c.Range(c.Cells(4, x0), c.Cells(n + 4, x0 + 7))
+    c.Range(c.Cells(b0 + 1, x0 + 1), c.Cells(b0 + n, x0 + 2)).NumberFormat = "@"
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0 + 7)).Value2 = s
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0 + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0 + 3), c.Cells(b0 + n, x0 + 4)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0 + 3), c.Cells(b0 + n, x0 + 4)).NumberFormat = "#,##0"
+    c.Range(c.Cells(b0 + 1, x0 + 5), c.Cells(b0 + n, x0 + 5)).NumberFormat = "#,##0.00 ""TL"""
+    c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).NumberFormat = "0.0%"
+    c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).HorizontalAlignment = xlCenter
+    Set alan = c.Range(c.Cells(b0, x0), c.Cells(b0 + n, x0 + 7))
     With alan
         .Font.Name = "Aptos": .Font.Size = 10
         .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
         .VerticalAlignment = xlCenter
     End With
-    With c.Range(c.Cells(4, x0), c.Cells(4, x0 + 7))
+    With c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 7))
         .Interior.Color = RGB(217, 217, 217): .Font.bold = True
         .HorizontalAlignment = xlCenter: .WrapText = True
     End With
-    c.Range(c.Cells(5, x0), c.Cells(n + 4, x0)).Font.bold = True
+    c.Rows(b0).RowHeight = 30
+    c.Range(c.Cells(b0 + 1, x0 + 1), c.Cells(b0 + n, x0 + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0)).Font.bold = True
     For i = 1 To n
         If s(i, 6) <= 0.005 And s(i, 4) <= 0 Then
-            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Interior.Color = RGB(220, 252, 231)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(220, 252, 231)
         ElseIf i = n And n > 1 Then
-            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Interior.Color = RGB(254, 226, 226)
-            c.Range(c.Cells(i + 4, x0), c.Cells(i + 4, x0 + 7)).Font.Color = RGB(185, 28, 28)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(254, 226, 226)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Font.Color = RGB(185, 28, 28)
         End If
     Next i
-    If n > 1 Then c.Cells(n + 4, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(n + 4, x0 + 7).Value2)
+    If n > 1 Then c.Cells(b0 + n, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(b0 + n, x0 + 7).Value2)
 End Sub
