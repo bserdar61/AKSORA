@@ -647,6 +647,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - 847319f2 Excel'i bir önceki doğrulanan çıktıyla birebir aynı.
 - SA_CIZ: 9. sütun (Atıl stok kaynağı / Satıcı) 125→190 px; Malzeme 140→105, Birim/Belge tarihi/Toplam tasarruf 105→95. Uzun metinler artık küçülmüyor.
 
+## KRİTİK STOK sayfası (03.11.2026, temel up37)
+- Malzeme Stok birimi: KRITIK_STOK sayfası (etiket AKSORA_KRITIK_V1, M_CDP_RAPOR kopyası, SATINALMA_KONTROL'ün yanında), ANA PANEL'de 10. hızlı buton goKritikStok (B25:T26), KAPAK açılışında görünür.
+- Ek SAP okuması yok. Stok: CDP/EPP/İLÇE/YÜKLENİCİ stok sayfaları (D/K + yüklenici, ATIL ile aynı kapsam). Sarf: _ATIL "Son 6 ay sarf" (MB51). Açık talep/sipariş: _SATINALMA.
+- Aylık sarf = 6 ay / 6; kapsam = stok / aylık sarf. KRİTİK <1 ay ve yoldakilerle <3 ay; AZALIYOR <3 ay; YOLDA <3 ay ama yoldakilerle ≥3; YETERLİ 3-12; FAZLA >12.
+- DÜZENSİZ SARF: son 6 ayın 3'ünden azında sarf (proje/tek seferlik), kritik sayılmaz. Bunun için _ATIL'e K sütunu "Aylık sarf (6 ay)" eklendi (ATIL_SISTEM_OKU aylık dağılım, ATIL_KAYDET/KAYIT_OKU 11 sütun, kr(8)). Eski kayıtta boş → hepsi düzenli sayılır, sayfada uyarı.
+- Önerilen talep = 3 aylık ihtiyaç - stok - açık talep - açık sipariş - diğer illerin atıl stoğundan transfer (aynı sistem, paylaştırmalı, en kritik önce). Tutar = öneri x AKSORA stok birim değeri.
+- Excel: Özet / Kritik ve Azalan / Yolda / Tüm İzlenen (22 sütun).
+- up37 verisiyle simülasyon (aylık ayrım olmadan): 2980 izlenen; 546 kritik, 251 azalıyor, 46 yolda. Çok sayıda tek seferlik proje sarfı var → aylık ayrım gerekli.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
