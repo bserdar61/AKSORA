@@ -581,6 +581,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - ASIL SEBEP (2. teşhis, 327 sn sürdü): T_AzAnahtar(ByVal a As Variant ...) her satırda 18k×14 diziyi kopyalıyordu
   (≈4,5 milyar kopya). ByRef yapıldı. KURAL: büyük diziyi döngü içinde çağrılan fonksiyona ASLA ByVal geçirme.
 
+## 03.11.2026 – Yükleme kartı güven / ARKA PLANA AL
+- Tüm birimler 4 dk 18 sn'ye döndü (Müşteri il başına 30-50 sn).
+- Kart takılması: SAP rapor çağrıları (IQ09 / MB52 / toplu okuma) tek çağrıda 10-19 sn Excel'i bloke eder; bu sürede
+  VBA kodu çalışamaz, kart güncellenemez, tıklama sonradan işlenir. Kartta bu adımlarda "(SAP yanıtı bekleniyor)" yazar.
+- ARKA PLANA AL: tıklanınca düğme yeşil "ARKA PLANDA • ÖNE GETİR" olur + bilgi metni; ikinci tıklama AKSORA_ONE_GETIR
+  (HWND_TOP). Eskiden pencere z-sırasında alta gidiyordu, başka pencere yoksa hiçbir şey olmamış gibi görünüyordu.
+- NABIZ eşiği 0,5 → 0,25 sn. Taban: up35.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

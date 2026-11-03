@@ -7371,7 +7371,7 @@ End Sub
 ' Uzun dongulerde cagrilir: kart acikken yarim saniyede bir mesaj kuyrugunu bosaltir (yazilar degismez).
 Public Sub AKSORA_BEKLE_NABIZ()
     Dim iv As Boolean
-    If Abs(Timer - mAdmYukSon) <= 0.5 Then Exit Sub
+    If Abs(Timer - mAdmYukSon) <= 0.25 Then Exit Sub
     ' Kart acilamadiysa da (simge durumu, acilis vb.) Windows "Yanit vermiyor" demesin.
     If Not mAdmYukleme Then
         On Error Resume Next
@@ -7403,6 +7403,19 @@ Public Sub AKSORA_ARKA_PLANA_AL()
     ' SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE; HWND_BOTTOM = 1
     If h <> 0 Then ADMW_SetWindowPos h, 1, 0, 0, 0, 0, &H13
     ADMW_SetWindowPos application.hWnd, 1, 0, 0, 0, 0, &H13
+    On Error GoTo 0
+End Sub
+
+' ARKA PLANDA dugmesine ikinci tiklama: kart ve Excel one getirilir, is surer.
+Public Sub AKSORA_ONE_GETIR()
+    Dim h As LongPtr
+    On Error Resume Next
+    AKSORA_ARKA_PLAN = False
+    ' SWP_NOSIZE Or SWP_NOMOVE; HWND_TOP = 0
+    ADMW_SetWindowPos application.hWnd, 0, 0, 0, 0, 0, &H3
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    If h <> 0 Then ADMW_SetWindowPos h, 0, 0, 0, 0, 0, &H3
     On Error GoTo 0
 End Sub
 
@@ -9014,8 +9027,11 @@ Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
     If metin = "tamamlandý." Then y = 1
     y = (mAdmTopluSira + 0.05 + 0.9 * y) / 4
     s = mAdmTopluAd & "  •  " & mAdmTopluMetin
+    ' SAP raporu calisirken Excel 10-20 sn bekler (SAP cagrisi bitene kadar kart guncellenemez): onceden yazilir.
+    If InStr(1, mAdmTopluMetin, "alýnýyor", vbTextCompare) > 0 Or InStr(1, mAdmTopluMetin, "sorgu", vbTextCompare) > 0 Then _
+        s = s & "  (SAP yanýtý bekleniyor)"
     If AKSORA_ADMIN_IPTAL Then s = "Durduruluyor: çalýþan il bitince iþlem duracak..."
-    If Len(s) > 72 Then s = Left$(s, 69) & "..."
+    If Len(s) > 90 Then s = Left$(s, 87) & "..."
     frmSplash.lblDurum.Caption = s & vbLf & "Birim " & (mAdmTopluSira + 1) & " / 4   •   Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * application.Min(1, y))
     frmSplash.Repaint
