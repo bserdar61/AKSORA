@@ -7531,9 +7531,15 @@ Private Function ADM_SAYFA() As Worksheet
 End Function
 
 Private Sub ADM_GORUNUM(ByVal ws As Worksheet)
-    Dim z As Double
+    Dim z As Double, sr As Long
     If Not (ActiveSheet Is ws) Then Exit Sub
     On Error Resume Next
+    ' Satinalma bolumu dugmeleri baslik satirina hizalanir (satir yukseklikleri cizimden sonra degisebilir).
+    sr = CLng(Val(CStr(ws.Range("BX40").Value2)))
+    If sr > 0 Then
+        ws.Shapes("ADM_SA_OKU").Top = ws.Rows(sr).Top + 2
+        ws.Shapes("ADM_SA_EXCEL").Top = ws.Rows(sr).Top + 2
+    End If
     With ThisWorkbook.Windows(1)
         If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
         .DisplayGridlines = False: .DisplayHeadings = False: .DisplayWorkbookTabs = False
@@ -11839,6 +11845,9 @@ Private Function ADM_SA_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl 
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 9), "SATINALMA KONTROLÜ   (ME5A açýk talepler • ME2N teslim alýnmamýþ sipariþler • stok ve atýl stokla)"
     ADM_DUGME ws, "ADM_SA_OKU", "SAP'DEN OKU", ws.Cells(r, 10).Left + 2, RGB(20, 103, 173), "AKSORA_SATINALMA_OKU", 1.1, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
     ADM_DUGME ws, "ADM_SA_EXCEL", "EXCEL'E AKTAR", ws.Cells(r, 12).Left - 6, RGB(33, 115, 70), "AKSORA_SATINALMA_EXCEL", 1.3, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
+    ' Dugmeler bolum basligi satirina baglanir: ustteki satirlar sonradan buyuyunce tablonun ustune kaymaz.
+    ws.Range("BX40").Value2 = r
+    ws.Shapes("ADM_SA_OKU").Placement = xlMove: ws.Shapes("ADM_SA_EXCEL").Placement = xlMove
     r = r + 1
     If kayit.Count = 0 Then
         ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Henüz okunmadý: SAP'DEN OKU ile açýk talepler ve sipariþler alýnýr; stoktan karþýlanabilenler burada görünür.", _

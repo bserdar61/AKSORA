@@ -606,6 +606,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Durumlar: ATIL STOKTAN KARŞILANIR / BAŞKA İLİN ATIL STOĞUNDAN / AYNI İLDE SERBEST STOK VAR / BAŞKA İLDE SERBEST STOK VAR / STOK YOK.
   SAP okurken CoRegisterMessageFilter 0 ile 'OLE eylemi bekleniyor' penceresi bastırılır, sonra eski filtre geri yüklenir.
   ME2N sipariş no boş: liste belgeye göre gruplu; kullanıcı düzende 'Satınalma belgesi' sütununu açıp varsayılan kaydetmeli.
+- 2. sonuç (11:20): toplam tasarruf 1.761.896,35 TL (talep 458.963,83 / sipariş 1.302.932,52). CDP ME2N EBELN geliyor
+  (/AKSORA düzeni), EPP'de düzen kaydedilmemiş → sipariş no boş. Admin SA düğmeleri xlMove + ADM_GORUNUM'da BX40 satırına hizalanır.
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
 - DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.
