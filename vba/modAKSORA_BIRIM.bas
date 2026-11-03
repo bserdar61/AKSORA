@@ -11901,6 +11901,14 @@ Hata:
     MsgBox "Satýnalma kontrolü Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
 
+' Satici: basindaki SAP satici numarasi atilir (sayfada okunur boyutta kalsin; tam hali Excel'de).
+Private Function SA_SATICI_AD(ByVal v As Variant) As String
+    Dim s As String, p As Long
+    s = Trim$(CStr(v)): p = InStr(s, " ")
+    If p > 1 Then If IsNumeric(Left$(s, p - 1)) Then s = Trim$(Mid$(s, p + 1))
+    SA_SATICI_AD = s
+End Function
+
 Private Function SA_YUVARLA(ByVal v As Variant, ByVal basamak As Long) As Variant
     If IsNumeric(v) And Not IsEmpty(v) And VarType(v) <> vbString Then SA_YUVARLA = Round(CDbl(v), basamak) Else SA_YUVARLA = v
 End Function
@@ -12295,7 +12303,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
             If x(22) = "FAZLA TESLÝM ALINMIÞ" And (ilSec = "TUM" Or x(2) = Y_IL_ADI(ilSec)) Then
                 i = i + 1
                 sonuc(i, 1) = x(2): sonuc(i, 2) = x(3): sonuc(i, 3) = x(5): sonuc(i, 4) = x(10): sonuc(i, 5) = x(9)
-                sonuc(i, 6) = -x(11): sonuc(i, 7) = x(12): sonuc(i, 8) = x(7): sonuc(i, 9) = x(8): sonuc(i, 10) = x(6)
+                sonuc(i, 6) = -x(11): sonuc(i, 7) = x(12): sonuc(i, 8) = x(7): sonuc(i, 9) = SA_SATICI_AD(x(8)): sonuc(i, 10) = x(6)
                 sonuc(i, 11) = Abs(x(20)): sonuc(i, 12) = x(21)
             End If
         Next x
