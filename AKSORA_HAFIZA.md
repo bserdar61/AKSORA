@@ -602,6 +602,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Tasarruf = karşılanabilir × AKSORA stok birim değeri (TL). Belge tutarı kendi PB'si ile.
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
+- DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.
+  build.sh artık fx/decl_check.py ile 'prosedürden sonra modül bildirimi' denetler (hata varsa durur).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)

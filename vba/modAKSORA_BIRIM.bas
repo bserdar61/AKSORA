@@ -80,6 +80,8 @@ Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
 Private Const I_ETIKET As String = "AKSORA_ILCE_V1"
 Private Const I_GECMIS_GUN As Long = 20
 Private Const I_TF As String = "dd.mm.yyyy hh:nn:ss"
+' Satinalma kontrolu (ME5A / ME2N) kaydi.
+Private Const SA_KAYIT As String = "_SATINALMA"
 Private Const I_DEFTER_SURE As Long = 400
 Private mIMal As Object
 Private mIMalKirli As Boolean
@@ -11232,7 +11234,6 @@ End Function
 ' SAP'den (CDP ve EPP oturumu) acik satinalma talepleri ve teslim alinmamis siparisler okunur, _SATINALMA kaydina yazilir.
 ' Eslestirme: ayni sistemde ayni ilin serbest stogu (D / K depolari, YENI ve kullanilabilir partiler), atil stok
 ' (ATIL_HESAPLA) ve diger illerin serbest stogu. Stoktan karsilanabilen miktar x stok birim degeri = tasarruf (TL).
-Private Const SA_KAYIT As String = "_SATINALMA"
 
 Private Function SA_GRID_ARA(ByVal o As Object) As Object
     Dim i As Long, n As Long, c As Object, tip As String, alt As String
