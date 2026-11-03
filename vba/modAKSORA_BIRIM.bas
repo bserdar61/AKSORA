@@ -7782,7 +7782,7 @@ Private Function ADM_TL_KISA(ByVal x As Double) As String
     ElseIf Abs(x) >= 1000# Then
         ADM_TL_KISA = AKSORA_SAYI_METNI(x / 1000#, "#,##0.0") & " bin TL"
     Else
-        ADM_TL_KISA = AKSORA_SAYI_METNI(x, "#,##0") & " TL"
+        ADM_TL_KISA = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
     End If
 End Function
 
@@ -8434,7 +8434,7 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ws.Cells(r, 8).Value2 = IIf(tumToplam > 0, 1, 0)
     ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
     ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
-    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).NumberFormat = "#,##0.00 ""TL"""
     ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).ShrinkToFit = True
     ws.Range(ADM_ADRES(satirNo + 1, 8, r, 8)).NumberFormat = "0.0%"
     ws.Range(ADM_ADRES(satirNo + 1, 9, r, 12)).NumberFormat = "#,##0"
@@ -8449,6 +8449,8 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     On Error GoTo 0
     '--- atil stok (malzeme birimi atil stok kaydindan)
     r = ADM_ATIL_CIZ(ws, r, secIl)
+    '--- satinalma kontrolu (ME5A / ME2N kaydindan)
+    r = ADM_SA_CIZ(ws, r, secIl)
     '--- uyarilar
     r = r + 2
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 10), "YÖNETÝCÝ UYARILARI  •  " & ilMetin
@@ -9136,9 +9138,9 @@ Private Function ADM_ATIL_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secI
     ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
     ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
     ws.Range(ADM_ADRES(ilk + 1, 2, r, 13)).HorizontalAlignment = xlCenter
-    ws.Range(ADM_ADRES(ilk + 1, 4, r, 4)).NumberFormat = "#,##0 ""TL"""
-    ws.Range(ADM_ADRES(ilk + 1, 6, r, 6)).NumberFormat = "#,##0 ""TL"""
-    ws.Range(ADM_ADRES(ilk + 1, 8, r, 8)).NumberFormat = "#,##0 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 4, r, 4)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 6, r, 6)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 8, r, 8)).NumberFormat = "#,##0.00 ""TL"""
     ws.Range(ADM_ADRES(ilk + 1, 9, r, 9)).NumberFormat = "0.0%"
     ws.Range(ADM_ADRES(ilk + 1, 3, r, 4)).Font.Color = RGB(185, 28, 28)
     ws.Range(ADM_ADRES(ilk + 1, 4, r, 8)).ShrinkToFit = True
@@ -11224,4 +11226,606 @@ Private Function ATIL_SISTEM_OKU(ByVal ses As Object, ByVal sis As String, ByVal
     Exit Function
 Hata:
     ATIL_SISTEM_OKU = adim & " | " & Err.Description
+End Function
+
+'==================== SATINALMA KONTROLU (ME5A acik talepler, ME2N acik siparisler) ====================
+' SAP'den (CDP ve EPP oturumu) acik satinalma talepleri ve teslim alinmamis siparisler okunur, _SATINALMA kaydina yazilir.
+' Eslestirme: ayni sistemde ayni ilin serbest stogu (D / K depolari, YENI ve kullanilabilir partiler), atil stok
+' (ATIL_HESAPLA) ve diger illerin serbest stogu. Stoktan karsilanabilen miktar x stok birim degeri = tasarruf (TL).
+Private Const SA_KAYIT As String = "_SATINALMA"
+
+Private Function SA_GRID_ARA(ByVal o As Object) As Object
+    Dim i As Long, n As Long, c As Object, tip As String, alt As String
+    On Error Resume Next
+    tip = o.Type: alt = o.SubType
+    If tip = "GuiShell" And alt = "GridView" Then Set SA_GRID_ARA = o: Exit Function
+    n = -1: n = o.Children.Count
+    On Error GoTo 0
+    For i = 0 To n - 1
+        Set c = Nothing
+        On Error Resume Next
+        Set c = SA_GRID_ARA(o.Children(i))
+        On Error GoTo 0
+        If Not c Is Nothing Then Set SA_GRID_ARA = c: Exit Function
+    Next i
+End Function
+
+Private Function SA_GRID_BUL(ByVal ses As Object) As Object
+    Dim g As Object
+    On Error Resume Next
+    Set g = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell")
+    If g Is Nothing Then Set g = SA_GRID_ARA(ses.FindById("wnd[0]/usr"))
+    On Error GoTo 0
+    Set SA_GRID_BUL = g
+End Function
+
+Private Sub SA_ALAN_BOSALT(ByVal ses As Object, ByVal ad As String)
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/" & ad).Text = vbNullString
+    On Error GoTo 0
+End Sub
+
+' tanim: Array(Array(anahtar, "ID1|ID2", "BASLIK1|BASLIK2"), ...). Donus: anahtar -> kolon id (bulunamazsa "").
+Private Function SA_KOLONLAR(ByVal g As Object, ByVal tanim As Variant, ByVal etiket As String) As Object
+    Dim d As Object, idler As Object, t As Variant, id As Variant, b As Variant, liste As String, nt As String, bul As String, nb As String
+    Dim co As Object, i As Long
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set idler = CreateObject("Scripting.Dictionary"): idler.CompareMode = vbTextCompare
+    Set co = g.ColumnOrder
+    For i = 0 To co.Count - 1
+        id = CStr(co(i))
+        nt = vbNullString
+        On Error Resume Next
+        nt = Y_NORM(CStr(g.GetDisplayedColumnTitle(CStr(id))))
+        On Error GoTo 0
+        idler(CStr(id)) = nt
+        liste = liste & " | " & CStr(id) & "=" & nt
+    Next i
+    AKSORA_SAP_TESHIS_YAZ etiket & " sütunlar:" & liste
+    For Each t In tanim
+        bul = vbNullString
+        For Each id In Split(CStr(t(1)), "|")
+            If Len(CStr(id)) > 0 Then If idler.Exists(CStr(id)) Then bul = CStr(id)
+            If Len(bul) > 0 Then Exit For
+        Next id
+        If Len(bul) = 0 Then
+            For Each b In Split(CStr(t(2)), "|")
+                nb = Y_NORM(CStr(b))
+                For Each id In idler.keys
+                    If idler(id) = nb Then bul = CStr(id): Exit For
+                Next id
+                If Len(bul) > 0 Then Exit For
+            Next b
+        End If
+        d(CStr(t(0))) = bul
+    Next t
+    Set SA_KOLONLAR = d
+End Function
+
+' Izgara satirlari: Array(anahtar sirasinda degerler). Bos malzeme / belge satirlari (ara toplam) alinmaz.
+Private Function SA_IZGARA_OKU(ByVal g As Object, ByVal kol As Object, ByVal anahtarlar As Variant) As Collection
+    Dim c As Collection, n As Long, i As Long, j As Long, a() As Variant, v As Variant, idMal As String, idBel As String, gor As Object
+    Set c = New Collection
+    Set gor = CreateObject("Scripting.Dictionary")
+    n = 0
+    On Error Resume Next
+    n = g.RowCount
+    On Error GoTo 0
+    idMal = kol("MAL"): idBel = kol("BELGE")
+    For i = 0 To n - 1
+        If (i Mod 25) = 0 Then
+            On Error Resume Next
+            g.FirstVisibleRow = i
+            On Error GoTo 0
+            AKSORA_BEKLE_NABIZ
+        End If
+        ReDim a(0 To UBound(anahtarlar))
+        For j = 0 To UBound(anahtarlar)
+            v = vbNullString
+            If Len(kol(anahtarlar(j))) > 0 Then
+                On Error Resume Next
+                v = g.GetCellValue(i, kol(anahtarlar(j)))
+                On Error GoTo 0
+            End If
+            a(j) = Trim$(CStr(v))
+        Next j
+        ' Ara toplam / grup satirlari ayni belge-kalemi tekrar dondurebilir: belge + kalem bir kez alinir.
+        If Len(a(0)) > 0 And Len(a(SA_IDX(anahtarlar, "MAL"))) > 0 Then
+            If Not gor.Exists(a(0) & "|" & a(1)) Then gor(a(0) & "|" & a(1)) = True: c.Add a
+        End If
+    Next i
+    Set SA_IZGARA_OKU = c
+End Function
+
+Private Function SA_IDX(ByVal anahtarlar As Variant, ByVal ad As String) As Long
+    Dim j As Long
+    For j = 0 To UBound(anahtarlar)
+        If anahtarlar(j) = ad Then SA_IDX = j: Exit Function
+    Next j
+    SA_IDX = -1
+End Function
+
+Private Function SA_ME5A_ANAHTAR() As Variant
+    SA_ME5A_ANAHTAR = Array("BELGE", "KALEM", "UY", "DEPO", "SAG", "MG", "MAL", "TANIM", "KISI", "MIKTAR", "BIRIM", "TARIH", _
+        "SIPARIS", "DEGER", "PB", "BASLIK")
+End Function
+
+Private Function SA_ME2N_ANAHTAR() As Variant
+    SA_ME2N_ANAHTAR = Array("BELGE", "KALEM", "UY", "DEPO", "SAG", "MG", "MAL", "TANIM", "KISI", "MIKTAR", "BIRIM", "TARIH", _
+        "FIYAT", "ACIK", "ACIKDEGER", "PB")
+End Function
+
+' Acik satinalma talepleri (ME5A). Liste yoksa (talep yok) bos koleksiyon.
+Private Function SA_ME5A(ByVal ses As Object, ByVal ilk As String, ByVal son As String, ByVal sis As String) As Collection
+    Dim g As Object, kol As Object, sb As String, tip As String
+    Set SA_ME5A = New Collection
+    ses.StartTransaction "ME5A"
+    SA_ALAN_BOSALT ses, "ctxtBA_BANFN-LOW": SA_ALAN_BOSALT ses, "ctxtBA_BANFN-HIGH"
+    SA_ALAN_BOSALT ses, "ctxtS_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtS_MATNR-HIGH"
+    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = ilk
+    ses.FindById("wnd[0]/usr/ctxtS_WERKS-HIGH").Text = son
+    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    Set g = SA_GRID_BUL(ses)
+    If g Is Nothing Then
+        On Error Resume Next
+        sb = ses.FindById("wnd[0]/sbar").Text: tip = ses.FindById("wnd[0]/sbar").MessageType
+        On Error GoTo 0
+        AKSORA_SAP_TESHIS_YAZ "ME5A " & sis & " liste yok: " & sb
+        If tip = "E" Or tip = "A" Then Err.Raise vbObjectError + 9801, , "ME5A (" & sis & "): " & sb
+        Exit Function
+    End If
+    Set kol = SA_KOLONLAR(g, Array( _
+        Array("BELGE", "BANFN", "SA TALEBI|SATINALMA TALEBI"), Array("KALEM", "BNFPO", "KALEM|TALEP KALEMI"), _
+        Array("UY", "WERKS", "UY|URETIM YERI"), Array("DEPO", "LGORT", "DPYR|DEPO YERI"), _
+        Array("SAG", "EKGRP", "SAG|SATINALMA GRUBU"), Array("MG", "MATKL", "MAL GRUBU"), _
+        Array("MAL", "MATNR", "MALZEME"), Array("TANIM", "TXZ01", "KISA METIN"), _
+        Array("KISI", "AFNAM", "TALEP EDEN"), Array("MIKTAR", "MENGE", "MIKTAR|TALEP MIKTARI"), _
+        Array("BIRIM", "MEINS", "BIRIM|OB|OLCU BIRIMI"), Array("TARIH", "BADAT", "TALEP TARIHI"), _
+        Array("SIPARIS", "EBELN", "SATINALMA SIPARISI"), Array("DEGER", "GSWRT|RLWRT", "TOPLAM DEGER"), _
+        Array("PB", "WAERS", "PB|PARA BIRIMI"), Array("BASLIK", "", "BASLIK METNI")), "ME5A " & sis)
+    If Len(kol("MAL")) = 0 Or Len(kol("UY")) = 0 Or Len(kol("MIKTAR")) = 0 Then _
+        Err.Raise vbObjectError + 9802, , "ME5A (" & sis & ") listesinde malzeme / üretim yeri / miktar sütunu bulunamadý (teþhis dosyasýnda sütunlar yazýlý)."
+    Set SA_ME5A = SA_IZGARA_OKU(g, kol, SA_ME5A_ANAHTAR())
+End Function
+
+' Teslim alinmamis siparisler (ME2N, secim parametresi WE101, liste kapsami ALV).
+Private Function SA_ME2N(ByVal ses As Object, ByVal ilk As String, ByVal son As String, ByVal sis As String) As Collection
+    Dim g As Object, kol As Object, sb As String, tip As String
+    Set SA_ME2N = New Collection
+    ses.StartTransaction "ME2N"
+    SA_ALAN_BOSALT ses, "ctxtEN_EBELN-LOW": SA_ALAN_BOSALT ses, "ctxtEN_EBELN-HIGH"
+    SA_ALAN_BOSALT ses, "ctxtEM_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtEM_MATNR-HIGH"
+    SA_ALAN_BOSALT ses, "ctxtS_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtS_MATNR-HIGH"
+    ses.FindById("wnd[0]/usr/ctxtLISTU").Text = "ALV"
+    ses.FindById("wnd[0]").SendVKey 0
+    ses.FindById("wnd[0]/usr/ctxtSELPA-LOW").Text = "WE101"
+    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = ilk
+    ses.FindById("wnd[0]/usr/ctxtS_WERKS-HIGH").Text = son
+    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    Set g = SA_GRID_BUL(ses)
+    If g Is Nothing Then
+        On Error Resume Next
+        sb = ses.FindById("wnd[0]/sbar").Text: tip = ses.FindById("wnd[0]/sbar").MessageType
+        On Error GoTo 0
+        AKSORA_SAP_TESHIS_YAZ "ME2N " & sis & " liste yok: " & sb
+        If tip = "E" Or tip = "A" Then Err.Raise vbObjectError + 9803, , "ME2N (" & sis & "): " & sb
+        Exit Function
+    End If
+    Set kol = SA_KOLONLAR(g, Array( _
+        Array("BELGE", "EBELN", "SATINALMA BELGESI|SAS"), Array("KALEM", "EBELP", "KALEM"), _
+        Array("UY", "WERKS", "UY|URETIM YERI"), Array("DEPO", "LGORT", "DPYR|DEPO YERI"), _
+        Array("SAG", "EKGRP", "SAS G.|SAS GRUBU|SATINALMA GRUBU"), Array("MG", "MATKL", "MAL GRUBU"), _
+        Array("MAL", "EMATN|MATNR", "MALZEME"), Array("TANIM", "TXZ01", "KISA METIN"), _
+        Array("KISI", "SUPERFIELD|NAME1|LIFNR", "SATICI/TESLIMAT YAPAN URT.YERI|SATICI"), _
+        Array("MIKTAR", "MENGE", "SAS MIKTARI|SA SIPARISI MIKTARI"), Array("BIRIM", "MEINS", "SOB|SAS OLCU BIRIMI"), _
+        Array("TARIH", "BEDAT", "BELGE TARIHI"), Array("FIYAT", "NETPR", "NET FIYAT"), _
+        Array("ACIK", "", "TSL.YAPILACAK|TESLIMATI YAPILACAK|TESLIM EDILECEK|TESLIMATI YAPILACAK (MIKTAR)"), _
+        Array("ACIKDEGER", "", "TSL.YPLC.|TESLIMATI YAPILACAK (DEGER)|TESLIM EDILECEK DEGER"), _
+        Array("PB", "WAERS", "PB|PARA BIRIMI")), "ME2N " & sis)
+    If Len(kol("MAL")) = 0 Or Len(kol("UY")) = 0 Or Len(kol("ACIK")) = 0 Then _
+        Err.Raise vbObjectError + 9804, , "ME2N (" & sis & ") listesinde malzeme / üretim yeri / teslim edilecek miktar sütunu bulunamadý (teþhis dosyasýnda sütunlar yazýlý)."
+    Set SA_ME2N = SA_IZGARA_OKU(g, kol, SA_ME2N_ANAHTAR())
+End Function
+
+Private Sub SA_KAYDET(ByVal liste As Collection, ByVal bilgi As String)
+    Dim ws As Worksheet, v() As Variant, i As Long, j As Long, x As Variant
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(SA_KAYIT)
+    On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = SA_KAYIT
+    End If
+    ws.Visible = xlSheetVeryHidden
+    ws.Cells.Clear
+    ws.Range("A1").Value2 = "SA1": ws.Range("B1").Value = Now: ws.Range("C1").Value2 = bilgi
+    If liste.Count > 0 Then
+        ReDim v(1 To liste.Count, 1 To 18)
+        For i = 1 To liste.Count
+            x = liste(i)
+            For j = 0 To UBound(x): v(i, j + 1) = x(j): Next j
+        Next i
+        ws.Range("A3").Resize(liste.Count, 18).NumberFormat = "@"
+        ws.Range("A3").Resize(liste.Count, 18).Value2 = v
+    End If
+End Sub
+
+' Kayit: Array(0 tur T/S, 1 sistem, 2..17 anahtarlar). Talep: BELGE..BASLIK; siparis: BELGE..PB.
+Private Function SA_KAYIT_OKU(ByRef tarih As Date, ByRef bilgi As String) As Collection
+    Dim ws As Worksheet, son As Long, v As Variant, i As Long, j As Long, a() As Variant
+    Set SA_KAYIT_OKU = New Collection
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(SA_KAYIT)
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    If CStr(ws.Range("A1").Value2) <> "SA1" Then Exit Function
+    If IsDate(ws.Range("B1").Value) Then tarih = CDate(ws.Range("B1").Value)
+    bilgi = CStr(ws.Range("C1").Value2)
+    son = AKSORA_SON_SATIR(ws, 1)
+    If son < 3 Then Exit Function
+    v = ws.Range("A3:R" & son).Value2
+    For i = 1 To UBound(v, 1)
+        ReDim a(0 To 17)
+        For j = 1 To 18: a(j - 1) = CStr(v(i, j)): Next j
+        SA_KAYIT_OKU.Add a
+    Next i
+End Function
+
+' SAP'den oku: Yonetim Merkezi "SATINALMA KONTROLU" dugmesi.
+Public Sub AKSORA_SATINALMA_OKU()
+    Dim ac As Boolean, ev As Boolean, sis As Variant, ses As Object, hata As String, liste As Collection, c As Collection
+    Dim x As Variant, a() As Variant, j As Long, bilgi As String, no As Long, metin As String, nT As Long, nS As Long
+    If MsgBox("Açýk satýnalma talepleri (ME5A) ve teslim alýnmamýþ sipariþler (ME2N) CDP ve EPP sistemlerinden okunacak." & vbCrLf & _
+        "SAP'de iki sisteme de giriþ yapýlmýþ olmalýdýr. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | SATINALMA KONTROLÜ") <> vbYes Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "SAP baðlantýsý hazýrlanýyor...", 0.03)
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    Set liste = New Collection
+    For Each sis In Array("CDP", "EPP")
+        hata = vbNullString
+        Set ses = SAP_SESSION_AL(CStr(sis), hata)
+        If ses Is Nothing Then
+            bilgi = bilgi & CStr(sis) & ": SAP oturumu yok (" & hata & ")  "
+        Else
+            AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.1, 0.55), CStr(sis) & "  •  açýk satýnalma talepleri (ME5A)  (SAP yanýtý bekleniyor)"
+            Set c = SA_ME5A(ses, IIf(sis = "CDP", "7151", "7051"), IIf(sis = "CDP", "7155", "7055"), CStr(sis))
+            For Each x In c
+                ReDim a(0 To 17): a(0) = "T": a(1) = sis
+                For j = 0 To UBound(x): a(j + 2) = x(j): Next j
+                liste.Add a: nT = nT + 1
+            Next x
+            AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.3, 0.75), CStr(sis) & "  •  teslim alýnmamýþ sipariþler (ME2N)  (SAP yanýtý bekleniyor)"
+            Set c = SA_ME2N(ses, IIf(sis = "CDP", "7151", "7051"), IIf(sis = "CDP", "7155", "7055"), CStr(sis))
+            For Each x In c
+                ReDim a(0 To 17): a(0) = "S": a(1) = sis
+                For j = 0 To UBound(x): a(j + 2) = x(j): Next j
+                liste.Add a: nS = nS + 1
+            Next x
+            On Error Resume Next
+            ses.SendCommand "/n"
+            On Error GoTo Hata
+            bilgi = bilgi & CStr(sis) & ": tamam  "
+        End If
+    Next sis
+    application.EnableEvents = False
+    SA_KAYDET liste, Trim$(bilgi)
+    application.EnableEvents = ev
+    If ac Then AKSORA_BEKLE_KAPAT
+    MsgBox "Satýnalma kontrolü okundu." & vbCrLf & vbCrLf & "Açýk talep kalemi: " & nT & vbCrLf & "Açýk sipariþ kalemi: " & nS & _
+        vbCrLf & vbCrLf & Trim$(bilgi) & vbCrLf & vbCrLf & "Sonuçlar Yönetim Merkezi'nde; ayrýntý için EXCEL'E AKTAR.", vbInformation, "AKSORA | SATINALMA KONTROLÜ"
+    If ActiveSheet.Name = ADM Then AKSORA_ADMIN_YENILE
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    application.EnableEvents = ev
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Satýnalma kontrolü okunamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA | SATINALMA KONTROLÜ"
+End Sub
+
+' Eslestirme. Donus: Collection of Array(0 tur, 1 sistem, 2 il, 3 UY, 4 depo, 5 belge, 6 kalem, 7 tarih, 8 kisi/satici,
+'   9 malzeme, 10 tanim, 11 acik miktar, 12 birim, 13 ayni il serbest, 14 ayni il atil, 15 transfer ili, 16 transfer miktari,
+'   17 karsilanabilir, 18 stok birim degeri TL, 19 tasarruf TL, 20 belge tutari, 21 PB, 22 durum, 23 not)
+Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
+    Dim tum As Object, atl As Object, c As Collection, bilgi As Variant, x As Variant, r As Variant, il As String, uy As String
+    Dim mal As String, sis As String, miktar As Double, serbest As Double, yuk As Double, atil As Double, bd As Double
+    Dim oIl As String, oMik As Double, il2 As Variant, uy2 As String, s2 As Double, karsi As Double, durum As String, nt As String
+    Dim o As Variant, k As Variant, p As Variant, i As Long, tutar As Double, pb As String, y2 As Double, b2 As Double
+    Set SA_ANALIZ = New Collection
+    If kayit.Count = 0 Then Exit Function
+    Set tum = ATIL_TUM_STOK()
+    Set atl = CreateObject("Scripting.Dictionary"): atl.CompareMode = vbTextCompare
+    If Not ADM_WS(ATIL_KAYIT) Is Nothing Then
+        On Error Resume Next
+        Set c = ATIL_HESAPLA(bilgi)
+        On Error GoTo 0
+        If Not c Is Nothing Then
+            For Each x In c
+                If IsArray(x(20)) Then atl(CStr(x(2)) & "|" & CStr(x(3))) = x(20)(3)
+            Next x
+        End If
+    End If
+    For Each r In kayit
+        i = i + 1: If (i And 63) = 0 Then AKSORA_BEKLE_NABIZ
+        uy = Trim$(CStr(r(4))): mal = Y_KOD_NORM(r(8)): sis = ATIL_SISTEM(uy): il = ATIL_TESIS_IL(uy)
+        If r(0) = "T" Then
+            miktar = SA_SAYI(r(11)): tutar = SA_SAYI(r(15)): pb = CStr(r(16))
+        Else
+            miktar = SA_SAYI(r(15)): tutar = SA_SAYI(r(16)): pb = CStr(r(17))
+        End If
+        serbest = 0: yuk = 0: atil = 0: bd = 0: oIl = vbNullString: oMik = 0: nt = vbNullString
+        If Len(il) > 0 And Len(mal) > 0 Then
+            SA_STOK tum, il, uy & "|" & mal, serbest, yuk, bd
+            If atl.Exists(uy & "|" & mal) Then atil = atl(uy & "|" & mal)
+            For Each il2 In ADM_ILLER()
+                If CStr(il2) <> il Then
+                    uy2 = AKSORA_IL_TESIS(CStr(il2), sis)
+                    s2 = 0: y2 = 0: b2 = -1
+                    SA_STOK tum, CStr(il2), uy2 & "|" & mal, s2, y2, b2
+                    If s2 > oMik Then oMik = s2: oIl = Y_IL_ADI(CStr(il2))
+                End If
+            Next il2
+            If bd <= 0 Then bd = SA_BIRIM_DEGER(tum, sis, mal)
+        End If
+        If atil > 0.0005 Then
+            karsi = application.Min(miktar, atil): durum = "ATIL STOKTAN KARÞILANIR"
+        ElseIf serbest > 0.0005 Then
+            karsi = application.Min(miktar, serbest): durum = "AYNI ÝLDE STOK VAR"
+        ElseIf oMik > 0.0005 Then
+            karsi = application.Min(miktar, oMik): durum = "TRANSFER EDÝLEBÝLÝR"
+        Else
+            karsi = 0: durum = "STOK YOK"
+        End If
+        If miktar <= 0.0005 Then durum = "STOK YOK": karsi = 0
+        If yuk > 0.0005 Then nt = "Yüklenici depolarýnda " & AKSORA_SAYI_METNI(yuk, "#,##0.###") & " " & CStr(r(12)) & " var"
+        If r(0) = "T" Then
+            If Len(CStr(r(14))) > 0 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Kýsmen sipariþte: " & CStr(r(14)))
+        End If
+        SA_ANALIZ.Add Array(r(0), r(1), Y_IL_ADI(il), uy, r(5), r(2), r(3), r(13), r(10), r(8), r(9), miktar, r(12), _
+            serbest, atil, oIl, oMik, karsi, Round(bd, 4), Round(karsi * bd, 2), tutar, pb, durum, nt)
+    Next r
+End Function
+
+Private Function SA_SAYI(ByVal v As Variant) As Double
+    Dim x As Double
+    If ATIL_SAYI_DENE(v, x) Then SA_SAYI = x
+End Function
+
+' Ilin serbest (D / K depolari) ve yuklenici stogu; birim deger (TL).
+Private Sub SA_STOK(ByVal tum As Object, ByVal il As String, ByVal k As String, ByRef serbest As Double, ByRef yuk As Double, _
+    ByRef bd As Double)
+    Dim s As Object, o As Variant, dp As Object, d As Variant
+    If Not tum.Exists(il) Then Exit Sub
+    Set s = tum(il)(0)
+    If Not s.Exists(k) Then Exit Sub
+    o = s(k)
+    Set dp = o(5)
+    For Each d In dp.keys
+        If ATIL_DEPO_MI(CStr(d)) Then serbest = serbest + dp(d)(1) Else yuk = yuk + dp(d)(1)
+    Next d
+    If bd >= 0 And o(0) > 0 Then bd = o(1) / o(0)
+End Sub
+
+Private Function SA_BIRIM_DEGER(ByVal tum As Object, ByVal sis As String, ByVal mal As String) As Double
+    Dim il As Variant, k As String, o As Variant, s As Object
+    For Each il In ADM_ILLER()
+        If tum.Exists(CStr(il)) Then
+            Set s = tum(CStr(il))(0)
+            k = AKSORA_IL_TESIS(CStr(il), sis) & "|" & mal
+            If s.Exists(k) Then
+                o = s(k)
+                If o(0) > 0 Then SA_BIRIM_DEGER = o(1) / o(0): Exit Function
+            End If
+        End If
+    Next il
+End Function
+
+' Excel: Ozet, Acik Talepler, Acik Siparisler (masaustu).
+Public Sub AKSORA_SATINALMA_EXCEL()
+    Dim kayit As Collection, an As Collection, tarih As Date, bilgi As String, wb As Workbook, ac As Boolean, ev As Boolean
+    Dim veri() As Variant, x As Variant, n As Long, i As Long, j As Long, anah() As String, idx() As Long, tur As Variant
+    Dim ust As String, sonuc As String, no As Long, metin As String, c As Worksheet, hz As Range, oz As Object, il As Variant
+    Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 6) As Double
+    Set kayit = SA_KAYIT_OKU(tarih, bilgi)
+    If kayit.Count = 0 Then MsgBox "Önce SATINALMA KONTROLÜ ile SAP'den okuyun.", vbInformation, "AKSORA": Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "Stok ve atýl stokla eþleþtiriliyor...", 0.1)
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set an = SA_ANALIZ(kayit)
+    AKSORA_BEKLE_ILERLE 0.7, "Excel hazýrlanýyor..."
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    wb.Worksheets.Add After:=wb.Worksheets(1)
+    wb.Worksheets.Add After:=wb.Worksheets(2)
+    ' Ozet (il bazinda)
+    Set oz = CreateObject("Scripting.Dictionary")
+    For Each il In ADM_ILLER(): oz(Y_IL_ADI(CStr(il))) = Array(0#, 0#, 0#, 0#, 0#, 0#): Next il
+    For Each x In an
+        If oz.Exists(x(2)) Then
+            t = oz(x(2))
+            sira = IIf(x(0) = "T", 0, 3)
+            t(sira) = t(sira) + 1
+            If x(17) > 0.0005 Then t(sira + 1) = t(sira + 1) + 1: t(sira + 2) = t(sira + 2) + x(19)
+            oz(x(2)) = t
+        End If
+    Next x
+    ReDim veri(1 To oz.Count + 1, 1 To 7)
+    i = 0
+    For Each kk In oz.keys
+        i = i + 1: t = oz(kk): veri(i, 1) = kk
+        For j = 0 To 5: veri(i, j + 2) = t(j): toplam(j + 1) = toplam(j + 1) + t(j): Next j
+    Next kk
+    i = i + 1: veri(i, 1) = "TOPLAM"
+    For j = 1 To 6: veri(i, j + 1) = toplam(j): Next j
+    ust = "SATINALMA KONTROLÜ  |  Özet  |  SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn")
+    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA c, Array("Ýl", "Açýk talep kalemi", "Stoktan karþýlanabilir (talep)", "Talep tasarrufu (TL)", _
+        "Açýk sipariþ kalemi", "Stoktan karþýlanabilir (sipariþ)", "Sipariþ tasarrufu (TL)"), veri, i, Array(14, 14, 18, 20, 14, 18, 20), _
+        Array("@", "General", "General", "#,##0.00 ""TL""", "General", "General", "#,##0.00 ""TL"""), _
+        Array(xlLeft, xlCenter, xlCenter, xlRight, xlCenter, xlCenter, xlRight), ust, _
+        "Tasarruf: stoktan karþýlanabilen miktar x AKSORA stok birim deðeri", "Özet", Empty
+    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Font.bold = True
+    c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Interior.Color = RGB(226, 236, 247)
+    ' Talepler ve siparisler (durum onceligi, sonra tasarruf buyukten kucuge)
+    For Each tur In Array("T", "S")
+        n = 0
+        For Each x In an
+            If x(0) = tur Then n = n + 1
+        Next x
+        Set c = wb.Worksheets(IIf(tur = "T", 2, 3))
+        If n = 0 Then
+            ReDim veri(1 To 1, 1 To 20): veri(1, 10) = "Açýk kayýt yok.": n = 1
+        Else
+            ReDim anah(1 To n): ReDim idx(1 To n): ReDim veri(1 To n, 1 To 20)
+            i = 0
+            For Each x In an
+                If x(0) = tur Then
+                    i = i + 1: idx(i) = i
+                    veri(i, 1) = x(22): veri(i, 2) = x(2): veri(i, 3) = x(3): veri(i, 4) = x(4): veri(i, 5) = x(5): veri(i, 6) = x(6)
+                    veri(i, 7) = x(7): veri(i, 8) = x(8): veri(i, 9) = x(9): veri(i, 10) = x(10): veri(i, 11) = x(11): veri(i, 12) = x(12)
+                    veri(i, 13) = x(13): veri(i, 14) = x(14): veri(i, 15) = x(15): veri(i, 16) = x(16): veri(i, 17) = x(17)
+                    veri(i, 18) = x(19): veri(i, 19) = x(20): veri(i, 20) = x(21) & IIf(Len(x(23)) > 0, "  •  " & x(23), "")
+                    anah(i) = SA_DURUM_SIRA(CStr(x(22))) & I_SIRA_ANAHTAR(CDbl(x(19)))
+                End If
+            Next x
+            Y_SIRALA anah, idx, 1, n
+            Dim s2() As Variant
+            ReDim s2(1 To n, 1 To 20)
+            For i = 1 To n
+                For j = 1 To 20: s2(i, j) = veri(idx(i), j): Next j
+            Next i
+            veri = s2
+        End If
+        ust = "SATINALMA KONTROLÜ  |  " & IIf(tur = "T", "Açýk satýnalma talepleri (ME5A)", "Teslim alýnmamýþ sipariþler (ME2N)") & _
+            "  |  SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn")
+        AKSORA_EXCEL_SAYFA c, Array("Durum", "Ýl", "ÜY", "Depo", IIf(tur = "T", "Talep no", "Sipariþ no"), "Kalem", _
+            IIf(tur = "T", "Talep tarihi", "Belge tarihi"), IIf(tur = "T", "Talep eden", "Satýcý"), "Malzeme", "Kýsa metin", _
+            IIf(tur = "T", "Talep miktarý", "Teslim edilecek"), "Birim", "Ayný ilde serbest stok", "Ayný ilde atýl stok", _
+            "Transfer ili", "Transfer miktarý", "Karþýlanabilir", "Tasarruf (TL)", IIf(tur = "T", "Talep tutarý", "Açýk tutar"), "PB / not"), _
+            veri, n, Array(24, 11, 7, 7, 12, 7, 11, 20, 13, 40, 11, 7, 12, 12, 11, 11, 12, 16, 15, 30), _
+            Array("@", "@", "@", "@", "@", "@", "@", "@", "0", "@", "General", "@", "General", "General", "@", "General", "General", _
+                "#,##0.00 ""TL""", "General", "@"), _
+            Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlRight, xlCenter, _
+                xlRight, xlRight, xlCenter, xlRight, xlRight, xlRight, xlRight, xlLeft), ust, _
+            "Kýrmýzý: atýl stoktan karþýlanýr  |  Turuncu: ayný ilde stok var  |  Sarý: baþka ilden transfer edilebilir", _
+            IIf(tur = "T", "Açýk Talepler", "Açýk Sipariþler"), Empty
+        ' Belge tutari SAP para biriminde (PB sutunu); TL disi olabilir, TL eki yalniz TL satirlarda.
+        For i = 1 To n
+            Set hz = c.Cells(i + 4, 1)
+            Select Case CStr(hz.Value2)
+                Case "ATIL STOKTAN KARÞILANIR": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = vbWhite: hz.Font.bold = True
+                Case "AYNI ÝLDE STOK VAR": hz.Interior.Color = RGB(253, 186, 116): hz.Font.Color = RGB(124, 45, 18): hz.Font.bold = True
+                Case "TRANSFER EDÝLEBÝLÝR": hz.Interior.Color = RGB(254, 240, 138): hz.Font.Color = RGB(113, 63, 18): hz.Font.bold = True
+            End Select
+            ' Belge tutari SAP para biriminde: TRY -> TL, digerleri kendi para birimiyle (USD, EUR...).
+            t = Trim$(Split(CStr(c.Cells(i + 4, 20).Value2) & " ", " ")(0))
+            If t = "TRY" Or t = "TL" Or Len(t) = 0 Then
+                c.Cells(i + 4, 19).NumberFormat = "#,##0.00 ""TL"""
+            Else
+                c.Cells(i + 4, 19).NumberFormat = "#,##0.00 """ & t & """"
+            End If
+        Next i
+    Next tur
+    wb.Worksheets(1).Activate
+    sonuc = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("Satýnalma Kontrolü - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(sonuc) > 0 Then application.StatusBar = "Masaüstüne kaydedildi: " & sonuc
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Satýnalma kontrolü Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+Private Function SA_DURUM_SIRA(ByVal d As String) As String
+    Select Case d
+        Case "ATIL STOKTAN KARÞILANIR": SA_DURUM_SIRA = "1"
+        Case "AYNI ÝLDE STOK VAR": SA_DURUM_SIRA = "2"
+        Case "TRANSFER EDÝLEBÝLÝR": SA_DURUM_SIRA = "3"
+        Case Else: SA_DURUM_SIRA = "4"
+    End Select
+End Function
+
+' Yonetim Merkezi bolumu: il bazinda acik talep / siparis ve stoktan karsilanabilir tutar.
+Private Function ADM_SA_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl As String) As Long
+    Dim kayit As Collection, an As Collection, tarih As Date, bilgi As String, x As Variant, p As Long, iller As Variant, ilk As Long
+    Dim v(0 To 4, 0 To 5) As Double, j As Long, durum As String
+    ADM_SA_CIZ = r
+    On Error GoTo Hata
+    Set kayit = SA_KAYIT_OKU(tarih, bilgi)
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 9), "SATINALMA KONTROLÜ   (ME5A açýk talepler • ME2N teslim alýnmamýþ sipariþler • stok ve atýl stokla)"
+    ADM_DUGME ws, "ADM_SA_OKU", "SAP'DEN OKU", ws.Cells(r, 10).Left + 2, RGB(20, 103, 173), "AKSORA_SATINALMA_OKU", 1.1, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
+    ADM_DUGME ws, "ADM_SA_EXCEL", "EXCEL'E AKTAR", ws.Cells(r, 12).Left - 6, RGB(33, 115, 70), "AKSORA_SATINALMA_EXCEL", 1.3, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
+    r = r + 1
+    If kayit.Count = 0 Then
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Henüz okunmadý: SAP'DEN OKU ile açýk talepler ve sipariþler alýnýr; stoktan karþýlanabilenler burada görünür.", _
+            RGB(244, 248, 252), RGB(71, 85, 105), 9, False, xlLeft
+        ADM_SA_CIZ = r
+        Exit Function
+    End If
+    ADM_ILERLE 0.97, "Satýnalma kontrolü eþleþtiriliyor..."
+    Set an = SA_ANALIZ(kayit)
+    iller = ADM_ILLER()
+    For Each x In an
+        For p = 0 To 4
+            If x(2) = Y_IL_ADI(CStr(iller(p))) Then Exit For
+        Next p
+        If p <= 4 Then
+            j = IIf(x(0) = "T", 0, 3)
+            v(p, j) = v(p, j) + 1
+            If x(17) > 0.0005 Then v(p, j + 1) = v(p, j + 1) + 1: v(p, j + 2) = v(p, j + 2) + x(19)
+        End If
+    Next x
+    ilk = r
+    ADM_BASLIKLAR ws, r, 2, Array("Ýl", "Açýk talep", "Stoktan karþýlanabilir", "Talep tasarrufu", "", "Açýk sipariþ", _
+        "Stoktan karþýlanabilir", "Sipariþ tasarrufu", "", "Toplam tasarruf", "", "Durum")
+    ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 9, r, 10)).Merge: ws.Range(ADM_ADRES(r, 11, r, 12)).Merge
+    For p = 0 To 4
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(CStr(iller(p)) = secIl, RGB(226, 236, 247), vbWhite)
+        ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 9, r, 10)).Merge: ws.Range(ADM_ADRES(r, 11, r, 12)).Merge
+        ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(iller(p))): ws.Cells(r, 2).Font.bold = True
+        ws.Cells(r, 3).Value2 = v(p, 0): ws.Cells(r, 4).Value2 = v(p, 1): ws.Cells(r, 5).Value2 = Round(v(p, 2), 2)
+        ws.Cells(r, 7).Value2 = v(p, 3): ws.Cells(r, 8).Value2 = v(p, 4): ws.Cells(r, 9).Value2 = Round(v(p, 5), 2)
+        ws.Cells(r, 11).Value2 = Round(v(p, 2) + v(p, 5), 2)
+        If v(p, 1) + v(p, 4) > 0 Then durum = "KARÞILANABÝLÝR" Else durum = IIf(v(p, 0) + v(p, 3) > 0, "STOK YOK", "AÇIK KAYIT YOK")
+        ws.Cells(r, 13).Value2 = durum
+    Next p
+    r = r + 1
+    ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 9, r, 10)).Merge: ws.Range(ADM_ADRES(r, 11, r, 12)).Merge
+    ws.Cells(r, 2).Value2 = "TOPLAM"
+    For Each x In Array(3, 4, 5, 7, 8, 9, 11)
+        ws.Cells(r, CLng(x)).Formula = "=SUM(" & ADM_ADRES(ilk + 1, CLng(x), r - 1, CLng(x)) & ")"
+    Next x
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
+    ws.Range(ADM_ADRES(ilk + 1, 2, r, 13)).HorizontalAlignment = xlCenter
+    For Each x In Array(5, 9, 11)
+        ws.Range(ADM_ADRES(ilk + 1, CLng(x), r, CLng(x))).NumberFormat = "#,##0.00 ""TL"""
+    Next x
+    ws.Range(ADM_ADRES(ilk + 1, 11, r, 11)).Font.Color = RGB(21, 128, 61)
+    ws.Range(ADM_ADRES(ilk + 1, 2, r, 13)).ShrinkToFit = True
+    Y_DURUM_KF ws.Range(ADM_ADRES(ilk + 1, 13, r - 1, 13)), "KARÞILANABÝLÝR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF ws.Range(ADM_ADRES(ilk + 1, 13, r - 1, 13)), "STOK YOK", RGB(241, 245, 249), RGB(100, 116, 139)
+    ADM_KENAR ws.Range(ADM_ADRES(ilk, 2, r, 13)), True
+    r = r + 1
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn") & "  •  " & bilgi & _
+        "  •  Tasarruf: stoktan karþýlanabilen miktar x AKSORA stok birim deðeri (ayný sistem: CDP / EPP).", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    ws.Cells(r, 2).Font.Italic = True
+    ADM_SA_CIZ = r
+    Exit Function
+Hata:
+    On Error Resume Next
+    r = r + 1
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Satýnalma kontrolü hesaplanamadý: " & Err.Description, RGB(254, 243, 199), RGB(146, 64, 14), 9, False, xlLeft
+    ADM_SA_CIZ = r
 End Function

@@ -589,6 +589,20 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   (HWND_TOP). Eskiden pencere z-sırasında alta gidiyordu, başka pencere yoksa hiçbir şey olmamış gibi görünüyordu.
 - NABIZ eşiği 0,5 → 0,25 sn. Taban: up35.
 
+## 03.11.2026 – SATINALMA KONTROLÜ (ME5A + ME2N) – ilk sürüm
+- Kullanıcı tercihi: yanıtlarda açıklama yok, yalnız "Yap:" adımları.
+- Yönetim Merkezi'nde atıl bölümünden sonra "SATINALMA KONTROLÜ" bölümü (ADM_SA_CIZ) + düğmeler SAP'DEN OKU
+  (AKSORA_SATINALMA_OKU) ve EXCEL'E AKTAR (AKSORA_SATINALMA_EXCEL).
+- SAP: CDP oturumu ÜY 7151-7155, EPP 7051-7055. ME5A: StartTransaction, S_WERKS-LOW/HIGH, F8, ızgara cntlGRID1.
+  ME2N: LISTU=ALV + Enter, SELPA-LOW=WE101, S_WERKS, F8. Malzeme/talep/sipariş no alanları önce boşaltılır (SET/GET MAT).
+  Sütunlar id ya da başlıkla eşlenir (SA_KOLONLAR); tüm sütunlar teşhise yazılır. ME2N açık miktar başlığı "TSL.YAPILACAK".
+- Kayıt: _SATINALMA (A1 SA1, B1 okuma zamanı, 3. satırdan T/S, sistem, 16 alan).
+- Eşleştirme (SA_ANALIZ): aynı sistem; aynı il serbest (D/K, ATIL_TUM_STOK depolar), atıl miktar (ATIL_HESAPLA x(20)(3)),
+  diğer illerden en yüksek serbest stok (transfer). Durum önceliği: ATIL > AYNI İLDE > TRANSFER > STOK YOK.
+  Tasarruf = karşılanabilir × AKSORA stok birim değeri (TL). Belge tutarı kendi PB'si ile.
+- Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
+- Admin atıl tutarları "#,##0.00 TL" (altın kural).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
