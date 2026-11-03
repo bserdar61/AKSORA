@@ -600,6 +600,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Eşleştirme (SA_ANALIZ): aynı sistem; aynı il serbest (D/K, ATIL_TUM_STOK depolar), atıl miktar (ATIL_HESAPLA x(20)(3)),
   diğer illerden en yüksek serbest stok (transfer). Durum önceliği: ATIL > AYNI İLDE > TRANSFER > STOK YOK.
   Tasarruf = karşılanabilir × AKSORA stok birim değeri (TL). Belge tutarı kendi PB'si ile.
+- DOĞRULUK DÜZELTMESİ (03.11 ilk sonuç 291 mn TL şişkindi): aynı stok birden çok kaleme yazılıyordu ve serbest (çalışan)
+  stok tasarruf sayılıyordu. Yeni kural: tasarruf YALNIZ atıl stoktan, paylaştırmalı havuz (önce aynı il, sonra diğer illerin
+  atılı en büyükten; talepler önce, sonra siparişler); serbest stok yalnız bilgi; stok birimi farklıysa eşleşmez.
+  Durumlar: ATIL STOKTAN KARŞILANIR / BAŞKA İLİN ATIL STOĞUNDAN / AYNI İLDE SERBEST STOK VAR / BAŞKA İLDE SERBEST STOK VAR / STOK YOK.
+  SAP okurken CoRegisterMessageFilter 0 ile 'OLE eylemi bekleniyor' penceresi bastırılır, sonra eski filtre geri yüklenir.
+  ME2N sipariş no boş: liste belgeye göre gruplu; kullanıcı düzende 'Satınalma belgesi' sütununu açıp varsayılan kaydetmeli.
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
 - DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.

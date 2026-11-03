@@ -33,6 +33,7 @@ Private Type ADMW_RECT
     Right As Long
     Bottom As Long
 End Type
+Private Declare PtrSafe Function ADMW_CoRegisterMessageFilter Lib "ole32" Alias "CoRegisterMessageFilter" (ByVal lFilterIn As LongPtr, ByRef lPreviousFilter As LongPtr) As Long
 Private Declare PtrSafe Function ADMW_SetTimer Lib "user32" Alias "SetTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr, ByVal uElapse As Long, ByVal lpTimerFunc As LongPtr) As LongPtr
 Private Declare PtrSafe Function ADMW_KillTimer Lib "user32" Alias "KillTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr) As Long
 Private Declare PtrSafe Function ADMW_FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As LongPtr
@@ -11494,10 +11495,13 @@ End Function
 Public Sub AKSORA_SATINALMA_OKU()
     Dim ac As Boolean, ev As Boolean, sis As Variant, ses As Object, hata As String, liste As Collection, c As Collection
     Dim x As Variant, a() As Variant, j As Long, bilgi As String, no As Long, metin As String, nT As Long, nS As Long
+    Dim oncekiFiltre As LongPtr, bosFiltre As LongPtr
     If MsgBox("Açýk satýnalma talepleri (ME5A) ve teslim alýnmamýþ sipariþler (ME2N) CDP ve EPP sistemlerinden okunacak." & vbCrLf & _
         "SAP'de iki sisteme de giriþ yapýlmýþ olmalýdýr. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | SATINALMA KONTROLÜ") <> vbYes Then Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "SAP baðlantýsý hazýrlanýyor...", 0.03)
     ev = application.EnableEvents
+    ' Uzun SAP raporunda "Excel bir OLE eylemini ... bekliyor" penceresi cikmasin (mesaj filtresi gecici kapatilir).
+    ADMW_CoRegisterMessageFilter 0, oncekiFiltre
     On Error GoTo Hata
     Set liste = New Collection
     For Each sis In Array("CDP", "EPP")
@@ -11526,6 +11530,7 @@ Public Sub AKSORA_SATINALMA_OKU()
             bilgi = bilgi & CStr(sis) & ": tamam  "
         End If
     Next sis
+    ADMW_CoRegisterMessageFilter oncekiFiltre, bosFiltre
     application.EnableEvents = False
     SA_KAYDET liste, Trim$(bilgi)
     application.EnableEvents = ev
@@ -11537,73 +11542,122 @@ Public Sub AKSORA_SATINALMA_OKU()
 Hata:
     no = Err.Number: metin = Err.Description
     On Error Resume Next
+    ADMW_CoRegisterMessageFilter oncekiFiltre, bosFiltre
     application.EnableEvents = ev
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     MsgBox "Satýnalma kontrolü okunamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA | SATINALMA KONTROLÜ"
 End Sub
 
-' Eslestirme. Donus: Collection of Array(0 tur, 1 sistem, 2 il, 3 UY, 4 depo, 5 belge, 6 kalem, 7 tarih, 8 kisi/satici,
+' Eslestirme. Tasarruf YALNIZ atil stoktan: once ayni ilin atil stogu, sonra ayni sistemde diger illerin atil stogu.
+' Atil miktar kalemler arasinda paylastirilir (ayni stok iki kez sayilmaz); talepler once, sonra siparisler.
+' Serbest (calisan) stok bilgi olarak gosterilir, tasarrufa katilmaz. Stok birimi farkliysa eslestirilmez.
+' Donus: Collection of Array(0 tur, 1 sistem, 2 il, 3 UY, 4 depo, 5 belge, 6 kalem, 7 tarih, 8 kisi/satici,
 '   9 malzeme, 10 tanim, 11 acik miktar, 12 birim, 13 ayni il serbest, 14 ayni il atil, 15 transfer ili, 16 transfer miktari,
-'   17 karsilanabilir, 18 stok birim degeri TL, 19 tasarruf TL, 20 belge tutari, 21 PB, 22 durum, 23 not)
+'   17 karsilanabilir (atil), 18 stok birim degeri TL, 19 tasarruf TL, 20 belge tutari, 21 PB, 22 durum, 23 not)
 Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
-    Dim tum As Object, atl As Object, c As Collection, bilgi As Variant, x As Variant, r As Variant, il As String, uy As String
+    Dim tum As Object, havuz As Object, c As Collection, bilgi As Variant, x As Variant, r As Variant, il As String, uy As String
     Dim mal As String, sis As String, miktar As Double, serbest As Double, yuk As Double, atil As Double, bd As Double
     Dim oIl As String, oMik As Double, il2 As Variant, uy2 As String, s2 As Double, karsi As Double, durum As String, nt As String
-    Dim o As Variant, k As Variant, p As Variant, i As Long, tutar As Double, pb As String, y2 As Double, b2 As Double
+    Dim i As Long, tutar As Double, pb As String, y2 As Double, b2 As Double, tur As Variant, ihtiyac As Double, a1 As Double
+    Dim al As Double, enIl As String, enMik As Double, sIl As String, sMik As Double, stBirim As String, k As String, o As Variant
     Set SA_ANALIZ = New Collection
     If kayit.Count = 0 Then Exit Function
     Set tum = ATIL_TUM_STOK()
-    Set atl = CreateObject("Scripting.Dictionary"): atl.CompareMode = vbTextCompare
+    Set havuz = CreateObject("Scripting.Dictionary"): havuz.CompareMode = vbTextCompare
     If Not ADM_WS(ATIL_KAYIT) Is Nothing Then
         On Error Resume Next
         Set c = ATIL_HESAPLA(bilgi)
         On Error GoTo 0
         If Not c Is Nothing Then
             For Each x In c
-                If IsArray(x(20)) Then atl(CStr(x(2)) & "|" & CStr(x(3))) = x(20)(3)
+                If IsArray(x(20)) Then If x(20)(3) > 0.0005 Then havuz(CStr(x(2)) & "|" & CStr(x(3))) = CDbl(x(20)(3))
             Next x
         End If
     End If
-    For Each r In kayit
-        i = i + 1: If (i And 63) = 0 Then AKSORA_BEKLE_NABIZ
-        uy = Trim$(CStr(r(4))): mal = Y_KOD_NORM(r(8)): sis = ATIL_SISTEM(uy): il = ATIL_TESIS_IL(uy)
-        If r(0) = "T" Then
-            miktar = SA_SAYI(r(11)): tutar = SA_SAYI(r(15)): pb = CStr(r(16))
-        Else
-            miktar = SA_SAYI(r(15)): tutar = SA_SAYI(r(16)): pb = CStr(r(17))
-        End If
-        serbest = 0: yuk = 0: atil = 0: bd = 0: oIl = vbNullString: oMik = 0: nt = vbNullString
-        If Len(il) > 0 And Len(mal) > 0 Then
-            SA_STOK tum, il, uy & "|" & mal, serbest, yuk, bd
-            If atl.Exists(uy & "|" & mal) Then atil = atl(uy & "|" & mal)
-            For Each il2 In ADM_ILLER()
-                If CStr(il2) <> il Then
-                    uy2 = AKSORA_IL_TESIS(CStr(il2), sis)
-                    s2 = 0: y2 = 0: b2 = -1
-                    SA_STOK tum, CStr(il2), uy2 & "|" & mal, s2, y2, b2
-                    If s2 > oMik Then oMik = s2: oIl = Y_IL_ADI(CStr(il2))
+    For Each tur In Array("T", "S")
+        For Each r In kayit
+            If r(0) = tur Then
+                i = i + 1: If (i And 63) = 0 Then AKSORA_BEKLE_NABIZ
+                uy = Trim$(CStr(r(4))): mal = Y_KOD_NORM(r(8)): sis = ATIL_SISTEM(uy): il = ATIL_TESIS_IL(uy)
+                If tur = "T" Then
+                    miktar = SA_SAYI(r(11)): tutar = SA_SAYI(r(15)): pb = CStr(r(16))
+                Else
+                    miktar = SA_SAYI(r(15)): tutar = SA_SAYI(r(16)): pb = CStr(r(17))
                 End If
-            Next il2
-            If bd <= 0 Then bd = SA_BIRIM_DEGER(tum, sis, mal)
+                serbest = 0: yuk = 0: atil = 0: bd = 0: oIl = vbNullString: oMik = 0: nt = vbNullString: karsi = 0
+                sIl = vbNullString: sMik = 0: stBirim = vbNullString
+                If Len(il) > 0 And Len(mal) > 0 And miktar > 0.0005 Then
+                    k = uy & "|" & mal
+                    SA_STOK tum, il, k, serbest, yuk, bd
+                    stBirim = SA_STOK_BIRIM(tum, sis, mal)
+                    If bd <= 0 Then bd = SA_BIRIM_DEGER(tum, sis, mal)
+                    If havuz.Exists(k) Then atil = havuz(k)
+                    If Len(stBirim) > 0 And UCase$(stBirim) <> UCase$(Trim$(CStr(r(12)))) Then
+                        nt = "Birim farklý (talep " & CStr(r(12)) & ", stok " & stBirim & "): eþleþtirilmedi"
+                    Else
+                        ' 1) ayni ilin atil stogu
+                        ihtiyac = miktar
+                        a1 = application.Min(ihtiyac, atil)
+                        If a1 > 0.0005 Then havuz(k) = atil - a1: ihtiyac = ihtiyac - a1: karsi = a1
+                        ' 2) diger illerin atil stogu (en buyukten), paylastirmali
+                        Do While ihtiyac > 0.0005
+                            enIl = vbNullString: enMik = 0
+                            For Each il2 In ADM_ILLER()
+                                If CStr(il2) <> il Then
+                                    uy2 = AKSORA_IL_TESIS(CStr(il2), sis) & "|" & mal
+                                    If havuz.Exists(uy2) Then If havuz(uy2) > enMik Then enMik = havuz(uy2): enIl = CStr(il2)
+                                End If
+                            Next il2
+                            If enMik <= 0.0005 Then Exit Do
+                            al = application.Min(ihtiyac, enMik)
+                            havuz(AKSORA_IL_TESIS(enIl, sis) & "|" & mal) = enMik - al
+                            ihtiyac = ihtiyac - al: oMik = oMik + al: karsi = karsi + al
+                            If Len(oIl) = 0 Then oIl = Y_IL_ADI(enIl) Else If InStr(oIl, Y_IL_ADI(enIl)) = 0 Then oIl = oIl & ", " & Y_IL_ADI(enIl)
+                        Loop
+                    End If
+                    ' Serbest stok (bilgi): diger illerde en buyuk
+                    For Each il2 In ADM_ILLER()
+                        If CStr(il2) <> il Then
+                            s2 = 0: y2 = 0: b2 = -1
+                            SA_STOK tum, CStr(il2), AKSORA_IL_TESIS(CStr(il2), sis) & "|" & mal, s2, y2, b2
+                            If s2 > sMik Then sMik = s2: sIl = Y_IL_ADI(CStr(il2))
+                        End If
+                    Next il2
+                End If
+                If karsi > 0.0005 And oMik <= 0.0005 Then
+                    durum = "ATIL STOKTAN KARÞILANIR"
+                ElseIf karsi > 0.0005 Then
+                    durum = IIf(karsi - oMik > 0.0005, "ATIL STOKTAN KARÞILANIR", "BAÞKA ÝLÝN ATIL STOÐUNDAN")
+                ElseIf serbest > 0.0005 Then
+                    durum = "AYNI ÝLDE SERBEST STOK VAR"
+                ElseIf sMik > 0.0005 Then
+                    durum = "BAÞKA ÝLDE SERBEST STOK VAR"
+                Else
+                    durum = "STOK YOK"
+                End If
+                If durum = "BAÞKA ÝLDE SERBEST STOK VAR" Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & sIl & ": " & ADM_ADET(sMik) & " " & CStr(r(12)) & " serbest")
+                If yuk > 0.0005 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Yüklenici depolarýnda " & ADM_ADET(yuk) & " " & CStr(r(12)))
+                If tur = "T" Then
+                    If Len(CStr(r(14))) > 0 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Kýsmen sipariþte: " & CStr(r(14)))
+                End If
+                SA_ANALIZ.Add Array(r(0), r(1), Y_IL_ADI(il), uy, r(5), r(2), r(3), r(13), r(10), r(8), r(9), miktar, r(12), _
+                    serbest, atil, oIl, oMik, karsi, Round(bd, 4), Round(karsi * bd, 2), tutar, pb, durum, nt)
+            End If
+        Next r
+    Next tur
+End Function
+
+' Stok birimi (ayni sistemde malzemenin stokta oldugu ilk ilden).
+Private Function SA_STOK_BIRIM(ByVal tum As Object, ByVal sis As String, ByVal mal As String) As String
+    Dim il As Variant, k As String, s As Object
+    For Each il In ADM_ILLER()
+        If tum.Exists(CStr(il)) Then
+            Set s = tum(CStr(il))(0)
+            k = AKSORA_IL_TESIS(CStr(il), sis) & "|" & mal
+            If s.Exists(k) Then SA_STOK_BIRIM = Trim$(CStr(s(k)(2))): If Len(SA_STOK_BIRIM) > 0 Then Exit Function
         End If
-        If atil > 0.0005 Then
-            karsi = application.Min(miktar, atil): durum = "ATIL STOKTAN KARÞILANIR"
-        ElseIf serbest > 0.0005 Then
-            karsi = application.Min(miktar, serbest): durum = "AYNI ÝLDE STOK VAR"
-        ElseIf oMik > 0.0005 Then
-            karsi = application.Min(miktar, oMik): durum = "TRANSFER EDÝLEBÝLÝR"
-        Else
-            karsi = 0: durum = "STOK YOK"
-        End If
-        If miktar <= 0.0005 Then durum = "STOK YOK": karsi = 0
-        If yuk > 0.0005 Then nt = "Yüklenici depolarýnda " & AKSORA_SAYI_METNI(yuk, "#,##0.###") & " " & CStr(r(12)) & " var"
-        If r(0) = "T" Then
-            If Len(CStr(r(14))) > 0 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Kýsmen sipariþte: " & CStr(r(14)))
-        End If
-        SA_ANALIZ.Add Array(r(0), r(1), Y_IL_ADI(il), uy, r(5), r(2), r(3), r(13), r(10), r(8), r(9), miktar, r(12), _
-            serbest, atil, oIl, oMik, karsi, Round(bd, 4), Round(karsi * bd, 2), tutar, pb, durum, nt)
-    Next r
+    Next il
 End Function
 
 Private Function SA_SAYI(ByVal v As Variant) As Double
@@ -11679,11 +11733,11 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     For j = 1 To 6: veri(i, j + 1) = toplam(j): Next j
     ust = "SATINALMA KONTROLÜ  |  Özet  |  SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn")
     Set c = wb.Worksheets(1)
-    AKSORA_EXCEL_SAYFA c, Array("Ýl", "Açýk talep kalemi", "Stoktan karþýlanabilir (talep)", "Talep tasarrufu (TL)", _
-        "Açýk sipariþ kalemi", "Stoktan karþýlanabilir (sipariþ)", "Sipariþ tasarrufu (TL)"), veri, i, Array(14, 14, 18, 20, 14, 18, 20), _
+    AKSORA_EXCEL_SAYFA c, Array("Ýl", "Açýk talep kalemi", "Atýl stoktan karþýlanabilir (talep)", "Talep tasarrufu (TL)", _
+        "Açýk sipariþ kalemi", "Atýl stoktan karþýlanabilir (sipariþ)", "Sipariþ tasarrufu (TL)"), veri, i, Array(14, 14, 18, 20, 14, 18, 20), _
         Array("@", "General", "General", "#,##0.00 ""TL""", "General", "General", "#,##0.00 ""TL"""), _
         Array(xlLeft, xlCenter, xlCenter, xlRight, xlCenter, xlCenter, xlRight), ust, _
-        "Tasarruf: stoktan karþýlanabilen miktar x AKSORA stok birim deðeri", "Özet", Empty
+        "Tasarruf: atýl stoktan karþýlanabilen miktar (paylaþtýrmalý) x AKSORA stok birim deðeri", "Özet", Empty
     c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Font.bold = True
     c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 7)).Interior.Color = RGB(226, 236, 247)
     ' Talepler ve siparisler (durum onceligi, sonra tasarruf buyukten kucuge)
@@ -11721,21 +11775,21 @@ Public Sub AKSORA_SATINALMA_EXCEL()
         AKSORA_EXCEL_SAYFA c, Array("Durum", "Ýl", "ÜY", "Depo", IIf(tur = "T", "Talep no", "Sipariþ no"), "Kalem", _
             IIf(tur = "T", "Talep tarihi", "Belge tarihi"), IIf(tur = "T", "Talep eden", "Satýcý"), "Malzeme", "Kýsa metin", _
             IIf(tur = "T", "Talep miktarý", "Teslim edilecek"), "Birim", "Ayný ilde serbest stok", "Ayný ilde atýl stok", _
-            "Transfer ili", "Transfer miktarý", "Karþýlanabilir", "Tasarruf (TL)", IIf(tur = "T", "Talep tutarý", "Açýk tutar"), "PB / not"), _
+            "Atýl transfer ili", "Atýl transfer miktarý", "Atýl stoktan karþýlanabilir", "Tasarruf (TL)", IIf(tur = "T", "Talep tutarý", "Açýk tutar"), "PB / not"), _
             veri, n, Array(24, 11, 7, 7, 12, 7, 11, 20, 13, 40, 11, 7, 12, 12, 11, 11, 12, 16, 15, 30), _
             Array("@", "@", "@", "@", "@", "@", "@", "@", "0", "@", "General", "@", "General", "General", "@", "General", "General", _
                 "#,##0.00 ""TL""", "General", "@"), _
             Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlRight, xlCenter, _
                 xlRight, xlRight, xlCenter, xlRight, xlRight, xlRight, xlRight, xlLeft), ust, _
-            "Kýrmýzý: atýl stoktan karþýlanýr  |  Turuncu: ayný ilde stok var  |  Sarý: baþka ilden transfer edilebilir", _
+            "Tasarruf yalnýz atýl stoktan (paylaþtýrmalý)  |  Kýrmýzý: ayný ilin atýl stoðu  |  Turuncu: baþka ilin atýl stoðu (transfer)  |  Sarý: serbest stok var (bilgi, tasarrufa dahil deðil)", _
             IIf(tur = "T", "Açýk Talepler", "Açýk Sipariþler"), Empty
         ' Belge tutari SAP para biriminde (PB sutunu); TL disi olabilir, TL eki yalniz TL satirlarda.
         For i = 1 To n
             Set hz = c.Cells(i + 4, 1)
             Select Case CStr(hz.Value2)
                 Case "ATIL STOKTAN KARÞILANIR": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = vbWhite: hz.Font.bold = True
-                Case "AYNI ÝLDE STOK VAR": hz.Interior.Color = RGB(253, 186, 116): hz.Font.Color = RGB(124, 45, 18): hz.Font.bold = True
-                Case "TRANSFER EDÝLEBÝLÝR": hz.Interior.Color = RGB(254, 240, 138): hz.Font.Color = RGB(113, 63, 18): hz.Font.bold = True
+                Case "BAÞKA ÝLÝN ATIL STOÐUNDAN": hz.Interior.Color = RGB(253, 186, 116): hz.Font.Color = RGB(124, 45, 18): hz.Font.bold = True
+                Case "AYNI ÝLDE SERBEST STOK VAR", "BAÞKA ÝLDE SERBEST STOK VAR": hz.Interior.Color = RGB(254, 249, 195): hz.Font.Color = RGB(113, 63, 18)
             End Select
             ' Belge tutari SAP para biriminde: TRY -> TL, digerleri kendi para birimiyle (USD, EUR...).
             t = Trim$(Split(CStr(c.Cells(i + 4, 20).Value2) & " ", " ")(0))
@@ -11767,9 +11821,10 @@ End Sub
 Private Function SA_DURUM_SIRA(ByVal d As String) As String
     Select Case d
         Case "ATIL STOKTAN KARÞILANIR": SA_DURUM_SIRA = "1"
-        Case "AYNI ÝLDE STOK VAR": SA_DURUM_SIRA = "2"
-        Case "TRANSFER EDÝLEBÝLÝR": SA_DURUM_SIRA = "3"
-        Case Else: SA_DURUM_SIRA = "4"
+        Case "BAÞKA ÝLÝN ATIL STOÐUNDAN": SA_DURUM_SIRA = "2"
+        Case "AYNI ÝLDE SERBEST STOK VAR": SA_DURUM_SIRA = "3"
+        Case "BAÞKA ÝLDE SERBEST STOK VAR": SA_DURUM_SIRA = "4"
+        Case Else: SA_DURUM_SIRA = "5"
     End Select
 End Function
 
@@ -11805,8 +11860,8 @@ Private Function ADM_SA_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl 
         End If
     Next x
     ilk = r
-    ADM_BASLIKLAR ws, r, 2, Array("Ýl", "Açýk talep", "Stoktan karþýlanabilir", "Talep tasarrufu", "", "Açýk sipariþ", _
-        "Stoktan karþýlanabilir", "Sipariþ tasarrufu", "", "Toplam tasarruf", "", "Durum")
+    ADM_BASLIKLAR ws, r, 2, Array("Ýl", "Açýk talep", "Atýl stoktan karþýlanabilir", "Talep tasarrufu", "", "Açýk sipariþ", _
+        "Atýl stoktan karþýlanabilir", "Sipariþ tasarrufu", "", "Toplam tasarruf", "", "Durum")
     ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 9, r, 10)).Merge: ws.Range(ADM_ADRES(r, 11, r, 12)).Merge
     For p = 0 To 4
         r = r + 1
@@ -11838,7 +11893,7 @@ Private Function ADM_SA_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl 
     ADM_KENAR ws.Range(ADM_ADRES(ilk, 2, r, 13)), True
     r = r + 1
     ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn") & "  •  " & bilgi & _
-        "  •  Tasarruf: stoktan karþýlanabilen miktar x AKSORA stok birim deðeri (ayný sistem: CDP / EPP).", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+        "  •  Tasarruf yalnýz ATIL stoktan, paylaþtýrmalý (ayný stok iki kez sayýlmaz; ayný sistem CDP / EPP); serbest stok tasarrufa dahil deðil.", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
     ws.Cells(r, 2).Font.Italic = True
     ADM_SA_CIZ = r
     Exit Function
