@@ -625,6 +625,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   EBELN gruplandığı için ColumnOrder'da yok → id doğrudan GetCellValue ile denenir; belge boşsa da satır alınır.
   build.sh artık fx/decl_check.py ile 'prosedürden sonra modül bildirimi' denetler (hata varsa durur).
 
+## Satınalma kontrolü düzeltmeleri (03.11.2026)
+- SAP'DEN OKU sonrası YÜKLENİCİ_RAPOR'a atlama giderildi: başlangıç sayfası saklanıyor, gizli _SATINALMA oluşturulunca geri etkinleştiriliyor.
+- Miktar hücreleri AKSORA_V13_MIKTAR_BICIMI ile: tam sayıda virgül yok, küsuratta virgül (sayfa + Excel çıktısı).
+- Excel çıktısında miktarlar 3, tutarlar 2 basamağa yuvarlanıyor (float gürültüsü yok). Özet = sayfa toplamları doğrulandı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

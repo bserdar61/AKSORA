@@ -11496,13 +11496,18 @@ Private Function SA_ME2N(ByVal ses As Object, ByVal ilk As String, ByVal son As 
 End Function
 
 Private Sub SA_KAYDET(ByVal liste As Collection, ByVal bilgi As String)
-    Dim ws As Worksheet, v() As Variant, i As Long, j As Long, x As Variant
+    Dim ws As Worksheet, v() As Variant, i As Long, j As Long, x As Variant, onceki As Object
+    Set onceki = ActiveSheet
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(SA_KAYIT)
     On Error GoTo 0
     If ws Is Nothing Then
         Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = SA_KAYIT
+        ws.Visible = xlSheetVeryHidden
+        On Error Resume Next
+        onceki.Activate
+        On Error GoTo 0
     End If
     ws.Visible = xlSheetVeryHidden
     ws.Cells.Clear
@@ -11543,9 +11548,10 @@ End Function
 Public Sub AKSORA_SATINALMA_OKU()
     Dim ac As Boolean, ev As Boolean, sis As Variant, ses As Object, hata As String, liste As Collection, c As Collection
     Dim x As Variant, a() As Variant, j As Long, bilgi As String, no As Long, metin As String, nT As Long, nS As Long
-    Dim oncekiFiltre As LongPtr, bosFiltre As LongPtr
+    Dim oncekiFiltre As LongPtr, bosFiltre As LongPtr, bas As Worksheet
     If MsgBox("Açýk satýnalma talepleri (ME5A) ve teslim alýnmamýþ sipariþler (ME2N) CDP ve EPP sistemlerinden okunacak." & vbCrLf & _
         "SAP'de iki sisteme de giriþ yapýlmýþ olmalýdýr. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | SATINALMA KONTROLÜ") <> vbYes Then Exit Sub
+    Set bas = ActiveSheet
     ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "SAP baðlantýsý hazýrlanýyor...", 0.03)
     ev = application.EnableEvents
     ' Uzun SAP raporunda "Excel bir OLE eylemini ... bekliyor" penceresi cikmasin (mesaj filtresi gecici kapatilir).
@@ -11581,13 +11587,18 @@ Public Sub AKSORA_SATINALMA_OKU()
     ADMW_CoRegisterMessageFilter oncekiFiltre, bosFiltre
     application.EnableEvents = False
     SA_KAYDET liste, Trim$(bilgi)
+    ' Gizli kayit sayfasi olusunca Excel baska sayfaya gecmesin: baslanan sayfaya donulur.
+    On Error Resume Next
+    ThisWorkbook.Activate
+    bas.Activate
+    On Error GoTo Hata
     application.EnableEvents = ev
     If ac Then AKSORA_BEKLE_KAPAT
     MsgBox "Satýnalma kontrolü okundu." & vbCrLf & vbCrLf & "Açýk talep kalemi: " & nT & vbCrLf & "Açýk sipariþ kalemi: " & nS & _
         vbCrLf & vbCrLf & Trim$(bilgi) & vbCrLf & vbCrLf & "Sonuçlar Yönetim Merkezi'nde; ayrýntý için EXCEL'E AKTAR.", vbInformation, "AKSORA | SATINALMA KONTROLÜ"
-    If ActiveSheet.Name = ADM Then
+    If bas.Name = ADM Then
         AKSORA_ADMIN_YENILE
-    ElseIf ActiveSheet.Name = SA_SAYFA Then
+    ElseIf bas.Name = SA_SAYFA Then
         AKSORA_SATINALMA_AC
     End If
     Exit Sub
@@ -11595,6 +11606,7 @@ Hata:
     no = Err.Number: metin = Err.Description
     On Error Resume Next
     ADMW_CoRegisterMessageFilter oncekiFiltre, bosFiltre
+    If Not bas Is Nothing Then ThisWorkbook.Activate: bas.Activate
     application.EnableEvents = ev
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
@@ -11753,7 +11765,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     Dim kayit As Collection, an As Collection, tarih As Date, bilgi As String, wb As Workbook, ac As Boolean, ev As Boolean
     Dim veri() As Variant, x As Variant, n As Long, i As Long, j As Long, anah() As String, idx() As Long, tur As Variant
     Dim ust As String, sonuc As String, no As Long, metin As String, c As Worksheet, hz As Range, oz As Object, il As Variant
-    Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 6) As Double
+    Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 6) As Double, j2 As Variant
     Set kayit = SA_KAYIT_OKU(tarih, bilgi)
     If kayit.Count = 0 Then MsgBox "Önce SATINALMA KONTROLÜ ile SAP'den okuyun.", vbInformation, "AKSORA": Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  SATINALMA KONTROLÜ", "Stok ve atýl stokla eþleþtiriliyor...", 0.1)
@@ -11781,10 +11793,10 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     i = 0
     For Each kk In oz.keys
         i = i + 1: t = oz(kk): veri(i, 1) = kk
-        For j = 0 To 5: veri(i, j + 2) = t(j): toplam(j + 1) = toplam(j + 1) + t(j): Next j
+        For j = 0 To 5: veri(i, j + 2) = SA_YUVARLA(t(j), 2): toplam(j + 1) = toplam(j + 1) + t(j): Next j
     Next kk
     i = i + 1: veri(i, 1) = "TOPLAM"
-    For j = 1 To 6: veri(i, j + 1) = toplam(j): Next j
+    For j = 1 To 6: veri(i, j + 1) = SA_YUVARLA(toplam(j), 2): Next j
     ust = "SATINALMA KONTROLÜ  |  Özet  |  SAP okumasý: " & Format$(tarih, "dd.mm.yyyy hh:nn")
     Set c = wb.Worksheets(1)
     AKSORA_EXCEL_SAYFA c, Array("Ýl", "Açýk talep kalemi", "Atýl stoktan karþýlanabilir (talep)", "Talep tasarrufu (TL)", _
@@ -11811,8 +11823,10 @@ Public Sub AKSORA_SATINALMA_EXCEL()
                     i = i + 1: idx(i) = i
                     veri(i, 1) = x(22): veri(i, 2) = x(2): veri(i, 3) = x(3): veri(i, 4) = x(4): veri(i, 5) = x(5): veri(i, 6) = x(6)
                     veri(i, 7) = x(7): veri(i, 8) = x(8): veri(i, 9) = x(9): veri(i, 10) = x(10): veri(i, 11) = x(11): veri(i, 12) = x(12)
-                    veri(i, 13) = x(13): veri(i, 14) = x(14): veri(i, 15) = x(15): veri(i, 16) = x(16): veri(i, 17) = x(17)
-                    veri(i, 18) = x(19): veri(i, 19) = x(20): veri(i, 20) = x(21) & IIf(Len(x(23)) > 0, "  •  " & x(23), "")
+                    veri(i, 11) = SA_YUVARLA(x(11), 3)
+                    veri(i, 13) = SA_YUVARLA(x(13), 3): veri(i, 14) = SA_YUVARLA(x(14), 3): veri(i, 15) = x(15)
+                    veri(i, 16) = SA_YUVARLA(x(16), 3): veri(i, 17) = SA_YUVARLA(x(17), 3)
+                    veri(i, 18) = SA_YUVARLA(x(19), 2): veri(i, 19) = SA_YUVARLA(x(20), 2): veri(i, 20) = x(21) & IIf(Len(x(23)) > 0, "  •  " & x(23), "")
                     anah(i) = SA_DURUM_SIRA(CStr(x(22))) & I_SIRA_ANAHTAR(CDbl(x(19)))
                 End If
             Next x
@@ -11837,6 +11851,10 @@ Public Sub AKSORA_SATINALMA_EXCEL()
                 xlRight, xlRight, xlCenter, xlRight, xlRight, xlRight, xlRight, xlLeft), ust, _
             "Tasarruf yalnýz atýl stoktan (paylaþtýrmalý)  |  Kýrmýzý: ayný ilin atýl stoðu  |  Turuncu: baþka ilin atýl stoðu (transfer)  |  Sarý: serbest stok var (bilgi)  |  Mor: sipariþten fazla teslim alýnmýþ", _
             IIf(tur = "T", "Açýk Talepler", "Açýk Sipariþler"), Empty
+        ' Miktarlar: tam sayida ondalik ayirac yok, kusuratta virgul (altin kural).
+        For Each j2 In Array(11, 13, 14, 16, 17)
+            AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+        Next j2
         ' Belge tutari SAP para biriminde (PB sutunu); TL disi olabilir, TL eki yalniz TL satirlarda.
         For i = 1 To n
             Set hz = c.Cells(i + 4, 1)
@@ -11872,6 +11890,10 @@ Hata:
     On Error GoTo 0
     MsgBox "Satýnalma kontrolü Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
+
+Private Function SA_YUVARLA(ByVal v As Variant, ByVal basamak As Long) As Variant
+    If IsNumeric(v) And Not IsEmpty(v) And VarType(v) <> vbString Then SA_YUVARLA = Round(CDbl(v), basamak) Else SA_YUVARLA = v
+End Function
 
 Private Function SA_DURUM_SIRA(ByVal d As String) As String
     Select Case d
@@ -12225,7 +12247,8 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 8), ws.Cells(r, 9)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
-        ws.Range(ws.Cells(a1, 6), ws.Cells(r, 7)).NumberFormat = "#,##0.###"
+        AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6))
+        AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7))
         ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).NumberFormat = "#,##0.00 ""TL"""
         ws.Range(ws.Cells(a1, 11), ws.Cells(r, 11)).Font.bold = True
         ws.Range(ws.Cells(a1, 11), ws.Cells(r, 11)).Font.Color = RGB(21, 128, 61)
@@ -12273,7 +12296,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         ws.Range(ws.Cells(a1, 10), ws.Cells(r, 10)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
-        ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6)).NumberFormat = "#,##0.###"
+        AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6))
         ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6)).Font.Color = RGB(91, 33, 182)
         ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6)).Font.bold = True
         For i = 1 To n
