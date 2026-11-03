@@ -7534,12 +7534,6 @@ Private Sub ADM_GORUNUM(ByVal ws As Worksheet)
     Dim z As Double, sr As Long
     If Not (ActiveSheet Is ws) Then Exit Sub
     On Error Resume Next
-    ' Satinalma bolumu dugmeleri baslik satirina hizalanir (satir yukseklikleri cizimden sonra degisebilir).
-    sr = CLng(Val(CStr(ws.Range("BX40").Value2)))
-    If sr > 0 Then
-        ws.Shapes("ADM_SA_OKU").Top = ws.Rows(sr).Top + 2
-        ws.Shapes("ADM_SA_EXCEL").Top = ws.Rows(sr).Top + 2
-    End If
     With ThisWorkbook.Windows(1)
         If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
         .DisplayGridlines = False: .DisplayHeadings = False: .DisplayWorkbookTabs = False
@@ -8232,8 +8226,11 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ws.Range("A4:N4").Interior.Color = RGB(226, 236, 247)
     ADM_BLOK ws, "B4", "ÝL:", RGB(226, 236, 247), RGB(12, 45, 79), 11, True, xlRight
     ADM_IL_DUGMELERI ws, secIl
-    ADM_BLOK ws, "J4:M4", "Seçili: " & ilMetin & "   •   her birimin ekrandaki ili canlý, diðer iller il kayýtlarýndan okunur", RGB(226, 236, 247), RGB(71, 85, 105), 8, False, xlRight
-    ws.Range("J4").Font.Italic = True
+    ADM_BLOK ws, "J4", "Seçili: " & ilMetin, RGB(226, 236, 247), RGB(71, 85, 105), 8, False, xlRight
+    ws.Range("J4").Font.Italic = True: ws.Range("J4").ShrinkToFit = True
+    ' Satinalma kontrolu dugmeleri ust cubukta (sayfanin altindaki bolumde yakinlastirmada satira gore kayiyordu).
+    ADM_DUGME ws, "ADM_SA_OKU", "SATINALMA: SAP'DEN OKU", ws.Range("K4").Left + 2, RGB(20, 103, 173), "AKSORA_SATINALMA_OKU", 1.2, ws.Rows(4).Top + 4, ws.Rows(4).Height - 8
+    ADM_DUGME ws, "ADM_SA_EXCEL", "SATINALMA: EXCEL'E AKTAR", ws.Range("L4").Left + 10, RGB(33, 115, 70), "AKSORA_SATINALMA_EXCEL", 1.6, ws.Rows(4).Top + 4, ws.Rows(4).Height - 8
     '--- arama (en ustte)
     ADM_BOLUM ws, 6, "B6:M6", "MALZEME / SERÝ NUMARASI ARAMA   •   " & ilMetin & "  •  tüm birimler"
     ws.Rows(7).RowHeight = 30
@@ -11267,6 +11264,44 @@ Private Function SA_GRID_BUL(ByVal ses As Object) As Object
     Set SA_GRID_BUL = g
 End Function
 
+Private Function SA_KOLON_VAR(ByVal g As Object, ByVal id As String) As Boolean
+    Dim co As Object, i As Long
+    On Error Resume Next
+    Set co = g.ColumnOrder
+    For i = 0 To co.Count - 1
+        If UCase$(CStr(co(i))) = UCase$(id) Then SA_KOLON_VAR = True: Exit Function
+    Next i
+End Function
+
+' ALV duzen secimi (standart "Duzen sec" penceresi). Bulunamazsa pencere kapatilir; liste varsayilan duzenle okunur.
+Private Function SA_DUZEN_YUKLE(ByVal ses As Object, ByVal g As Object, ByVal duzen As String) As Boolean
+    Dim p As Object, i As Long, n As Long
+    On Error Resume Next
+    g.PressToolbarContextButton "&MB_VARIANT"
+    g.SelectContextMenuItem "&LOAD"
+    Set p = ses.FindById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell")
+    If p Is Nothing Then
+        ses.FindById("wnd[1]").Close
+        AKSORA_SAP_TESHIS_YAZ "ME2N düzen seçimi açýlamadý (" & duzen & ")"
+        Exit Function
+    End If
+    n = p.RowCount
+    For i = 0 To n - 1
+        If UCase$(Trim$(CStr(p.GetCellValue(i, "VARIANT")))) = UCase$(duzen) Then
+            p.SetCurrentCell i, "TEXT"
+            p.ClickCurrentCell
+            If Not ses.FindById("wnd[1]", False) Is Nothing Then p.DoubleClickCurrentCell
+            SA_DUZEN_YUKLE = True
+            Exit For
+        End If
+    Next i
+    If Not SA_DUZEN_YUKLE Then
+        ses.FindById("wnd[1]").Close
+        AKSORA_SAP_TESHIS_YAZ "ME2N düzeni bulunamadý: " & duzen
+    End If
+    Err.Clear
+End Function
+
 Private Sub SA_ALAN_BOSALT(ByVal ses As Object, ByVal ad As String)
     On Error Resume Next
     ses.FindById("wnd[0]/usr/" & ad).Text = vbNullString
@@ -11436,6 +11471,10 @@ Private Function SA_ME2N(ByVal ses As Object, ByVal ilk As String, ByVal son As 
         AKSORA_SAP_TESHIS_YAZ "ME2N " & sis & " liste yok: " & sb
         If tip = "E" Or tip = "A" Then Err.Raise vbObjectError + 9803, , "ME2N (" & sis & "): " & sb
         Exit Function
+    End If
+    ' Satinalma belgesi sutunu gorunmuyorsa (/AKSORA duzeni bu kullanicida varsayilan degil) duzen AKSORA tarafindan secilir.
+    If Not SA_KOLON_VAR(g, "EBELN") Then
+        If SA_DUZEN_YUKLE(ses, g, "/AKSORA") Then Set g = SA_GRID_BUL(ses)
     End If
     Set kol = SA_KOLONLAR(g, Array( _
         Array("BELGE", "EBELN", "SATINALMA BELGESI|SAS"), Array("KALEM", "EBELP", "KALEM"), _
@@ -11642,6 +11681,8 @@ Private Function SA_ANALIZ(ByVal kayit As Collection) As Collection
                 Else
                     durum = "STOK YOK"
                 End If
+                ' Eksi teslim edilecek: siparisten fazla teslim alinmis (tasarrufa girmez, ayrica incelenmeli).
+                If miktar < -0.0005 Then durum = "FAZLA TESLÝM ALINMIÞ"
                 If durum = "BAÞKA ÝLDE SERBEST STOK VAR" Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & sIl & ": " & ADM_ADET(sMik) & " " & CStr(r(12)) & " serbest")
                 If yuk > 0.0005 Then nt = Trim$(nt & IIf(Len(nt) > 0, "  •  ", "") & "Yüklenici depolarýnda " & ADM_ADET(yuk) & " " & CStr(r(12)))
                 If tur = "T" Then
@@ -11787,7 +11828,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
                 "#,##0.00 ""TL""", "General", "@"), _
             Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlRight, xlCenter, _
                 xlRight, xlRight, xlCenter, xlRight, xlRight, xlRight, xlRight, xlLeft), ust, _
-            "Tasarruf yalnýz atýl stoktan (paylaþtýrmalý)  |  Kýrmýzý: ayný ilin atýl stoðu  |  Turuncu: baþka ilin atýl stoðu (transfer)  |  Sarý: serbest stok var (bilgi, tasarrufa dahil deðil)", _
+            "Tasarruf yalnýz atýl stoktan (paylaþtýrmalý)  |  Kýrmýzý: ayný ilin atýl stoðu  |  Turuncu: baþka ilin atýl stoðu (transfer)  |  Sarý: serbest stok var (bilgi)  |  Mor: sipariþten fazla teslim alýnmýþ", _
             IIf(tur = "T", "Açýk Talepler", "Açýk Sipariþler"), Empty
         ' Belge tutari SAP para biriminde (PB sutunu); TL disi olabilir, TL eki yalniz TL satirlarda.
         For i = 1 To n
@@ -11796,6 +11837,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
                 Case "ATIL STOKTAN KARÞILANIR": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = vbWhite: hz.Font.bold = True
                 Case "BAÞKA ÝLÝN ATIL STOÐUNDAN": hz.Interior.Color = RGB(253, 186, 116): hz.Font.Color = RGB(124, 45, 18): hz.Font.bold = True
                 Case "AYNI ÝLDE SERBEST STOK VAR", "BAÞKA ÝLDE SERBEST STOK VAR": hz.Interior.Color = RGB(254, 249, 195): hz.Font.Color = RGB(113, 63, 18)
+                Case "FAZLA TESLÝM ALINMIÞ": hz.Interior.Color = RGB(237, 233, 254): hz.Font.Color = RGB(91, 33, 182): hz.Font.bold = True
             End Select
             ' Belge tutari SAP para biriminde: TRY -> TL, digerleri kendi para birimiyle (USD, EUR...).
             t = Trim$(Split(CStr(c.Cells(i + 4, 20).Value2) & " ", " ")(0))
@@ -11830,7 +11872,8 @@ Private Function SA_DURUM_SIRA(ByVal d As String) As String
         Case "BAÞKA ÝLÝN ATIL STOÐUNDAN": SA_DURUM_SIRA = "2"
         Case "AYNI ÝLDE SERBEST STOK VAR": SA_DURUM_SIRA = "3"
         Case "BAÞKA ÝLDE SERBEST STOK VAR": SA_DURUM_SIRA = "4"
-        Case Else: SA_DURUM_SIRA = "5"
+        Case "FAZLA TESLÝM ALINMIÞ": SA_DURUM_SIRA = "5"
+        Case Else: SA_DURUM_SIRA = "6"
     End Select
 End Function
 
@@ -11842,15 +11885,10 @@ Private Function ADM_SA_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl 
     On Error GoTo Hata
     Set kayit = SA_KAYIT_OKU(tarih, bilgi)
     r = r + 2
-    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 9), "SATINALMA KONTROLÜ   (ME5A açýk talepler • ME2N teslim alýnmamýþ sipariþler • stok ve atýl stokla)"
-    ADM_DUGME ws, "ADM_SA_OKU", "SAP'DEN OKU", ws.Cells(r, 10).Left + 2, RGB(20, 103, 173), "AKSORA_SATINALMA_OKU", 1.1, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
-    ADM_DUGME ws, "ADM_SA_EXCEL", "EXCEL'E AKTAR", ws.Cells(r, 12).Left - 6, RGB(33, 115, 70), "AKSORA_SATINALMA_EXCEL", 1.3, ws.Rows(r).Top + 2, ws.Rows(r).Height - 4
-    ' Dugmeler bolum basligi satirina baglanir: ustteki satirlar sonradan buyuyunce tablonun ustune kaymaz.
-    ws.Range("BX40").Value2 = r
-    ws.Shapes("ADM_SA_OKU").Placement = xlMove: ws.Shapes("ADM_SA_EXCEL").Placement = xlMove
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "SATINALMA KONTROLÜ   (ME5A açýk talepler • ME2N teslim alýnmamýþ sipariþler • atýl stokla  •  düðmeler üst çubukta)"
     r = r + 1
     If kayit.Count = 0 Then
-        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Henüz okunmadý: SAP'DEN OKU ile açýk talepler ve sipariþler alýnýr; stoktan karþýlanabilenler burada görünür.", _
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Henüz okunmadý: üst çubuktaki SATINALMA: SAP'DEN OKU ile açýk talepler ve sipariþler alýnýr; stoktan karþýlanabilenler burada görünür.", _
             RGB(244, 248, 252), RGB(71, 85, 105), 9, False, xlLeft
         ADM_SA_CIZ = r
         Exit Function

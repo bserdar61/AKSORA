@@ -608,6 +608,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ME2N sipariş no boş: liste belgeye göre gruplu; kullanıcı düzende 'Satınalma belgesi' sütununu açıp varsayılan kaydetmeli.
 - 2. sonuç (11:20): toplam tasarruf 1.761.896,35 TL (talep 458.963,83 / sipariş 1.302.932,52). CDP ME2N EBELN geliyor
   (/AKSORA düzeni), EPP'de düzen kaydedilmemiş → sipariş no boş. Admin SA düğmeleri xlMove + ADM_GORUNUM'da BX40 satırına hizalanır.
+- 3. tur: sipariş no tam (iki sistemde /AKSORA ön ayar). Kontrol: özet = sayfa toplamları, birim farkı 0, atıl taşması yok.
+  Eksi 'teslim edilecek' (503… belgeler) → durum FAZLA TESLİM ALINMIŞ (mor, tasarrufa girmez).
+  ME2N'de EBELN görünmüyorsa SA_DUZEN_YUKLE: &MB_VARIANT → &LOAD → G51 ızgarasında VARIANT=/AKSORA seçilir
+  (başka kullanıcıda ön ayar olmasa da çalışsın; bulunamazsa pencere kapanır, hata yok, yalnız sipariş no boş kalır).
+  Admin SA düğmeleri üst il çubuğuna (K4/L4) taşındı: sayfanın altındaki şekiller yakınlaştırmada satır yuvarlamasıyla kayıyordu.
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
 - DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.
