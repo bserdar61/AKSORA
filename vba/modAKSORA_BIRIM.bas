@@ -12118,8 +12118,8 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | SATINALMA KONTROLÜ  |  " & IIf(ilSec = "TUM", "Tüm Ýller", Y_IL_ADI(ilSec))
     Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
     If s Is Nothing Then w = 1544 Else w = s.Width
-    sw = application.Max(170, w - 1285)
-    Y_KOLONLAR ws, Array(90, 60, 95, 230, 140, 95, 115, 105, 125, 105, 125, sw)
+    sw = application.Max(170, w - 1305)
+    Y_KOLONLAR ws, Array(90, 60, 95, 230, 105, 95, 115, 95, 190, 105, 125, sw)
     ws.Range("BX20").Value2 = ilSec
     iller = ADM_ILLER()
     Set kayit = SA_KAYIT_OKU(tarih, bilgi)

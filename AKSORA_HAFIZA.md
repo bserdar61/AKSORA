@@ -643,6 +643,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Satınalma Excel'i doğrulandı: Özet 11 sütun, toplamlar sayfalarla aynı, aynı il atıl stok değeri sabit.
 - Fazla teslim tablosunda satıcı numarası atılıyor (SA_SATICI_AD); ad okunur boyutta.
 
+## Satınalma sütun genişliği (03.11.2026)
+- 847319f2 Excel'i bir önceki doğrulanan çıktıyla birebir aynı.
+- SA_CIZ: 9. sütun (Atıl stok kaynağı / Satıcı) 125→190 px; Malzeme 140→105, Birim/Belge tarihi/Toplam tasarruf 105→95. Uzun metinler artık küçülmüyor.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
