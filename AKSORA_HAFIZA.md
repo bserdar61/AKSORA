@@ -656,6 +656,12 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Excel: Özet / Kritik ve Azalan / Yolda / Tüm İzlenen (22 sütun).
 - up37 verisiyle simülasyon (aylık ayrım olmadan): 2980 izlenen; 546 kritik, 251 azalıyor, 46 yolda. Çok sayıda tek seferlik proje sarfı var → aylık ayrım gerekli.
 
+## Kritik stok düzeltmeleri (03.11.2026)
+- SATINALMA_KONTROL sekmesi Malzeme birimi açılışında görünür (KAPAK, ATIL/KRITIK gibi).
+- Sayfa listesinde "Aylık sarf" yerine "Son 6 ay sarf" (ondalık kafa karıştırıyordu); Excel'de "Aylık ortalama sarf" 2 basamak.
+- Aylık dağılım yokken de kesin kural: adetli birimde 6 ayda 3 adetten az sarf → DÜZENSİZ SARF (en fazla 2 ayda olabilir). ÇFT adetli listeye eklendi.
+- Kullanıcı Excel'i (fa18117c): 797 kritik+azalan, 75,4 mn TL; yeni kuralla ~608 / 69,5 mn TL. Tutarın çoğu DİREK G-10I / G-K1 (yatırım sarfı); MB51 yeniden okununca aylık ayrım devreye girer.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

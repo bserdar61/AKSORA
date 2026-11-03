@@ -673,6 +673,13 @@ Private Sub AKSORA_GIRIS_AC()
     End If
     Set ws = Nothing
     On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("SATINALMA_KONTROL")
+    On Error GoTo Hata
+    If Not ws Is Nothing Then
+        If AKSORA_SATINALMA_SAYFA(ws) Then ws.Visible = xlSheetVisible
+    End If
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("KRITIK_STOK")
     On Error GoTo Hata
     If Not ws Is Nothing Then

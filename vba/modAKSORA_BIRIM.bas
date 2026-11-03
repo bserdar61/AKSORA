@@ -12442,6 +12442,8 @@ Private Function KS_ANALIZ(ByRef okuma As Variant, ByRef saTarih As Date) As Col
             kap = (serbest + yuk) / aylik
             kapG = (serbest + yuk + acT + acS) / aylik
             aySay = KS_AY_SAYISI(CStr(kr(8)))
+            ' Aylik dagilim yoksa da kesin olan: adetli malzemede 6 ayda 3 adetten az sarf en fazla 2 ayda olabilir.
+            If aySay < 0 And sarf6 < 2.9995 And KS_YUKARI(0.5, birim) = 1 Then aySay = Int(sarf6 + 0.0005)
             If aySay >= 0 And aySay < 3 And kap < 3 Then
                 durum = "DÜZENSÝZ SARF"
             ElseIf kap < 1 And kapG < 3 Then
@@ -12521,7 +12523,7 @@ End Function
 ' Adetli birimlerde yukari tam sayiya, digerlerinde 2 basamaga yukari yuvarlanir.
 Private Function KS_YUKARI(ByVal x As Double, ByVal birim As String) As Double
     Select Case UCase$(Trim$(birim))
-        Case "ADT", "AD", "SET", "TK", "ST", "PAK", "KUT", "TOP", "RUL", "CFT"
+        Case "ADT", "AD", "SET", "TK", "ST", "PAK", "KUT", "TOP", "RUL", "CFT", "ÇFT"
             KS_YUKARI = -Int(-Round(x, 6))
         Case Else
             KS_YUKARI = -Int(-Round(x * 100, 6)) / 100
@@ -12740,7 +12742,7 @@ Private Sub KS_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     If an.Count = 0 Then GoTo Son
     '--- il bazinda ozet
     r = 11
-    Y_BOLUM ws, r, "ÝL BAZINDA ÖZET", "Son 6 ayda sarfý olan malzemeler; kapsam = stok / aylýk sarf", 12
+    Y_BOLUM ws, r, "ÝL BAZINDA ÖZET", "Son 6 ayda sarfý olan malzemeler; kapsam (ay) = stok / (son 6 ay sarf / 6)", 12
     ws.Rows(r).RowHeight = 30
     r = r + 1
     Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Ýl", "Ýzlenen kalem", "Kritik", "Azalýyor", "Yolda", "Düzensiz sarf", _
@@ -12799,7 +12801,7 @@ Private Sub KS_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         ws.Rows(r).RowHeight = 30
         r = r + 1
         Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Ýl", "Malzeme", "Kýsa metin", "Birim", "Stok (D/K + yük.)", _
-            "Aylýk sarf", "Kapsam (ay)", "Açýk talep + sipariþ", "Atýl transfer (il: miktar)", "Önerilen talep", "Tahmini tutar", "Durum")
+            "Son 6 ay sarf", "Kapsam (ay)", "Açýk talep + sipariþ", "Atýl transfer (il: miktar)", "Önerilen talep", "Tahmini tutar", "Durum")
         ws.Rows(r).RowHeight = 34
         a1 = r + 1
         If n > 0 Then
@@ -12809,7 +12811,7 @@ Private Sub KS_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
                 If (x(19) = durumlar(0) Or x(19) = durumlar(1)) And (ilSec = "TUM" Or x(0) = ilSec) Then
                     i = i + 1
                     sonuc(i, 1) = x(1): sonuc(i, 2) = x(4): sonuc(i, 3) = x(5): sonuc(i, 4) = x(6)
-                    sonuc(i, 5) = Round(x(7) + x(8), 3): sonuc(i, 6) = Round(x(9), 3): sonuc(i, 7) = KS_KAPSAM_METNI(x(10))
+                    sonuc(i, 5) = Round(x(7) + x(8), 3): sonuc(i, 6) = Round(x(20), 3): sonuc(i, 7) = KS_KAPSAM_METNI(x(10))
                     sonuc(i, 8) = Round(x(11) + x(12), 3): sonuc(i, 9) = x(17): sonuc(i, 10) = x(14): sonuc(i, 11) = x(16)
                     sonuc(i, 12) = x(19)
                 End If
@@ -12942,7 +12944,7 @@ Public Sub AKSORA_KRITIK_EXCEL()
                 End If
                 veri(i, 1) = x(19): veri(i, 2) = x(1): veri(i, 3) = x(2): veri(i, 4) = x(3): veri(i, 5) = x(4): veri(i, 6) = x(5)
                 veri(i, 7) = x(6): veri(i, 8) = Round(x(7), 3): veri(i, 9) = Round(x(8), 3): veri(i, 10) = Round(x(7) + x(8), 3)
-                veri(i, 11) = Round(x(20), 3): veri(i, 12) = Round(x(9), 3): veri(i, 13) = Round(x(10), 1)
+                veri(i, 11) = Round(x(20), 3): veri(i, 12) = Round(x(9), 2): veri(i, 13) = Round(x(10), 1)
                 veri(i, 14) = Round(x(11), 3): veri(i, 15) = Round(x(12), 3): veri(i, 16) = Round(x(13), 1)
                 veri(i, 17) = x(17): veri(i, 18) = x(14): veri(i, 19) = Round(x(15), 2): veri(i, 20) = x(16)
                 If x(21) > 0 Then veri(i, 21) = Format$(CDate(x(21)), "dd.mm.yyyy") Else veri(i, 21) = vbNullString
@@ -12956,7 +12958,7 @@ Sonraki:
             Case Else: ust = "KRÝTÝK STOK  |  Tüm izlenen malzemeler (son 6 ayda sarfý olan)"
         End Select
         AKSORA_EXCEL_SAYFA c, Array("Durum", "Ýl", "Sistem", "ÜY", "Malzeme", "Kýsa metin", "Birim", "Serbest stok (D/K)", _
-            "Yüklenici stok", "Toplam stok", "Son 6 ay sarf", "Aylýk sarf", "Kapsam (ay)", "Açýk talep", "Açýk sipariþ", _
+            "Yüklenici stok", "Toplam stok", "Son 6 ay sarf", "Aylýk ortalama sarf", "Kapsam (ay)", "Açýk talep", "Açýk sipariþ", _
             "Yoldakilerle kapsam (ay)", "Atýl transfer (il: miktar)", "Önerilen talep", "Stok birim deðeri (TL)", "Tahmini tutar (TL)", _
             "Son sarf tarihi", "Sarf olan ay sayýsý"), veri, n, Array(15, 11, 7, 7, 13, 40, 7, 12, 11, 11, 11, 11, 10, 11, 11, 12, 24, 12, 15, 17, 12, 11), _
             Array("@", "@", "@", "@", "0", "@", "@", "General", "General", "General", "General", "General", "0.0", "General", _
