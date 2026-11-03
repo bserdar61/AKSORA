@@ -613,6 +613,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ME2N'de EBELN görünmüyorsa SA_DUZEN_YUKLE: &MB_VARIANT → &LOAD → G51 ızgarasında VARIANT=/AKSORA seçilir
   (başka kullanıcıda ön ayar olmasa da çalışsın; bulunamazsa pencere kapanır, hata yok, yalnız sipariş no boş kalır).
   Admin SA düğmeleri üst il çubuğuna (K4/L4) taşındı: sayfanın altındaki şekiller yakınlaştırmada satır yuvarlamasıyla kayıyordu.
+- 4. tur (11:48) Excel doğrulandı: il bazında kalem / tasarruf Özet ve Yönetim Merkezi ile kuruşu kuruşuna aynı, taşma yok.
+- MALZEME STOK BİRİMİ SAYFASI: SATINALMA_KONTROL (etiket AKSORA_SATINALMA_V1, M_CDP_RAPOR şablonundan, ATIL_STOK'tan sonra).
+  AKSORA_SATINALMA_AC / _IL_SEC / SA_GOSTER / SA_CIZ: KPI (talep, sipariş, atıldan karşılanabilir, tasarruf TL), il düğmeleri,
+  SAP'DEN OKU + EXCEL'E AKTAR, il bazında özet (12 sütun), TASARRUF FIRSATLARI (tasarrufa göre azalan, filtreli),
+  FAZLA TESLİM ALINMIŞ SİPARİŞLER. Ana panel hızlı erişim: goSatinalma (9 düğme, T_PanelHizala). BIRIM_OLAY / AKTIF_GORUNUM tanır.
 - Excel: Özet + Açık Talepler + Açık Siparişler; kırmızı/turuncu/sarı; masaüstü "Satınalma Kontrolü - <tarih>".
 - Admin atıl tutarları "#,##0.00 TL" (altın kural).
 - DERLEME HATASI (ilk teslim): Private Const SA_KAYIT prosedürlerden sonra yazılmıştı → modülün başına taşındı.

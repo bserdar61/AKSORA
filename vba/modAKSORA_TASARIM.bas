@@ -839,10 +839,23 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         s.TextFrame2.TextRange.Text = "ATIL STOK"
         s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_ATIL_AC"
     End If
+    ' SATINALMA KONTROL dugmesi: ayni yolla (yoksa bir kez olusturulur).
+    Set s = T_Sekil(ws, "goSatinalma")
+    If s Is Nothing Then
+        Set s = T_Sekil(ws, "goStokKarsilastir")
+        If Not s Is Nothing Then
+            Set s = s.Duplicate
+            s.Name = "goSatinalma"
+        End If
+    End If
+    If Not s Is Nothing Then
+        s.TextFrame2.TextRange.Text = "SATINALMA KONTROL"
+        s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_SATINALMA_AC"
+    End If
     Set r = ws.Range("B25:T26")
-    bw = (r.Width - 7 * 8) / 8
+    bw = (r.Width - 8 * 8) / 9
     i = 0
-    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok")
+    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma")
         Set s = T_Sekil(ws, CStr(ad))
         If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.Top + 1, bw, r.Height - 2
         i = i + 1
