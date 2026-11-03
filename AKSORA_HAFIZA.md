@@ -572,6 +572,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Taban: up34 (kullanıcının 02.11 dosyası, kod aynı).
 - YENİ KOD YAZARKEN: her tutar hücresi/sütunu ve mesaj metni TL ile biter.
 
+## 03.11.2026 – Müşteri yazımı 36 sn → 431 sn gerilemesi düzeltildi
+- Teşhis: Müşteri ARTVIN "Sayfaya yazılıyor: M_CDP_STOK" 08:02:08 → 08:08:44 (önceden 1-2 sn). Sebep: AKSORA_GORUNUR'daki
+  ws.Evaluate("SUBTOTAL(103,OFFSET(satır,ROW(...)-ilk,0))") 18 bin satırda dakikalar sürüyordu (M_STOK_KUR → AKSORA_MUSTERI_BANT).
+  Bu sırada DoEvents olmadığından kartın ARKA PLANA AL / DURDUR düğmeleri tıklanamıyordu.
+- Çözüm: AKSORA_GORUNUR: FilterMode yoksa hepsi görünür (anında); filtre varsa Rows().Hidden döngüsü + 2048 satırda NABIZ.
+  OFFSET/SUBTOTAL dizi Evaluate'i büyük sayfada KULLANMA.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

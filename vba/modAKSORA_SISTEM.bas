@@ -361,35 +361,26 @@ End Function
 
 
 
-' Gorunur (filtreyle gizlenmemis, bos olmayan) satirlar: 1 = gorunur. Satirlar A-Z siralanip depoya gore
-' suzulunce gorunur alan binlerce parcaya bolunur; SpecialCells/Areas o durumda Excel'i kilitler.
-' Tek SUBTOTAL(103) dizi hesabi kullanilir; olmazsa satir satir Hidden okunur.
+' Gorunur (filtreyle gizlenmemis) satirlar: 1 = gorunur. Satirlar A-Z siralanip depoya gore suzulunce gorunur
+' alan binlerce parcaya bolunur; SpecialCells/Areas Excel'i kilitler. Filtre yoksa hepsi gorunur (aninda);
+' filtre varsa satir satir Hidden okunur (18 bin satirda ~1 sn, ekran canli tutulur).
+' Not: SUBTOTAL(OFFSET(...)) dizi hesabi buyuk sayfada dakikalar suruyordu; kullanilmaz.
 Public Function AKSORA_GORUNUR(ByVal ws As Worksheet, ByVal ilk As Long, ByVal son As Long, ByVal sonKol As Long) As Variant
-    Dim n As Long, r As Long, v As Variant, s() As Byte, satir As String, ok As Boolean
+    Dim n As Long, r As Long, s() As Byte, filtreli As Boolean
     If son < ilk Then Exit Function
     n = son - ilk + 1
     ReDim s(1 To n)
-    satir = ws.Range(ws.Cells(ilk, 1), ws.Cells(ilk, sonKol)).Address(False, False)
     On Error Resume Next
-    If n = 1 Then
-        v = ws.Evaluate("SUBTOTAL(103," & satir & ")")
-        If Not IsError(v) Then s(1) = IIf(CDbl(v) > 0, 1, 0): ok = True
-    Else
-        v = ws.Evaluate("SUBTOTAL(103,OFFSET(" & satir & ",ROW(" & ws.Range(ws.Cells(ilk, 1), ws.Cells(son, 1)).Address(False, False) & ")-" & ilk & ",0))")
-        If IsArray(v) Then
-            If UBound(v, 1) - LBound(v, 1) + 1 = n Then
-                ok = True
-                For r = 1 To n
-                    If IsError(v(LBound(v, 1) + r - 1, LBound(v, 2))) Then ok = False: Exit For
-                    s(r) = IIf(v(LBound(v, 1) + r - 1, LBound(v, 2)) > 0, 1, 0)
-                Next r
-            End If
-        End If
-    End If
+    filtreli = ws.FilterMode
     On Error GoTo 0
-    If Not ok Then
+    If Not filtreli Then
         For r = 1 To n
-            s(r) = IIf(ws.Rows(ilk + r - 1).Hidden, 0, 1)
+            s(r) = 1
+        Next r
+    Else
+        For r = 1 To n
+            If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+            If Not ws.Rows(ilk + r - 1).Hidden Then s(r) = 1
         Next r
     End If
     AKSORA_GORUNUR = s
