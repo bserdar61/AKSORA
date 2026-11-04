@@ -5,6 +5,7 @@ Private Const etiket As String = "_AKSORA_TASARIM_P1S2R1"
 Private Const AKT_PREFIX As String = "AKT1_"
 ' Excel ciktilarinda AKSORA baslik satirlarinin kilidi (kullanicinin VBA sifresinden bagimsiz).
 Private Const T_IMZA_SIFRE As String = "AKS-imza-7c41"
+Private mDonusSayfa As String
 Private mCalisiyor As Boolean
 Private mKurulum As Boolean
 Private mExcelAktar As Boolean
@@ -2241,6 +2242,7 @@ Private Sub T_CiktiYaz(ByVal kaynakAd As String, ByVal bas As Variant, ByRef ver
     Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range
     Dim dosya As String, alan As Range, no As Long, metin As String
     k = UBound(bas) - LBound(bas) + 1
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     On Error GoTo Hata
     wb.Windows(1).Visible = False
@@ -2303,6 +2305,7 @@ Private Sub T_ExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As
     ByVal mk As Long, ByVal ust As String, ByVal depo As String)
     Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range, alan As Range, ad As String, x As Variant
     k = UBound(bas) - LBound(bas) + 1
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     Set c = wb.Worksheets(1)
     ad = Left$(depo, 28)
@@ -2460,6 +2463,7 @@ Public Function AKSORA_EXCEL_TABLO(ByVal bas As Variant, ByRef veri() As Variant
     ByVal bicim As Variant, ByVal hiza As Variant, ByVal ust As String, ByVal bilgi As String, ByVal sayfaAd As String, _
     ByVal yol As String, ByVal kapat As Boolean, ByVal sira As Variant) As String
     Dim wb As Workbook
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     AKSORA_EXCEL_SAYFA wb.Worksheets(1), bas, veri, n, gen, bicim, hiza, ust, bilgi, sayfaAd, sira
     mExcelYol = yol: mExcelKapat = kapat
@@ -2658,7 +2662,7 @@ Private Sub T_AksoraImza(ByVal wb As Workbook)
     no = Format$(Now, "yyyymmddhhnnss") & "-" & Format$(Int(Rnd() * 900000) + 100000, "000000")
     metin = "Bu dosya AKSORA ile üretilmiþtir. Tarih: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  •  Kullanýcý: " & kim & "  •  Ýmza: " & no
     pc = application.PrintCommunication
-    application.PrintCommunication = False
+    application.PrintCommunication = True
     For Each ws In wb.Worksheets
         If ws.Visible = xlSheetVisible Then
             If Len(CStr(ws.Range("A1").Value2)) > 0 Then
@@ -2666,8 +2670,8 @@ Private Sub T_AksoraImza(ByVal wb As Workbook)
                     If Len(CStr(ws.Range("A2").Value2)) = 0 Then ws.Range("A2").Value2 = "AKSORA" Else ws.Range("A2").Value2 = CStr(ws.Range("A2").Value2) & "  |  AKSORA"
                 End If
                 ws.Range("A2").Value2 = Replace(CStr(ws.Range("A2").Value2), "|  AKSORA", "|  AKSORA ile hazýrlanmýþtýr")
-                If InStr(1, ws.PageSetup.CenterFooter, "AKSORA", vbTextCompare) = 0 And InStr(1, ws.PageSetup.CenterFooter, "&G", vbTextCompare) = 0 Then
-                    ws.PageSetup.CenterFooter = "&""Aptos""&7AKSORA ile hazýrlanmýþtýr"
+                If InStr(1, ws.PageSetup.CenterFooter, "&G", vbTextCompare) = 0 Then
+                    ws.PageSetup.CenterFooter = "&8AKSORA ile hazýrlanmýþtýr"
                 End If
                 ws.Unprotect T_IMZA_SIFRE
                 ws.Cells.Locked = False
@@ -2696,4 +2700,29 @@ Private Sub T_AksoraImza(ByVal wb As Workbook)
     im.Range("A2").Value2 = "Kaynak: " & ThisWorkbook.Name
     im.Visible = xlSheetVeryHidden
     On Error GoTo 0
+End Sub
+
+' Excel'e aktar sonrasi AKSORA'ya donuste kullanici ayni sayfada kalir (aktarim sirasinda etkin sayfa degisse bile).
+Public Sub AKSORA_DONUS_KAYDET(Optional ByVal zorla As Boolean = False)
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
+    If zorla Or Len(mDonusSayfa) = 0 Then mDonusSayfa = ActiveSheet.Name
+End Sub
+
+Public Sub AKSORA_DONUS_UYGULA()
+    Dim ws As Worksheet, ev As Boolean, ad As String
+    If Len(mDonusSayfa) = 0 Then Exit Sub
+    ad = mDonusSayfa: mDonusSayfa = vbNullString
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then mDonusSayfa = ad: Exit Sub
+    If ActiveSheet.Name = ad Then Exit Sub
+    Set ws = ThisWorkbook.Worksheets(ad)
+    If ws Is Nothing Then Exit Sub
+    If ws.Visible <> xlSheetVisible Then Exit Sub
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    ws.Activate
+    application.EnableEvents = ev
+    AKSORA_BIRIM_AKTIF_GORUNUM
 End Sub

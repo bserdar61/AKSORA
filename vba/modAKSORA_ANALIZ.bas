@@ -2723,6 +2723,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     Dim veri() As Variant, x As Variant, n As Long, i As Long, j As Long, anah() As String, idx() As Long, tur As Variant
     Dim ust As String, sonuc As String, no As Long, metin As String, c As Worksheet, hz As Range, oz As Object, il As Variant
     Dim kk As Variant, sira As Long, t As Variant, toplam(1 To 10) As Double, j2 As Variant
+    AKSORA_DONUS_KAYDET True
     Set kayit = SA_KAYIT_OKU(tarih, bilgi)
     If kayit.Count = 0 Then MsgBox "Önce SATINALMA KONTROLÜ ile SAP'den okuyun.", vbInformation, "AKSORA": Exit Sub
     ac = AKSORA_BEKLE_AC("AKSORA  |  SATIN ALMA", "Stok ve atýl stokla eþleþtiriliyor...", 0.1)
@@ -2732,6 +2733,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
     application.EnableEvents = False: application.ScreenUpdating = False
     Set an = SA_ANALIZ(kayit)
     AKSORA_BEKLE_ILERLE 0.7, "Excel hazýrlanýyor..."
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     wb.Worksheets.Add After:=wb.Worksheets(1)
     wb.Worksheets.Add After:=wb.Worksheets(2)
@@ -3986,6 +3988,7 @@ Public Sub AKSORA_TRANSFER_EXCEL()
     Dim liste As Collection, saTarih As Date, okuma As Variant, wb As Workbook, c As Worksheet, ac As Boolean, ev As Boolean
     Dim veri() As Variant, x As Variant, n As Long, i As Long, j As Long, il As Variant, sonuc As String, no As Long, metin As String
     Dim sayfalar As Collection, top As Double, ust As String
+    AKSORA_DONUS_KAYDET True
     ac = AKSORA_BEKLE_AC("AKSORA  |  TRANSFER LÝSTESÝ", "Transfer listesi hazýrlanýyor...", 0.1)
     ev = application.EnableEvents
     AN_ONB_AC
@@ -4006,6 +4009,7 @@ Public Sub AKSORA_TRANSFER_EXCEL()
             If x(0) = CStr(il) Then sayfalar.Add CStr(il): Exit For
         Next x
     Next il
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     For i = 2 To sayfalar.Count: wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count): Next i
     For i = 1 To sayfalar.Count

@@ -723,6 +723,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Stok süresi ondalık ay yerine metin: AN_SURE_METNI (1,9 ay → "1 ay 27 gün", 0,4 → "12 gün", 0 → "Stok yok", ≥24 ay → yıl). Satın alma sayfası, Excel ve transfer gerekçesi.
 - Kullanıcı Excel'i: transfer 256 satır / 7.434.773,60 TL (140 fazla stoktan, 116 atıl/kendi).
 
+## Excel aktar sonrası sayfa atlaması + temel up43 (04.11.2026)
+- Kullanıcı: Excel'e aktar sonrası AKSORA'ya dönünce YÜKLENİCİ_RAPOR'a atıyor. Kök neden kesin bulunamadı (son görünür sayfa = gizlenen/eklenen sayfa belirtisi).
+  Çözüm: AKSORA_DONUS_KAYDET (her Workbooks.Add öncesi; SA/TR Excel başında zorla) + AKSORA_DONUS_UYGULA (Workbook_Activate ve mUygApp_WindowActivate):
+  dönüşte etkin sayfa farklıysa kayıtlı sayfa açılır.
+- up43: KRITIK_STOK sayfası silindiği için Sayfa99 modülü kalktı → raw/Sayfa99.txt silindi (yoksa round-trip hatası).
+- İmza doğrulandı (kullanıcı Excel'leri): 1-2. satır kilitli, veri satırları açık, AKSORA_IMZA veryHidden, Author=AKSORA. Alt bilgi yazılmamıştı → PrintCommunication açıkken "&8AKSORA ile hazırlanmıştır".
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

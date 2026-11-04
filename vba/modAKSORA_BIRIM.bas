@@ -6462,6 +6462,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     ev = application.EnableEvents
     application.EnableEvents = False: application.ScreenUpdating = False
     application.Cursor = xlWait
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     wb.Worksheets.Add After:=wb.Worksheets(1)
     '--- 1. sayfa: ilce bazinda ISG durumu
@@ -9439,6 +9440,7 @@ Public Sub AKSORA_ILCE_AY_AKTAR()
     Set depolar = I_DEPOLAR(il)
     Set liste = I_AY_TOPLAM(aylar, depolar)
     ayAd = I_AY_ADI(secAy)
+    AKSORA_DONUS_KAYDET
     Set wb = Workbooks.Add(xlWBATWorksheet)
     For i = 2 To 4: wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count): Next i
     '--- 1. Tum aylar siralamasi

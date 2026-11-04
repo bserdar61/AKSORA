@@ -22,6 +22,7 @@ Private Sub mUygApp_WindowActivate(ByVal wb As Workbook, ByVal wn As Window)
         If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Then Exit Sub
         If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
         UYGULAMA_MODU_AC
+        AKSORA_DONUS_UYGULA
         ' Uygulama olayi kitap olayindan sonra gelir: secim ekranlarinin gorunumu yeniden uygulanir.
         If Not AKSORA_BIRIM_AKTIF_GORUNUM() Then
             If Not AKSORA_GIRIS_ACIK Then AKSORA_V8_KAPAK_GORUNUM
@@ -184,6 +185,7 @@ Private Sub Workbook_Activate()
 
 
     UYGULAMA_MODU_AC
+    AKSORA_DONUS_UYGULA
     ' AKSORA_BIRIM_HOOK_ACTIVATE
     If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
 
