@@ -3962,7 +3962,13 @@ Private Function AN_TRANSFERLER(ByRef saTarih As Date, ByRef okuma As Variant) A
     For Each x In an
         If (x(19) = "KRÝTÝK" Or x(19) = "AZALIYOR") And Len(CStr(x(23))) > 0 Then
             For Each kk In AN_KAYNAKLAR(CStr(x(23)))
-                gerekce = "Kritik stok: " & AKSORA_SAYI_METNI(Round(x(10), 1), "0.0") & " ay yeter"
+                ' Alan ilin stogu bugunku tuketimle kac ay yeter (stok / son 6 ay ortalama aylik sarf).
+                If x(7) + x(8) <= 0.0005 Then
+                    gerekce = Y_IL_ADI(CStr(x(0))) & "'da stok yok; ayda ort. " & ADM_ADET(Round(x(9), 1)) & " " & CStr(x(6)) & " kullanýlýyor"
+                Else
+                    gerekce = Y_IL_ADI(CStr(x(0))) & " stoðu " & AKSORA_SAYI_METNI(Round(x(10), 1), "0.0") & " ay yeter (stok " & _
+                        ADM_ADET(Round(x(7) + x(8), 3)) & ", ayda ort. " & ADM_ADET(Round(x(9), 1)) & " " & CStr(x(6)) & " kullanýlýyor)"
+                End If
                 AN_TR_EKLE d, CStr(kk(0)), CStr(x(0)), CStr(x(2)), CStr(x(4)), CStr(x(5)), kk(1), CStr(x(6)), kk(1) * x(15), gerekce, False
             Next kk
         End If
