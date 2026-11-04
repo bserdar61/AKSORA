@@ -750,6 +750,15 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   ADM_YAPILACAK_CIZ: diğer birim uyarılarından her kategoriden (Demontaj, İSG, Teminat...) yalnız en önemli tek madde (önce seviye 1, sonra 2).
 - Kullanıcının gönderdiği "Yeni klasör.zip" boş (yalnız boş klasör).
 
+## Tam tur incelemesi (91 ekran görüntüsü, 04.11.2026, temel up45)
+- Genel: Satın alma, transfer, atıl NE YAPILMALI, Yönetim Merkezi doğru çalışıyor.
+- Tutarsızlık giderildi: ATIL sayfası 4. kart ve Yönetim Merkezi atıl tablosu eski ATIL transfer mantığını (896 kalem / YÜKSEK öncelik) gösteriyordu.
+  Artık: ATIL 4. kart "SAT / HURDA / İADE ADAYI" (NE YAPILMALI eylem 5); admin atıl tablosu "Kullanılabilir (kendi / transfer)" ve "Sat / hurda adayı" (ATIL_ISLEM_IL_OZET).
+  ATIL_ISLEM_CIZ hesabı ATIL_ISLEM_HESAPLA'ya ayrıldı; eylem satırına 13 il kodu eklendi.
+- Bugün yapılacak 5 iş: uzun metin küçülmüyor, satır kaydırmalı (34 px).
+- Kullanıcı verisi: ATIL NE YAPILMALI özeti → kendi ihtiyacı 25 / 718 bin TL, transfer 77 / 599 bin, önce bunu kullan 320 / 5,17 mn, beklet 396 / 4,19 mn,
+  sat/hurda/iade 735 kalem / 21,1 mn TL, önce kullan 569 / 4,68 mn.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

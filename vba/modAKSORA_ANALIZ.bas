@@ -1633,7 +1633,12 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     ws.Range("BZ21").Value2 = ADM_TL_KISA(kpiT(3)) & "  •  " & kpiA(3) & " kalem"
     ws.Range("BZ22").Value2 = ADM_TL_KISA(kpiT(2)) & "  •  " & kpiA(2) & " kalem"
     ws.Range("BZ23").Value2 = ADM_TL_KISA(kpiT(1)) & "  •  " & kpiA(1) & " kalem"
-    ws.Range("BZ24").Value2 = oneriA & " kalem  •  " & yuksek & " yüksek öncelik"
+    ' 4. kart: NE YAPILMALI hesabindan satis / hurda / iade adayi (hicbir ilde kullanilmayan atil).
+    t = Array(0#, 0#)
+    For Each x In ATIL_ISLEM_HESAPLA(c, ilSec)
+        If x(0) = 5 Then t(0) = t(0) + 1: t(1) = t(1) + x(7)
+    Next x
+    ws.Range("BZ24").Value2 = AKSORA_SAYI_METNI(Round(t(1) / 1000000, 1), "#,##0.0") & " mn TL  •  " & t(0) & " kalem"
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 30: ws.Rows(9).RowHeight = 20: ws.Rows(10).RowHeight = 30: ws.Rows(11).RowHeight = 8
     y = ws.Rows(3).Top + 1
@@ -1641,7 +1646,7 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_KPI ws, 1, 0, y, kw, 63.7, "ATIL (24 AYDAN ESKÝ STOK)", "$BZ$21", RGB(220, 38, 38)
     Y_KPI ws, 2, kw + 12, y, kw, 63.7, "3 AY KALDI (21-24 AY)", "$BZ$22", RGB(234, 88, 12)
     Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "6 AY KALDI (18-21 AY)", "$BZ$23", RGB(202, 138, 4)
-    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "TRANSFER ÖNERÝSÝ (AYNI SÝSTEM)", "$BZ$24", RGB(20, 103, 173)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "SAT / HURDA / ÝADE ADAYI", "$BZ$24", RGB(124, 58, 237)
     For i = 1 To 4
         Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
         If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 15
@@ -4160,7 +4165,7 @@ End Function
 ' Oncelik: 1 kendi ihtiyacinda kullan (acik talep/siparis), 2 transfer et (TRANSFER LISTESI ile ayni hesap), 3 once bunu kullan
 ' (ilde tuketiliyor: eski stok once), 4 beklet (baska il kullaniyor), 5 sat / hurda / iade degerlendir (hic kullanilmiyor),
 ' 6 once kullan (3 / 6 ay icinde atil olacak).
-Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal ilSec As String)
+Private Function ATIL_ISLEM_HESAPLA(ByVal c As Collection, ByVal ilSec As String) As Collection
     Dim tr As Object, kd As Object, trM As Object, kayit As Object, okuma As Variant, saT As Date, ok2 As Variant, x As Variant
     Dim k As String, q As Double, bd As Double, kal As Double, isler As Collection, eylem As String, ayr As String, il2 As Variant
     Dim uy2 As String, s6 As Double, enIl As String, enS As Double, i As Long, n As Long, r As Long, a1 As Long, anah() As String
@@ -4221,6 +4226,26 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
             End If
         End If
     Next x
+    Set ATIL_ISLEM_HESAPLA = isler
+End Function
+
+' Il bazinda ozet (Yonetim Merkezi atil tablosu): il kodu -> Array(kullanilabilir kalem (kendi ihtiyaci + transfer), sat/hurda kalem, sat/hurda TL)
+Public Function ATIL_ISLEM_IL_OZET(ByVal c As Collection) As Object
+    Dim d As Object, o As Variant, t As Variant
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each o In ATIL_ISLEM_HESAPLA(c, "TUM")
+        If d.Exists(CStr(o(13))) Then t = d(CStr(o(13))) Else t = Array(0#, 0#, 0#)
+        If o(0) <= 2 Then t(0) = t(0) + 1
+        If o(0) = 5 Then t(1) = t(1) + 1: t(2) = t(2) + o(7)
+        d(CStr(o(13))) = t
+    Next o
+    Set ATIL_ISLEM_IL_OZET = d
+End Function
+
+Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal ilSec As String)
+    Dim isler As Collection, ayr As String, i As Long, n As Long, r As Long, a1 As Long, anah() As String
+    Dim idx() As Long, sonuc() As Variant, o As Variant, top(1 To 6) As Double, adet(1 To 6) As Long, ad As Variant, kk As Variant
+    Set isler = ATIL_ISLEM_HESAPLA(c, ilSec)
     n = isler.Count
     For Each o In isler
         top(o(0)) = top(o(0)) + o(7): adet(o(0)) = adet(o(0)) + 1
@@ -4289,12 +4314,12 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
     ws.Cells(r, 1).Font.Size = 9: ws.Cells(r, 1).Font.Color = RGB(71, 85, 105)
 End Sub
 
-' Eylem satiri: Array(0 oncelik, 1 il, 2 sistem, 3 malzeme, 4 tanim, 5 depo, 6 miktar, 7 deger, 8 birim, 9 eylem, 10 durum, 11 giris, 12 ayrinti)
+' Eylem satiri: Array(0 oncelik, 1 il, 2 sistem, 3 malzeme, 4 tanim, 5 depo, 6 miktar, 7 deger, 8 birim, 9 eylem, 10 durum, 11 giris, 12 ayrinti, 13 il kodu)
 Private Sub AN_ISLEM_EKLE(ByVal sat As Collection, ByVal x As Variant, ByVal sira As Long, ByVal eylem As String, ByVal q As Double, _
     ByVal bd As Double, ByVal ayrinti As String)
     If q <= 0.0005 Then Exit Sub
     sat.Add Array(sira, Y_IL_ADI(CStr(x(0))), CStr(x(1)), CStr(x(3)), CStr(x(4)), ATIL_DEPO_METIN(x(15)), Round(q, 3), Round(q * bd, 2), _
-        CStr(x(7)), eylem, ATIL_DURUM_ADI(CLng(x(10))), CStr(x(9)), ayrinti)
+        CStr(x(7)), eylem, ATIL_DURUM_ADI(CLng(x(10))), CStr(x(9)), ayrinti, CStr(x(0)))
 End Sub
 
 ' Yonetim Merkezi en ustte: BUGUN YAPILACAK 5 IS. Malzeme analiz isleri (tutarli) + diger birimlerin kritik / uyari maddeleri;
@@ -4347,7 +4372,7 @@ Public Function ADM_YAPILACAK_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal 
     ws.Range(ADM_ADRES(r, 3, r, 9)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
     For i = 1 To application.Min(5, n)
         r = r + 1
-        ws.Rows(r).RowHeight = 24
+        ws.Rows(r).RowHeight = IIf(Len(CStr(a(i)(1))) > 110, 34, 24)
         ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(i = 1, RGB(254, 242, 242), vbWhite)
         ws.Range(ADM_ADRES(r, 3, r, 9)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
         ws.Cells(r, 2).Value2 = i
@@ -4355,7 +4380,8 @@ Public Function ADM_YAPILACAK_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal 
         If a(i)(2) > 0.005 Then ws.Cells(r, 10).Value2 = Round(a(i)(2), 2): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
         ws.Cells(r, 12).NumberFormat = "@": ws.Cells(r, 12).Value2 = CStr(a(i)(3))
         ws.Cells(r, 2).HorizontalAlignment = xlCenter: ws.Cells(r, 2).Font.bold = True: ws.Cells(r, 2).Font.Size = 12
-        ws.Cells(r, 3).HorizontalAlignment = xlLeft: ws.Cells(r, 3).IndentLevel = 1: ws.Cells(r, 3).ShrinkToFit = True
+        ws.Cells(r, 3).HorizontalAlignment = xlLeft: ws.Cells(r, 3).IndentLevel = 1: ws.Cells(r, 3).WrapText = True
+        ws.Cells(r, 3).VerticalAlignment = xlCenter: ws.Cells(r, 3).Font.Size = 10
         ws.Cells(r, 3).Font.bold = (i = 1)
         ws.Cells(r, 10).HorizontalAlignment = xlRight: ws.Cells(r, 10).Font.bold = True
         ws.Cells(r, 12).HorizontalAlignment = xlCenter: ws.Cells(r, 12).ShrinkToFit = True: ws.Cells(r, 12).Font.Color = RGB(20, 103, 173)

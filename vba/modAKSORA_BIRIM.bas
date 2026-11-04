@@ -9099,6 +9099,7 @@ End Function
 Private Function ADM_ATIL_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl As String) As Long
     Dim c As Collection, bilgi As Variant, x As Variant, iller As Variant, p As Long, j As Long, ilk As Long, n As Long
     Dim v(0 To 4, 0 To 8) As Double, kapsam(0 To 4) As Double, ok As String, t As Double, enAz As Double, enCok As Double, t2 As Long
+    Dim islem As Object
     ADM_ATIL_CIZ = r
     If ADM_WS(ATIL_KAYIT) Is Nothing Then Exit Function
     On Error GoTo Hata
@@ -9117,20 +9118,21 @@ Private Function ADM_ATIL_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secI
                 For t2 = 1 To 3
                     If x(20)(t2) > 0.0000001 Then j = (3 - t2) * 2: v(p, j) = v(p, j) + 1: v(p, j + 1) = v(p, j + 1) + x(19)(t2)
                 Next t2
-                If Len(x(13)) > 0 Then
-                    v(p, 6) = v(p, 6) + 1
-                    If x(18) = "YÜKSEK" Then v(p, 7) = v(p, 7) + 1
-                End If
                 If x(16) Then v(p, 8) = v(p, 8) + 1
             End If
         End If
     Next x
+    ' 6: kullanilabilir (kendi ihtiyaci + transfer, TRANSFER LISTESI ile ayni), 7: satis / hurda / iade adayi (ATIL STOK > NE YAPILMALI)
+    Set islem = ATIL_ISLEM_IL_OZET(c)
+    For p = 0 To 4
+        If islem.Exists(CStr(iller(p))) Then v(p, 6) = islem(CStr(iller(p)))(0): v(p, 7) = islem(CStr(iller(p)))(1)
+    Next p
     ok = "SAP okumasý: CDP " & IIf(bilgi(0) > 0, Format$(bilgi(0), "dd.mm.yyyy"), "-") & "  •  EPP " & IIf(bilgi(1) > 0, Format$(bilgi(1), "dd.mm.yyyy"), "-")
     r = r + 2
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "ATIL STOK   (24 aydan eski stok • D, K ve yüklenici depolarý • " & ok & ")"
     r = r + 1: ilk = r
     ADM_BASLIKLAR ws, r, 2, Array("Ýl", "ATIL kalem", "ATIL deðeri", "3 AY kalem", "3 AY deðeri", "6 AY kalem", "6 AY deðeri", _
-        "Atýl oraný", "Transfer önerisi", "Yüksek öncelik", "Stoðu düþen", "Deðerlendirme")
+        "Atýl oraný", "Kullanýlabilir (kendi / transfer)", "Sat / hurda adayý", "Stoðu düþen", "Deðerlendirme")
     enAz = -1: enCok = -1
     For p = 0 To 4
         If kapsam(p) > 0 Then
