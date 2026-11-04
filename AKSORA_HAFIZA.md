@@ -741,6 +741,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Yönetim Merkezi: arama bölümünden hemen sonra ADM_YAPILACAK_CIZ: mAdmIsler (ADM_ANALIZ_UYARI doldurur: kritik satın alma, transfer, gereksiz talep, fazla teslim, MB51 yaşı; tutarlı)
   + diğer birimlerin kritik (seviye 1) ve uyarı (seviye 2) maddeleri; ilk 5, No | Yapılacak iş | Tutar | Nerede.
 
+## DERS: VBA büyük/küçük harf duyarsız — saT ve sat aynı ad (04.11.2026)
+- "Compile error in hidden module: modAKSORA_ANALIZ": ATIL_ISLEM_CIZ'de "saT As Date" ve "sat As Collection" aynı prosedürde (çift tanım).
+  Düzeltme: koleksiyon adı isler. build.sh'a fx/dup_check.py eklendi (aynı prosedürde harf farkıyla çift Dim/parametre; #Else dalı hariç).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

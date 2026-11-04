@@ -4162,7 +4162,7 @@ End Function
 ' 6 once kullan (3 / 6 ay icinde atil olacak).
 Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal ilSec As String)
     Dim tr As Object, kd As Object, trM As Object, kayit As Object, okuma As Variant, saT As Date, ok2 As Variant, x As Variant
-    Dim k As String, q As Double, bd As Double, kal As Double, sat As Collection, eylem As String, ayr As String, il2 As Variant
+    Dim k As String, q As Double, bd As Double, kal As Double, isler As Collection, eylem As String, ayr As String, il2 As Variant
     Dim uy2 As String, s6 As Double, enIl As String, enS As Double, i As Long, n As Long, r As Long, a1 As Long, anah() As String
     Dim idx() As Long, sonuc() As Variant, o As Variant, top(1 To 6) As Double, adet(1 To 6) As Long, ad As Variant, kk As Variant
     Set tr = CreateObject("Scripting.Dictionary"): tr.CompareMode = vbTextCompare
@@ -4180,7 +4180,7 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
         End If
     Next x
     Set kayit = ATIL_KAYIT_OKU(okuma)
-    Set sat = New Collection
+    Set isler = New Collection
     For Each x In c
         If x(10) >= 1 And (ilSec = "TUM" Or x(0) = ilSec) Then
             k = CStr(x(2)) & "|" & CStr(x(3))
@@ -4189,18 +4189,18 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
             If IsArray(x(20)) Then q = x(20)(3)
             kal = q
             If kal > 0.0005 And kd.Exists(k) Then
-                AN_ISLEM_EKLE sat, x, 1, "KENDÝ ÝHTÝYACINDA KULLAN", application.Min(kal, kd(k)), bd, "Açýk talep / sipariþ var: iptal et, depodaki stoðu kullan"
+                AN_ISLEM_EKLE isler, x, 1, "KENDÝ ÝHTÝYACINDA KULLAN", application.Min(kal, kd(k)), bd, "Açýk talep / sipariþ var: iptal et, depodaki stoðu kullan"
                 kal = kal - application.Min(kal, kd(k))
             End If
             If kal > 0.0005 And tr.Exists(k) Then
-                AN_ISLEM_EKLE sat, x, 2, "TRANSFER ET", application.Min(kal, tr(k)), bd, ChrW(8594) & " " & trM(k) & "  (TRANSFER LÝSTESÝ)"
+                AN_ISLEM_EKLE isler, x, 2, "TRANSFER ET", application.Min(kal, tr(k)), bd, ChrW(8594) & " " & trM(k) & "  (TRANSFER LÝSTESÝ)"
                 kal = kal - application.Min(kal, tr(k))
             End If
             If kal > 0.0005 Then
                 s6 = 0
                 If kayit.Exists(k) Then s6 = kayit(k)(3)
                 If s6 > 0.0005 Then
-                    AN_ISLEM_EKLE sat, x, 3, "ÖNCE BUNU KULLAN", kal, bd, "Ýlde ayda ort. " & ADM_ADET(Round(s6 / 6, 1)) & " " & x(7) & " kullanýlýyor: yeni stoktan önce bu eski stok çýkýlsýn"
+                    AN_ISLEM_EKLE isler, x, 3, "ÖNCE BUNU KULLAN", kal, bd, "Ýlde ayda ort. " & ADM_ADET(Round(s6 / 6, 1)) & " " & x(7) & " kullanýlýyor: yeni stoktan önce bu eski stok çýkýlsýn"
                 Else
                     enIl = vbNullString: enS = 0
                     For Each il2 In ADM_ILLER()
@@ -4210,19 +4210,19 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
                         End If
                     Next il2
                     If enS > 0.0005 Then
-                        AN_ISLEM_EKLE sat, x, 4, "BEKLET", kal, bd, Y_IL_ADI(enIl) & " ayda ort. " & ADM_ADET(Round(enS / 6, 1)) & " " & x(7) & " kullanýyor; ihtiyaç doðunca transfer"
+                        AN_ISLEM_EKLE isler, x, 4, "BEKLET", kal, bd, Y_IL_ADI(enIl) & " ayda ort. " & ADM_ADET(Round(enS / 6, 1)) & " " & x(7) & " kullanýyor; ihtiyaç doðunca transfer"
                     Else
-                        AN_ISLEM_EKLE sat, x, 5, "SAT / HURDA / ÝADE", kal, bd, "Son 6 ayda hiçbir ilde kullanýlmadý"
+                        AN_ISLEM_EKLE isler, x, 5, "SAT / HURDA / ÝADE", kal, bd, "Son 6 ayda hiçbir ilde kullanýlmadý"
                     End If
                 End If
             End If
             If IsArray(x(20)) Then
-                If x(20)(1) + x(20)(2) > 0.0005 Then AN_ISLEM_EKLE sat, x, 6, "ÖNCE KULLAN", x(20)(1) + x(20)(2), bd, "Atýla " & CStr(x(11))
+                If x(20)(1) + x(20)(2) > 0.0005 Then AN_ISLEM_EKLE isler, x, 6, "ÖNCE KULLAN", x(20)(1) + x(20)(2), bd, "Atýla " & CStr(x(11))
             End If
         End If
     Next x
-    n = sat.Count
-    For Each o In sat
+    n = isler.Count
+    For Each o In isler
         top(o(0)) = top(o(0)) + o(7): adet(o(0)) = adet(o(0)) + 1
     Next o
     r = 12
@@ -4251,14 +4251,14 @@ Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal i
     End If
     ReDim anah(1 To n): ReDim idx(1 To n)
     i = 0
-    For Each o In sat
+    For Each o In isler
         i = i + 1: idx(i) = i
         anah(i) = CStr(o(0)) & I_SIRA_ANAHTAR(CDbl(o(7)))
     Next o
     Y_SIRALA anah, idx, 1, n
     ReDim sonuc(1 To n, 1 To 12)
     For i = 1 To n
-        o = sat(idx(i))
+        o = isler(idx(i))
         For kk = 1 To 12: sonuc(i, kk) = o(kk): Next kk
     Next i
     ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 5)).NumberFormat = "@"
