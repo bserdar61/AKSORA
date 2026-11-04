@@ -390,11 +390,13 @@ End Sub
 Private Sub ATIL_PANO_YAZ(ByVal metin As String)
     Dim h As LongPtr, p As LongPtr, boyut As LongPtr, i As Long, acik As Boolean
     application.CutCopyMode = False
-    For i = 1 To 40
+    ' Pano baska program (pano yoneticisi, OneDrive, Teams, SAP GUI) tarafindan kisa sure tutulabilir: 20 sn'ye kadar beklenir.
+    For i = 1 To 210
         If ATIL_OpenClipboard(0) <> 0 Then acik = True: Exit For
-        ATIL_Sleep 50
+        If i Mod 10 = 0 Then DoEvents: ATIL_SURE_YAZ
+        ATIL_Sleep IIf(i <= 20, 50, 100)
     Next i
-    If Not acik Then Err.Raise vbObjectError + 2330, , "Pano açýlamadý (baþka bir program kullanýyor)."
+    If Not acik Then Err.Raise vbObjectError + 2330, , "Pano 20 sn boyunca açýlamadý (baþka bir program kullanýyor). Pano kullanan programlarý (Teams ekran paylaþýmý, pano yöneticisi) kapatýp tekrar deneyin."
     ATIL_EmptyClipboard
     boyut = (Len(metin) + 1) * 2
     h = ATIL_GlobalAlloc(&H2, boyut)
@@ -925,7 +927,7 @@ Public Sub AKSORA_ATIL_SAP_OKU()
     Dim tum As Object, il As Variant, sis As Variant, ses As Object, msg As String, oturumlar As Object
     Dim sonuc As Object, adim As String, eksik As String, atlanan As String, bugun As Date
     Dim adet As Long, toplam As Long, no As Long, metin As String, ev As Boolean, sure As Double, ozet As String
-    Dim tamam As Object, hatalar As String
+    Dim tamam As Object, hatalar As String, okuma As Variant, kayitTmp As Object, bugunOk As String, digeri As String, cvp As VbMsgBoxResult
     If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR Then Exit Sub
     On Error GoTo Hata
     adim = "Stok verisi okunuyor"
@@ -955,6 +957,19 @@ Public Sub AKSORA_ATIL_SAP_OKU()
         MsgBox "SAP CDP ve EPP oturumu bulunamadý." & vbCrLf & "SAP'ye giriþ yapýn, sonra tekrar deneyin.", vbExclamation, "AKSORA | ATIL STOK"
         Exit Sub
     End If
+    ' Bir sistem bugun okunduysa (onceki okuma kismen kaldiysa) yalniz digeri okunabilir.
+    If oturumlar.Count = 2 Then
+        Set kayitTmp = ATIL_KAYIT_OKU(okuma)
+        If Int(CDbl(okuma(0))) = CDbl(Date) And Int(CDbl(okuma(1))) <> CDbl(Date) Then bugunOk = "CDP": digeri = "EPP"
+        If Int(CDbl(okuma(1))) = CDbl(Date) And Int(CDbl(okuma(0))) <> CDbl(Date) Then bugunOk = "EPP": digeri = "CDP"
+        Set kayitTmp = Nothing
+        If Len(bugunOk) > 0 Then
+            cvp = MsgBox(bugunOk & " bugün okundu." & vbCrLf & vbCrLf & "Yalnýz " & digeri & " okunsun mu?" & vbCrLf & vbCrLf & _
+                "Evet: yalnýz " & digeri & "   •   Hayýr: ikisi de   •   Ýptal: vazgeç", vbYesNoCancel + vbQuestion, "AKSORA | ATIL STOK")
+            If cvp = vbCancel Then Exit Sub
+            If cvp = vbYes Then oturumlar.Remove bugunOk
+        End If
+    End If
     If MsgBox("SAP'den atýl stok verisi okunacak (MB51)." & vbCrLf & vbCrLf & _
         "Sistem: " & Join(oturumlar.keys, " + ") & _
         IIf(Len(atlanan) > 0, vbCrLf & "Açýk oturum yok: " & Mid$(atlanan, 3) & " (eski kaydý korunur)", "") & vbCrLf & _
@@ -975,6 +990,17 @@ Public Sub AKSORA_ATIL_SAP_OKU()
             hatalar = hatalar & vbCrLf & "• " & sis & ": baþlatýlmadý (durduruldu)"
         Else
             metin = ATIL_SISTEM_OKU(oturumlar(sis), CStr(sis), tum, sonuc, bugun, adet, toplam)
+            ' Gecici hata (pano mesgul, SAP penceresi) bir kez daha denenir.
+            If Len(metin) > 0 And Not AKSORA_ADMIN_IPTAL Then
+                AKSORA_SAP_TESHIS_YAZ "Atýl " & sis & " yeniden deneniyor: " & metin
+                On Error Resume Next
+                If Not oturumlar(sis).FindById("wnd[1]", False) Is Nothing Then oturumlar(sis).FindById("wnd[1]/tbar[0]/btn[12]").Press
+                On Error GoTo Hata
+                ATIL_ADIM 0.03 + 0.92 * adet / toplam, sis & " yeniden deneniyor (geçici hata)..."
+                DoEvents: ATIL_Sleep 2000
+                toplam = toplam + 15
+                metin = ATIL_SISTEM_OKU(oturumlar(sis), CStr(sis), tum, sonuc, bugun, adet, toplam)
+            End If
             If Len(metin) = 0 Then tamam.Add CStr(sis), oturumlar(sis) Else hatalar = hatalar & vbCrLf & "• " & sis & ": " & metin
             metin = vbNullString
         End If

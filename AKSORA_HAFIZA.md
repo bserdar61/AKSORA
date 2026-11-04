@@ -686,6 +686,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Excel: Tüm Liste + her gönderen il ayrı sayfa. ANA PANEL 11. hızlı buton goTransfer; KRİTİK ve SATINALMA sayfalarında TRANSFER LİSTESİ düğmesi.
 - KRİTİK STOK sadeleşti: 4 kart (kritik, azalıyor, transferle çözülen, satın alınması gereken TL) + tek tablo "SATIN ALINMASI GEREKENLER"; tam liste Excel'de.
 
+## ATIL MB51: pano meşgul hatası (04.11.2026)
+- Kullanıcı: EPP 7055 "Pano açılamadı (başka bir program kullanıyor)" → EPP okunmadı. ATIL_PANO_YAZ artık 20 sn bekler (önce 2 sn).
+- ATIL_SISTEM_OKU geçici hata verirse aynı sistem bir kez daha denenir (popup kapatılır, 2 sn bekleme).
+- Bir sistem bugün okunduysa: "Yalnız <diğeri> okunsun mu?" (Evet/Hayır/İptal) — kısmi okumadan sonra 5 dk tasarruf.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
