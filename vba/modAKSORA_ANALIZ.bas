@@ -3414,6 +3414,8 @@ Private Function KS_ANALIZ(ByRef okuma As Variant, ByRef saTarih As Date) As Col
         x = ham(idx(i))
         If x(19) = "KRÝTÝK" Or x(19) = "AZALIYOR" Then
             ihtiyac = 3 * x(9) - (x(7) + x(8) + x(11) + x(12))
+            ' Adetli malzemede transfer de satin alma da tam sayi (1,5 adet transfer onerilmez).
+            If ihtiyac > 0.0005 Then ihtiyac = KS_YUKARI(ihtiyac, CStr(x(6)))
             tMik = 0: tMetin = vbNullString: tKay = vbNullString
             Do While ihtiyac > 0.0005
                 enIl = vbNullString: enMik = 0
@@ -3681,7 +3683,7 @@ Private Sub KS_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         For Each x In an
             If (ilSec = "TUM" Or x(0) = ilSec) And x(14) > 0.0005 Then
                 i = i + 1
-                sonuc(i, 1) = x(1): sonuc(i, 2) = x(4): sonuc(i, 3) = x(5): sonuc(i, 4) = Round(x(7) + x(8), 3)
+                sonuc(i, 1) = x(1) & " " & x(2): sonuc(i, 2) = x(4): sonuc(i, 3) = x(5): sonuc(i, 4) = Round(x(7) + x(8), 3)
                 sonuc(i, 5) = Round(x(10), 1): sonuc(i, 6) = x(14): sonuc(i, 7) = x(6): sonuc(i, 8) = x(16): sonuc(i, 9) = x(19)
                 sonuc(i, 10) = Round(x(11) + x(12), 3)
             End If
@@ -4175,7 +4177,7 @@ Private Sub TR_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         For Each x In liste
             If ilSec = "TUM" Or x(0) = ilSec Or x(1) = ilSec Then
                 i = i + 1
-                sonuc(i, 1) = Y_IL_ADI(CStr(x(0))): sonuc(i, 2) = Y_IL_ADI(CStr(x(1))): sonuc(i, 3) = x(3): sonuc(i, 4) = x(4)
+                sonuc(i, 1) = Y_IL_ADI(CStr(x(0))) & " " & x(2): sonuc(i, 2) = Y_IL_ADI(CStr(x(1))) & " " & x(2): sonuc(i, 3) = x(3): sonuc(i, 4) = x(4)
                 sonuc(i, 5) = x(5): sonuc(i, 6) = x(6): sonuc(i, 7) = x(7): sonuc(i, 8) = x(8): sonuc(i, 9) = x(9)
             End If
         Next x

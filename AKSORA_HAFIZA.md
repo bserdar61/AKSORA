@@ -698,6 +698,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - SA_SISTEM_OKU: sistem başına okuma; hata olursa bir kez yeniden; yine olmazsa o sistemin ÖNCEKİ kaydı korunur, diğer sistem kaydedilir; hiçbiri okunamazsa kayıt değişmez.
 - up41 verisi: _ATIL K (aylık sarf) dolu 3057 kalem. Basit simülasyon (yoldakiler hariç): kritik 128, azalıyor 211, düzensiz 509 (önceden ~546 kritik).
 
+## Kritik/transfer düzeltmeleri (04.11.2026, temel up42; Sayfa100 = TRANSFER_LISTESI)
+- Satınalma okuması başarılı (1020 talep / 1633 sipariş). Transfer Excel'i: 119 satır, 1.868.707,24 TL; 94 transfer, 25 kendi atıl stoğu; tekrar yok.
+- Adetli malzemede kritik transfer/öneri tam sayı (önceden "1,5 ADT" transfer çıkıyordu).
+- Kritik ve transfer sayfasında il yanında sistem (Artvin CDP / Artvin EPP): aynı malzeme iki satır görünüyordu (CDP ve EPP ayrı üretim yeri).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
