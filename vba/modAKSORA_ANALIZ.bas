@@ -22,6 +22,7 @@ Private mOnbHes As Collection
 Private mOnbBilgi As Variant
 Private Const AN_ESKI_GUN As Long = 7
 Private Const TR_SAYFA As String = "TRANSFER_LISTESI"
+Private mAdmIsler As Collection
 Private Const TR_ETIKET As String = "AKSORA_TRANSFER_V1"
 Private Declare PtrSafe Function ATIL_OpenClipboard Lib "user32" Alias "OpenClipboard" (ByVal hWnd As LongPtr) As Long
 Private Declare PtrSafe Function ATIL_EmptyClipboard Lib "user32" Alias "EmptyClipboard" () As Long
@@ -1208,6 +1209,7 @@ Private Sub ATIL_GOSTER(ByVal il As String, Optional ByVal gorunum As String = "
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
     application.Calculation = xlCalculationManual
+    AN_ONB_AC
     Set ws = ATIL_SAYFA_KUR()
     If Len(gorunum) > 0 Then ws.Unprotect "": ws.Range("BX21").Value2 = gorunum
     If Len(il) = 0 Then il = CStr(ws.Range("BX20").Value2)
@@ -1221,6 +1223,7 @@ Private Sub ATIL_GOSTER(ByVal il As String, Optional ByVal gorunum As String = "
 Cikis:
     ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
     On Error Resume Next
+    AN_ONB_KAPAT
     mYonlendirme = False
     application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = True
@@ -1553,8 +1556,8 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_KOLONLAR ws, Array(90, 60, 95, 230, 140, 95, 115, 105, 125, 105, 125, sw)
     ws.Range("BX20").Value2 = ilSec
     gor = CStr(ws.Range("BX21").Value2)
-    ' Transfer onerileri tek yerde: TRANSFER LISTESI sayfasi (bu sayfada ayri transfer gorunumu yok).
-    If gor <> "LISTE" Then gor = "OZET"
+    ' Varsayilan gorunum NE YAPILMALI; transfer ayrintisi TRANSFER LISTESI sayfasinda.
+    If gor <> "LISTE" And gor <> "OZET" Then gor = "ISLEM"
     Set c = ATIL_HESAPLA(bilgi)
     ' kapsam degeri (atil orani icin) ve karne
     Set kapsam = CreateObject("Scripting.Dictionary"): kapsam.CompareMode = vbTextCompare
@@ -1676,11 +1679,11 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     If Not gec Then GoTo Son
 
     '--- gorunum sekmeleri: ozet / transfer / liste (tek bolum gosterilir, sayfa kisa kalir)
-    gAd = Array("ÖZET  •  kategori ve karne", "ATIL LÝSTESÝ  •  " & liste.Count & " kalem", "TRANSFER LÝSTESÝ  " & ChrW(8594) & "  ne, nereden, nereye")
-    gKod = Array("OZET", "LISTE", "GIT")
-    bw2 = (w - 2 * 8) / 3
+    gAd = Array("NE YAPILMALI", "ÖZET  •  kategori ve karne", "ATIL LÝSTESÝ  •  " & liste.Count & " kalem", "TRANSFER LÝSTESÝ  " & ChrW(8594))
+    gKod = Array("ISLEM", "OZET", "LISTE", "GIT")
+    bw2 = (w - 3 * 8) / 4
     y = ws.Rows(10).Top + 1
-    For i = 0 To 2
+    For i = 0 To 3
         If CStr(gKod(i)) = "GIT" Then
             Set s = Y_DUGME(ws, "ATIL_GOR_" & i, CStr(gAd(i)), i * (bw2 + 8), y, bw2, 28, RGB(39, 160, 94), "AKSORA_TRANSFER_AC")
             s.TextFrame2.TextRange.Font.Size = 11
@@ -1692,6 +1695,10 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         End If
         s.AlternativeText = CStr(gKod(i))
     Next i
+    If gor = "ISLEM" Then
+        ATIL_ISLEM_CIZ ws, c, ilSec
+        GoTo Son
+    End If
     If gor <> "OZET" Then GoTo Ayrinti
 
     '--- kategori ozeti
@@ -4065,9 +4072,11 @@ End Sub
 '---------- Yonetim Merkezi: analiz uyarilari ve kritik stok ozeti ----------
 ' Skor hesabindan once cagrilir (ADM_KUR). Veri yasi, fazla teslim, kritik stok ve bekleyen transfer kazanci.
 Public Sub ADM_ANALIZ_UYARI(ByVal uy As Collection, ByVal secIl As String)
+    Dim nIp As Long, tIp As Double, nStokYok As Long, enAcil As String
     Dim ws As Worksheet, t0 As Double, t1 As Double, g As Long, saTarih As Date, sBilgi As String, kayit As Collection, x As Variant
     Dim nF As Long, tF As Double, an As Collection, okuma As Variant, nK As Long, tK As Double, liste As Collection, tT As Double, nT As Long
     Dim ilAd As String
+    Set mAdmIsler = New Collection
     On Error GoTo Son
     ilAd = IIf(Len(secIl) = 0, "Tüm iller", Y_IL_ADI(secIl))
     Set ws = ADM_WS(ATIL_KAYIT)
@@ -4075,7 +4084,10 @@ Public Sub ADM_ANALIZ_UYARI(ByVal uy As Collection, ByVal secIl As String)
         t0 = AN_EN_ESKI(ATIL_HUCRE_SAYI(ws.Range("D1").Value2), ATIL_HUCRE_SAYI(ws.Range("E1").Value2))
         If t0 > 0 Then
             g = Int(CDbl(Now)) - Int(t0)
-            If g >= AN_ESKI_GUN Then ADM_UYAR uy, 2, "Malzeme • ATIL STOK SAP okumasý (MB51) " & g & " gün önce; atýl stok, transfer ve kritik stok eski veriyle hesaplanýyor.", "Malzeme | Analiz", "Analiz verisi"
+            If g >= AN_ESKI_GUN Then
+                ADM_UYAR uy, 2, "Malzeme • ATIL STOK SAP okumasý (MB51) " & g & " gün önce; atýl stok, transfer ve kritik stok eski veriyle hesaplanýyor.", "Malzeme | Analiz", "Analiz verisi"
+                mAdmIsler.Add Array(60, "ATIL STOK'ta SAP'den oku (MB51): veri " & g & " gün eski, öneriler güncel deðil", 0#, "Malzeme > ATIL STOK")
+            End If
         End If
     End If
     Set kayit = SA_KAYIT_OKU(saTarih, sBilgi)
@@ -4083,8 +4095,13 @@ Public Sub ADM_ANALIZ_UYARI(ByVal uy As Collection, ByVal secIl As String)
         g = Int(CDbl(Now)) - Int(CDbl(saTarih))
         If g >= AN_ESKI_GUN Then ADM_UYAR uy, 3, "Malzeme • SATINALMA KONTROL (ME5A / ME2N) " & g & " gün önce okundu.", "Malzeme | Analiz", "Analiz verisi"
         For Each x In SA_ANALIZ(kayit)
-            If x(22) = "FAZLA TESLÝM ALINMIÞ" And (Len(secIl) = 0 Or ATIL_TESIS_IL(CStr(x(3))) = secIl) Then nF = nF + 1: tF = tF + Abs(x(20))
+            If Len(secIl) = 0 Or ATIL_TESIS_IL(CStr(x(3))) = secIl Then
+                If x(22) = "FAZLA TESLÝM ALINMIÞ" Then nF = nF + 1: tF = tF + Abs(x(20))
+                If x(17) > 0.0005 Then nIp = nIp + 1: tIp = tIp + x(19)
+            End If
         Next x
+        If nIp > 0 Then mAdmIsler.Add Array(30, nIp & " açýk talep / sipariþi iptal et ya da azalt: ayný malzeme atýl stokta var", tIp, "Malzeme > SATIN ALMA (tablo 2)")
+        If nF > 0 Then mAdmIsler.Add Array(40, nF & " fazla teslim alýnmýþ sipariþ kalemi için iade / fatura kontrolü yap", tF, "Malzeme > SATIN ALMA (tablo 3)")
         If nF > 0 Then ADM_UYAR uy, 2, "Satýnalma • " & ilAd & ": " & nF & " sipariþ kalemi sipariþten FAZLA teslim alýnmýþ; iade / fatura kontrolü yapýlmalý.", "Malzeme | Satýnalma", "Fazla teslim"
     End If
     Set an = KS_ANALIZ(okuma, saTarih)
@@ -4092,13 +4109,19 @@ Public Sub ADM_ANALIZ_UYARI(ByVal uy As Collection, ByVal secIl As String)
         If (Len(secIl) = 0 Or x(0) = secIl) Then
             If x(19) = "KRÝTÝK" Then nK = nK + 1
             If x(14) > 0.0005 Then tK = tK + x(16)
+            If x(19) = "KRÝTÝK" And x(7) + x(8) <= 0.0005 And x(14) > 0.0005 Then
+                nStokYok = nStokYok + 1
+                If Len(enAcil) = 0 Then enAcil = CStr(x(5)) & " (" & x(1) & ")"
+            End If
         End If
     Next x
+    If nK > 0 Then mAdmIsler.Add Array(10, "Satýn almayý baþlat: " & nK & " malzemenin stoðu 1 aydan az yetiyor" & IIf(nStokYok > 0, ", " & nStokYok & " tanesinin stoðu yok (ör. " & enAcil & ")", ""), tK, "Malzeme > SATIN ALMA (tablo 1)")
     If nK > 0 Then ADM_UYAR uy, IIf(nK >= 50, 1, 2), "Kritik stok • " & ilAd & ": " & nK & " malzemenin stoðu 1 aydan az yetiyor; satýn alýnmasý gereken " & ADM_TL(tK) & ".", "Malzeme | Kritik stok", "Kritik stok"
     Set liste = AN_TRANSFERLER(saTarih, okuma)
     For Each x In liste
         If Len(secIl) = 0 Or x(0) = secIl Or x(1) = secIl Then nT = nT + 1: tT = tT + x(7)
     Next x
+    If nT > 0 Then mAdmIsler.Add Array(20, nT & " stok naklini / atýl kullanýmýný uygula (satýn alma yerine)", tT, "Malzeme > TRANSFER LÝSTESÝ")
     If nT > 0 Then ADM_UYAR uy, 3, "Transfer • " & ilAd & ": " & nT & " transfer / atýl kullaným önerisi bekliyor; uygulanýrsa " & ADM_TL(tT) & " satýn alma yapýlmaz (TRANSFER LÝSTESÝ).", "Malzeme | Transfer", "Transfer"
 Son:
 End Sub
@@ -4131,4 +4154,208 @@ Private Function AN_SURE_METNI(ByVal ay As Double) As String
     Else
         AN_SURE_METNI = a & " ay" & IIf(d > 0, " " & d & " gün", "")
     End If
+End Function
+
+' ATIL STOK "NE YAPILMALI": her atil / atila yaklasan kalem icin tek eylem satiri.
+' Oncelik: 1 kendi ihtiyacinda kullan (acik talep/siparis), 2 transfer et (TRANSFER LISTESI ile ayni hesap), 3 once bunu kullan
+' (ilde tuketiliyor: eski stok once), 4 beklet (baska il kullaniyor), 5 sat / hurda / iade degerlendir (hic kullanilmiyor),
+' 6 once kullan (3 / 6 ay icinde atil olacak).
+Private Sub ATIL_ISLEM_CIZ(ByVal ws As Worksheet, ByVal c As Collection, ByVal ilSec As String)
+    Dim tr As Object, kd As Object, trM As Object, kayit As Object, okuma As Variant, saT As Date, ok2 As Variant, x As Variant
+    Dim k As String, q As Double, bd As Double, kal As Double, sat As Collection, eylem As String, ayr As String, il2 As Variant
+    Dim uy2 As String, s6 As Double, enIl As String, enS As Double, i As Long, n As Long, r As Long, a1 As Long, anah() As String
+    Dim idx() As Long, sonuc() As Variant, o As Variant, top(1 To 6) As Double, adet(1 To 6) As Long, ad As Variant, kk As Variant
+    Set tr = CreateObject("Scripting.Dictionary"): tr.CompareMode = vbTextCompare
+    Set trM = CreateObject("Scripting.Dictionary"): trM.CompareMode = vbTextCompare
+    Set kd = CreateObject("Scripting.Dictionary"): kd.CompareMode = vbTextCompare
+    For Each x In AN_TRANSFERLER(saT, ok2)
+        If InStr(CStr(x(8)), "fazla stoktan") = 0 Then
+            k = AKSORA_IL_TESIS(CStr(x(0)), CStr(x(2))) & "|" & CStr(x(3))
+            If x(0) = x(1) Then
+                kd(k) = ATIL_DS(kd, k) + x(5)
+            Else
+                tr(k) = ATIL_DS(tr, k) + x(5)
+                trM(k) = IIf(trM.Exists(k), trM(k) & ", ", "") & Y_IL_ADI(CStr(x(1))) & " " & ADM_ADET(x(5))
+            End If
+        End If
+    Next x
+    Set kayit = ATIL_KAYIT_OKU(okuma)
+    Set sat = New Collection
+    For Each x In c
+        If x(10) >= 1 And (ilSec = "TUM" Or x(0) = ilSec) Then
+            k = CStr(x(2)) & "|" & CStr(x(3))
+            If x(6) > 0 Then bd = x(8) / x(6) Else bd = 0
+            q = 0
+            If IsArray(x(20)) Then q = x(20)(3)
+            kal = q
+            If kal > 0.0005 And kd.Exists(k) Then
+                AN_ISLEM_EKLE sat, x, 1, "KENDÝ ÝHTÝYACINDA KULLAN", application.Min(kal, kd(k)), bd, "Açýk talep / sipariþ var: iptal et, depodaki stoðu kullan"
+                kal = kal - application.Min(kal, kd(k))
+            End If
+            If kal > 0.0005 And tr.Exists(k) Then
+                AN_ISLEM_EKLE sat, x, 2, "TRANSFER ET", application.Min(kal, tr(k)), bd, ChrW(8594) & " " & trM(k) & "  (TRANSFER LÝSTESÝ)"
+                kal = kal - application.Min(kal, tr(k))
+            End If
+            If kal > 0.0005 Then
+                s6 = 0
+                If kayit.Exists(k) Then s6 = kayit(k)(3)
+                If s6 > 0.0005 Then
+                    AN_ISLEM_EKLE sat, x, 3, "ÖNCE BUNU KULLAN", kal, bd, "Ýlde ayda ort. " & ADM_ADET(Round(s6 / 6, 1)) & " " & x(7) & " kullanýlýyor: yeni stoktan önce bu eski stok çýkýlsýn"
+                Else
+                    enIl = vbNullString: enS = 0
+                    For Each il2 In ADM_ILLER()
+                        If CStr(il2) <> CStr(x(0)) Then
+                            uy2 = AKSORA_IL_TESIS(CStr(il2), CStr(x(1))) & "|" & CStr(x(3))
+                            If kayit.Exists(uy2) Then If kayit(uy2)(3) > enS Then enS = kayit(uy2)(3): enIl = CStr(il2)
+                        End If
+                    Next il2
+                    If enS > 0.0005 Then
+                        AN_ISLEM_EKLE sat, x, 4, "BEKLET", kal, bd, Y_IL_ADI(enIl) & " ayda ort. " & ADM_ADET(Round(enS / 6, 1)) & " " & x(7) & " kullanýyor; ihtiyaç doðunca transfer"
+                    Else
+                        AN_ISLEM_EKLE sat, x, 5, "SAT / HURDA / ÝADE", kal, bd, "Son 6 ayda hiçbir ilde kullanýlmadý"
+                    End If
+                End If
+            End If
+            If IsArray(x(20)) Then
+                If x(20)(1) + x(20)(2) > 0.0005 Then AN_ISLEM_EKLE sat, x, 6, "ÖNCE KULLAN", x(20)(1) + x(20)(2), bd, "Atýla " & CStr(x(11))
+            End If
+        End If
+    Next x
+    n = sat.Count
+    For Each o In sat
+        top(o(0)) = top(o(0)) + o(7): adet(o(0)) = adet(o(0)) + 1
+    Next o
+    r = 12
+    Y_BOLUM ws, r, "NE YAPILMALI  •  " & n & " satýr", "Her satýr tek iþ. Transferler TRANSFER LÝSTESÝ ile ayný hesap (ayný stok iki kez önerilmez).", 12
+    ws.Rows(r).RowHeight = 30
+    ' eylem ozeti (tek satir)
+    r = r + 1
+    ayr = vbNullString
+    i = 0
+    For Each ad In Array("Kendi ihtiyacýnda kullan", "Transfer et", "Önce bunu kullan", "Beklet", "Sat / hurda / iade", "Önce kullan (atýla yaklaþan)")
+        i = i + 1
+        If adet(i) > 0 Then ayr = ayr & IIf(Len(ayr) > 0, "     •     ", "") & ad & ": " & adet(i) & " kalem, " & AKSORA_SAYI_METNI(Round(top(i), 2), "#,##0.00") & " TL"
+    Next ad
+    ws.Cells(r, 1).Value2 = ayr
+    ws.Cells(r, 1).Font.Size = 10: ws.Cells(r, 1).Font.bold = True: ws.Cells(r, 1).Font.Color = RGB(12, 45, 79)
+    ws.Rows(r).RowHeight = 22
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Ýl", "Sistem", "Malzeme", "Kýsa metin", "Depo", "Miktar", _
+        "Deðer", "Birim", "Ne yapýlmalý", "Durum", "En eski giriþ", "Ayrýntý")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    If n = 0 Then
+        ws.Cells(a1, 4).Value2 = "Atýl ya da atýla yaklaþan stok yok."
+        ws.Cells(a1, 4).Font.Italic = True: ws.Cells(a1, 4).Font.Color = RGB(21, 128, 61)
+        Exit Sub
+    End If
+    ReDim anah(1 To n): ReDim idx(1 To n)
+    i = 0
+    For Each o In sat
+        i = i + 1: idx(i) = i
+        anah(i) = CStr(o(0)) & I_SIRA_ANAHTAR(CDbl(o(7)))
+    Next o
+    Y_SIRALA anah, idx, 1, n
+    ReDim sonuc(1 To n, 1 To 12)
+    For i = 1 To n
+        o = sat(idx(i))
+        For kk = 1 To 12: sonuc(i, kk) = o(kk): Next kk
+    Next i
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 5)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 8), ws.Cells(a1 + n - 1, 12)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
+    r = a1 + n - 1
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+    ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 20
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).ShrinkToFit = True
+    AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6))
+    ws.Range(ws.Cells(a1, 6), ws.Cells(r, 6)).Font.bold = True
+    ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 8), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).ShrinkToFit = True
+    ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12)).ShrinkToFit = True
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "KENDÝ ÝHTÝYACINDA KULLAN", RGB(220, 38, 38), RGB(255, 255, 255)
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "TRANSFER ET", RGB(35, 119, 204), RGB(255, 255, 255)
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "ÖNCE BUNU KULLAN", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "BEKLET", RGB(241, 245, 249), RGB(71, 85, 105)
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "SAT / HURDA / ÝADE", RGB(237, 233, 254), RGB(91, 33, 182)
+    Y_DURUM_KF ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)), "ÖNCE KULLAN", RGB(254, 243, 199), RGB(146, 64, 14)
+    ATIL_DURUM_RENK ws.Range(ws.Cells(a1, 10), ws.Cells(r, 10))
+    ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(r, 12)).AutoFilter
+    r = r + 2
+    ws.Cells(r, 1).Value2 = "Atýl: stoðun 24 aydan eski giriþe ait kýsmý. Önce kullan: 18-24 ay arasý (3 / 6 ay içinde atýl olacak). Deðer: miktar x AKSORA stok birim deðeri."
+    ws.Cells(r, 1).Font.Size = 9: ws.Cells(r, 1).Font.Color = RGB(71, 85, 105)
+End Sub
+
+' Eylem satiri: Array(0 oncelik, 1 il, 2 sistem, 3 malzeme, 4 tanim, 5 depo, 6 miktar, 7 deger, 8 birim, 9 eylem, 10 durum, 11 giris, 12 ayrinti)
+Private Sub AN_ISLEM_EKLE(ByVal sat As Collection, ByVal x As Variant, ByVal sira As Long, ByVal eylem As String, ByVal q As Double, _
+    ByVal bd As Double, ByVal ayrinti As String)
+    If q <= 0.0005 Then Exit Sub
+    sat.Add Array(sira, Y_IL_ADI(CStr(x(0))), CStr(x(1)), CStr(x(3)), CStr(x(4)), ATIL_DEPO_METIN(x(15)), Round(q, 3), Round(q * bd, 2), _
+        CStr(x(7)), eylem, ATIL_DURUM_ADI(CLng(x(10))), CStr(x(9)), ayrinti)
+End Sub
+
+' Yonetim Merkezi en ustte: BUGUN YAPILACAK 5 IS. Malzeme analiz isleri (tutarli) + diger birimlerin kritik / uyari maddeleri;
+' oncelik: kritik stok, kritik uyarilar, transfer, gereksiz talep, fazla teslim, veri yasi, diger uyarilar. Donus: son satir.
+Public Function ADM_YAPILACAK_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal uy As Collection, ByVal ilMetin As String) As Long
+    Dim liste As Collection, x As Variant, i As Long, j As Long, n As Long, a() As Variant, t As Variant, ilk As Long
+    On Error GoTo Son
+    Set liste = New Collection
+    If Not mAdmIsler Is Nothing Then
+        For Each x In mAdmIsler
+            liste.Add x
+        Next x
+    End If
+    For Each x In uy
+        Select Case CStr(x(3))
+            Case "Analiz verisi", "Kritik stok", "Fazla teslim", "Transfer"
+                ' malzeme analiz isleri yukarida tutariyla
+            Case Else
+                If x(0) = 1 Then liste.Add Array(15, CStr(x(1)), 0#, CStr(x(2)))
+                If x(0) = 2 Then liste.Add Array(70, CStr(x(1)), 0#, CStr(x(2)))
+        End Select
+    Next x
+    n = liste.Count
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "BUGÜN YAPILACAK " & application.Min(5, n) & " ÝÞ   •   " & ilMetin & "   (en önemliden baþlayarak)"
+    r = r + 1
+    If n = 0 Then
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Bekleyen önemli iþ yok.", RGB(220, 252, 231), RGB(21, 128, 61), 10, True, xlLeft
+        ADM_YAPILACAK_CIZ = r
+        Exit Function
+    End If
+    ReDim a(1 To n)
+    i = 0
+    For Each x In liste
+        i = i + 1: a(i) = x
+    Next x
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If a(j)(0) < a(i)(0) Or (a(j)(0) = a(i)(0) And a(j)(2) > a(i)(2)) Then t = a(i): a(i) = a(j): a(j) = t
+        Next j
+    Next i
+    ilk = r
+    ADM_BASLIKLAR ws, r, 2, Array("No", "Yapýlacak iþ", "", "", "", "", "", "", "Tutar", "", "Nerede", "")
+    ws.Range(ADM_ADRES(r, 3, r, 9)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+    For i = 1 To application.Min(5, n)
+        r = r + 1
+        ws.Rows(r).RowHeight = 24
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(i = 1, RGB(254, 242, 242), vbWhite)
+        ws.Range(ADM_ADRES(r, 3, r, 9)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+        ws.Cells(r, 2).Value2 = i
+        ws.Cells(r, 3).NumberFormat = "@": ws.Cells(r, 3).Value2 = CStr(a(i)(1))
+        If a(i)(2) > 0.005 Then ws.Cells(r, 10).Value2 = Round(a(i)(2), 2): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+        ws.Cells(r, 12).NumberFormat = "@": ws.Cells(r, 12).Value2 = CStr(a(i)(3))
+        ws.Cells(r, 2).HorizontalAlignment = xlCenter: ws.Cells(r, 2).Font.bold = True: ws.Cells(r, 2).Font.Size = 12
+        ws.Cells(r, 3).HorizontalAlignment = xlLeft: ws.Cells(r, 3).IndentLevel = 1: ws.Cells(r, 3).ShrinkToFit = True
+        ws.Cells(r, 3).Font.bold = (i = 1)
+        ws.Cells(r, 10).HorizontalAlignment = xlRight: ws.Cells(r, 10).Font.bold = True
+        ws.Cells(r, 12).HorizontalAlignment = xlCenter: ws.Cells(r, 12).ShrinkToFit = True: ws.Cells(r, 12).Font.Color = RGB(20, 103, 173)
+    Next i
+    ADM_KENAR ws.Range(ADM_ADRES(ilk, 2, r, 13)), True
+    ADM_YAPILACAK_CIZ = r
+    Exit Function
+Son:
+    ADM_YAPILACAK_CIZ = r
 End Function

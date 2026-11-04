@@ -733,6 +733,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## Temel up44 (04.11.2026)
 - Kullanıcı dosyası (7f906351) kod olarak son derlemeyle aynı; temel up44. Excel'lerde alt bilgi XML'de var (&C&8AKSORA ile hazırlanmıştır); openpyxl &R sonrası &C'yi okumuyor, sorun yok.
 
+## ATIL "NE YAPILMALI" + Yönetim Merkezi "BUGÜN YAPILACAK 5 İŞ" (04.11.2026)
+- ATIL_STOK varsayılan görünüm ISLEM (ATIL_ISLEM_CIZ): her atıl/atıla yaklaşan kalem için tek eylem satırı:
+  1 KENDİ İHTİYACINDA KULLAN (açık talep/sipariş), 2 TRANSFER ET (AN_TRANSFERLER atıl kaynakları; aynı hesap), 3 ÖNCE BUNU KULLAN (ilde tüketiliyor),
+  4 BEKLET (başka il kullanıyor), 5 SAT / HURDA / İADE (6 ayda hiçbir ilde sarf yok), 6 ÖNCE KULLAN (3/6 ay kaldı). Sekmeler: NE YAPILMALI | ÖZET | ATIL LİSTESİ | TRANSFER LİSTESİ →.
+  ATIL_GOSTER önbellek açar (AN_ONB).
+- Yönetim Merkezi: arama bölümünden hemen sonra ADM_YAPILACAK_CIZ: mAdmIsler (ADM_ANALIZ_UYARI doldurur: kritik satın alma, transfer, gereksiz talep, fazla teslim, MB51 yaşı; tutarlı)
+  + diğer birimlerin kritik (seviye 1) ve uyarı (seviye 2) maddeleri; ilk 5, No | Yapılacak iş | Tutar | Nerede.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

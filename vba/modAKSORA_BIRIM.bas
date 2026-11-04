@@ -8260,6 +8260,9 @@ Private Sub ADM_KUR(ByVal ws As Worksheet)
     ws.Range("K7").Font.Italic = True: ws.Range("K7").WrapText = True
     ws.Rows(ADM_ARA_SATIR & ":" & ADM_ARA_SATIR + ADM_ARA_N + 1).Hidden = True
     r = ADM_ARA_SATIR + ADM_ARA_N + 3
+    '--- bugun yapilacak 5 is (malzeme analizleri + kritik uyarilar)
+    r = ADM_YAPILACAK_CIZ(ws, r, uy, ilMetin)
+    r = r + 2
     '--- demontaj kontrolu
     ADM_ILERLE 0.91, "Demontaj tablosu çiziliyor..."
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "DEMONTAJ KONTROLÜ   •   " & ilMetin & "  (yalnýz trafo, pano, armatür, kablo, direk, hücre; azalan malzeme - ÇIKMA/BDSZ giriþi)"
