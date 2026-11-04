@@ -761,7 +761,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 ## Katalog v3 + LinkedIn kataloğu (04.11.2026)
 - katalog/AKSORA_Katalog_v3.pdf: kurum içi, 19 sayfa, güncel rakamlar (atıl 31,8 mn / transfer 7,4 mn / gereksiz talep 1,6 mn), yeni sayfalar: Atıl NE YAPILMALI, Transfer listesi, Satın alma.
-- katalog/AKSORA_LinkedIn.pdf: 11 sayfa 1080x1350 (LinkedIn belge gönderisi). Kurum adı/logosu, il/ilçe/depo adları ve gerçek rakamlar YOK; A-E İli, İlçe-07 gibi takma adlar ve uydurma rakamlar. Gerçek ekran görüntüsü kullanılmadı (temsilî HTML tablolar).
+- katalog/AKSORA_LinkedIn.pdf (v2): kurum kataloğu tasarımıyla (A4 yatay) 11 sayfa; kapak aynı, banner'larda kurum logosu ve il haritası bulanık (imgL/). Rakamlar uydurma (atıl 48,6 mn, transfer 12,9 mn, yıllık nakit etkisi 29 mn TL, 2.600 saat/yıl), iller A-E İli, ilçeler İlçe-NN; ekranlar temsilî HTML tablo. Kaynak: scratchpad katalog/linkedin2.html (lhead+lbody).
 
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
