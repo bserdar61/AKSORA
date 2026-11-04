@@ -4300,23 +4300,30 @@ End Sub
 ' Yonetim Merkezi en ustte: BUGUN YAPILACAK 5 IS. Malzeme analiz isleri (tutarli) + diger birimlerin kritik / uyari maddeleri;
 ' oncelik: kritik stok, kritik uyarilar, transfer, gereksiz talep, fazla teslim, veri yasi, diger uyarilar. Donus: son satir.
 Public Function ADM_YAPILACAK_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal uy As Collection, ByVal ilMetin As String) As Long
-    Dim liste As Collection, x As Variant, i As Long, j As Long, n As Long, a() As Variant, t As Variant, ilk As Long
+    Dim liste As Collection, x As Variant, i As Long, j As Long, n As Long, a() As Variant, t As Variant, ilk As Long, kat As Object
     On Error GoTo Son
     Set liste = New Collection
+    Set kat = CreateObject("Scripting.Dictionary"): kat.CompareMode = vbTextCompare
     If Not mAdmIsler Is Nothing Then
         For Each x In mAdmIsler
             liste.Add x
         Next x
     End If
+    Dim sev As Long
+    For sev = 1 To 2
     For Each x In uy
         Select Case CStr(x(3))
             Case "Analiz verisi", "Kritik stok", "Fazla teslim", "Transfer"
                 ' malzeme analiz isleri yukarida tutariyla
             Case Else
-                If x(0) = 1 Then liste.Add Array(15, CStr(x(1)), 0#, CStr(x(2)))
-                If x(0) = 2 Then liste.Add Array(70, CStr(x(1)), 0#, CStr(x(2)))
+                ' Her konudan (demontaj, ISG, teminat...) en onemli tek madde: ilk 5 cesitli kalsin.
+                If x(0) = sev And Not kat.Exists(CStr(x(3))) Then
+                    kat(CStr(x(3))) = True
+                    liste.Add Array(IIf(sev = 1, 15, 70), CStr(x(1)), 0#, CStr(x(2)))
+                End If
         End Select
     Next x
+    Next sev
     n = liste.Count
     ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "BUGÜN YAPILACAK " & application.Min(5, n) & " ÝÞ   •   " & ilMetin & "   (en önemliden baþlayarak)"
     r = r + 1

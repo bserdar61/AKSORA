@@ -745,6 +745,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - "Compile error in hidden module: modAKSORA_ANALIZ": ATIL_ISLEM_CIZ'de "saT As Date" ve "sat As Collection" aynı prosedürde (çift tanım).
   Düzeltme: koleksiyon adı isler. build.sh'a fx/dup_check.py eklendi (aynı prosedürde harf farkıyla çift Dim/parametre; #Else dalı hariç).
 
+## Bugün yapılacak 5 iş: konu başına tek madde (04.11.2026)
+- Ekran: 2-5. satırlar Trabzon/Giresun demontaj + Artvin/Trabzon İSG idi (aynı konu tekrar), transfer ve iptal edilecek talep görünmüyordu.
+  ADM_YAPILACAK_CIZ: diğer birim uyarılarından her kategoriden (Demontaj, İSG, Teminat...) yalnız en önemli tek madde (önce seviye 1, sonra 2).
+- Kullanıcının gönderdiği "Yeni klasör.zip" boş (yalnız boş klasör).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
