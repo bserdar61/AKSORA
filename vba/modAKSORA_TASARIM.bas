@@ -3,6 +3,8 @@ Option Explicit
 
 Private Const etiket As String = "_AKSORA_TASARIM_P1S2R1"
 Private Const AKT_PREFIX As String = "AKT1_"
+' Excel ciktilarinda AKSORA baslik satirlarinin kilidi (kullanicinin VBA sifresinden bagimsiz).
+Private Const T_IMZA_SIFRE As String = "AKS-imza-7c41"
 Private mCalisiyor As Boolean
 Private mKurulum As Boolean
 Private mExcelAktar As Boolean
@@ -2371,6 +2373,7 @@ End Sub
 ' Yeni kitap: basliklar dondurulur, masaustune / klasore kaydedilir (mExcelYol); toplu aktarimda kapatilir,
 ' tek aktarimda normal Excel gorunumunde acik kalir.
 Private Sub T_ExcelBitir(ByVal wb As Workbook, ByVal c As Worksheet, ByVal ilkSatir As Long)
+    T_AksoraImza wb
     wb.Windows(1).Visible = True
     wb.Activate
     c.Activate
@@ -2644,3 +2647,53 @@ Private Function T_CiktiDisi(ByVal parti As String) As Boolean
     t = Replace(Replace(t, "Ç", "C"), "Ý", "I")
     T_CiktiDisi = (InStr(t, "HURDA") > 0 Or InStr(t, "CIKMA") > 0 Or InStr(t, "BDSZ") > 0 Or InStr(t, "BEDELSIZ") > 0)
 End Function
+
+' AKSORA imzasi (butun Excel'e aktar ciktilari): baslik ve "AKSORA" satiri (1-2) kilitli, sayfa altinda AKSORA,
+' dosya ozelliklerinde ve gizli imza sayfasinda uretim kaydi. Veriler serbest: filtre, siralama, bicim, satir ekle/sil calisir.
+Private Sub T_AksoraImza(ByVal wb As Workbook)
+    Dim ws As Worksheet, im As Worksheet, kim As String, no As String, metin As String, pc As Boolean
+    On Error Resume Next
+    kim = Environ$("USERNAME"): If Len(kim) = 0 Then kim = application.UserName
+    Randomize
+    no = Format$(Now, "yyyymmddhhnnss") & "-" & Format$(Int(Rnd() * 900000) + 100000, "000000")
+    metin = "Bu dosya AKSORA ile üretilmiþtir. Tarih: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  •  Kullanýcý: " & kim & "  •  Ýmza: " & no
+    pc = application.PrintCommunication
+    application.PrintCommunication = False
+    For Each ws In wb.Worksheets
+        If ws.Visible = xlSheetVisible Then
+            If Len(CStr(ws.Range("A1").Value2)) > 0 Then
+                If InStr(1, CStr(ws.Range("A2").Value2), "AKSORA", vbTextCompare) = 0 Then
+                    If Len(CStr(ws.Range("A2").Value2)) = 0 Then ws.Range("A2").Value2 = "AKSORA" Else ws.Range("A2").Value2 = CStr(ws.Range("A2").Value2) & "  |  AKSORA"
+                End If
+                ws.Range("A2").Value2 = Replace(CStr(ws.Range("A2").Value2), "|  AKSORA", "|  AKSORA ile hazýrlanmýþtýr")
+                If InStr(1, ws.PageSetup.CenterFooter, "AKSORA", vbTextCompare) = 0 And InStr(1, ws.PageSetup.CenterFooter, "&G", vbTextCompare) = 0 Then
+                    ws.PageSetup.CenterFooter = "&""Aptos""&7AKSORA ile hazýrlanmýþtýr"
+                End If
+                ws.Unprotect T_IMZA_SIFRE
+                ws.Cells.Locked = False
+                ws.Rows("1:2").Locked = True
+                ws.Protect Password:=T_IMZA_SIFRE, DrawingObjects:=False, Contents:=True, Scenarios:=False, _
+                    AllowFormattingCells:=True, AllowFormattingColumns:=True, AllowFormattingRows:=True, AllowInsertingRows:=True, _
+                    AllowInsertingColumns:=True, AllowDeletingRows:=True, AllowDeletingColumns:=False, AllowSorting:=True, _
+                    AllowFiltering:=True, AllowUsingPivotTables:=True
+                ws.EnableSelection = xlNoRestrictions
+            End If
+        End If
+    Next ws
+    application.PrintCommunication = pc
+    wb.BuiltinDocumentProperties("Author").Value = "AKSORA"
+    wb.BuiltinDocumentProperties("Company").Value = "AKSORA"
+    wb.BuiltinDocumentProperties("Comments").Value = metin
+    wb.CustomDocumentProperties("AKSORA_IMZA").Delete
+    wb.CustomDocumentProperties.Add Name:="AKSORA_IMZA", LinkToContent:=False, Type:=msoPropertyTypeString, Value:=no & " | " & kim
+    Set im = Nothing
+    Set im = wb.Worksheets("AKSORA_IMZA")
+    If im Is Nothing Then
+        Set im = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        im.Name = "AKSORA_IMZA"
+    End If
+    im.Range("A1").Value2 = metin
+    im.Range("A2").Value2 = "Kaynak: " & ThisWorkbook.Name
+    im.Visible = xlSheetVeryHidden
+    On Error GoTo 0
+End Sub

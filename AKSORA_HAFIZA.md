@@ -715,6 +715,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Fazla stok kaynağı (KS_FAZLA): kritik/azalan ihtiyaç atılla karşılanmazsa diğer ilin serbest (D/K) stoğunun atıl dışı ve 12 aylık ihtiyacını aşan kısmı (adetli: aşağı tam sayı).
   tKay "F:IL=miktar"; AN_KAYNAKLAR → Array(il, miktar, "A"/"F"); transfer satırında "(fazla stoktan)" / "(atıl stoktan)".
 
+## AKSORA imzası + okunur stok süresi (04.11.2026)
+- KURAL (kullanıcı): bütün Excel'e aktar çıktılarında AKSORA yazısı silinememeli. T_ExcelBitir başında T_AksoraImza:
+  satır 1-2 (başlık + "... | AKSORA ile hazırlanmıştır") kilitli, sayfa şifreli (T_IMZA_SIFRE, TASARIM'da) ama filtre/sıralama/biçim/satır ekle-sil serbest;
+  alt bilgi "AKSORA ile hazırlanmıştır"; dosya özellikleri Author/Company = AKSORA, Comments = üretim kaydı; özel özellik AKSORA_IMZA;
+  veryHidden "AKSORA_IMZA" sayfası (tarih, kullanıcı, imza no, kaynak dosya).
+- Stok süresi ondalık ay yerine metin: AN_SURE_METNI (1,9 ay → "1 ay 27 gün", 0,4 → "12 gün", 0 → "Stok yok", ≥24 ay → yıl). Satın alma sayfası, Excel ve transfer gerekçesi.
+- Kullanıcı Excel'i: transfer 256 satır / 7.434.773,60 TL (140 fazla stoktan, 116 atıl/kendi).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

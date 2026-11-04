@@ -3143,7 +3143,7 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         "En acil üstte. Atýl / fazla stokla karþýlanan kýsým düþüldü (TRANSFER LÝSTESÝ).", 10
     ws.Rows(r).RowHeight = 30
     r = r + 1
-    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 10)), Array("Ýl", "Kaç ay yeter", "Stok", "Malzeme", "Kýsa metin", _
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 10)), Array("Ýl", "Ne kadar yeter", "Stok", "Malzeme", "Kýsa metin", _
         "Alýnacak miktar", "Açýk talep / sipariþ", "Birim", "Tahmini tutar", "Durum")
     ws.Rows(r).RowHeight = 30
     a1 = r + 1
@@ -3153,18 +3153,18 @@ Private Sub SA_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
         For Each x In ks
             If (ilSec = "TUM" Or x(0) = ilSec) And x(14) > 0.0005 Then
                 i = i + 1
-                sonuc(i, 1) = x(1) & " " & x(2): sonuc(i, 2) = Round(x(10), 1): sonuc(i, 3) = Round(x(7) + x(8), 3): sonuc(i, 4) = x(4)
+                sonuc(i, 1) = x(1) & " " & x(2): sonuc(i, 2) = AN_SURE_METNI(x(10)): sonuc(i, 3) = Round(x(7) + x(8), 3): sonuc(i, 4) = x(4)
                 sonuc(i, 5) = x(5): sonuc(i, 6) = x(14): sonuc(i, 7) = Round(x(11) + x(12), 3): sonuc(i, 8) = x(6): sonuc(i, 9) = x(16)
                 sonuc(i, 10) = x(19)
             End If
         Next x
+        ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + nAl - 1, 2)).NumberFormat = "@"
         ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + nAl - 1, 5)).NumberFormat = "@"
         ws.Range(ws.Cells(a1, 8), ws.Cells(a1 + nAl - 1, 8)).NumberFormat = "@"
         ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + nAl - 1, 10)).Value2 = sonuc
         r = a1 + nAl - 1
         SA_TABLO_BICIM ws, a1, r
         AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7))
-        ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).NumberFormat = "0.0"
         ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).HorizontalAlignment = xlCenter
         AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3))
         Y_DURUM_KF ws.Range(ws.Cells(a1, 10), ws.Cells(r, 10)), "KRÝTÝK", RGB(220, 38, 38), RGB(255, 255, 255)
@@ -3574,25 +3574,25 @@ Private Sub KS_EXCEL_EKLE(ByVal wb As Workbook)
                     i = i + 1
                     veri(i, 1) = x(19): veri(i, 2) = x(1): veri(i, 3) = x(2): veri(i, 4) = x(3): veri(i, 5) = x(4): veri(i, 6) = x(5)
                     veri(i, 7) = x(6): veri(i, 8) = Round(x(7) + x(8), 3): veri(i, 9) = Round(x(20), 3): veri(i, 10) = Round(x(9), 2)
-                    veri(i, 11) = Round(x(10), 1): veri(i, 12) = Round(x(11), 3): veri(i, 13) = Round(x(12), 3)
+                    veri(i, 11) = AN_SURE_METNI(x(10)): veri(i, 12) = Round(x(11), 3): veri(i, 13) = Round(x(12), 3)
                     veri(i, 14) = x(17): veri(i, 15) = Round(x(18), 3): veri(i, 16) = x(14): veri(i, 17) = Round(x(15), 2)
                     veri(i, 18) = x(16)
                     If x(21) > 0 Then veri(i, 19) = Format$(CDate(x(21)), "dd.mm.yyyy")
                     If x(22) >= 0 Then veri(i, 20) = CStr(x(22)) Else veri(i, 20) = "-"
-                    veri(i, 21) = Round(x(13), 1)
+                    veri(i, 21) = AN_SURE_METNI(x(13))
                 End If
             Next x
         End If
         ust = "SATIN ALMA  |  " & IIf(sayfa = 1, "Satýn alýnacaklar (kritik ve azalan)", "Stok kapsamý (son 6 ayda sarfý olan tüm malzemeler)")
         AKSORA_EXCEL_SAYFA c, Array("Durum", "Ýl", "Sistem", "ÜY", "Malzeme", "Kýsa metin", "Birim", "Stok (D/K + yük.)", _
-            "Son 6 ay sarf", "Aylýk ortalama sarf", "Kaç ay yeter", "Açýk talep", "Açýk sipariþ", "Transfer (il: miktar)", "Transfer miktarý", _
-            "Alýnacak miktar", "Stok birim deðeri (TL)", "Tahmini tutar (TL)", "Son sarf tarihi", "Sarf olan ay sayýsý", "Yoldakilerle kaç ay"), _
+            "Son 6 ay sarf", "Aylýk ortalama sarf", "Ne kadar yeter", "Açýk talep", "Açýk sipariþ", "Transfer (il: miktar)", "Transfer miktarý", _
+            "Alýnacak miktar", "Stok birim deðeri (TL)", "Tahmini tutar (TL)", "Son sarf tarihi", "Sarf olan ay sayýsý", "Yoldakilerle ne kadar yeter"), _
             veri, n, Array(14, 11, 7, 7, 13, 40, 7, 12, 11, 11, 10, 10, 10, 28, 11, 12, 15, 17, 12, 10, 11), _
-            Array("@", "@", "@", "@", "0", "@", "@", "General", "General", "General", "0.0", "General", "General", "@", "General", _
-                "General", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "@", "@", "0.0"), _
+            Array("@", "@", "@", "@", "0", "@", "@", "General", "General", "General", "@", "General", "General", "@", "General", _
+                "General", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "@", "@", "@"), _
             Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlRight, _
                 xlLeft, xlRight, xlRight, xlRight, xlRight, xlCenter, xlCenter, xlCenter), ust, _
-            "Kaç ay yeter = stok / aylýk ortalama sarf  |  Alýnacak = 3 aylýk ihtiyaç - stok - yoldakiler - transfer (atýl veya fazla stok)", _
+            "Ne kadar yeter = stok / aylýk ortalama sarf (1 ay = 30 gün)  |  Alýnacak = 3 aylýk ihtiyaç - stok - yoldakiler - transfer (atýl veya fazla stok)", _
             IIf(sayfa = 1, "Satýn Alýnacaklar", "Stok Kapsamý"), Empty
         For Each j2 In Array(8, 9, 10, 12, 13, 15, 16)
             AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
@@ -3717,7 +3717,7 @@ Private Function AN_TRANSFERLER(ByRef saTarih As Date, ByRef okuma As Variant) A
                 If x(7) + x(8) <= 0.0005 Then
                     gerekce = Y_IL_ADI(CStr(x(0))) & "'da stok yok; ayda ort. " & ADM_ADET(Round(x(9), 1)) & " " & CStr(x(6)) & " kullanýlýyor"
                 Else
-                    gerekce = Y_IL_ADI(CStr(x(0))) & " stoðu " & AKSORA_SAYI_METNI(Round(x(10), 1), "0.0") & " ay yeter (stok " & _
+                    gerekce = Y_IL_ADI(CStr(x(0))) & " stoðu " & AN_SURE_METNI(x(10)) & " yeter (stok " & _
                         ADM_ADET(Round(x(7) + x(8), 3)) & ", ayda ort. " & ADM_ADET(Round(x(9), 1)) & " " & CStr(x(6)) & " kullanýlýyor)"
                 End If
                 AN_TR_EKLE d, CStr(kk(0)), CStr(x(0)), CStr(x(2)), CStr(x(4)), CStr(x(5)), kk(1), CStr(x(6)), kk(1) * x(15), gerekce, False, (kk(2) = "F")
@@ -4112,3 +4112,19 @@ Private Sub AN_ESKI_SAYFA_SIL(ByVal ad As String, ByVal etiket As String)
     application.DisplayAlerts = da
     On Error GoTo 0
 End Sub
+
+' Stok suresi okunur metin: 1,9 ay -> "1 ay 27 gün"; 0,4 ay -> "12 gün"; 0 -> "Stok yok"; 24 ay ustu -> "2 yýl 3 ay".
+Private Function AN_SURE_METNI(ByVal ay As Double) As String
+    Dim g As Long, a As Long, d As Long, y As Long
+    If ay <= 0 Then AN_SURE_METNI = "Stok yok": Exit Function
+    g = CLng(Round(ay * 30, 0))
+    If g < 1 Then AN_SURE_METNI = "1 günden az": Exit Function
+    If g < 30 Then AN_SURE_METNI = g & " gün": Exit Function
+    a = g \ 30: d = g Mod 30
+    If a >= 24 Then
+        y = a \ 12: a = a Mod 12
+        AN_SURE_METNI = y & " yýl" & IIf(a > 0, " " & a & " ay", "")
+    Else
+        AN_SURE_METNI = a & " ay" & IIf(d > 0, " " & d & " gün", "")
+    End If
+End Function
