@@ -703,6 +703,18 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Adetli malzemede kritik transfer/öneri tam sayı (önceden "1,5 ADT" transfer çıkıyordu).
 - Kritik ve transfer sayfasında il yanında sistem (Artvin CDP / Artvin EPP): aynı malzeme iki satır görünüyordu (CDP ve EPP ayrı üretim yeri).
 
+## Malzeme analiz sayfaları birleştirildi + fazla stok kaynağı (04.11.2026)
+- Kullanıcı: "çok fazla sayfa, transfer iki yerde; aynı amaca hizmet edenleri tek sayfada birleştir". Karşılaştırılan dış liste: İŞLETME MALZEME DAĞILIM TABLOSU (D001 stok+açık SAS, 2024Q4-2025 sarf payına göre dağıtım).
+- Sayfalar artık: ATIL_STOK (kayıt, MB51, kanıt) • SATINALMA_KONTROL = "SATIN ALMA" • TRANSFER_LISTESI.
+  - KRITIK_STOK kaldırıldı: SA_GOSTER ilk açılışta etiketli KRITIK_STOK sayfasını siler (AN_ESKI_SAYFA_SIL); AKSORA_KRITIK_AC/IL_SEC/EXCEL → satın alma sayfası.
+  - SATIN ALMA sayfası (SA_CIZ yeniden): 4 kart (satın alınması gereken • gereksiz talep/sipariş • transferle çözülen kritik • fazla teslim) + 3 tablo
+    (1 satın alınacaklar, 2 iptal/azaltılacak talep-sipariş, 3 fazla teslim), 10 sütun ortak düzen (SA_TABLO_BICIM). İl özeti tablosu kaldırıldı.
+  - Satın alma Excel'i: Özet, Açık Talepler, Açık Siparişler + Satın Alınacaklar + Stok Kapsamı (KS_EXCEL_EKLE). Dosya adı "Satın Alma - tarih".
+  - ATIL sayfasında transfer görünümü kaldırıldı; 3. sekme TRANSFER LİSTESİ'ne gider (ölü kod: Ayrinti içindeki TRANSFER dalı).
+  - ANA PANEL: goKritikStok silinir, goSatinalma "SATIN ALMA"; 10 hızlı buton.
+- Fazla stok kaynağı (KS_FAZLA): kritik/azalan ihtiyaç atılla karşılanmazsa diğer ilin serbest (D/K) stoğunun atıl dışı ve 12 aylık ihtiyacını aşan kısmı (adetli: aşağı tam sayı).
+  tKay "F:IL=miktar"; AN_KAYNAKLAR → Array(il, miktar, "A"/"F"); transfer satırında "(fazla stoktan)" / "(atıl stoktan)".
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

@@ -849,22 +849,12 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         End If
     End If
     If Not s Is Nothing Then
-        s.TextFrame2.TextRange.Text = "SATINALMA KONTROL"
+        s.TextFrame2.TextRange.Text = "SATIN ALMA"
         s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_SATINALMA_AC"
     End If
-    ' KRITIK STOK dugmesi: ayni yolla (yoksa bir kez olusturulur).
+    ' KRITIK STOK artik SATIN ALMA sayfasinda: eski dugme kaldirilir.
     Set s = T_Sekil(ws, "goKritikStok")
-    If s Is Nothing Then
-        Set s = T_Sekil(ws, "goStokKarsilastir")
-        If Not s Is Nothing Then
-            Set s = s.Duplicate
-            s.Name = "goKritikStok"
-        End If
-    End If
-    If Not s Is Nothing Then
-        s.TextFrame2.TextRange.Text = "KRÝTÝK STOK"
-        s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_KRITIK_AC"
-    End If
+    If Not s Is Nothing Then s.Delete
     ' TRANSFER LISTESI dugmesi: ayni yolla (yoksa bir kez olusturulur).
     Set s = T_Sekil(ws, "goTransfer")
     If s Is Nothing Then
@@ -879,9 +869,9 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_TRANSFER_AC"
     End If
     Set r = ws.Range("B25:T26")
-    bw = (r.Width - 10 * 8) / 11
+    bw = (r.Width - 9 * 8) / 10
     i = 0
-    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma", "goKritikStok", "goTransfer")
+    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma", "goTransfer")
         Set s = T_Sekil(ws, CStr(ad))
         If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.Top + 1, bw, r.Height - 2
         i = i + 1
