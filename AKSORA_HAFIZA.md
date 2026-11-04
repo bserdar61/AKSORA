@@ -759,6 +759,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Kullanıcı verisi: ATIL NE YAPILMALI özeti → kendi ihtiyacı 25 / 718 bin TL, transfer 77 / 599 bin, önce bunu kullan 320 / 5,17 mn, beklet 396 / 4,19 mn,
   sat/hurda/iade 735 kalem / 21,1 mn TL, önce kullan 569 / 4,68 mn.
 
+## Katalog v3 + LinkedIn kataloğu (04.11.2026)
+- katalog/AKSORA_Katalog_v3.pdf: kurum içi, 19 sayfa, güncel rakamlar (atıl 31,8 mn / transfer 7,4 mn / gereksiz talep 1,6 mn), yeni sayfalar: Atıl NE YAPILMALI, Transfer listesi, Satın alma.
+- katalog/AKSORA_LinkedIn.pdf: 11 sayfa 1080x1350 (LinkedIn belge gönderisi). Kurum adı/logosu, il/ilçe/depo adları ve gerçek rakamlar YOK; A-E İli, İlçe-07 gibi takma adlar ve uydurma rakamlar. Gerçek ekran görüntüsü kullanılmadı (temsilî HTML tablolar).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
