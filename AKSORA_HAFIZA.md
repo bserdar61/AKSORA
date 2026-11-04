@@ -691,6 +691,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - ATIL_SISTEM_OKU geçici hata verirse aynı sistem bir kez daha denenir (popup kapatılır, 2 sn bekleme).
 - Bir sistem bugün okunduysa: "Yalnız <diğeri> okunsun mu?" (Evet/Hayır/İptal) — kısmi okumadan sonra 5 dk tasarruf.
 
+## Satınalma okuma sağlamlığı (04.11.2026, temel up41)
+- Kullanıcı: "The control could not be found by id (619)" (ATIL okumasından hemen sonra). Teşhiste bugün ME5A/ME2N satırı yok → seçim ekranında alan bulunamadı.
+- SA_TX_AC: işlem açılır, beklenen alan görünene kadar 3 deneme (/n<tx>); açık bilgi penceresi İptal ile kapanır, güvenlik/izin penceresine dokunulmaz.
+- SA_YAZ / SA_BAS: alan/düğme yoksa adım + alan adıyla anlaşılır hata ve teşhis satırı.
+- SA_SISTEM_OKU: sistem başına okuma; hata olursa bir kez yeniden; yine olmazsa o sistemin ÖNCEKİ kaydı korunur, diğer sistem kaydedilir; hiçbiri okunamazsa kayıt değişmez.
+- up41 verisi: _ATIL K (aylık sarf) dolu 3057 kalem. Basit simülasyon (yoldakiler hariç): kritik 128, azalıyor 211, düzensiz 509 (önceden ~546 kritik).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

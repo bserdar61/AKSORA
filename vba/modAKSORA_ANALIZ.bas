@@ -2165,6 +2165,79 @@ Private Function SA_DUZEN_YUKLE(ByVal ses As Object, ByVal g As Object, ByVal du
     Err.Clear
 End Function
 
+' Bir sistemin ME5A + ME2N okumasi. Donus: hata metni (bos = tamam). Basarisiz okuma listeye yarim satir birakmaz.
+Private Function SA_SISTEM_OKU(ByVal ses As Object, ByVal sis As String, ByVal liste As Collection, ByRef nT As Long, ByRef nS As Long) As String
+    Dim c1 As Collection, c2 As Collection, x As Variant, a() As Variant, j As Long, ilk As String, son As String
+    On Error GoTo Hata
+    ilk = IIf(sis = "CDP", "7151", "7051"): son = IIf(sis = "CDP", "7155", "7055")
+    AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.1, 0.55), sis & "  •  açýk satýnalma talepleri (ME5A)  (SAP yanýtý bekleniyor)"
+    Set c1 = SA_ME5A(ses, ilk, son, sis)
+    AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.3, 0.75), sis & "  •  teslim alýnmamýþ sipariþler (ME2N)  (SAP yanýtý bekleniyor)"
+    Set c2 = SA_ME2N(ses, ilk, son, sis)
+    For Each x In c1
+        ReDim a(0 To 17): a(0) = "T": a(1) = sis
+        For j = 0 To UBound(x): a(j + 2) = x(j): Next j
+        liste.Add a: nT = nT + 1
+    Next x
+    For Each x In c2
+        ReDim a(0 To 17): a(0) = "S": a(1) = sis
+        For j = 0 To UBound(x): a(j + 2) = x(j): Next j
+        liste.Add a: nS = nS + 1
+    Next x
+    Exit Function
+Hata:
+    SA_SISTEM_OKU = Err.Description & " (" & Err.Number & ")"
+End Function
+
+' Islemi acar ve beklenen alan gorunene kadar dener. Acik kalan bilgi penceresi (wnd[1]) Iptal ile kapatilir;
+' guvenlik / izin penceresine dokunulmaz, hata verilir.
+Private Sub SA_TX_AC(ByVal ses As Object, ByVal tx As String, ByVal alanId As String, ByVal sis As String)
+    Dim deneme As Long, p As Object, baslik As String, ekran As String, sb As String
+    For deneme = 1 To 3
+        On Error Resume Next
+        Set p = ses.FindById("wnd[1]", False)
+        If Not p Is Nothing Then
+            baslik = p.Text
+            If InStr(1, Y_NORM(baslik), "GUVENLIK") > 0 Or InStr(1, Y_NORM(baslik), "SECURITY") > 0 Or InStr(1, Y_NORM(baslik), "IZIN") > 0 Then
+                On Error GoTo 0
+                Err.Raise vbObjectError + 9810, , tx & " (" & sis & "): SAP güvenlik penceresi açýk (" & baslik & "). Pencereyi SAP'de yanýtlayýp tekrar deneyin."
+            End If
+            AKSORA_SAP_TESHIS_YAZ tx & " " & sis & " açýk pencere kapatýlýyor: " & baslik
+            ses.FindById("wnd[1]/tbar[0]/btn[12]").Press
+        End If
+        Err.Clear
+        If deneme = 1 Then ses.StartTransaction tx Else ses.SendCommand "/n" & tx
+        On Error GoTo 0
+        If Not ses.FindById(alanId, False) Is Nothing Then Exit Sub
+        DoEvents
+    Next deneme
+    On Error Resume Next
+    ekran = ses.FindById("wnd[0]").Text: sb = ses.FindById("wnd[0]/sbar").Text
+    On Error GoTo 0
+    AKSORA_SAP_TESHIS_YAZ tx & " " & sis & " seçim ekraný açýlmadý: ekran '" & ekran & "', durum '" & sb & "'"
+    Err.Raise vbObjectError + 9811, , tx & " (" & sis & ") seçim ekraný açýlamadý. Ekran: " & ekran & IIf(Len(sb) > 0, "  •  SAP: " & sb, "")
+End Sub
+
+Private Sub SA_YAZ(ByVal ses As Object, ByVal id As String, ByVal deger As String, ByVal adim As String)
+    Dim o As Object
+    Set o = ses.FindById(id, False)
+    If o Is Nothing Then
+        AKSORA_SAP_TESHIS_YAZ adim & ": alan bulunamadý " & id
+        Err.Raise vbObjectError + 9812, , adim & ": SAP ekranýnda alan bulunamadý (" & Mid$(id, InStrRev(id, "/") + 1) & ")."
+    End If
+    o.Text = deger
+End Sub
+
+Private Sub SA_BAS(ByVal ses As Object, ByVal id As String, ByVal adim As String)
+    Dim o As Object
+    Set o = ses.FindById(id, False)
+    If o Is Nothing Then
+        AKSORA_SAP_TESHIS_YAZ adim & ": düðme bulunamadý " & id
+        Err.Raise vbObjectError + 9813, , adim & ": SAP ekranýnda Çalýþtýr düðmesi bulunamadý."
+    End If
+    o.Press
+End Sub
+
 Private Sub SA_ALAN_BOSALT(ByVal ses As Object, ByVal ad As String)
     On Error Resume Next
     ses.FindById("wnd[0]/usr/" & ad).Text = vbNullString
@@ -2283,12 +2356,12 @@ End Function
 Private Function SA_ME5A(ByVal ses As Object, ByVal ilk As String, ByVal son As String, ByVal sis As String) As Collection
     Dim g As Object, kol As Object, sb As String, tip As String
     Set SA_ME5A = New Collection
-    ses.StartTransaction "ME5A"
+    SA_TX_AC ses, "ME5A", "wnd[0]/usr/ctxtS_WERKS-LOW", sis
     SA_ALAN_BOSALT ses, "ctxtBA_BANFN-LOW": SA_ALAN_BOSALT ses, "ctxtBA_BANFN-HIGH"
     SA_ALAN_BOSALT ses, "ctxtS_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtS_MATNR-HIGH"
-    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = ilk
-    ses.FindById("wnd[0]/usr/ctxtS_WERKS-HIGH").Text = son
-    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    SA_YAZ ses, "wnd[0]/usr/ctxtS_WERKS-LOW", ilk, "ME5A " & sis
+    SA_YAZ ses, "wnd[0]/usr/ctxtS_WERKS-HIGH", son, "ME5A " & sis
+    SA_BAS ses, "wnd[0]/tbar[1]/btn[8]", "ME5A " & sis
     Set g = SA_GRID_BUL(ses)
     If g Is Nothing Then
         On Error Resume Next
@@ -2316,16 +2389,16 @@ End Function
 Private Function SA_ME2N(ByVal ses As Object, ByVal ilk As String, ByVal son As String, ByVal sis As String) As Collection
     Dim g As Object, kol As Object, sb As String, tip As String
     Set SA_ME2N = New Collection
-    ses.StartTransaction "ME2N"
+    SA_TX_AC ses, "ME2N", "wnd[0]/usr/ctxtLISTU", sis
     SA_ALAN_BOSALT ses, "ctxtEN_EBELN-LOW": SA_ALAN_BOSALT ses, "ctxtEN_EBELN-HIGH"
     SA_ALAN_BOSALT ses, "ctxtEM_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtEM_MATNR-HIGH"
     SA_ALAN_BOSALT ses, "ctxtS_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtS_MATNR-HIGH"
-    ses.FindById("wnd[0]/usr/ctxtLISTU").Text = "ALV"
+    SA_YAZ ses, "wnd[0]/usr/ctxtLISTU", "ALV", "ME2N " & sis
     ses.FindById("wnd[0]").SendVKey 0
-    ses.FindById("wnd[0]/usr/ctxtSELPA-LOW").Text = "WE101"
-    ses.FindById("wnd[0]/usr/ctxtS_WERKS-LOW").Text = ilk
-    ses.FindById("wnd[0]/usr/ctxtS_WERKS-HIGH").Text = son
-    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    SA_YAZ ses, "wnd[0]/usr/ctxtSELPA-LOW", "WE101", "ME2N " & sis
+    SA_YAZ ses, "wnd[0]/usr/ctxtS_WERKS-LOW", ilk, "ME2N " & sis
+    SA_YAZ ses, "wnd[0]/usr/ctxtS_WERKS-HIGH", son, "ME2N " & sis
+    SA_BAS ses, "wnd[0]/tbar[1]/btn[8]", "ME2N " & sis
     Set g = SA_GRID_BUL(ses)
     If g Is Nothing Then
         On Error Resume Next
@@ -2408,7 +2481,7 @@ End Function
 Public Sub AKSORA_SATINALMA_OKU()
     Dim ac As Boolean, ev As Boolean, sis As Variant, ses As Object, hata As String, liste As Collection, c As Collection
     Dim x As Variant, a() As Variant, j As Long, bilgi As String, no As Long, metin As String, nT As Long, nS As Long
-    Dim oncekiFiltre As LongPtr, bosFiltre As LongPtr, bas As Worksheet
+    Dim oncekiFiltre As LongPtr, bosFiltre As LongPtr, bas As Worksheet, eskiT As Date, eskiB As String, eksikSis As String, okunan As Long
     If MsgBox("Açýk satýnalma talepleri (ME5A) ve teslim alýnmamýþ sipariþler (ME2N) CDP ve EPP sistemlerinden okunacak." & vbCrLf & _
         "SAP'de iki sisteme de giriþ yapýlmýþ olmalýdýr. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | SATINALMA KONTROLÜ") <> vbYes Then Exit Sub
     Set bas = ActiveSheet
@@ -2424,26 +2497,38 @@ Public Sub AKSORA_SATINALMA_OKU()
         If ses Is Nothing Then
             bilgi = bilgi & CStr(sis) & ": SAP oturumu yok (" & hata & ")  "
         Else
-            AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.1, 0.55), CStr(sis) & "  •  açýk satýnalma talepleri (ME5A)  (SAP yanýtý bekleniyor)"
-            Set c = SA_ME5A(ses, IIf(sis = "CDP", "7151", "7051"), IIf(sis = "CDP", "7155", "7055"), CStr(sis))
-            For Each x In c
-                ReDim a(0 To 17): a(0) = "T": a(1) = sis
-                For j = 0 To UBound(x): a(j + 2) = x(j): Next j
-                liste.Add a: nT = nT + 1
-            Next x
-            AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.3, 0.75), CStr(sis) & "  •  teslim alýnmamýþ sipariþler (ME2N)  (SAP yanýtý bekleniyor)"
-            Set c = SA_ME2N(ses, IIf(sis = "CDP", "7151", "7051"), IIf(sis = "CDP", "7155", "7055"), CStr(sis))
-            For Each x In c
-                ReDim a(0 To 17): a(0) = "S": a(1) = sis
-                For j = 0 To UBound(x): a(j + 2) = x(j): Next j
-                liste.Add a: nS = nS + 1
-            Next x
+            ' Sistem okunamazsa bir kez daha denenir; yine olmazsa o sistemin onceki kaydi korunur (diger sistem kaybolmaz).
+            hata = SA_SISTEM_OKU(ses, CStr(sis), liste, nT, nS)
+            If Len(hata) > 0 And Not AKSORA_ADMIN_IPTAL Then
+                AKSORA_SAP_TESHIS_YAZ "Satýnalma " & sis & " yeniden deneniyor: " & hata
+                AKSORA_BEKLE_ILERLE IIf(sis = "CDP", 0.12, 0.57), CStr(sis) & "  •  yeniden deneniyor (geçici hata)..."
+                On Error Resume Next
+                ses.SendCommand "/n"
+                On Error GoTo Hata
+                DoEvents
+                hata = SA_SISTEM_OKU(ses, CStr(sis), liste, nT, nS)
+            End If
             On Error Resume Next
             ses.SendCommand "/n"
             On Error GoTo Hata
-            bilgi = bilgi & CStr(sis) & ": tamam  "
+            If Len(hata) = 0 Then
+                okunan = okunan + 1
+                bilgi = bilgi & CStr(sis) & ": tamam  "
+            Else
+                AKSORA_SAP_TESHIS_YAZ "Satýnalma " & sis & " okunamadý: " & hata
+                For Each x In SA_KAYIT_OKU(eskiT, eskiB)
+                    If x(1) = CStr(sis) Then
+                        liste.Add x
+                        If x(0) = "T" Then nT = nT + 1 Else nS = nS + 1
+                    End If
+                Next x
+                bilgi = bilgi & CStr(sis) & ": OKUNAMADI, önceki kayýt korundu (" & Left$(hata, 120) & ")  "
+                eksikSis = eksikSis & IIf(Len(eksikSis) > 0, ", ", "") & CStr(sis)
+            End If
         End If
     Next sis
+    ' Hicbir sistem okunamadiysa onceki kayit oldugu gibi kalir.
+    If okunan = 0 Then Err.Raise vbObjectError + 9815, , Trim$(bilgi)
     ADMW_CoRegisterMessageFilter oncekiFiltre, bosFiltre
     application.EnableEvents = False
     SA_KAYDET liste, Trim$(bilgi)
@@ -2454,8 +2539,9 @@ Public Sub AKSORA_SATINALMA_OKU()
     On Error GoTo Hata
     application.EnableEvents = ev
     If ac Then AKSORA_BEKLE_KAPAT
-    MsgBox "Satýnalma kontrolü okundu." & vbCrLf & vbCrLf & "Açýk talep kalemi: " & nT & vbCrLf & "Açýk sipariþ kalemi: " & nS & _
-        vbCrLf & vbCrLf & Trim$(bilgi) & vbCrLf & vbCrLf & "Sonuçlar Yönetim Merkezi'nde; ayrýntý için EXCEL'E AKTAR.", vbInformation, "AKSORA | SATINALMA KONTROLÜ"
+    MsgBox IIf(Len(eksikSis) > 0, "Satýnalma kontrolü kýsmen okundu (" & eksikSis & " okunamadý, önceki kaydý korundu).", "Satýnalma kontrolü okundu.") & _
+        vbCrLf & vbCrLf & "Açýk talep kalemi: " & nT & vbCrLf & "Açýk sipariþ kalemi: " & nS & _
+        vbCrLf & vbCrLf & Trim$(bilgi), IIf(Len(eksikSis) > 0, vbExclamation, vbInformation), "AKSORA | SATINALMA KONTROLÜ"
     If bas.Name = ADM Then
         AKSORA_ADMIN_YENILE
     ElseIf bas.Name = SA_SAYFA Then
