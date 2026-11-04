@@ -685,6 +685,13 @@ Private Sub AKSORA_GIRIS_AC()
     If Not ws Is Nothing Then
         If AKSORA_KRITIK_SAYFA(ws) Then ws.Visible = xlSheetVisible
     End If
+    Set ws = Nothing
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("TRANSFER_LISTESI")
+    On Error GoTo Hata
+    If Not ws Is Nothing Then
+        If AKSORA_TRANSFER_SAYFA(ws) Then ws.Visible = xlSheetVisible
+    End If
 
 
     ThisWorkbook.Worksheets("ANA PANEL").Visible = _

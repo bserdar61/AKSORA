@@ -671,6 +671,21 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## İSG Excel sıralama konumu (03.11.2026)
 - Kullanıcı isteği: sıralama ana tablonun altında, aynı A:H sütunlarında (başlık TOPLAM'dan 4 satır aşağıda, sütun başlıkları bir alt satırda). Sütun genişliklerine dokunulmuyor.
 
+## Teknik sağlamlaştırma + TRANSFER LİSTESİ + sade KRİTİK STOK (04.11.2026, temel up40)
+- MODÜL BÖLME: ATIL STOK + SATINALMA + KRİTİK STOK + TRANSFER kodu yeni standart modül `modAKSORA_ANALIZ`'e taşındı (BIRIM 697 KB → 494 KB).
+  Ortak yardımcılar BIRIM'de Public (Y_*, ADM_*, I_SAYI, I_SIRA_ANAHTAR, BIRIM_MAKRO, ADM_UYAR...), mYonlendirme Public.
+  Yeni modül eklemek: tools/add_module.py <bin> <out> <ad> <şablon std modül> (dir + PROJECT + PROJECTwm); bx/xl/vbaProject.bin'e bir kez uygulanır.
+  YENİ TEMEL ALINIRKEN: kullanıcının dosyasında modAKSORA_ANALIZ zaten olacak; yoksa add_module tekrar uygulanır.
+- build.sh yeni denetimler: fx/xmod_check.py (modüller arası Private erişim = derleme hatası riski), fx/proc_size.py (prosedür ≤48 KB, modül ≤600 KB).
+  ADM_KUR 43 KB → 37,8 KB (en değerli depo/malzeme tabloları ADM_EN_DEGERLI'ye ayrıldı).
+- Analiz önbelleği: AN_ONB_AC/KAPAT (en fazla 120 sn): ATIL_TUM_STOK ve ATIL_HESAPLA aynı işlemde bir kez hesaplanır (sayfa, Excel, Yönetim Merkezi).
+- Veri yaşı: ATIL/SATINALMA/KRİTİK/TRANSFER sayfalarında A9 kırmızı "⚠ ... n GÜN ÖNCE OKUNDU" (AN_ESKI_GUN = 7).
+- Yönetim Merkezi: ADM_ANALIZ_UYARI (skor öncesi): MB51 yaşı, satınalma yaşı, fazla teslim, kritik stok, bekleyen transfer kazancı.
+- SA_ANALIZ x(24) = atıl kaynakları "ILKODU=miktar;..." ; KS_ANALIZ havuzu satınalmanın ayırdığı atıl stoğu düşer (aynı stok iki kez önerilmez); x(23) transfer kaynakları.
+- TRANSFER_LISTESI sayfası (AKSORA_TRANSFER_V1): tek tablo Nereden | Nereye | Malzeme | Kısa metin | Miktar | Birim | Kazanç | Ne yapılacak | Gerekçe; il = gönderen veya alan.
+  Excel: Tüm Liste + her gönderen il ayrı sayfa. ANA PANEL 11. hızlı buton goTransfer; KRİTİK ve SATINALMA sayfalarında TRANSFER LİSTESİ düğmesi.
+- KRİTİK STOK sadeleşti: 4 kart (kritik, azalıyor, transferle çözülen, satın alınması gereken TL) + tek tablo "SATIN ALINMASI GEREKENLER"; tam liste Excel'de.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
