@@ -769,6 +769,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - İSG bölge sarfı (05.11): manuel sarf kaleminde birim fiyat (stok değeri / miktar) > 10.000 TL ise "BÖLGE SARF EDECEK" (gri). Sabit I_ISG_BOLGE_TL (modAKSORA_BIRIM başı). İlçe özetinde ayrı "Bölge Sarfı Kalem" sütunu; ilçe durumuna, MANUEL SARF sayılarına, Yönetim Merkezi İSG uyarı/karnesine girmez. 4. filtre düğmesi BÖLGE SARF EDECEK; Excel aktarda gri renk.
 
+- İSG bölge sarfı görünümü (05.11): ilçeye iş yok ama bölge kalemi varsa Durum "BÖLGE SARFI BEKLİYOR" (gri); Excel aktar 1. sayfada "Bölge Sarfı Kalem" sütunu; sıralamada bu ilçeler temizlerle önde, neden "İlçeye iş yok: değer bölge sarfı". Manuel sarf miktarı (adet toplamı) kullanıcı isteğiyle aynı kaldı.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

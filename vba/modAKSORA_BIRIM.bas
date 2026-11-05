@@ -6453,7 +6453,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     Dim ws As Worksheet, wb As Workbook, c As Worksheet, a1 As Long, b1 As Long, a2 As Long, b2 As Long, p() As String
     Dim secim As String, il As String, v As Variant, r As Long, n As Long, i As Long, j As Long, veri() As Variant
     Dim gorV As Variant, t As String, ev As Boolean, ust As String, ad As String, sonuc As String, no As Long, metin As String
-    Dim top(1 To 5) As Double, tarih As String, durum As String, hz As Range
+    Dim top(1 To 5) As Double, tarih As String, durum As String, hz As Range, bTop As Double
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
     p = Split(CStr(ws.Range("BX27").Value2), "|")
@@ -6470,36 +6470,40 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     wb.Worksheets.Add After:=wb.Worksheets(1)
     '--- 1. sayfa: ilce bazinda ISG durumu
     v = ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9)).Value2
-    ReDim veri(1 To b1 - a1 + 2, 1 To 8)
+    ReDim veri(1 To b1 - a1 + 2, 1 To 9)
     For r = 1 To b1 - a1 + 1
         If Len(CStr(v(r, 1))) > 0 And (Len(secim) = 0 Or UCase$(CStr(v(r, 1))) = secim) Then
             n = n + 1
             veri(n, 1) = v(r, 1): veri(n, 2) = v(r, 2)
             For j = 3 To 6: veri(n, j) = v(r, j): top(j - 2) = top(j - 2) + I_SAYI(v(r, j)): Next j
-            veri(n, 7) = v(r, 8): top(5) = top(5) + I_SAYI(v(r, 8))
-            veri(n, 8) = v(r, 9)
+            veri(n, 7) = v(r, 7): bTop = bTop + I_SAYI(v(r, 7))
+            veri(n, 8) = v(r, 8): top(5) = top(5) + I_SAYI(v(r, 8))
+            veri(n, 9) = v(r, 9)
         End If
     Next r
     If n = 0 Then Err.Raise vbObjectError + 9711, , "Ýlçe listesi boþ (ilçe stoklarýný güncelleyin)."
     n = n + 1
-    veri(n, 2) = "TOPLAM": veri(n, 3) = top(1): veri(n, 4) = top(2): veri(n, 5) = top(3): veri(n, 6) = top(4): veri(n, 7) = Round(top(5), 2)
+    veri(n, 2) = "TOPLAM": veri(n, 3) = top(1): veri(n, 4) = top(2): veri(n, 5) = top(3): veri(n, 6) = top(4)
+    veri(n, 7) = bTop: veri(n, 8) = Round(top(5), 2)
     If Len(secim) > 0 Then ad = I_DEPO_KISA(CStr(veri(1, 2))) Else ad = Y_IL_ADI(il)
     ust = "ÝSG ZÝMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  Ýlçe bazýnda ÝSG durumu"
     Set c = wb.Worksheets(1)
     AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adý", "Zimmet Kalem", "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", _
-        "ÝSG Stok Deðeri", "Durum"), veri, n, Array(8, 26, 12, 13, 14, 15, 18, 26), _
-        Array("@", "@", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
-        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
-        "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr", "Ýlçe Durumu", Empty
+        "Bölge Sarfý Kalem", "ÝSG Stok Deðeri", "Durum"), veri, n, Array(8, 26, 12, 13, 14, 15, 12, 18, 26), _
+        Array("@", "@", "General", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
+        "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr. Birim fiyatý " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (Bölge Sarfý Kalem)", "Ýlçe Durumu", Empty
     ' TOPLAM satiri ve durum renkleri (ekrandaki gibi)
-    With c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 8))
+    With c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 9))
         .Interior.Color = RGB(226, 236, 247): .Font.bold = True
     End With
     For r = 1 To n - 1
-        Set hz = c.Cells(r + 4, 8)
+        Set hz = c.Cells(r + 4, 9)
         Select Case CStr(hz.Value2)
             Case "ZÝMMET + SARF BEKLÝYOR", "ZÝMMET BEKLÝYOR": hz.Interior.Color = RGB(254, 226, 226): hz.Font.Color = RGB(185, 28, 28)
             Case "SARF BEKLÝYOR": hz.Interior.Color = RGB(219, 234, 254): hz.Font.Color = RGB(29, 78, 216)
+            Case "BÖLGE SARFI BEKLÝYOR": hz.Interior.Color = RGB(226, 232, 240): hz.Font.Color = RGB(51, 65, 85)
             Case "TEMÝZ": hz.Interior.Color = RGB(220, 252, 231): hz.Font.Color = RGB(21, 128, 61)
         End Select
         hz.Font.bold = True
@@ -6966,6 +6970,9 @@ Private Sub I_ISG_KUR(ByVal il As String)
             ws.Cells(r, 9).Value2 = "ZÝMMET BEKLÝYOR"
         ElseIf o(3) > 0 Then
             ws.Cells(r, 9).Value2 = "SARF BEKLÝYOR"
+        ElseIf o(6) > 0 Then
+            ' Ilceye is yok; depodaki deger bolge mudurlugunun sarf edecegi malzeme.
+            ws.Cells(r, 9).Value2 = "BÖLGE SARFI BEKLÝYOR"
         Else
             ws.Cells(r, 9).Value2 = "TEMÝZ"
         End If
@@ -6989,6 +6996,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     Y_DURUM_KF rr, "ZÝMMET + SARF BEKLÝYOR", RGB(254, 226, 226), RGB(185, 28, 28)
     Y_DURUM_KF rr, "ZÝMMET BEKLÝYOR", RGB(254, 226, 226), RGB(185, 28, 28)
     Y_DURUM_KF rr, "SARF BEKLÝYOR", RGB(219, 234, 254), RGB(29, 78, 216)
+    Y_DURUM_KF rr, "BÖLGE SARFI BEKLÝYOR", RGB(226, 232, 240), RGB(51, 65, 85)
     Y_DURUM_KF rr, "TEMÝZ", RGB(220, 252, 231), RGB(21, 128, 61)
     ' Malzeme listesi: baslik + ilce secimi, islem filtreleri, tablo
     Y_BOLUM ws, a2 - 4, "ÝSG MALZEME LÝSTESÝ  –  YAPILACAK ÝÞLEM", ""
@@ -9617,16 +9625,20 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
     ReDim anah(1 To n): ReDim idx(1 To n)
     For i = 1 To n
         idx(i) = i
-        kalem = I_SAYI(veri(i, 3)) + I_SAYI(veri(i, 5)): deger = I_SAYI(veri(i, 7))
+        kalem = I_SAYI(veri(i, 3)) + I_SAYI(veri(i, 5)): deger = I_SAYI(veri(i, 8))
+        ' Ilceye is kalmadiysa (yalniz bolge sarfi) temiz ilcelerle birlikte one alinir.
+        If kalem <= 0 Then deger = 0
         anah(i) = Format$(Round(deger, 2) * 100, "0000000000000000") & Format$(kalem, "000000") & CStr(veri(i, 1))
     Next i
     Y_SIRALA anah, idx, 1, n
     ReDim s(1 To n, 1 To 8)
     For i = 1 To n
         j = idx(i)
-        kalem = I_SAYI(veri(j, 3)) + I_SAYI(veri(j, 5)): mik = I_SAYI(veri(j, 4)) + I_SAYI(veri(j, 6)): deger = I_SAYI(veri(j, 7))
+        kalem = I_SAYI(veri(j, 3)) + I_SAYI(veri(j, 5)): mik = I_SAYI(veri(j, 4)) + I_SAYI(veri(j, 6)): deger = I_SAYI(veri(j, 8))
         If kalem <= 0 And deger <= 0.005 Then
             neden = "Depoda ÝSG malzemesi yok"
+        ElseIf kalem <= 0 Then
+            neden = "Ýlçeye iþ yok: deðer bölge sarfý (" & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem, birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)"
         Else
             neden = vbNullString
             If I_SAYI(veri(j, 3)) > 0 Then neden = "Zimmet: " & ADM_ADET(I_SAYI(veri(j, 3))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 4))) & " adet"
@@ -9665,10 +9677,12 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
     For i = 1 To n
         If s(i, 6) <= 0.005 And s(i, 4) <= 0 Then
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(220, 252, 231)
+        ElseIf s(i, 4) <= 0 Then
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(226, 232, 240)
         ElseIf i = n And n > 1 Then
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(254, 226, 226)
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Font.Color = RGB(185, 28, 28)
         End If
     Next i
-    If n > 1 Then c.Cells(b0 + n, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(b0 + n, x0 + 7).Value2)
+    If n > 1 Then If s(n, 4) > 0 Then c.Cells(b0 + n, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(b0 + n, x0 + 7).Value2)
 End Sub
