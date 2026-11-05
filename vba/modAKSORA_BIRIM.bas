@@ -9638,7 +9638,7 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
         If kalem <= 0 And deger <= 0.005 Then
             neden = "Depoda ÝSG malzemesi yok"
         ElseIf kalem <= 0 Then
-            neden = "Ýlçeye iþ yok: deðer bölge sarfý (" & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem, birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)"
+            neden = "Ýlçeye iþ yok  •  " & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem bölge sarfý (birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)"
         Else
             neden = vbNullString
             If I_SAYI(veri(j, 3)) > 0 Then neden = "Zimmet: " & ADM_ADET(I_SAYI(veri(j, 3))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 4))) & " adet"
@@ -9661,13 +9661,13 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
     c.Range(c.Cells(b0 + 1, x0 + 5), c.Cells(b0 + n, x0 + 5)).NumberFormat = "#,##0.00 ""TL"""
     c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).NumberFormat = "0.0%"
     c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).HorizontalAlignment = xlCenter
-    Set alan = c.Range(c.Cells(b0, x0), c.Cells(b0 + n, x0 + 7))
+    Set alan = c.Range(c.Cells(b0, x0), c.Cells(b0 + n, x0 + 8))
     With alan
         .Font.Name = "Aptos": .Font.Size = 10
         .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
         .VerticalAlignment = xlCenter
     End With
-    With c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 7))
+    With c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 8))
         .Interior.Color = RGB(217, 217, 217): .Font.bold = True
         .HorizontalAlignment = xlCenter: .WrapText = True
     End With
@@ -9676,13 +9676,21 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
     c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0)).Font.bold = True
     For i = 1 To n
         If s(i, 6) <= 0.005 And s(i, 4) <= 0 Then
-            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(220, 252, 231)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(220, 252, 231)
         ElseIf s(i, 4) <= 0 Then
-            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(226, 232, 240)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(226, 232, 240)
         ElseIf i = n And n > 1 Then
-            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Interior.Color = RGB(254, 226, 226)
-            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 7)).Font.Color = RGB(185, 28, 28)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(254, 226, 226)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Font.Color = RGB(185, 28, 28)
         End If
     Next i
     If n > 1 Then If s(n, 4) > 0 Then c.Cells(b0 + n, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(b0 + n, x0 + 7).Value2)
+    ' Neden: ust tablonun H sutunu buyumesin diye H:I birlesik (ust tablodaki Durum sutununun genisligi kullanilir).
+    For i = 0 To n
+        With c.Range(c.Cells(b0 + i, x0 + 7), c.Cells(b0 + i, x0 + 8))
+            .Merge
+            .HorizontalAlignment = IIf(i = 0, xlCenter, xlLeft)
+            .ShrinkToFit = True
+        End With
+    Next i
 End Sub
