@@ -764,7 +764,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - katalog/AKSORA_LinkedIn.pdf (v2): kurum kataloğu tasarımıyla (A4 yatay) 11 sayfa; kapak aynı, banner'larda kurum logosu ve il haritası bulanık (imgL/). Rakamlar uydurma (atıl 48,6 mn, transfer 12,9 mn, yıllık nakit etkisi 29 mn TL, 2.600 saat/yıl), iller A-E İli, ilçeler İlçe-NN; ekranlar temsilî HTML tablo. Kaynak: scratchpad katalog/linkedin2.html (lhead+lbody).
 
 ## İSG listesi + Excel sayım formu (05.11.2026, taban up46)
-- İSG: I_ISG_LISTE kullanıcının İSG-HIRDAVAT listesine (05.11) eşitlendi: 373 kalem (282 zimmet / 91 manuel sarf). 80 eksik kalem eklendi, 7500053995 (ÇANTA MALZEME EL TİPİ) M→Z düzeltildi. docs/isg/ISG_ISLEM.csv aynı liste. İSG sayfaları/mantığı değişmedi. Not: listedeki kalemler demontaj kontrolüne girmez (mevcut kural).
+- İSG: I_ISG_LISTE kullanıcının İSG-HIRDAVAT listesine (05.11) eşitlendi: 372 kalem (282 zimmet / 90 manuel sarf; 7500051242 MODEM RADYO FREKANS kullanıcı isteğiyle İSG dışı). 80 eksik kalem eklendi, 7500053995 (ÇANTA MALZEME EL TİPİ) M→Z düzeltildi. docs/isg/ISG_ISLEM.csv aynı liste. İSG sayfaları/mantığı değişmedi. Not: listedeki kalemler demontaj kontrolüne girmez (mevcut kural).
 - Sayım: stok sayfalarında ÇIKTI AL → "EVET = Excel / HAYIR = PDF". Excel sayım formu (T_SayimExcelYaz): PDF ile aynı düzen (A4 yatay, başlık, kaşe/imza bandı, sayfa no, siyah-beyaz baskı), SAYILAN (sarı, ≥0 doğrulama) ve AÇIKLAMA doldurulur, FARK formülle (eksi kırmızı, artı yeşil), 3. satırda "Girilen x / n, Farklı çıkan y". Stok sütunları ve FARK kilitli (T_AksoraImza + mSayimKilit). Masaüstüne "<depo> - SAYIM - <sayfa> - <tarih>.xlsx". Koşullu biçimde formül yok (Türkçe Excel yerel formül sorunu).
 
 ## Sıradaki işler
