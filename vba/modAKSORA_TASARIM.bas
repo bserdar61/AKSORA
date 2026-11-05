@@ -17,6 +17,8 @@ Private mExcelToplu As Boolean
 Private mExcelKlasor As String
 Private mDepoFiltre As String
 Private mExcelSonuc As String
+Private mSayimExcel As Boolean
+Private mSayimKilit As String
 Private mTopluAdlar As Object
 
 Public Function AKSORA_TASARIM_AKTIF() As Boolean
@@ -1896,9 +1898,19 @@ Public Sub AKSORA_KLASOR_AC(ByVal klasor As String)
 End Sub
 
 Public Sub AKSORA_CIKTI_AL()
-    Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String
+    Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String, cvp As VbMsgBoxResult
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     Set ws = ActiveSheet
+    mSayimExcel = False
+    If T_CiktiTur(ws.Name) = 1 Then
+        cvp = MsgBox("Sayým listesi nasýl hazýrlansýn?" & vbCrLf & vbCrLf & _
+            "EVET  =  EXCEL (önerilen)" & vbCrLf & _
+            "SAYILAN miktarlarý bilgisayarda girin; FARK kendiliðinden hesaplanýr. Sonra yazdýrýp imzalatýn." & vbCrLf & vbCrLf & _
+            "HAYIR  =  PDF" & vbCrLf & "Boþ liste; sahada elle doldurmak için.", _
+            vbQuestion + vbYesNoCancel, "AKSORA  |  SAYIM LÝSTESÝ")
+        If cvp = vbCancel Then Exit Sub
+        mSayimExcel = (cvp = vbYes)
+    End If
     ev = application.EnableEvents: sc = application.ScreenUpdating
     application.EnableEvents = False: application.ScreenUpdating = False
     application.Cursor = xlWait
@@ -1913,6 +1925,13 @@ Public Sub AKSORA_CIKTI_AL()
     application.PrintCommunication = True
     application.Cursor = xlDefault
     application.EnableEvents = ev: application.ScreenUpdating = True
+    If mSayimExcel And no = 0 Then
+        ' Sayim formu acik kalir (kullanici doldurur); AKSORA'ya donuste ayni sayfa.
+        mSayimExcel = False
+        If Len(mExcelSonuc) > 0 Then application.StatusBar = "Sayým formu masaüstüne kaydedildi: " & mExcelSonuc
+        Exit Sub
+    End If
+    mSayimExcel = False
     ws.Activate
     On Error GoTo 0
     If no <> 0 Then MsgBox "Çýktý hazýrlanamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
@@ -2045,6 +2064,36 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         End If
         Exit Sub
     End If
+    If mSayimExcel Then
+        depoAd = depo
+        If depoAd = "TÜMÜ" Then depoAd = T_IlAdi(ws) & " Tüm Depolar"
+        mExcelYol = AKSORA_MASAUSTU() & application.PathSeparator & _
+            AKSORA_DOSYA_ADI(depoAd & " - SAYIM - " & T_SayfaKisa(ws.Name) & " - " & tarihMetin) & ".xlsx"
+        k = IIf(seriVar, 12, 11)
+        ReDim cikis(1 To n, 1 To k)
+        For i = 1 To n
+            cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
+            cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+            x = 6
+            If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
+            cikis(i, x) = veri(i, 5)
+            cikis(i, x + 1) = adet(i)
+            cikis(i, x + 2) = veri(i, 6)
+        Next i
+        mExcelKapat = False
+        On Error GoTo SayimHata
+        If seriVar Then
+            T_SayimExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), cikis, n, _
+                Array(9.89, 7, 14.66, 11, 34, 16, 7.5, 11, 6.5, 14, 12, 14), 8, ust
+        Else
+            T_SayimExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), cikis, n, _
+                Array(9.89, 7, 14.66, 11, 40.55, 7.5, 11, 6.5, 15, 13, 22), 7, ust
+        End If
+        mExcelYol = vbNullString: mSayimKilit = vbNullString
+        Exit Sub
+    End If
     If seriVar Then
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
             "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 22, 20), _
@@ -2056,6 +2105,113 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
             Array("@", "@", "@", "@", "@", "@", "@", "@", "@"), _
             Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust, Array(5, 4, 2)
     End If
+    Exit Sub
+SayimHata:
+    x = Err.Number: depoAd = Err.Description
+    mExcelYol = vbNullString: mSayimKilit = vbNullString
+    On Error GoTo 0
+    Err.Raise x, , depoAd
+End Sub
+
+' Excel sayim formu: PDF sayim listesiyle ayni duzen (A4 yatay, baslik, kase/imza bandi, sayfa no) ama
+' SAYILAN ve ACIKLAMA bilgisayarda doldurulur; FARK = SAYILAN - stok kendiliginden. Stok sutunlari kilitli.
+' 1. satir baslik, 2. satir AKSORA, 3. satir ilerleme ozeti, 4. satir sutun basliklari (her sayfada), 5+ veri.
+Private Sub T_SayimExcelYaz(ByVal bas As Variant, ByRef veri() As Variant, ByVal n As Long, ByVal gen As Variant, _
+    ByVal mk As Long, ByVal ust As String)
+    Dim wb As Workbook, c As Worksheet, k As Long, j As Long, r As Range, alan As Range, son As Long
+    Dim rS As Range, rF As Range, rM As Range, fc As FormatCondition, sA As String, fA As String, mA As String
+    k = UBound(bas) - LBound(bas) + 1
+    son = n + 4
+    AKSORA_DONUS_KAYDET
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Set c = wb.Worksheets(1)
+    On Error Resume Next
+    c.Name = "SAYIM"
+    On Error GoTo 0
+    c.Cells.Font.Name = "Aptos": c.Cells.Font.Size = 10: c.Cells.Font.Color = RGB(0, 0, 0)
+    c.Range("A1").Value2 = "SAYIM LÝSTESÝ  |  " & ust
+    c.Range("A1").Font.bold = True: c.Range("A1").Font.Size = 12
+    c.Range("A2").Value2 = "Hazýrlama: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  " & n & " kalem  |  Sarý hücrelere sayýlan miktarý girin  |  AKSORA"
+    c.Range("A2").Font.Size = 9: c.Range("A2").Font.Color = RGB(89, 89, 89)
+    For j = 1 To k
+        c.Columns(j).ColumnWidth = gen(LBound(gen) + j - 1)
+        c.Cells(4, j).Value2 = bas(LBound(bas) + j - 1)
+        If j < mk Or j = mk + 1 Or j = mk + 4 Then c.Range(c.Cells(5, j), c.Cells(son, j)).NumberFormat = "@"
+    Next j
+    For j = 1 To n
+        If T_SadeSayi(veri(j, 1)) Then veri(j, 1) = CDbl(veri(j, 1))
+        If T_SadeSayi(veri(j, 4)) Then veri(j, 4) = CDbl(veri(j, 4))
+        If IsNumeric(veri(j, mk)) Then veri(j, mk) = Round(CDbl(veri(j, mk)), 3)
+    Next j
+    c.Range("A5").Resize(n, k).Value2 = veri
+    Set r = c.Range(c.Cells(5, 1), c.Cells(son, k))
+    If n > 1 Then
+        r.Sort Key1:=r.Columns(5), Order1:=xlAscending, Key2:=r.Columns(4), Order2:=xlAscending, _
+            Key3:=r.Columns(2), Order3:=xlAscending, Header:=xlNo, MatchCase:=False, Orientation:=xlTopToBottom
+    End If
+    Set rM = c.Range(c.Cells(5, mk), c.Cells(son, mk))
+    Set rS = c.Range(c.Cells(5, mk + 2), c.Cells(son, mk + 2))
+    Set rF = c.Range(c.Cells(5, mk + 3), c.Cells(son, mk + 3))
+    mA = rM.Address: sA = rS.Address: fA = rF.Address
+    rS.ClearContents
+    rF.FormulaR1C1 = "=IF(RC[-1]="""","""",ROUND(RC[-1]-RC[-3],3))"
+    ' Miktarlar Genel bicim: tam sayida virgul yok, kusurat varsa virgulle (Excel'e aktar ile ayni).
+    ' Kosullu bicim yalniz sabit sayiyla (formul kullanilmaz: Turkce / Ingilizce Excel'de ayni calisir).
+    rM.NumberFormat = "General": rS.NumberFormat = "General": rF.NumberFormat = "General"
+    Set fc = rF.FormatConditions.Add(Type:=xlCellValue, Operator:=xlLess, Formula1:="0")
+    fc.Font.Color = RGB(192, 0, 0): fc.Font.bold = True
+    Set fc = rF.FormatConditions.Add(Type:=xlCellValue, Operator:=xlGreater, Formula1:="0")
+    fc.Font.Color = RGB(0, 112, 60): fc.Font.bold = True
+    ' Giris hucreleri: ekranda acik sari (baskida siyah-beyaz), yalniz 0 veya pozitif sayi.
+    With c.Range(c.Cells(5, mk + 2), c.Cells(son, mk + 2))
+        .Interior.Color = RGB(255, 247, 204)
+        .Validation.Delete
+        .Validation.Add Type:=xlValidateDecimal, AlertStyle:=xlValidAlertStop, Operator:=xlGreaterEqual, Formula1:="0"
+        .Validation.ErrorTitle = "AKSORA": .Validation.ErrorMessage = "Sayýlan miktar 0 veya pozitif bir sayý olmalýdýr."
+        .Validation.InputTitle = "SAYILAN": .Validation.InputMessage = "Depoda sayýlan miktarý girin."
+    End With
+    c.Range(c.Cells(5, mk + 4), c.Cells(son, mk + 4)).Interior.Color = RGB(255, 251, 230)
+    c.Range("A3").Formula = "=""Girilen: ""&COUNT(" & sA & ")&"" / " & n & " kalem   |   Farklý çýkan: ""&SUMPRODUCT((" & sA & "<>"""")*(" & fA & "<>0))&"" kalem"""
+    c.Range("A3").Font.Size = 9: c.Range("A3").Font.bold = True: c.Range("A3").Font.Color = RGB(31, 78, 121)
+    Set alan = c.Range(c.Cells(4, 1), c.Cells(son, k))
+    With alan
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
+        .VerticalAlignment = xlCenter
+    End With
+    With c.Range(c.Cells(4, 1), c.Cells(4, k))
+        .Interior.Color = RGB(217, 217, 217): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .WrapText = True
+    End With
+    c.Rows(4).RowHeight = 30
+    c.Range(c.Cells(5, 1), c.Cells(son, 1)).EntireRow.RowHeight = 22
+    c.Range(c.Cells(5, 1), c.Cells(son, 4)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, 3), c.Cells(son, 3)).HorizontalAlignment = xlLeft
+    c.Range(c.Cells(5, mk - 1), c.Cells(son, mk - 1)).HorizontalAlignment = xlCenter
+    If mk = 8 Then c.Range(c.Cells(5, 6), c.Cells(son, 6)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, mk), c.Cells(son, mk)).HorizontalAlignment = xlRight
+    c.Range(c.Cells(5, mk + 1), c.Cells(son, mk + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(5, mk + 2), c.Cells(son, mk + 3)).HorizontalAlignment = xlRight
+    c.Range(c.Cells(5, mk + 2), c.Cells(son, mk + 3)).Font.bold = True
+    c.Range(c.Cells(5, mk + 4), c.Cells(son, mk + 4)).HorizontalAlignment = xlLeft
+    alan.AutoFilter
+    ' Kilit (AKSORA imzasiyla birlikte): baslik satirlari, stok sutunlari ve FARK; serbest: SAYILAN, ACIKLAMA.
+    mSayimKilit = application.Union(c.Range("A3").Resize(2, k), c.Range(c.Cells(5, 1), c.Cells(son, mk + 1)), rF).Address
+    On Error Resume Next
+    application.PrintCommunication = False
+    With c.PageSetup
+        .PrintArea = alan.Address
+        .PrintTitleRows = "$4:$4"
+        .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+        .BlackAndWhite = True
+    End With
+    T_CiktiSayfa c.PageSetup, ust, True
+    application.PrintCommunication = True
+    c.PageSetup.LeftFooter = "&""Aptos""&7AKSORA  •  Çýktý: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    On Error GoTo 0
+    T_ExcelBitir wb, c, 5
+    mSayimKilit = vbNullString
+    On Error Resume Next
+    c.Cells(5, mk + 2).Select
 End Sub
 
 Private Function T_CiktiMiktar(ByVal x As Double, ByVal birim As String) As String
@@ -2676,6 +2832,7 @@ Private Sub T_AksoraImza(ByVal wb As Workbook)
                 ws.Unprotect T_IMZA_SIFRE
                 ws.Cells.Locked = False
                 ws.Rows("1:2").Locked = True
+                If Len(mSayimKilit) > 0 And ws.Name = "SAYIM" Then ws.Range(mSayimKilit).Locked = True
                 ws.Protect Password:=T_IMZA_SIFRE, DrawingObjects:=False, Contents:=True, Scenarios:=False, _
                     AllowFormattingCells:=True, AllowFormattingColumns:=True, AllowFormattingRows:=True, AllowInsertingRows:=True, _
                     AllowInsertingColumns:=True, AllowDeletingRows:=True, AllowDeletingColumns:=False, AllowSorting:=True, _

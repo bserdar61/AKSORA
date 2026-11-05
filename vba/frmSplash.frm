@@ -1,18 +1,11 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmSplash 
-   ClientHeight    =   4032
-   ClientLeft      =   144
-   ClientTop       =   408
-   ClientWidth     =   7824
-   OleObjectBlob   =   "frmSplash.frx":0000
-   ShowModal       =   0   'False
-   StartUpPosition =   2  'CenterScreen
-End
 Attribute VB_Name = "frmSplash"
+Attribute VB_Base = "0{981EEC7E-EB02-4256-98DB-68366FCF498D}{886CCD64-1EB2-44BC-A3C5-75D4C40F9E33}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
 Option Explicit
 
 #If VBA7 Then
@@ -131,7 +124,20 @@ End Sub
 ' ARKA PLANA AL: Excel simge durumuna alinir, guncelleme surer; bitince pencere geri acilir.
 Private Sub lblAltBaslik_Click()
     If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
-    AKSORA_ARKA_PLANA_AL
+    ' Tiklama aninda gorunur geri bildirim (pencere arkaya gidince baska pencere yoksa degisiklik fark edilmiyordu).
+    If AKSORA_ARKA_PLAN Then
+        Me.lblAltBaslik.Caption = "ARKA PLANA AL"
+        Me.lblAltBaslik.BackColor = RGB(21, 101, 192)
+        Me.Repaint
+        AKSORA_ONE_GETIR
+    Else
+        Me.lblAltBaslik.Caption = "ARKA PLANDA  •  ÖNE GETÝR"
+        Me.lblAltBaslik.BackColor = RGB(21, 128, 61)
+        Me.lblDurum.Caption = "Arka planda çalýþýyor: baþka programlarla çalýþabilirsiniz." & vbLf & _
+            "Ýþ bitince görev çubuðunda AKSORA yanýp söner."
+        Me.Repaint
+        AKSORA_ARKA_PLANA_AL
+    End If
 End Sub
 
 ' Kart Alt+F4 ile kapatilamaz; islem bitince kod kapatir.

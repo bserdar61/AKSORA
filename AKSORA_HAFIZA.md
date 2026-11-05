@@ -763,6 +763,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - katalog/AKSORA_Katalog_v3.pdf: kurum içi, 19 sayfa, güncel rakamlar (atıl 31,8 mn / transfer 7,4 mn / gereksiz talep 1,6 mn), yeni sayfalar: Atıl NE YAPILMALI, Transfer listesi, Satın alma.
 - katalog/AKSORA_LinkedIn.pdf (v2): kurum kataloğu tasarımıyla (A4 yatay) 11 sayfa; kapak aynı, banner'larda kurum logosu ve il haritası bulanık (imgL/). Rakamlar uydurma (atıl 48,6 mn, transfer 12,9 mn, yıllık nakit etkisi 29 mn TL, 2.600 saat/yıl), iller A-E İli, ilçeler İlçe-NN; ekranlar temsilî HTML tablo. Kaynak: scratchpad katalog/linkedin2.html (lhead+lbody).
 
+## İSG listesi + Excel sayım formu (05.11.2026, taban up46)
+- İSG: I_ISG_LISTE kullanıcının İSG-HIRDAVAT listesine (05.11) eşitlendi: 373 kalem (282 zimmet / 91 manuel sarf). 80 eksik kalem eklendi, 7500053995 (ÇANTA MALZEME EL TİPİ) M→Z düzeltildi. docs/isg/ISG_ISLEM.csv aynı liste. İSG sayfaları/mantığı değişmedi. Not: listedeki kalemler demontaj kontrolüne girmez (mevcut kural).
+- Sayım: stok sayfalarında ÇIKTI AL → "EVET = Excel / HAYIR = PDF". Excel sayım formu (T_SayimExcelYaz): PDF ile aynı düzen (A4 yatay, başlık, kaşe/imza bandı, sayfa no, siyah-beyaz baskı), SAYILAN (sarı, ≥0 doğrulama) ve AÇIKLAMA doldurulur, FARK formülle (eksi kırmızı, artı yeşil), 3. satırda "Girilen x / n, Farklı çıkan y". Stok sütunları ve FARK kilitli (T_AksoraImza + mSayimKilit). Masaüstüne "<depo> - SAYIM - <sayfa> - <tarih>.xlsx". Koşullu biçimde formül yok (Türkçe Excel yerel formül sorunu).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
