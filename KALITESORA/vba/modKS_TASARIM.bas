@@ -122,31 +122,27 @@ Private Function KS_AktifSekme(ByVal ws As Worksheet) As Long
     Next i
 End Function
 
-' Koyu sekme bandý (v2.5): aktif sekmesi iþaretli hazýr görsel + üstünde 8 saydam týklama alaný.
-' Görsel yoksa 0 döner ve þekil sekmeler kullanýlýr. Bandýn alt kenarýný (pt) döndürür.
+' Koyu sekme bandý: her sekme kendi görseli (aktif / pasif) ve týklanan þey görünen sekmenin kendisidir.
+' (v2.6'daki tek bant + görünmez týklama alanlarý kaldýrýldý: büyük / ikinci ekranda Excel'in týklama noktasý
+' kayýnca alttaki düðmelere basmak bu görünmez alanlara denk gelip baþka sayfaya atýyordu.)
+' Görsellerden biri eksikse 0 döner ve þekil sekmeler kullanýlýr. Bandýn alt kenarýný (pt) döndürür.
 Private Function KS_NavBandi(ByVal ws As Worksheet, ByVal sol As Double, ByVal ust As Double) As Double
-    Dim p As String, s As Shape, yuk As Double, gen As Double, i As Long, hedef As Variant
-    p = KS_Gorsel("KALITESORA_NAV_" & KS_AktifSekme(ws))
-    If Len(p) = 0 Then Exit Function
+    Dim p(0 To 7) As String, s As Shape, yuk As Double, gen As Double, i As Long, hedef As Variant, aktif As Long
+    aktif = KS_AktifSekme(ws)
+    For i = 0 To 7
+        p(i) = KS_Gorsel("KALITESORA_NAV_T" & i & IIf(i = aktif, "_A", "_P"))
+        If Len(p(i)) = 0 Then Exit Function
+    Next i
     hedef = Array(SH_PANEL, SH_KAYIT, SH_SEVK, SH_ARIZA, SH_MALZ, SH_KARNE, SH_RAPOR, SH_TANIM)
     yuk = KS_GENISLIK * 72 / 2400
-    Set s = ws.Shapes.AddPicture(p, msoFalse, msoTrue, sol, ust, KS_GENISLIK, yuk)
-    s.Name = "ksC_Nav"
-    s.Placement = xlFreeFloating
-    s.Locked = True
     gen = KS_GENISLIK / 8
     For i = 0 To 7
-        Set s = ws.Shapes.AddShape(msoShapeRectangle, sol + i * gen, ust, gen, yuk)
+        Set s = ws.Shapes.AddPicture(p(i), msoFalse, msoTrue, sol + i * gen, ust, gen, yuk)
         s.Name = "ksC_Sekme" & i
         s.AlternativeText = CStr(hedef(i))
-        s.Fill.Visible = msoTrue
-        s.Fill.Solid
-        s.Fill.ForeColor.RGB = vbWhite
-        s.Fill.Transparency = 0.99
-        s.Line.Visible = msoFalse
-        s.Shadow.Visible = msoFalse
         s.Placement = xlFreeFloating
-        s.OnAction = "KS_NAV"
+        s.Locked = True
+        If i <> aktif Then s.OnAction = "KS_NAV"
     Next i
     KS_NavBandi = ust + yuk
 End Function
@@ -183,9 +179,12 @@ End Function
 Public Sub KS_NAV()
     Dim s As Shape, hedef As Worksheet
     On Error GoTo Son
+    If TypeName(Application.Caller) <> "String" Then Exit Sub
+    If Left$(CStr(Application.Caller), 9) <> "ksC_Sekme" Then Exit Sub
     Set s = ActiveSheet.Shapes(CStr(Application.Caller))
     Set hedef = KS_WS(s.AlternativeText)
     If hedef Is Nothing Then Exit Sub
+    If hedef Is ActiveSheet Then Exit Sub
     If hedef.Name = SH_PANEL Then KS_PanelYenile False
     hedef.Activate
     ActiveWindow.ScrollRow = 1

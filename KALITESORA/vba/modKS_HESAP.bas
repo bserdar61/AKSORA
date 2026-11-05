@@ -218,6 +218,8 @@ Public Sub KS_HesaplaTumu()
     Dim mik As Double, d As Date, d2 As Date, enYakin As Date, bulundu As Boolean, sira As Long
     Dim sevkMik() As Double, arzMik() As Double, sonArz() As Date, uyeler As Variant, anahtar As String
 
+    Dim aktif As Object
+    Set aktif = ActiveSheet
     KS_Basla
     KS_ParamYukle
     Set loM = KS_LOZ(T_MALZ)
@@ -330,6 +332,9 @@ Public Sub KS_HesaplaTumu()
     KS_MailBaglantilari loA
     KS_KilitAyarla loS, KS_DuzenSevk()
     KS_KilitAyarla loM, KS_DuzenMalz()
+    If Not aktif Is Nothing Then
+        If Not ActiveSheet Is aktif Then aktif.Activate
+    End If
     KS_Bitir
 End Sub
 

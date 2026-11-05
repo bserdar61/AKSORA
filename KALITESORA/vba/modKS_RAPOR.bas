@@ -558,7 +558,7 @@ Private Sub KS_KarneCalistir(ByVal tur As String)
     Set ws = KS_WS(SH_KARNE)
     ara = KS_Metin(KS_FV("kAra"))
     KS_Basla
-    KS_HesaplaTumu
+    ' Türetilmiþ alanlar kayýt / aktarým sýrasýnda zaten güncellenir; karne yalnýz okur (diðer sayfalara dokunmaz).
     KS_BaglamYukle
     korumali = ws.ProtectContents
     KS_Ac ws
@@ -596,9 +596,11 @@ Private Sub KS_KarneCalistir(ByVal tur As String)
     End If
     If korumali Then KS_Kapat ws
     KS_Bitir
+    If Not ActiveSheet Is ws Then ws.Activate
     Exit Sub
 Hata:
     KS_Bitir True
+    If Not ActiveSheet Is ws Then ws.Activate
     MsgBox "Karne oluþturulamadý: " & Err.Description, vbExclamation, KS_AD
 End Sub
 

@@ -1,4 +1,4 @@
-# KALİTESORA v2.6 — Kurulum ve Kullanım
+# KALİTESORA v2.7 — Kurulum ve Kullanım
 
 **Çoruh Bölgesi malzeme kalite, garanti ve arıza takip merkezi.** Tamamen VBA ile çalışır; Excel dışında bir şey gerektirmez.
 Tasarım ailesi AKSORA ile aynıdır: banner görseli, açık zemin, gölgeli beyaz kartlar, hizalı sekme çubuğu.
@@ -133,3 +133,8 @@ SEVKİYATLAR > **YILLIK EXCEL YÜKLE** > dosya > başlangıç tarihi.
 4. Yeni sürümleri hep bu klasöre, eskisinin üzerine çıkarın.
 
 Ek yol: ZIP'i açmadan önce sağ tık > Özellikler > **Engellemeyi kaldır** > Tamam. Kurum bilgisayarında BT ilkesi güvenilir konumları kapattıysa, klasörün eklenmesini BT'den isteyin. Aynı adımlar YÖNETİM > MAKRO UYARISI NASIL KALKAR? düğmesinde de yazılı.
+
+## v2.7 düzeltmeleri
+- **Düğmeler başka sayfaya atıyordu:** Sekme bandı tek görsel ve üstünde 8 görünmez tıklama alanından oluşuyordu. Büyük ya da ikinci ekranda Excel'in tıklama noktası kayınca, banda yakın düğmelere (özellikle KARNE'dekilere) basmak bu görünmez alanlara denk geliyor ve başka sayfa açılıyordu. Artık her sekme kendi görseli; görünmez alan kalmadı. Açık sayfanın sekmesine tıklamak hiçbir şey yapmaz.
+- **KARNE:** Düğmeler artık bütün tabloları yeniden hesaplamıyor, yalnız karneyi çiziyor (daha hızlı). İşlem bitince sayfa her zaman KARNE'de kalıyor.
+- Yeni sekme görselleri: `KALITESORA_GORSEL\KALITESORA_NAV_T0_A.jpg` … `T7_P.jpg`. Klasör güncellenmezse sekmeler şekille çizilir; düzeltme yine geçerlidir.

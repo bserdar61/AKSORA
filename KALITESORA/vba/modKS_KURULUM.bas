@@ -5,7 +5,7 @@ Option Explicit
 ' Tekrar çalýþtýrýldýðýnda veri tablolarýna dokunmaz; yalnýz eksikleri tamamlar ve tasarýmý yeniler.
 
 Private Const ETIKET As String = "_KS_KURULU"
-Public Const KS_TASARIM_NO As Long = 26      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
+Public Const KS_TASARIM_NO As Long = 27      ' tasarým sürümü; açýlýþta eskiyse kendiliðinden yenilenir
 
 Private mSessiz As Boolean
 
