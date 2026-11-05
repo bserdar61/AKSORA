@@ -2,6 +2,9 @@ Attribute VB_Name = "modAKSORA_BIRIM"
 Option Explicit
 
 Private Const HUB As String = "BIRIM SECIM"
+' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutarin uzerindeyse sarfi bolge mudurlugu yapar:
+' ilceden beklenmez, "BÖLGE SARF EDECEK" gosterilir, ilce durumuna ve yonetim uyarilarina girmez.
+Private Const I_ISG_BOLGE_TL As Double = 10000#
 Private Const YAT As String = "YATIRIM PANEL"
 Private Const MUS As String = "MUSTERI PANEL"
 Private Const MUK As String = "MUSTERI IL SECIM"
@@ -6529,12 +6532,14 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
         "Stok Deðeri", "Yapýlacak Ýþlem"), veri, n, Array(8, 22, 9, 12, 13, 44, 10, 8, 15, 22), _
         Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00 ""TL""", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter), ust, _
-        "Kýrmýzý: kiþiye ZÝMMET yapýlacak  |  Mavi: MANUEL SARF yapýlacak", "Malzeme Listesi", Empty
+        "Kýrmýzý: kiþiye ZÝMMET yapýlacak  |  Mavi: MANUEL SARF yapýlacak  |  Gri: BÖLGE müdürlüðü sarf edecek (birim fiyatý " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)", "Malzeme Listesi", Empty
     For r = 1 To n
         Set hz = c.Cells(r + 4, 10)
         Select Case CStr(hz.Value2)
             Case "ZÝMMET YAPIN": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
             Case "MANUEL SARF YAPIN": hz.Interior.Color = RGB(29, 78, 216): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
+            Case "BÖLGE SARF EDECEK": hz.Interior.Color = RGB(226, 232, 240): hz.Font.Color = RGB(51, 65, 85): hz.Font.bold = True
         End Select
     Next r
     wb.Worksheets(1).Activate
@@ -6868,7 +6873,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     Dim islem As String, a1 As Long, b1 As Long, a2 As Long, b2 As Long, n As Long, nD As Long
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, y As Double, kw As Double
     Dim zK As Long, zM As Double, sK As Long, sM As Double, toplam As Double, rr As Range, bw As Double
-    Dim dd As Shape, secim As String, birim As String, o As Variant
+    Dim dd As Shape, secim As String, birim As String, o As Variant, bK As Long
     Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
@@ -6905,10 +6910,17 @@ Private Sub I_ISG_KUR(ByVal il As String)
         Next r
     End If
     I_ANAHTAR_SIRALA depolar
-    ' Ilce ozeti: depo -> (ad, zimmet kalem, zimmet miktar, sarf kalem, sarf miktar, deger)
+    ' Birim fiyati yuksek manuel sarf malzemesi bolge mudurlugunun isi.
+    For Each k In mal.keys
+        t = mal(k)
+        If t(9) = "MANUEL SARF YAPIN" And t(6) > 0 Then
+            If t(8) / t(6) > I_ISG_BOLGE_TL Then t(9) = "BÖLGE SARF EDECEK": mal(k) = t
+        End If
+    Next k
+    ' Ilce ozeti: depo -> (ad, zimmet kalem, zimmet miktar, sarf kalem, sarf miktar, deger, bolge sarfi kalem)
     Set ozet = CreateObject("Scripting.Dictionary"): ozet.CompareMode = vbTextCompare
     For Each k In depolar.keys
-        ozet(CStr(k)) = Array(CStr(depolar(k)), 0, 0#, 0, 0#, 0#)
+        ozet(CStr(k)) = Array(CStr(depolar(k)), 0, 0#, 0, 0#, 0#, 0)
     Next k
     For Each k In mal.keys
         t = mal(k)
@@ -6917,8 +6929,10 @@ Private Sub I_ISG_KUR(ByVal il As String)
             If Len(CStr(o(0))) = 0 Then o(0) = t(1)
             If t(9) = "ZÝMMET YAPIN" Then
                 o(1) = o(1) + 1: o(2) = o(2) + t(6): zK = zK + 1: zM = zM + t(6)
-            Else
+            ElseIf t(9) = "MANUEL SARF YAPIN" Then
                 o(3) = o(3) + 1: o(4) = o(4) + t(6): sK = sK + 1: sM = sM + t(6)
+            Else
+                o(6) = o(6) + 1: bK = bK + 1
             End If
             o(5) = o(5) + t(8): toplam = toplam + t(8)
             ozet(CStr(t(0))) = o
@@ -6934,16 +6948,17 @@ Private Sub I_ISG_KUR(ByVal il As String)
     ws.Rows(b1 + 2).RowHeight = 14
     ws.Rows(a2 - 4).RowHeight = 30: ws.Rows(a2 - 3).RowHeight = 32: ws.Rows(a2 - 2).RowHeight = 8: ws.Rows(a2 - 1).RowHeight = 30
     ws.Range(ws.Rows(a2), ws.Rows(b2)).RowHeight = 19
-    Y_BOLUM ws, a1 - 2, "ÝLÇE BAZINDA ÝSG DURUMU", "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr.", 9
+    Y_BOLUM ws, a1 - 2, "ÝLÇE BAZINDA ÝSG DURUMU", "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr. " & _
+        "Birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder.", 9
     Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 9)), Array("Depo", "Depo Adý", "Zimmet Kalem", _
-        "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", "", "ÝSG Stok Deðeri", "Durum")
+        "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", "Bölge Sarfý Kalem", "ÝSG Stok Deðeri", "Durum")
     r = a1
     For Each k In ozet.keys
         o = ozet(k)
         ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value2 = CStr(k)
         ws.Cells(r, 2).Value2 = o(0)
         ws.Cells(r, 3).Value2 = o(1): ws.Cells(r, 4).Value2 = o(2)
-        ws.Cells(r, 5).Value2 = o(3): ws.Cells(r, 6).Value2 = o(4)
+        ws.Cells(r, 5).Value2 = o(3): ws.Cells(r, 6).Value2 = o(4): ws.Cells(r, 7).Value2 = o(6)
         ws.Cells(r, 8).Value2 = Round(o(5), 2)
         If o(1) > 0 And o(3) > 0 Then
             ws.Cells(r, 9).Value2 = "ZÝMMET + SARF BEKLÝYOR"
@@ -6960,13 +6975,13 @@ Private Sub I_ISG_KUR(ByVal il As String)
     If nD = 0 Then ws.Cells(a1, 2).Value2 = "Ýlçe stoklarý güncellenince ilçeler listelenir."
     ws.Cells(b1 + 1, 2).Value2 = "TOPLAM"
     ws.Cells(b1 + 1, 3).Value2 = zK: ws.Cells(b1 + 1, 4).Value2 = zM
-    ws.Cells(b1 + 1, 5).Value2 = sK: ws.Cells(b1 + 1, 6).Value2 = sM
+    ws.Cells(b1 + 1, 5).Value2 = sK: ws.Cells(b1 + 1, 6).Value2 = sM: ws.Cells(b1 + 1, 7).Value2 = bK
     ws.Cells(b1 + 1, 8).Value2 = Round(toplam, 2)
     Y_MIKTAR_BICIM ws.Cells(b1 + 1, 4): Y_MIKTAR_BICIM ws.Cells(b1 + 1, 6)
     Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9))
     Y_TOPLAM_SATIRI ws.Range(ws.Cells(b1 + 1, 1), ws.Cells(b1 + 1, 9))
     ws.Range(ws.Cells(a1, 1), ws.Cells(b1 + 1, 1)).HorizontalAlignment = xlCenter
-    ws.Range(ws.Cells(a1, 3), ws.Cells(b1 + 1, 6)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(b1 + 1, 7)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(a1, 2), ws.Cells(b1, 2)).IndentLevel = 1
     ws.Range(ws.Cells(a1, 8), ws.Cells(b1 + 1, 8)).NumberFormat = "#,##0.00 ""TL"""
@@ -6992,11 +7007,12 @@ Private Sub I_ISG_KUR(ByVal il As String)
     If dd.ControlFormat.Value < 1 Then dd.ControlFormat.Value = 1
     dd.ControlFormat.DropDownLines = application.Min(30, i)
     dd.OnAction = BIRIM_MAKRO("AKSORA_ILCE_ISG_SEC")
-    bw = (w - 2 * 8) / 3
+    bw = (w - 3 * 8) / 4
     y = ws.Rows(a2 - 3).Top + 2
     Set s = Y_DUGME(ws, "I_ISG_F_TUMU", "TÜMÜ  (" & n & " kalem)", 0, y, bw, 28, RGB(45, 95, 145), "AKSORA_ILCE_ISG_TUMU")
     Set s = Y_DUGME(ws, "I_ISG_F_ZIMMET", "ZÝMMET YAPIN  (" & zK & " kalem)", bw + 8, y, bw, 28, RGB(185, 28, 28), "AKSORA_ILCE_ISG_ZIMMET")
     Set s = Y_DUGME(ws, "I_ISG_F_SARF", "MANUEL SARF YAPIN  (" & sK & " kalem)", 2 * (bw + 8), y, bw, 28, RGB(29, 78, 216), "AKSORA_ILCE_ISG_SARF")
+    Set s = Y_DUGME(ws, "I_ISG_F_BOLGE", "BÖLGE SARF EDECEK  (" & bK & " kalem)", 3 * (bw + 8), y, bw, 28, RGB(100, 116, 139), "AKSORA_ILCE_ISG_BOLGE")
     Y_BASLIK_SATIRI ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(a2 - 1, 9)), Array("Depo", "Depo Adý", "Sistem", "Mal Grubu", _
         "Malzeme", "Malzeme Tanýmý", "Miktar", "Stok Deðeri", "YAPILACAK ÝÞLEM")
     If n > 0 Then
@@ -7006,7 +7022,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
             t = mal(k): i = i + 1: idx(i) = i
             blok(i, 1) = t(0): blok(i, 2) = t(1): blok(i, 3) = t(2): blok(i, 4) = t(3)
             blok(i, 5) = t(4): blok(i, 6) = t(5): blok(i, 7) = t(6): blok(i, 8) = Round(t(8), 2): blok(i, 9) = t(9): blok(i, 10) = t(7)
-            anah(i) = CStr(t(0)) & "|" & IIf(t(9) = "ZÝMMET YAPIN", "1", "2") & "|" & Y_NORM(CStr(t(5))) & "|" & CStr(t(2))
+            anah(i) = CStr(t(0)) & "|" & IIf(t(9) = "ZÝMMET YAPIN", "1", IIf(t(9) = "MANUEL SARF YAPIN", "2", "3")) & "|" & Y_NORM(CStr(t(5))) & "|" & CStr(t(2))
         Next k
         Y_SIRALA anah, idx, 1, n
         ReDim sonuc(1 To n, 1 To 9)
@@ -7030,6 +7046,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
         Set rr = ws.Range(ws.Cells(a2, 9), ws.Cells(b2, 9))
         Y_DURUM_KF rr, "ZÝMMET YAPIN", RGB(220, 38, 38), RGB(255, 255, 255)
         Y_DURUM_KF rr, "MANUEL SARF YAPIN", RGB(29, 78, 216), RGB(255, 255, 255)
+        Y_DURUM_KF rr, "BÖLGE SARF EDECEK", RGB(226, 232, 240), RGB(51, 65, 85)
         ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(b2, 9)).AutoFilter
         If Len(secim) > 0 Then ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:="=" & secim
     Else
@@ -7037,7 +7054,8 @@ Private Sub I_ISG_KUR(ByVal il As String)
         ws.Cells(a2, 2).Font.Italic = True: ws.Cells(a2, 2).Font.Color = RGB(100, 116, 139)
     End If
     ws.Cells(b2 + 2, 1).Value2 = "ÝSG malzemesi ana listesi ve kiþisel zimmet listesi AKSORA'da kayýtlýdýr (" & liste.Count & _
-        " ÝSG malzemesi). Zimmet listesindekiler kiþiye zimmetlenir, diðerleri manuel sarf edilir."
+        " ÝSG malzemesi). Zimmet listesindekiler kiþiye zimmetlenir, diðerleri manuel sarf edilir; birim fiyatý " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (ilçeden beklenmez)."
     ws.Cells(b2 + 2, 1).Font.Size = 9: ws.Cells(b2 + 2, 1).Font.Color = RGB(71, 85, 105)
     ' KPI (panel karti BZ21 / BZ22 kullanir)
     ws.Range("BZ21").Value2 = n
@@ -7100,6 +7118,7 @@ End Sub
 Public Sub AKSORA_ILCE_ISG_TUMU(): I_ISG_FILTRE 9, "": End Sub
 Public Sub AKSORA_ILCE_ISG_ZIMMET(): I_ISG_FILTRE 9, "ZÝMMET YAPIN": End Sub
 Public Sub AKSORA_ILCE_ISG_SARF(): I_ISG_FILTRE 9, "MANUEL SARF YAPIN": End Sub
+Public Sub AKSORA_ILCE_ISG_BOLGE(): I_ISG_FILTRE 9, "BÖLGE SARF EDECEK": End Sub
 
 ' Karsilastirma tarihleri degisince sayfa yenilenir.
 Public Sub AKSORA_ILCE_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
@@ -7754,7 +7773,7 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
                     t = depolar(kod): t(1) = t(1) + 1: t(2) = t(2) + d: depolar(kod) = t
                     ' Ilce ISG: zimmet listesindeki (Z) ve manuel sarf (M) malzemeler, depoda miktar > 0
                     If u = 3 Then
-                        If liste.Exists(mal) And x > 0 Then
+                        If liste.Exists(mal) And x > 0 And Not (liste(mal) <> "Z" And d > I_ISG_BOLGE_TL * x) Then
                             kod = UCase$(I_TEMIZ(v(i, cD)))
                             If Not isg.Exists(kod) Then isg(kod) = Array(I_TEMIZ(v(i, cA)), 0#, 0#, 0#, 0#)
                             t = isg(kod)
