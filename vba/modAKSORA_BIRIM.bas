@@ -9675,10 +9675,9 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
     c.Range(c.Cells(b0 + 1, x0 + 1), c.Cells(b0 + n, x0 + 1)).HorizontalAlignment = xlCenter
     c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0)).Font.bold = True
     For i = 1 To n
-        If s(i, 6) <= 0.005 And s(i, 4) <= 0 Then
+        If s(i, 4) <= 0 Then
+            ' Ilceye is kalmadi (yalniz bolge sarfi olsa da): ilce temiz sayilir, yesil.
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(220, 252, 231)
-        ElseIf s(i, 4) <= 0 Then
-            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(226, 232, 240)
         ElseIf i = n And n > 1 Then
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(254, 226, 226)
             c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Font.Color = RGB(185, 28, 28)
