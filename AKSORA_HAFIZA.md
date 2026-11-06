@@ -785,6 +785,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - NEREDEN/NEREYE ek (06.11): karşı taraf ilçe (K) ve yüklenici (M) depoları: _KH_<IL> günlük kayıt (STOK_KH_KAYDET; toplu güncellemede _AKLIVE_ ILC+YUK, tek il güncellemesinde STOK_KH_KAYDET_CANLI; 60 gün, gün başına son kayıt). _KH_ yoksa ilçe biriminin _IH_ geçmişi (yalnız K). Gün kuralı: t günü sütunu, yoksa t öncesi son. Simülasyon: 7372 D001 -9 → 7155 K009.
 - Üst bantlar ve hızlı düğmeler N'ye kadar (STOK_KARS_UST_GENISLET, eski sayfa için; yeni kurulum doğrudan N).
 
+- İÇ NAKİL (06.11): aynı üretim yerinin D depoları arasında tamamı eşleşen satır durumu "İÇ NAKİL" (gri); azalan/artan sayı ve filtrelerine girmez.
 - Stok karşılaştırma sağ paneline BÜTÜN İLLERİ GÜNCELLE (AKSORA_KARS_TOPLU_DUGME, AKSORA_V11_KARS_UYARI sonunda; makro AKSORA_KARS_BUTUN_ILLER: 5 il güncelle → karşılaştırma sayfası → tarihler → KARŞILAŞTIR). Taban up50.
 
 ## HATA DERSİ (06.11.2026): "Rapor kaynağı boş: STOKLAR" / "Stok sayfası boş"

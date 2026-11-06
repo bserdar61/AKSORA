@@ -1257,6 +1257,7 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
     Dim a As Object, b As Object, kk As Variant, q1 As Double, q2 As Double, rec As Variant, mk As String, g As Variant
     Dim dec() As Long, inc() As Long, nd As Long, ni As Long, tmp As Long, cikti() As Variant, satirlar() As String, parca() As String
     Dim metin As String, lab As String, tamami As Boolean, ok As String, ilR As String, cq As Long
+    Dim durumlar As Variant, icNakil As Boolean, sp() As String, ownT As String, ownD As String, degisti As Boolean
     If son < 16 Then Exit Sub
     v = ws.Range("A16:J" & son).Value2
     ReDim eLoc(1 To 64): ReDim ePar(1 To 64): ReDim eIl(1 To 64): ReDim eQ(1 To 64)
@@ -1393,6 +1394,11 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
     Next kk
     ' Metin
     ReDim cikti(1 To UBound(v, 1), 1 To 1)
+    If son > 16 Then
+        durumlar = ws.Range("A16:A" & son).Value2
+    Else
+        ReDim durumlar(1 To 1, 1 To 1): durumlar(1, 1) = ws.Range("A16").Value2
+    End If
     For p = 1 To n
         If eRow(p) > 0 Then
             ok = IIf(eQ(p) < 0, ChrW(8594), ChrW(8592))
@@ -1427,9 +1433,31 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
                 End If
             End If
             cikti(eRow(p), 1) = metin
+            ' Ayni uretim yerinin D depolari arasinda tamami eslesen hareket: sag cepten sol cebe (IC NAKIL).
+            ' Azalan / artan sayilarina ve filtrelerine girmez; toplam deger zaten degismez.
+            If eRem(p) <= 0.0000001 And Len(eTxt(p)) > 0 Then
+                ownT = Trim$(CStr(v(eRow(p), 2))): ownD = UCase$(Trim$(CStr(v(eRow(p), 3))))
+                icNakil = (Left$(ownD, 1) = "D")
+                satirlar = Split(Mid$(eTxt(p), 2), vbLf)
+                For i = 0 To UBound(satirlar)
+                    sp = Split(Split(satirlar(i), vbTab)(0), " ")
+                    If UBound(sp) <> 1 Then
+                        icNakil = False
+                    ElseIf sp(0) <> ownT Or Left$(sp(1), 1) <> "D" Or sp(1) = ownD Then
+                        icNakil = False
+                    End If
+                Next i
+                If icNakil Then durumlar(eRow(p), 1) = "ÝÇ NAKÝL": degisti = True
+            End If
         End If
     Next p
     ws.Range("N16:N" & son).Value2 = cikti
+    If degisti Then
+        ws.Range("A16:A" & son).Value2 = durumlar
+        For r = 1 To UBound(v, 1)
+            If CStr(durumlar(r, 1)) = "ÝÇ NAKÝL" Then ws.Cells(r + 15, 1).Font.Color = RGB(100, 116, 139)
+        Next r
+    End If
 End Sub
 
 Private Sub STOK_KARS_E_EKLE(ByRef n As Long, ByRef eLoc() As String, ByRef ePar() As String, ByRef eIl() As String, _
