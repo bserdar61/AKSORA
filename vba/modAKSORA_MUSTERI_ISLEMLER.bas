@@ -1611,12 +1611,28 @@ End Function
 ' Son dolu satir; filtreyle gizlenen satirlar da sayilir (End(xlUp) filtreli listede gizli satirlari atlar,
 ' filtre acikken okunan/kopyalanan veri eksik kaliyordu).
 Public Function AKSORA_SON_SATIR(ByVal ws As Worksheet, ByVal kolon As Variant) As Long
-    Dim c As Range
+    Dim c As Range, v As Variant, alt As Long, k As Long, r As Long
     On Error Resume Next
     Set c = ws.Columns(kolon).Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
         SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
     On Error GoTo 0
     If c Is Nothing Then AKSORA_SON_SATIR = 1 Else AKSORA_SON_SATIR = c.Row
+    ' Filtre acikken Find gizli satirlari atlayabilir (butun satirlar gizliyse sayfa "bos" sanilir):
+    ' kullanilan alanin o sutunu dogrudan okunur, filtreye dokunulmaz.
+    If ws.FilterMode Then
+        On Error Resume Next
+        alt = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+        k = ws.Columns(kolon).Column
+        On Error GoTo 0
+        If alt > AKSORA_SON_SATIR And k > 0 Then
+            v = ws.Range(ws.Cells(1, k), ws.Cells(alt, k)).Formula
+            If IsArray(v) Then
+                For r = UBound(v, 1) To AKSORA_SON_SATIR + 1 Step -1
+                    If Len(CStr(v(r, 1))) > 0 Then AKSORA_SON_SATIR = r: Exit For
+                Next r
+            End If
+        End If
+    End If
 End Function
 
 Private Function M_KAYNAK_IMZA(ByVal ad As String) As String

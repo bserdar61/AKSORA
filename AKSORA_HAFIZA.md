@@ -787,6 +787,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - Stok karşılaştırma sağ paneline BÜTÜN İLLERİ GÜNCELLE (AKSORA_KARS_TOPLU_DUGME, AKSORA_V11_KARS_UYARI sonunda; makro AKSORA_KARS_BUTUN_ILLER: 5 il güncelle → karşılaştırma sayfası → tarihler → KARŞILAŞTIR). Taban up50.
 
+## HATA DERSİ (06.11.2026): "Rapor kaynağı boş: STOKLAR" / "Stok sayfası boş"
+- Sebep: STOKLAR'da kullanıcı filtresi açık (D003/D009/D010 + İSG/HIRDAVAT); güncellemeden sonra AKG_KOPYALA filtreyi yeniden uyguluyor, Range.Find filtre gizli satırları atlıyor → AKSORA_SON_SATIR başlık satırını döndürüyor.
+- Düzeltme: AKSORA_SON_SATIR FilterMode'da UsedRange sütununu doğrudan okur (filtreye dokunmaz). KURAL: son satır hesabı asla yalnız Find'a bırakılmaz.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
