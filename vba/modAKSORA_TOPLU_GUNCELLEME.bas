@@ -1353,9 +1353,17 @@ Public Sub AKSORA_KARS_TOPLU_DUGME(ByVal ws As Worksheet)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .TextFrame2.VerticalAnchor = msoAnchorMiddle
         .TextFrame2.MarginLeft = 14: .TextFrame2.MarginRight = 10
+        ' Gecis once kurulur, renkler sonra verilir (aksi halde bazi Excel surumlerinde ikinci renk beyaz kalir).
+        .Fill.Visible = msoTrue: .Fill.Solid
+        .Fill.TwoColorGradient msoGradientHorizontal, 1
         .Fill.ForeColor.RGB = RGB(9, 45, 62)
         .Fill.BackColor.RGB = RGB(0, 112, 84)
-        .Fill.TwoColorGradient msoGradientHorizontal, 1
+        ' Sekil stilinden kalan ara (beyaz) gecis noktalari silinir: yalniz iki renk kalir.
+        Do While .Fill.GradientStops.Count > 2
+            .Fill.GradientStops.Delete 2
+        Loop
+        .Fill.GradientStops(1).Color.RGB = RGB(9, 45, 62)
+        .Fill.GradientStops(.Fill.GradientStops.Count).Color.RGB = RGB(0, 112, 84)
         .line.Visible = msoTrue
         .line.ForeColor.RGB = RGB(28, 211, 163): .line.Weight = 1.25
         .Shadow.Visible = msoTrue
@@ -1374,7 +1382,7 @@ Public Sub AKSORA_KARS_TOPLU_DUGME(ByVal ws As Worksheet)
         .Placement = xlFreeFloating: .Locked = True
         .OnAction = ana.OnAction
     End With
-    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x - 10, y + h + 4, w + 20, 40)
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y + h + 4, w, 44)
     With s
         .Name = "AKSORA_KARS_TOPLU_NOT"
         .TextFrame2.TextRange.Text = "Ýller arasý nakillerin (NEREDEN / NEREYE) görünmesi için beþ il ayný anda güncellenmelidir."
