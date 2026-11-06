@@ -260,7 +260,7 @@ Public Sub AKFIX_KARS_TARIHLER()
     Next il
     If w.FilterMode Then w.ShowAllData
     son = AKSORA_SON_SATIR(w, "A")
-    If son >= 16 Then w.Range("A16:M" & son).ClearContents
+    If son >= 16 Then w.Range("A16:N" & son).ClearContents
     For Each k In Array("A10", "D10", "G10", "J10", "A12", "D12", "G12", "J12")
         w.Range(CStr(k)).Value = 0
     Next k
@@ -367,14 +367,40 @@ Public Function AKFIX_KARS_TOPLAM(ByVal id As String) As Double
 End Function
 
 Public Function AKFIX_KARS_DURUM(ByVal id As String) As Object
-    Dim d As Object, il As Variant, ws As Worksheet, idx As Worksheet
-    Dim veri As Variant, kayit As Variant, mevcut As Variant, anahtar As String
-    Dim r As Long, j As Long, son As Long, ix As Long, tarih As Date, hedef As Double
-    Dim durum As String, tesis As String, cdp As String, epp As String
+    Dim d As Object, il As Variant, tarih As Date
     If mKarsIller Is Nothing Then Err.Raise vbObjectError + 904, , "Önce karþýlaþtýrýlacak ili seçin."
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     tarih = AKFIX_KARS_TARIH(id)
     For Each il In mKarsIller.keys
+        AKFIX_IL_DURUM_EKLE d, CStr(il), tarih
+    Next il
+    AKFIX_KARS_DOGRULA d, AKFIX_KARS_TOPLAM(id)
+    Set AKFIX_KARS_DURUM = d
+End Function
+
+' Tek ilin secilen zamandaki stok durumu (NEREDEN / NEREYE eslestirmesi icin karsi iller).
+' Gecmisi yoksa, o tarihten once kaydi yoksa veya toplam tutmuyorsa Nothing (il atlanir).
+Public Function AKFIX_KARS_IL_DURUM(ByVal il As String, ByVal tarih As Date) As Object
+    Dim d As Object, idx As Worksheet, ix As Long, k As Variant, toplam As Double, rec As Variant
+    On Error GoTo Yok
+    If Not AKFIX_GECMIS_VAR(il) Then Exit Function
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    AKFIX_IL_DURUM_EKLE d, il, tarih
+    Set idx = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(il, "INDEX"))
+    ix = AKFIX_INDEX_SATIR(il, tarih)
+    For Each k In d.keys
+        rec = d(k): toplam = toplam + CDbl(rec(11))
+    Next k
+    If Abs(toplam - CDbl(idx.Cells(ix, "E").Value2)) > 0.05 Then Exit Function
+    Set AKFIX_KARS_IL_DURUM = d
+Yok:
+End Function
+
+Private Sub AKFIX_IL_DURUM_EKLE(ByVal d As Object, ByVal il As String, ByVal tarih As Date)
+    Dim ws As Worksheet, idx As Worksheet
+    Dim veri As Variant, kayit As Variant, mevcut As Variant, anahtar As String
+    Dim r As Long, j As Long, son As Long, ix As Long, hedef As Double
+    Dim durum As String, tesis As String, cdp As String, epp As String
         cdp = AKSORA_IL_TESIS(CStr(il), "CDP"): epp = AKSORA_IL_TESIS(CStr(il), "EPP")
         Set idx = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(CStr(il), "INDEX"))
         ix = AKFIX_INDEX_SATIR(CStr(il), tarih)
@@ -425,10 +451,7 @@ Public Function AKFIX_KARS_DURUM(ByVal id As String) As Object
                 End If
             Next r
         End If
-    Next il
-    AKFIX_KARS_DOGRULA d, AKFIX_KARS_TOPLAM(id)
-    Set AKFIX_KARS_DURUM = d
-End Function
+End Sub
 
 Private Sub AKFIX_KARS_DOGRULA(ByVal d As Object, ByVal beklenen As Double)
     Dim k As Variant, kayit As Variant, toplam As Double

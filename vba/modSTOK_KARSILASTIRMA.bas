@@ -2,6 +2,7 @@ Attribute VB_Name = "modSTOK_KARSILASTIRMA"
 Option Explicit
 
 Private Const KARS_SAYFA As String = "STOK_KARÞILAÞTIRMA"
+Private Const KARS_NN As String = "NEREDEN / NEREYE"
 
 
 Public Sub STOK_KARSILASTIRMA_KUR()
@@ -91,6 +92,7 @@ Public Sub STOK_KARSILASTIR()
     On Error GoTo Hata
 
     Set ws = ThisWorkbook.Worksheets(KARS_SAYFA)
+    STOK_KARS_NN_HAZIRLA ws
 
     Snap1 = STOK_KARS_SECILEN_SNAPSHOT(ws.Range("B6").Value)
     Snap2 = STOK_KARS_SECILEN_SNAPSHOT(ws.Range("I6").Value)
@@ -145,7 +147,7 @@ Public Sub STOK_KARSILASTIR()
         End If
     Next anahtar
 
-    ws.Range("A16:M" & STOK_KARS_ICERIK_SON(ws)).ClearContents
+    ws.Range("A16:N" & STOK_KARS_ICERIK_SON(ws)).ClearContents
 
     CikisSatir = 16
 
@@ -235,6 +237,7 @@ ws.Range("J12").Value = application.Max(0, CikisSatir - 16)
 ws.Range("A12,D12,G12").NumberFormat = "#,##0.00 ""TL"""
 
     If CikisSatir > 16 Then
+        STOK_KARS_NEREDEN ws, CikisSatir - 1, tarih1, tarih2
         STOK_KARS_TABLO_FORMAT ws, CikisSatir - 1
     End If
 
@@ -413,7 +416,7 @@ Private Sub STOK_KARS_FILTRE(ByVal durum As String)
                 durum)
 
         If Eslesen = 0 Then
-            ws.Range("A15:M" & sonSatir).AutoFilter Field:=1, Criteria1:=durum
+            ws.Range("A15:N" & sonSatir).AutoFilter Field:=1, Criteria1:=durum
             STOK_KARS_KPI_GUNCELLE
     AKSORA_V11_BICIM_SAYFA ws
             AKFIX_EN_USTE ws
@@ -421,7 +424,7 @@ Private Sub STOK_KARS_FILTRE(ByVal durum As String)
         End If
 
         ws.Range( _
-            "A15:M" & sonSatir).AutoFilter _
+            "A15:N" & sonSatir).AutoFilter _
             Field:=1, _
             Criteria1:=durum
 
@@ -604,7 +607,7 @@ Private Sub STOK_KARS_ZEMIN(ByVal ws As Worksheet)
         .Cells.Font.Name = "Aptos"
         .Cells.Font.Size = 10
 
-        .Range("A1:M2000").Interior.Color = _
+        .Range("A1:N2000").Interior.Color = _
             RGB(245, 247, 250)
 
         .Columns("A").ColumnWidth = 14
@@ -616,6 +619,7 @@ Private Sub STOK_KARS_ZEMIN(ByVal ws As Worksheet)
         .Columns("G:I").ColumnWidth = 13
         .Columns("J").ColumnWidth = 10
         .Columns("K:M").ColumnWidth = 16
+        .Columns("N").ColumnWidth = 44
 
         .Rows("1:3").RowHeight = 25
         .Rows("4:13").RowHeight = 23
@@ -629,7 +633,7 @@ End Sub
 
 Private Sub STOK_KARS_BASLIK(ByVal ws As Worksheet)
 
-    With ws.Range("A1:M2")
+    With ws.Range("A1:N2")
 
         .Merge
         .Value = "STOK KARÞILAÞTIRMA MERKEZÝ"
@@ -645,7 +649,7 @@ Private Sub STOK_KARS_BASLIK(ByVal ws As Worksheet)
 
     End With
 
-    With ws.Range("A3:M3")
+    With ws.Range("A3:N3")
 
         .Merge
 
@@ -976,7 +980,8 @@ ByVal ws As Worksheet)
         "BÝRÝM", _
         "ESKÝ DEÐER", _
         "YENÝ DEÐER", _
-        "DEÐER FARKI")
+        "DEÐER FARKI", _
+        KARS_NN)
 
     For i = 0 To UBound(basliklar)
 
@@ -985,7 +990,7 @@ ByVal ws As Worksheet)
 
     Next i
 
-    With ws.Range("A15:M15")
+    With ws.Range("A15:N15")
 
         .Interior.Color = RGB(20, 55, 95)
 
@@ -1068,7 +1073,7 @@ Private Sub STOK_KARS_TABLO_FORMAT( _
 ByVal ws As Worksheet, _
 ByVal sonSatir As Long)
 
-    With ws.Range("A16:M" & sonSatir)
+    With ws.Range("A16:N" & sonSatir)
 
         .Interior.Color = RGB(255, 255, 255)
 
@@ -1090,6 +1095,13 @@ ByVal sonSatir As Long)
 
     ws.Range( _
         "A16:A" & sonSatir).Font.bold = True
+
+    With ws.Range("N16:N" & sonSatir)
+        .HorizontalAlignment = xlLeft
+        .IndentLevel = 1
+        .Font.Color = RGB(20, 55, 95)
+        .ShrinkToFit = True
+    End With
 
 End Sub
 
@@ -1145,7 +1157,7 @@ Public Sub AKSORA_KARS_IL_GECIS_YENILE()
     If ws.FilterMode Then ws.ShowAllData
 
     son = AKSORA_SON_SATIR(ws, "A")
-    If son >= 16 Then ws.Range("A16:M" & son).ClearContents
+    If son >= 16 Then ws.Range("A16:N" & son).ClearContents
 
     ws.Range("B6").MergeArea.ClearContents
     ws.Range("I6").MergeArea.ClearContents
@@ -1193,11 +1205,239 @@ End Sub
 Private Function STOK_KARS_ICERIK_SON(ByVal ws As Worksheet) As Long
     Dim sonHucre As Range
     STOK_KARS_ICERIK_SON = 16
-    Set sonHucre = ws.Range("A:M").Find(What:="*", _
+    Set sonHucre = ws.Range("A:N").Find(What:="*", _
         after:=ws.Range("A1"), LookIn:=xlFormulas, LookAt:=xlPart, _
         SearchOrder:=xlByRows, SearchDirection:=xlPrevious, _
         MatchCase:=False, SearchFormat:=False)
     If Not sonHucre Is Nothing Then
         If sonHucre.Row > 16 Then STOK_KARS_ICERIK_SON = sonHucre.Row
+    End If
+End Function
+
+' Eski kurulumlu sayfaya NEREDEN / NEREYE sutunu bir kez eklenir: N genisler, sagdaki panel ayni miktar kayar,
+' baslik bantlari N'ye uzar, filtre A:N olur. Sutun varsa hicbir sey yapilmaz.
+Private Sub STOK_KARS_NN_HAZIRLA(ByVal ws As Worksheet)
+    Dim eskiW As Double, fark As Double, sinir As Double, s As Shape, da As Boolean
+    If CStr(ws.Range("N15").Value2) = KARS_NN Then Exit Sub
+    On Error Resume Next
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    sinir = ws.Columns("O").Left - 1
+    eskiW = ws.Columns("N").Width
+    ws.Columns("N").ColumnWidth = 44
+    fark = ws.Columns("N").Width - eskiW
+    If fark > 0 Then
+        For Each s In ws.Shapes
+            If s.Left >= sinir Then s.Left = s.Left + fark
+        Next s
+    End If
+    ws.Range("N1:N2000").Interior.Color = RGB(245, 247, 250)
+    ws.Range("A1:N2").Merge
+    ws.Range("A3:N3").Merge
+    With ws.Range("N15")
+        .Value = KARS_NN
+        .Interior.Color = RGB(20, 55, 95)
+        .Font.Color = RGB(255, 255, 255): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
+    If ws.AutoFilterMode Then ws.AutoFilterMode = False
+    ws.Range("A15:N15").AutoFilter
+    application.DisplayAlerts = da
+    On Error GoTo 0
+End Sub
+
+' NEREDEN / NEREYE: ayni malzemenin (ayni birim) iki tarih arasindaki azalislari artislarla eslestirilir.
+' Ayni il icinde: once birebir ayni miktar, sonra buyukten kucuge dagitim. Iller arasi: yalniz birebir ayni miktar
+' ve iki yonde tek aday (tesaduf eslesmesi olmasin). Karsi iller stok hafizasindan (kayit saati farki icin 1 saat tolerans).
+' Karsiligi bulunmayan azalis "Sarf / depo dýþý", artis "Alým / depo dýþý".
+Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1 As Date, ByVal t2 As Date)
+    Dim v As Variant, r As Long, n As Long, i As Long, j As Long, p As Long, q As Long, x As Double, c As Long
+    Dim eLoc() As String, ePar() As String, eIl() As String, eQ() As Double, eRem() As Double, eRow() As Long, eTxt() As String
+    Dim grup As Object, mallar As Object, tesisIl As Object, iller As Variant, sec As String, il As Variant
+    Dim a As Object, b As Object, kk As Variant, q1 As Double, q2 As Double, rec As Variant, mk As String, g As Variant
+    Dim dec() As Long, inc() As Long, nd As Long, ni As Long, tmp As Long, cikti() As Variant, satirlar() As String, parca() As String
+    Dim metin As String, lab As String, tamami As Boolean, ok As String, ilR As String, cq As Long
+    If son < 16 Then Exit Sub
+    v = ws.Range("A16:J" & son).Value2
+    ReDim eLoc(1 To 64): ReDim ePar(1 To 64): ReDim eIl(1 To 64): ReDim eQ(1 To 64)
+    ReDim eRem(1 To 64): ReDim eRow(1 To 64): ReDim eTxt(1 To 64)
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    Set mallar = CreateObject("Scripting.Dictionary"): mallar.CompareMode = vbTextCompare
+    Set tesisIl = CreateObject("Scripting.Dictionary"): tesisIl.CompareMode = vbTextCompare
+    iller = Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
+    For Each il In iller
+        tesisIl(CStr(AKSORA_IL_TESIS(CStr(il), "CDP"))) = CStr(il)
+        tesisIl(CStr(AKSORA_IL_TESIS(CStr(il), "EPP"))) = CStr(il)
+    Next il
+    ' Ekrandaki satirlar
+    For r = 1 To UBound(v, 1)
+        x = STOK_KARS_DOUBLE(v(r, 9))
+        If Abs(x) > 0.0000001 Then
+            mk = Trim$(CStr(v(r, 4))) & "|" & UCase$(Trim$(CStr(v(r, 10))))
+            ilR = "?"
+            If tesisIl.Exists(Trim$(CStr(v(r, 2)))) Then ilR = tesisIl(Trim$(CStr(v(r, 2))))
+            STOK_KARS_E_EKLE n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup, _
+                Trim$(CStr(v(r, 2))) & " " & UCase$(Trim$(CStr(v(r, 3)))), UCase$(Trim$(CStr(v(r, 6)))), ilR, mk, x, r
+            mallar(mk) = True
+        End If
+    Next r
+    If n = 0 Then Exit Sub
+    ' Karsi iller (secili il TUMU degilse): yalniz ekranda gecen malzemeler
+    sec = AKFIX_KARS_IL()
+    If sec <> "TUMU" Then
+        For Each il In iller
+            If CStr(il) <> sec Then
+                Set a = AKFIX_KARS_IL_DURUM(CStr(il), t1 + 1# / 24#)
+                Set b = Nothing
+                If Not a Is Nothing Then Set b = AKFIX_KARS_IL_DURUM(CStr(il), t2 + 1# / 24#)
+                If Not a Is Nothing And Not b Is Nothing Then
+                    For Each kk In b.keys
+                        If Not a.Exists(kk) Then a(kk) = Empty
+                    Next kk
+                    For Each kk In a.keys
+                        rec = a(kk): q1 = 0: q2 = 0
+                        If Not IsEmpty(rec) Then q1 = STOK_KARS_DOUBLE(rec(9))
+                        If b.Exists(kk) Then
+                            rec = b(kk): q2 = STOK_KARS_DOUBLE(rec(9))
+                        End If
+                        If Abs(q2 - q1) > 0.0000001 And Not IsEmpty(rec) Then
+                            mk = Trim$(CStr(rec(7))) & "|" & UCase$(Trim$(CStr(rec(10))))
+                            If mallar.Exists(mk) Then
+                                STOK_KARS_E_EKLE n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup, _
+                                    Trim$(CStr(rec(1))) & " " & UCase$(Trim$(CStr(rec(2)))), UCase$(Trim$(CStr(rec(6)))), CStr(il), mk, q2 - q1, 0
+                            End If
+                        End If
+                    Next kk
+                End If
+            End If
+        Next il
+    End If
+    ' Eslestirme (malzeme malzeme)
+    For Each kk In grup.keys
+        g = Split(Mid$(CStr(grup(kk)), 2), ",")
+        ReDim dec(0 To UBound(g) + 1): ReDim inc(0 To UBound(g) + 1)
+        ' 1) ayni il icinde
+        For Each il In iller
+            nd = 0: ni = 0
+            For i = 0 To UBound(g)
+                p = CLng(g(i))
+                If eIl(p) = CStr(il) Then
+                    If eQ(p) < 0 Then dec(nd) = p: nd = nd + 1 Else inc(ni) = p: ni = ni + 1
+                End If
+            Next i
+            If nd > 0 And ni > 0 Then
+                For i = 0 To nd - 2
+                    For j = i + 1 To nd - 1
+                        If eRem(dec(j)) > eRem(dec(i)) Then tmp = dec(i): dec(i) = dec(j): dec(j) = tmp
+                    Next j
+                Next i
+                For i = 0 To ni - 2
+                    For j = i + 1 To ni - 1
+                        If eRem(inc(j)) > eRem(inc(i)) Then tmp = inc(i): inc(i) = inc(j): inc(j) = tmp
+                    Next j
+                Next i
+                For i = 0 To nd - 1
+                    For j = 0 To ni - 1
+                        p = dec(i): q = inc(j)
+                        If eRem(p) > 0.0000001 And eRem(q) > 0.0000001 And Abs(eRem(p) - eRem(q)) < 0.0000001 Then
+                            STOK_KARS_E_BAGLA p, q, eRem(p), eLoc, ePar, eRem, eTxt
+                        End If
+                    Next j
+                Next i
+                For i = 0 To nd - 1
+                    For j = 0 To ni - 1
+                        p = dec(i): q = inc(j)
+                        If eRem(p) > 0.0000001 And eRem(q) > 0.0000001 Then
+                            x = eRem(p): If eRem(q) < x Then x = eRem(q)
+                            STOK_KARS_E_BAGLA p, q, x, eLoc, ePar, eRem, eTxt
+                        End If
+                    Next j
+                Next i
+            End If
+        Next il
+        ' 2) iller arasi: birebir ayni miktar, iki yonde tek aday
+        For i = 0 To UBound(g)
+            p = CLng(g(i))
+            If eQ(p) < 0 And eRem(p) > 0.0000001 Then
+                c = 0: cq = 0
+                For j = 0 To UBound(g)
+                    q = CLng(g(j))
+                    If eQ(q) > 0 And eIl(q) <> eIl(p) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(p)) < 0.0000001 Then c = c + 1: cq = q
+                Next j
+                If c = 1 Then
+                    c = 0
+                    For j = 0 To UBound(g)
+                        q = CLng(g(j))
+                        If eQ(q) < 0 And eIl(q) <> eIl(cq) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(cq)) < 0.0000001 Then c = c + 1
+                    Next j
+                    If c = 1 Then STOK_KARS_E_BAGLA p, cq, eRem(p), eLoc, ePar, eRem, eTxt
+                End If
+            End If
+        Next i
+    Next kk
+    ' Metin
+    ReDim cikti(1 To UBound(v, 1), 1 To 1)
+    For p = 1 To n
+        If eRow(p) > 0 Then
+            ok = IIf(eQ(p) < 0, ChrW(8594), ChrW(8592))
+            metin = vbNullString
+            If Len(eTxt(p)) > 0 Then
+                satirlar = Split(Mid$(eTxt(p), 2), vbLf)
+                tamami = (UBound(satirlar) = 0 And eRem(p) <= 0.0000001)
+                For i = 0 To UBound(satirlar)
+                    parca = Split(satirlar(i), vbTab)
+                    lab = parca(0)
+                    If tamami Then
+                        metin = lab
+                    Else
+                        metin = metin & IIf(Len(metin) > 0, ", ", "") & lab & " (" & STOK_KARS_MIK(CDbl(parca(1))) & ")"
+                    End If
+                Next i
+                metin = ok & " " & metin
+            End If
+            If eRem(p) > 0.0000001 Then
+                If Len(metin) = 0 Then
+                    metin = IIf(eQ(p) < 0, "Sarf / depo dýþý", "Alým / depo dýþý")
+                Else
+                    metin = metin & "  •  " & STOK_KARS_MIK(eRem(p)) & IIf(eQ(p) < 0, " sarf / depo dýþý", " alým / depo dýþý")
+                End If
+            End If
+            cikti(eRow(p), 1) = metin
+        End If
+    Next p
+    ws.Range("N16:N" & son).Value2 = cikti
+End Sub
+
+Private Sub STOK_KARS_E_EKLE(ByRef n As Long, ByRef eLoc() As String, ByRef ePar() As String, ByRef eIl() As String, _
+    ByRef eQ() As Double, ByRef eRem() As Double, ByRef eRow() As Long, ByRef eTxt() As String, ByVal grup As Object, _
+    ByVal yer As String, ByVal parti As String, ByVal il As String, ByVal mk As String, ByVal fark As Double, ByVal satir As Long)
+    n = n + 1
+    If n > UBound(eLoc) Then
+        ReDim Preserve eLoc(1 To 2 * n): ReDim Preserve ePar(1 To 2 * n): ReDim Preserve eIl(1 To 2 * n)
+        ReDim Preserve eQ(1 To 2 * n): ReDim Preserve eRem(1 To 2 * n): ReDim Preserve eRow(1 To 2 * n)
+        ReDim Preserve eTxt(1 To 2 * n)
+    End If
+    eLoc(n) = yer: ePar(n) = parti: eIl(n) = il: eQ(n) = fark: eRem(n) = Abs(fark): eRow(n) = satir: eTxt(n) = vbNullString
+    If grup.Exists(mk) Then grup(mk) = grup(mk) & "," & n Else grup(mk) = "," & n
+End Sub
+
+' p (azalan) -> q (artan) x kadar: iki tarafa karsi yer yazilir. Ayni depoda parti degisiminde parti eklenir.
+Private Sub STOK_KARS_E_BAGLA(ByVal p As Long, ByVal q As Long, ByVal x As Double, ByRef eLoc() As String, _
+    ByRef ePar() As String, ByRef eRem() As Double, ByRef eTxt() As String)
+    Dim lp As String, lq As String
+    lp = eLoc(p): lq = eLoc(q)
+    If lp = lq Then
+        If Len(ePar(p)) > 0 Then lp = lp & " " & ePar(p)
+        If Len(ePar(q)) > 0 Then lq = lq & " " & ePar(q)
+    End If
+    eTxt(p) = eTxt(p) & vbLf & lq & vbTab & CStr(x)
+    eTxt(q) = eTxt(q) & vbLf & lp & vbTab & CStr(x)
+    eRem(p) = eRem(p) - x: eRem(q) = eRem(q) - x
+End Sub
+
+Private Function STOK_KARS_MIK(ByVal x As Double) As String
+    If Abs(x - Round(x, 0)) < 0.0000001 Then
+        STOK_KARS_MIK = AKSORA_SAYI_METNI(Round(x, 0), "#,##0")
+    Else
+        STOK_KARS_MIK = AKSORA_SAYI_METNI(x, "#,##0.###")
     End If
 End Function

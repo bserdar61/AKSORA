@@ -53,7 +53,7 @@ Public Sub AKSORA_V11_BICIM_SAYFA(ByVal ws As Worksheet)
             h = 12: kolon = 11: son = AKSORA_SON_SATIR(ws, "D")
             ws.Range("I10").NumberFormat = PARA
         Case "STOK_KARSILASTIRMA"
-            h = 15: kolon = 13: son = AKSORA_SON_SATIR(ws, "D")
+            h = 15: kolon = 14: son = AKSORA_SON_SATIR(ws, "D")
         Case "ANA PANEL"
             ' Numeric dashboard money cells retain their values and merges.
             For r = 1 To 40
@@ -647,8 +647,8 @@ Public Sub AKSORA_V11_KARS_UYARI(ByVal ws As Worksheet)
                 "bu tarihler için kesin deðildir."
         renk = RGB(160, 90, 25)
     Else
-        metin = "Karþýlaþtýrma, seçili ilin kayýtlý " & _
-                "stok geçmiþini kullanýr."
+        metin = "Karþýlaþtýrma, seçili ilin kayýtlý stok geçmiþini kullanýr. " & _
+                "NEREDEN / NEREYE: ayný malzemenin ayný aralýktaki azalýþ ve artýþlarý (5 il) eþleþtirilir."
         renk = RGB(85, 103, 123)
     End If
 
