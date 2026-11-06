@@ -6829,9 +6829,10 @@ End Sub
 
 ' Ilce ISG malzemeleri (docs/isg/ISG_ISLEM.csv): kod + Z (kisisel zimmet) / M (manuel sarf).
 Private Function I_ISG_LISTE() As Object
-    Static d As Object
+    Static d As Object, adet As Long
     Dim s As String, x As Variant
-    If Not d Is Nothing Then Set I_ISG_LISTE = d: Exit Function
+    ' Sozluge yanlislikla anahtar eklenmisse (d(k) okumasi anahtar ekler) liste yeniden kurulur.
+    If Not d Is Nothing Then If d.Count = adet Then Set I_ISG_LISTE = d: Exit Function
     s = s & "7500050332Z;7500051142Z;7500051144Z;7500050334Z;7500051145Z;7500050240Z;7500000038Z;7500050254Z;7500051153Z;7500051152Z;7500050908Z;7500051135Z;7500000042Z;7500000233Z;"
     s = s & "7500000067Z;7500050900Z;7500050977Z;7500050266Z;7500000060Z;7500050335Z;7500000253Z;7500001730Z;7500000709Z;7500000710Z;7500000711Z;7500000712Z;7500000713Z;7500000714Z;"
     s = s & "7500000715Z;7500000716Z;7500000717Z;7500000729Z;7500000733Z;7500000735Z;7500000737Z;7500000739Z;7500000740Z;7500000744Z;7500000747Z;7500000752Z;7500000762Z;7500000769Z;"
@@ -6863,6 +6864,7 @@ Private Function I_ISG_LISTE() As Object
     For Each x In Split(s, ";")
         If Len(x) > 1 Then d(Left$(CStr(x), Len(x) - 1)) = Right$(CStr(x), 1)
     Next x
+    adet = d.Count
     Set I_ISG_LISTE = d
 End Function
 
@@ -7692,6 +7694,7 @@ Private Function ADM_IL_UYGUN(ByVal uy As String, ByVal il As String) As Boolean
 End Function
 
 Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
+    Dim isgVar As Boolean
     Dim imza As String, canli As Boolean, kx As Variant, sh As Worksheet, son As Long, t As Variant, k As String
     Dim v As Variant, satirlar() As String, n As Long, tarih As Date, ozet(0 To 6) As Double, depolar As Object, isg As Object
     Dim i As Long, cU As Long, cD As Long, cA As Long, cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cV As Long, cS As Long, cF As Long
@@ -7780,8 +7783,12 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
                     If Not depolar.Exists(kod) Then depolar(kod) = Array(I_TEMIZ(v(i, cA)), 0#, 0#)
                     t = depolar(kod): t(1) = t(1) + 1: t(2) = t(2) + d: depolar(kod) = t
                     ' Ilce ISG: zimmet listesindeki (Z) ve manuel sarf (M) malzemeler, depoda miktar > 0
+                    ' Dikkat: VBA And kisa devre yapmaz; liste(mal) yalniz Exists sonrasi okunur (yoksa sozluge bos anahtar eklenir).
+                    isgVar = False
                     If u = 3 Then
-                        If liste.Exists(mal) And x > 0 And Not (liste(mal) <> "Z" And d > I_ISG_BOLGE_TL * x) Then
+                        If liste.Exists(mal) Then isgVar = (x > 0 And Not (liste(mal) <> "Z" And d > I_ISG_BOLGE_TL * x))
+                    End If
+                    If isgVar Then
                             kod = UCase$(I_TEMIZ(v(i, cD)))
                             If Not isg.Exists(kod) Then isg(kod) = Array(I_TEMIZ(v(i, cA)), 0#, 0#, 0#, 0#)
                             t = isg(kod)
@@ -7791,7 +7798,6 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
                             End If
                             If liste(mal) = "Z" Then t(2) = t(2) + x Else t(4) = t(4) + x
                             isg(kod) = t
-                        End If
                     End If
                 End If
             Next i

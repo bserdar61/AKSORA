@@ -771,6 +771,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - İSG bölge sarfı görünümü (05.11): ilçeye iş yok ama bölge kalemi varsa Durum "BÖLGE SARFI BEKLİYOR" (gri); Excel aktar 1. sayfada "Bölge Sarfı Kalem" sütunu; sıralamada bu ilçeler temizlerle önde, neden "İlçeye iş yok: değer bölge sarfı". Manuel sarf miktarı (adet toplamı) kullanıcı isteğiyle aynı kaldı.
 
+## HATA DERSİ (06.11.2026, taban up47): İSG'ye bütün malzemeler geldi
+- Sebep: ADM_VERI'de `If liste.Exists(mal) And ... liste(mal) ...` — VBA And kısa devre yapmaz; liste(mal) okuması olmayan anahtarı Static sözlüğe ekledi (değer Empty → "MANUEL SARF"). Düzeltme: önce Exists, sonra oku (isgVar). I_ISG_LISTE sayı tutmazsa listeyi yeniden kurar.
+- KURAL: Dictionary'de d(k) okuması anahtar EKLER; Exists ile aynı satırda And/Or içinde asla okuma yapma.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
