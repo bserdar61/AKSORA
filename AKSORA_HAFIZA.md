@@ -778,7 +778,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - İSG bölge sarfı sınırı (06.11, taban up48): 12.000 TL ve üzeri (>=, 0,005 tolerans). Sabit I_ISG_BOLGE_TL = 12000.
 
 ## Stok karşılaştırma: NEREDEN / NEREYE (06.11.2026, taban up49)
-- STOK_KARŞILAŞTIRMA tablosuna N sütunu "NEREDEN / NEREYE" (STOK_KARS_NEREDEN). SAP yok; 5 ilin stok hafızasından aynı malzeme+birimin azalış↔artış eşleştirmesi. Aynı il: birebir miktar, sonra büyükten küçüğe dağıtım. İller arası: yalnız birebir aynı miktar ve iki yönde tek aday. Karşı iller AKFIX_KARS_IL_DURUM(il, t+1 saat) (kayıt saati farkı). Karşılıksız: "Sarf / depo dışı" / "Alım / depo dışı". Aynı depoda parti değişimi partiyle yazılır.
+- STOK_KARŞILAŞTIRMA tablosuna N sütunu "NEREDEN / NEREYE" (STOK_KARS_NEREDEN). SAP yok; 5 ilin stok hafızasından aynı malzeme+birimin azalış↔artış eşleştirmesi. Aynı il: birebir miktar, sonra büyükten küçüğe dağıtım. İller arası: yalnız birebir aynı miktar ve iki yönde tek aday. Karşı iller AKFIX_KARS_IL_DURUM(il, t+1 saat) (kayıt saati farkı). Karşılıksız: "Sarf / depo dışı" / "Alım / depo dışı"; HURDA partisi "Hurda girişi (demontaj)" / "hurda çıkışı (satış / imha)", ÇIKMA "Çıkma girişi (demontaj)" / "çıkma malzeme kullanıldı". Aynı depoda parti değişimi partiyle yazılır.
 - Eski sayfada ilk karşılaştırmada STOK_KARS_NN_HAZIRLA: N genişler (44), sağ panel aynı miktar kayar, başlık A1:N, filtre A15:N.
 - Simülasyon (fx/sim_nn.py) Artvin 05.11→06.11: 7055 D002 → 7055 D011 traversler; Trabzon 7052 D001 ← 7053 D014 hücre (Gümüşhane tarafı da →).
 

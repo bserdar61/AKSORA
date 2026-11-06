@@ -1395,10 +1395,18 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
                 metin = ok & " " & metin
             End If
             If eRem(p) > 0.0000001 Then
-                If Len(metin) = 0 Then
-                    metin = IIf(eQ(p) < 0, "Sarf / depo dýþý", "Alým / depo dýþý")
+                ' Karsiligi olmayan kisim: hurda / cikma partisinde demontaj, digerlerinde alim veya sarf.
+                If InStr(1, ePar(p), "HURDA", vbTextCompare) > 0 Then
+                    lab = IIf(eQ(p) < 0, "hurda çýkýþý (satýþ / imha)", "hurda giriþi (demontaj)")
+                ElseIf InStr(1, ePar(p), "CIKMA", vbTextCompare) > 0 Or InStr(1, ePar(p), "ÇIKMA", vbTextCompare) > 0 Then
+                    lab = IIf(eQ(p) < 0, "çýkma malzeme kullanýldý", "çýkma giriþi (demontaj)")
                 Else
-                    metin = metin & "  •  " & STOK_KARS_MIK(eRem(p)) & IIf(eQ(p) < 0, " sarf / depo dýþý", " alým / depo dýþý")
+                    lab = IIf(eQ(p) < 0, "sarf / depo dýþý", "alým / depo dýþý")
+                End If
+                If Len(metin) = 0 Then
+                    metin = UCase$(Left$(lab, 1)) & Mid$(lab, 2)
+                Else
+                    metin = metin & "  •  " & STOK_KARS_MIK(eRem(p)) & " " & lab
                 End If
             End If
             cikti(eRow(p), 1) = metin
