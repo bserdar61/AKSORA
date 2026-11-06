@@ -681,6 +681,9 @@ Public Sub AKSORA_V11_KARS_UYARI(ByVal ws As Worksheet)
         .Characters.Font.Color = renk
     End With
 
+    adim = "Bütün illeri güncelle düðmesi"
+    AKSORA_KARS_TOPLU_DUGME ws
+
 Bitir:
     On Error GoTo KorumaHatasi
     ws.Protect Password:="", DrawingObjects:=True, _
@@ -1323,3 +1326,82 @@ Hata:
     AKSORA_SAP_TESHIS_YAZ "Toplu hýzlý veri " & il & " adým " & adim & ": " & Err.Description
     AKHZ_VERI = 0
 End Function
+
+' Stok karsilastirma sag paneli: BUTUN ILLERI GUNCELLE (malzeme aramadaki dugmenin aynisi). Iller arasi
+' NEREDEN / NEREYE icin bes il ayni anda guncellenmeli. Bitince karsilastirma sayfasina donulur ve karsilastirilir.
+Public Sub AKSORA_KARS_TOPLU_DUGME(ByVal ws As Worksheet)
+    Dim ref As Shape, nt As Shape, s As Shape, ana As Shape, x As Double, y As Double, w As Double, h As Double
+    On Error Resume Next
+    ws.Shapes("AKSORA_KARS_TOPLU").Delete
+    ws.Shapes("AKSORA_KARS_TOPLU_VURGU").Delete
+    ws.Shapes("AKSORA_KARS_TOPLU_NOT").Delete
+    Set ref = ws.Shapes("AKSKV1_ARTVIN")
+    Set nt = ws.Shapes("AKSORA_GECMIS_KAYIT_NOTU")
+    On Error GoTo 0
+    If ref Is Nothing Then Exit Sub
+    x = ref.Left: w = ref.Width: h = 58
+    If nt Is Nothing Then y = ref.Top + ref.Height + 110 Else y = nt.Top + nt.Height + 14
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    With s
+        .Name = "AKSORA_KARS_TOPLU"
+        .Adjustments.Item(1) = 0.12
+        .TextFrame2.TextRange.Text = "BÜTÜN ÝLLERÝ GÜNCELLE" & vbLf & "CDP + EPP  |  5 ÝL"
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 10
+        .TextFrame2.TextRange.Font.bold = msoTrue
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(225, 255, 246)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle
+        .TextFrame2.MarginLeft = 14: .TextFrame2.MarginRight = 10
+        .Fill.ForeColor.RGB = RGB(9, 45, 62)
+        .Fill.BackColor.RGB = RGB(0, 112, 84)
+        .Fill.TwoColorGradient msoGradientHorizontal, 1
+        .line.Visible = msoTrue
+        .line.ForeColor.RGB = RGB(28, 211, 163): .line.Weight = 1.25
+        .Shadow.Visible = msoTrue
+        .Shadow.ForeColor.RGB = RGB(10, 39, 50)
+        .Shadow.Transparency = 0.8
+        .Shadow.OffsetX = 1: .Shadow.OffsetY = 2
+        .Placement = xlFreeFloating
+        .Locked = True
+        .OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_KARS_BUTUN_ILLER"
+    End With
+    Set ana = s
+    Set s = ws.Shapes.AddShape(msoShapeRectangle, x + 8, y + 12, 3, h - 24)
+    With s
+        .Name = "AKSORA_KARS_TOPLU_VURGU"
+        .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+        .OnAction = ana.OnAction
+    End With
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x - 10, y + h + 4, w + 20, 40)
+    With s
+        .Name = "AKSORA_KARS_TOPLU_NOT"
+        .TextFrame2.TextRange.Text = "Ýller arasý nakillerin (NEREDEN / NEREYE) görünmesi için beþ il ayný anda güncellenmelidir."
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 9
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(85, 103, 123)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.WordWrap = msoTrue
+        .Fill.Visible = msoFalse: .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+    End With
+End Sub
+
+' Karsilastirma sayfasindan: bes il guncellenir, sonra karsilastirma sayfasi acilir, tarihler yenilenir ve
+' en son kayit ile onceki gunun kaydi karsilastirilir.
+Public Sub AKSORA_KARS_BUTUN_ILLER()
+    Dim ws As Worksheet
+    AKSORA_BUTUN_ILLERI_GUNCELLE
+    If AKSORA_V11_MESGUL Then Exit Sub
+    On Error GoTo Hata
+    STOK_KARS_PANEL_AC
+    Set ws = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    If ActiveSheet Is ws Then
+        AKSORA_KARS_IL_GECIS_YENILE
+        If Len(CStr(ws.Range("B6").Value2)) > 0 And Len(CStr(ws.Range("I6").Value2)) > 0 Then STOK_KARSILASTIR
+    End If
+    Exit Sub
+Hata:
+    MsgBox "Güncelleme tamamlandý; karþýlaþtýrma açýlamadý: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
