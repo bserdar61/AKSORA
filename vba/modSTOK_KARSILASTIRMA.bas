@@ -93,6 +93,7 @@ Public Sub STOK_KARSILASTIR()
 
     Set ws = ThisWorkbook.Worksheets(KARS_SAYFA)
     STOK_KARS_NN_HAZIRLA ws
+    STOK_KARS_UST_GENISLET ws
 
     Snap1 = STOK_KARS_SECILEN_SNAPSHOT(ws.Range("B6").Value)
     Snap2 = STOK_KARS_SECILEN_SNAPSHOT(ws.Range("I6").Value)
@@ -680,7 +681,7 @@ Private Sub STOK_KARS_SECIM_ALANI(ByVal ws As Worksheet)
 
     End With
 
-    With ws.Range("H5:M5")
+    With ws.Range("H5:N5")
 
         .Merge
         .Value = "2. KARÞILAÞTIRMA TARÝHÝ"
@@ -707,7 +708,7 @@ Private Sub STOK_KARS_SECIM_ALANI(ByVal ws As Worksheet)
 
     End With
 
-    With ws.Range("I6:M6")
+    With ws.Range("I6:N6")
 
         .Merge
         .Name = "KARS_TARIH_2"
@@ -733,7 +734,7 @@ Private Sub STOK_KARS_SECIM_ALANI(ByVal ws As Worksheet)
 
     End With
 
-    With ws.Range("I7:M7")
+    With ws.Range("I7:N7")
 
         .Merge
 
@@ -771,8 +772,8 @@ Private Sub STOK_KARS_OZET_ALANI(ByVal ws As Worksheet)
 
     STOK_KARS_KPI _
         ws, _
-        "J9:M9", _
-        "J10:M10", _
+        "J9:N9", _
+        "J10:N10", _
         "SIFIRLANAN", _
         "K10"
 
@@ -799,8 +800,8 @@ Private Sub STOK_KARS_OZET_ALANI(ByVal ws As Worksheet)
 
     STOK_KARS_KPI _
         ws, _
-        "J11:M11", _
-        "J12:M12", _
+        "J11:N11", _
+        "J12:N12", _
         "TOPLAM DEÐÝÞÝM", _
         "K12"
 
@@ -904,7 +905,7 @@ ByVal ad As String)
     Dim ButonGenislik As Double
     Dim ButonYukseklik As Double
 
-    Set alan = ws.Range("A14:M14")
+    Set alan = ws.Range("A14:N14")
 
     ToplamGenislik = alan.Width
     ButonGenislik = ToplamGenislik / toplam
@@ -1311,6 +1312,22 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
             End If
         Next il
     End If
+    ' Ilce (K) ve yuklenici (M) depolari: _KH_ gunluk kaydi (yoksa ilce biriminin _IH_ gecmisi, yalniz K).
+    For Each il In iller
+        Set a = STOK_KARS_WS("_KH_" & CStr(il))
+        c = 0: cq = 0
+        If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cq = STOK_KARS_GUN_KOL(a, t2)
+        If c > 0 And cq > 0 And c <> cq Then
+            STOK_KARS_GECMIS_EKLE a, c, cq, True, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
+        Else
+            Set a = STOK_KARS_WS("_IH_" & CStr(il))
+            c = 0: cq = 0
+            If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cq = STOK_KARS_GUN_KOL(a, t2)
+            If c > 0 And cq > 0 And c <> cq Then
+                STOK_KARS_GECMIS_EKLE a, c, cq, False, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
+            End If
+        End If
+    Next il
     ' Eslestirme (malzeme malzeme)
     For Each kk In grup.keys
         g = Split(Mid$(CStr(grup(kk)), 2), ",")
@@ -1449,3 +1466,177 @@ Private Function STOK_KARS_MIK(ByVal x As Double) As String
         STOK_KARS_MIK = AKSORA_SAYI_METNI(x, "#,##0.###")
     End If
 End Function
+
+' Eski kurulumlu sayfada ust bantlar (2. tarih, KPI'lar) ve hizli dugmeler N sutununa kadar uzatilir.
+Private Sub STOK_KARS_UST_GENISLET(ByVal ws As Worksheet)
+    Dim da As Boolean, ad As Variant, i As Long, s As Shape, alan As Range, w As Double
+    On Error Resume Next
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    If ws.Range("J9").MergeArea.Columns.Count < 5 Then
+        For Each ad In Array("H5:N5", "I6:N6", "I7:N7", "J9:N9", "J10:N10", "J11:N11", "J12:N12")
+            ws.Range(CStr(ad)).Merge
+        Next ad
+    End If
+    Set alan = ws.Range("A14:N14")
+    w = alan.Width / 6
+    i = 0
+    For Each ad In Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+        Set s = Nothing
+        Set s = ws.Shapes(CStr(ad))
+        If Not s Is Nothing Then
+            s.Left = alan.Left + i * w: s.Width = w
+        End If
+        i = i + 1
+    Next ad
+    application.DisplayAlerts = da
+    On Error GoTo 0
+End Sub
+
+Private Function STOK_KARS_WS(ByVal ad As String) As Worksheet
+    On Error Resume Next
+    Set STOK_KARS_WS = ThisWorkbook.Worksheets(ad)
+End Function
+
+' Gunluk gecmiste t gununun sutunu; o gun kayit yoksa t'den onceki son kayit. Yoksa 0.
+Private Function STOK_KARS_GUN_KOL(ByVal ws As Worksheet, ByVal t As Date) As Long
+    Dim c As Long, son As Long, x As Variant, enIyi As Double
+    son = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    For c = 1 To son
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            If Int(CDbl(CDate(x))) = Int(CDbl(t)) Then STOK_KARS_GUN_KOL = c: Exit Function
+            If CDbl(CDate(x)) <= CDbl(t) And CDbl(CDate(x)) > enIyi Then enIyi = CDbl(CDate(x)): STOK_KARS_GUN_KOL = c
+        End If
+    Next c
+End Function
+
+' Gunluk gecmisin iki sutunu arasindaki farklar karsi taraf olarak eklenir (yalniz ekranda gecen malzemeler).
+' kh = True: _KH_ (uretim yeri, depo, malzeme, parti, birim, miktar); False: _IH_ (depo, uretim yeri, malzeme,
+' degerleme, depo adi, tanim, birim, miktar, deger; eski kayitta degerleme yok).
+Private Sub STOK_KARS_GECMIS_EKLE(ByVal ws As Worksheet, ByVal c1 As Long, ByVal c2 As Long, ByVal kh As Boolean, _
+    ByVal il As String, ByVal mallar As Object, ByRef n As Long, ByRef eLoc() As String, ByRef ePar() As String, _
+    ByRef eIl() As String, ByRef eQ() As Double, ByRef eRem() As Double, ByRef eRow() As Long, ByRef eTxt() As String, _
+    ByVal grup As Object)
+    Dim d(1 To 2) As Object, dd As Object, d1 As Object, d2 As Object, i As Long, kol As Long, r As Long, son As Long, satirlar() As String, f() As String
+    Dim j As Long, tesis As String, depo As String, mal As String, parti As String, birim As String, q As Double
+    Dim mk As String, anahtar As String, t As Variant, kk As Variant, q1 As Double, q2 As Double
+    For i = 1 To 2
+        Set dd = CreateObject("Scripting.Dictionary"): dd.CompareMode = vbTextCompare
+        Set d(i) = dd
+        kol = IIf(i = 1, c1, c2)
+        son = ws.Cells(ws.Rows.Count, kol).End(xlUp).Row
+        For r = 2 To son
+            satirlar = Split(CStr(ws.Cells(r, kol).Value2), vbLf)
+            For j = 0 To UBound(satirlar)
+                f = Split(satirlar(j), vbTab)
+                mal = vbNullString
+                If kh And UBound(f) >= 5 Then
+                    tesis = f(0): depo = f(1): mal = f(2): parti = f(3): birim = f(4): q = Val(f(5))
+                ElseIf Not kh And UBound(f) >= 8 Then
+                    depo = f(0): tesis = f(1): mal = f(2): parti = f(3): birim = f(6): q = Val(f(7))
+                ElseIf Not kh And UBound(f) = 7 Then
+                    depo = f(0): tesis = f(1): mal = f(2): parti = vbNullString: birim = f(5): q = Val(f(6))
+                End If
+                If Len(mal) > 0 Then
+                    mk = Trim$(mal) & "|" & UCase$(Trim$(birim))
+                    If mallar.Exists(mk) Then
+                        anahtar = Trim$(tesis) & " " & UCase$(Trim$(depo)) & "|" & UCase$(Trim$(parti)) & "|" & mk
+                        If dd.Exists(anahtar) Then
+                            t = dd(anahtar): t(3) = t(3) + q: dd(anahtar) = t
+                        Else
+                            dd(anahtar) = Array(Trim$(tesis) & " " & UCase$(Trim$(depo)), UCase$(Trim$(parti)), mk, q)
+                        End If
+                    End If
+                End If
+            Next j
+        Next r
+    Next i
+    Set d1 = d(1): Set d2 = d(2)
+    For Each kk In d2.keys
+        If Not d1.Exists(kk) Then d1(kk) = Empty
+    Next kk
+    For Each kk In d1.keys
+        q1 = 0: q2 = 0
+        t = d1(kk)
+        If Not IsEmpty(t) Then q1 = CDbl(t(3))
+        If d2.Exists(kk) Then
+            t = d2(kk): q2 = CDbl(t(3))
+        End If
+        If Abs(q2 - q1) > 0.0000001 And Not IsEmpty(t) Then
+            STOK_KARS_E_EKLE n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup, CStr(t(0)), CStr(t(1)), il, CStr(t(2)), q2 - q1, 0
+        End If
+    Next kk
+End Sub
+
+' Ilce ve yuklenici stoklarinin gunluk kaydi (_KH_<IL>): her sutun bir gun (gunun son guncellemesi), en fazla 60 gun.
+' Satir: uretim yeri TAB depo TAB malzeme TAB parti TAB birim TAB miktar. Hata olursa guncelleme etkilenmez.
+Public Sub STOK_KH_KAYDET_CANLI()
+    Dim a As Worksheet, b As Worksheet
+    On Error Resume Next
+    Set a = STOK_KARS_WS("ÝLÇE_STOK"): Set b = STOK_KARS_WS("YÜKLENÝCÝ_STOK")
+    STOK_KH_KAYDET AKSORA_CANLI_STOK_IL(), a, b
+End Sub
+
+Public Sub STOK_KH_KAYDET(ByVal il As String, ByVal wsIlc As Worksheet, ByVal wsYuk As Worksheet)
+    Dim ws As Worksheet, d As Object, kaynak As Variant, kw As Worksheet, v As Variant, r As Long, son As Long, k As String
+    Dim c As Long, x As Variant, satir As String, tampon As String, j As Long, tarih As Date, kk As Variant
+    On Error GoTo Son
+    il = UCase$(Trim$(il))
+    If Len(il) = 0 Then Exit Sub
+    tarih = Now
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each kaynak In Array(wsIlc, wsYuk)
+        If Not kaynak Is Nothing Then
+            Set kw = kaynak
+            son = AKSORA_SON_SATIR(kw, "G")
+            If son >= 7 Then
+                v = kw.Range("A7:L" & son).Value2
+                For r = 1 To UBound(v, 1)
+                    If Len(Trim$(CStr(v(r, 7)))) > 0 And Not IsError(v(r, 9)) Then
+                        k = Trim$(CStr(v(r, 1))) & vbTab & UCase$(Trim$(CStr(v(r, 2)))) & vbTab & Trim$(CStr(v(r, 7))) & vbTab & _
+                            UCase$(Trim$(CStr(v(r, 6)))) & vbTab & UCase$(Trim$(CStr(v(r, 10))))
+                        d(k) = d(k) + STOK_KARS_DOUBLE(v(r, 9))
+                    End If
+                Next r
+            End If
+        End If
+    Next kaynak
+    If d.Count = 0 Then Exit Sub
+    Set ws = STOK_KARS_WS("_KH_" & il)
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = "_KH_" & il
+        ws.Visible = xlSheetVeryHidden
+    End If
+    son = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    If son = 1 And Len(CStr(ws.Cells(1, 1).Value2)) = 0 Then son = 0
+    For c = son To 1 Step -1
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            If Int(CDbl(CDate(x))) = Int(CDbl(tarih)) Then ws.Columns(c).Delete
+        Else
+            ws.Columns(c).Delete
+        End If
+    Next c
+    son = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    If son = 1 And Len(CStr(ws.Cells(1, 1).Value2)) = 0 Then son = 0
+    Do While son >= 60
+        ws.Columns(1).Delete
+        son = son - 1
+    Loop
+    c = son + 1
+    ws.Columns(c).NumberFormat = "@"
+    ws.Cells(1, c).NumberFormat = "dd.mm.yyyy hh:mm:ss"
+    ws.Cells(1, c).Value = tarih
+    j = 1
+    For Each kk In d.keys
+        satir = CStr(kk) & vbTab & Trim$(Str$(d(kk)))
+        If Len(tampon) + Len(satir) + 1 > 30000 And Len(tampon) > 0 Then
+            j = j + 1: ws.Cells(j, c).Value2 = tampon: tampon = vbNullString
+        End If
+        If Len(tampon) > 0 Then tampon = tampon & vbLf
+        tampon = tampon & satir
+    Next kk
+    If Len(tampon) > 0 Then j = j + 1: ws.Cells(j, c).Value2 = tampon
+Son:
+End Sub

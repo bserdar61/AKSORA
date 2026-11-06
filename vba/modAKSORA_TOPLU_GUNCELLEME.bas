@@ -398,6 +398,7 @@ Private Function AK11_IL_GUNCELLE(ByVal il As String, ByRef aciklama As String) 
         ar(i).Visible = xlSheetVeryHidden
     Next i
     STOK_HAFIZA_KAYDET il
+    STOK_KH_KAYDET il, ar(4), ar(5)
     yaziliyor = False
     application.ScreenUpdating = True
     AK11_IL_GUNCELLE = True
