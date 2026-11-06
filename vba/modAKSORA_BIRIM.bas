@@ -2,9 +2,9 @@ Attribute VB_Name = "modAKSORA_BIRIM"
 Option Explicit
 
 Private Const HUB As String = "BIRIM SECIM"
-' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutarin uzerindeyse sarfi bolge mudurlugu yapar:
+' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutar ve uzerindeyse sarfi bolge mudurlugu yapar:
 ' ilceden beklenmez, "BÖLGE SARF EDECEK" gosterilir, ilce durumuna ve yonetim uyarilarina girmez.
-Private Const I_ISG_BOLGE_TL As Double = 10000#
+Private Const I_ISG_BOLGE_TL As Double = 12000#
 Private Const YAT As String = "YATIRIM PANEL"
 Private Const MUS As String = "MUSTERI PANEL"
 Private Const MUK As String = "MUSTERI IL SECIM"
@@ -6493,7 +6493,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
         Array("@", "@", "General", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
         "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr. Birim fiyatý " & _
-        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (Bölge Sarfý Kalem)", "Ýlçe Durumu", Empty
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (Bölge Sarfý Kalem)", "Ýlçe Durumu", Empty
     ' TOPLAM satiri ve durum renkleri (ekrandaki gibi)
     With c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 9))
         .Interior.Color = RGB(226, 236, 247): .Font.bold = True
@@ -6537,7 +6537,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
         Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00 ""TL""", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter), ust, _
         "Kýrmýzý: kiþiye ZÝMMET yapýlacak  |  Mavi: MANUEL SARF yapýlacak  |  Gri: BÖLGE müdürlüðü sarf edecek (birim fiyatý " & _
-        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)", "Malzeme Listesi", Empty
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri)", "Malzeme Listesi", Empty
     For r = 1 To n
         Set hz = c.Cells(r + 4, 10)
         Select Case CStr(hz.Value2)
@@ -6920,7 +6920,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     For Each k In mal.keys
         t = mal(k)
         If t(9) = "MANUEL SARF YAPIN" And t(6) > 0 Then
-            If t(8) / t(6) > I_ISG_BOLGE_TL Then t(9) = "BÖLGE SARF EDECEK": mal(k) = t
+            If t(8) / t(6) >= I_ISG_BOLGE_TL - 0.005 Then t(9) = "BÖLGE SARF EDECEK": mal(k) = t
         End If
     Next k
     ' Ilce ozeti: depo -> (ad, zimmet kalem, zimmet miktar, sarf kalem, sarf miktar, deger, bolge sarfi kalem)
@@ -6955,7 +6955,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     ws.Rows(a2 - 4).RowHeight = 30: ws.Rows(a2 - 3).RowHeight = 32: ws.Rows(a2 - 2).RowHeight = 8: ws.Rows(a2 - 1).RowHeight = 30
     ws.Range(ws.Rows(a2), ws.Rows(b2)).RowHeight = 19
     Y_BOLUM ws, a1 - 2, "ÝLÇE BAZINDA ÝSG DURUMU", "Depoda ÝSG malzemesi bekletilmez: kiþisel zimmet ya da manuel sarf yapýlmalýdýr. " & _
-        "Birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder.", 9
+        "Birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder.", 9
     Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 9)), Array("Depo", "Depo Adý", "Zimmet Kalem", _
         "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", "Bölge Sarfý Kalem", "ÝSG Stok Deðeri", "Durum")
     r = a1
@@ -7065,7 +7065,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     End If
     ws.Cells(b2 + 2, 1).Value2 = "ÝSG malzemesi ana listesi ve kiþisel zimmet listesi AKSORA'da kayýtlýdýr (" & liste.Count & _
         " ÝSG malzemesi). Zimmet listesindekiler kiþiye zimmetlenir, diðerleri manuel sarf edilir; birim fiyatý " & _
-        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (ilçeden beklenmez)."
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüðü sarf eder (ilçeden beklenmez)."
     ws.Cells(b2 + 2, 1).Font.Size = 9: ws.Cells(b2 + 2, 1).Font.Color = RGB(71, 85, 105)
     ' KPI (panel karti BZ21 / BZ22 kullanir)
     ws.Range("BZ21").Value2 = n
@@ -7786,7 +7786,7 @@ Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
                     ' Dikkat: VBA And kisa devre yapmaz; liste(mal) yalniz Exists sonrasi okunur (yoksa sozluge bos anahtar eklenir).
                     isgVar = False
                     If u = 3 Then
-                        If liste.Exists(mal) Then isgVar = (x > 0 And Not (liste(mal) <> "Z" And d > I_ISG_BOLGE_TL * x))
+                        If liste.Exists(mal) Then isgVar = (x > 0 And Not (liste(mal) <> "Z" And d >= (I_ISG_BOLGE_TL - 0.005) * x))
                     End If
                     If isgVar Then
                             kod = UCase$(I_TEMIZ(v(i, cD)))
@@ -9644,7 +9644,7 @@ Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal 
         If kalem <= 0 And deger <= 0.005 Then
             neden = "Depoda ÝSG malzemesi yok"
         ElseIf kalem <= 0 Then
-            neden = "Ýlçeye iþ yok  •  " & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem bölge sarfý (birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL üzeri)"
+            neden = "Ýlçeye iþ yok  •  " & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem bölge sarfý (birim fiyatý " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri)"
         Else
             neden = vbNullString
             If I_SAYI(veri(j, 3)) > 0 Then neden = "Zimmet: " & ADM_ADET(I_SAYI(veri(j, 3))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 4))) & " adet"

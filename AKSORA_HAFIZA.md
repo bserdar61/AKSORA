@@ -775,6 +775,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Sebep: ADM_VERI'de `If liste.Exists(mal) And ... liste(mal) ...` — VBA And kısa devre yapmaz; liste(mal) okuması olmayan anahtarı Static sözlüğe ekledi (değer Empty → "MANUEL SARF"). Düzeltme: önce Exists, sonra oku (isgVar). I_ISG_LISTE sayı tutmazsa listeyi yeniden kurar.
 - KURAL: Dictionary'de d(k) okuması anahtar EKLER; Exists ile aynı satırda And/Or içinde asla okuma yapma.
 
+- İSG bölge sarfı sınırı (06.11, taban up48): 12.000 TL ve üzeri (>=, 0,005 tolerans). Sabit I_ISG_BOLGE_TL = 12000.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
