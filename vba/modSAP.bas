@@ -78,6 +78,12 @@ Dim j As Long
 On Error GoTo Hata
 
 hataMesaji = vbNullString
+' Yayin (izleme) kopyasinda SAP'ye baglanilmaz.
+If AKSORA_YAYIN_MODU() Then
+    hataMesaji = "Bu AKSORA yayýn kopyasýdýr (izleme modu); SAP güncellemesi kapalýdýr."
+    Set SAP_SESSION_AL = Nothing
+    Exit Function
+End If
 HedefSistem = UCase$(Trim$(HedefSistem))
 
 ' Ayný SAP oturumunu yeniden kullan; kopmuþsa normal taramaya dön.

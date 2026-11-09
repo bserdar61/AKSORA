@@ -792,6 +792,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Sebep: STOKLAR'da kullanıcı filtresi açık (D003/D009/D010 + İSG/HIRDAVAT); güncellemeden sonra AKG_KOPYALA filtreyi yeniden uyguluyor, Range.Find filtre gizli satırları atlıyor → AKSORA_SON_SATIR başlık satırını döndürüyor.
 - Düzeltme: AKSORA_SON_SATIR FilterMode'da UsedRange sütununu doğrudan okur (filtreye dokunmaz). KURAL: son satır hesabı asla yalnız Find'a bırakılmaz.
 
+## Ortak klasöre YAYIN (09.11.2026)
+- Bütün illeri güncelle ve Yönetim Merkezi Tüm birimleri güncelle sonunda AKSORA_YAYINLA_SESSIZ: ortak klasöre ThisWorkbook.SaveCopyAs "AKSORA_YAYIN.xlsm" (salt okunur özniteliği), açıksa "AKSORA_YAYIN_yyyymmdd_hhnn.xlsm"; AKSORA_YAYIN_BILGI.txt. Klasör _AKSORA_YAYIN_KLASOR (ilk sefer sorulur; "YOK" = kapalı). Alt+F8: AKSORA_YAYIN_AYAR, AKSORA_YAYINLA.
+- İzleme modu = dosya adında AKSORA_YAYIN (AKSORA_YAYIN_MODU): SAP_SESSION_AL, AKSORA_SAP_GUNCELLEME_IZNI, BÜTÜN İLLER, TÜM BİRİMLER kapalı (AKSORA_YAYIN_UYARI). Sayfalar, filtre, Excel'e aktar, çıktı, birim şifreleri aynen.
+- Kullanıcıya önerilen yol: kişisel SAP kullanıcısı yerine IT'den salt okunur teknik SAP kullanıcısı + sunucuda zamanlanmış çalışma (faz 2), Power BI (faz 3).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

@@ -8997,6 +8997,7 @@ End Sub
 Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
     Dim bas As Double, sure As Double, sonuc As String, ws As Worksheet, sh As Worksheet
     If AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
     If MsgBox("Tüm birimler (Malzeme, Müþteri, Yatýrým, Ýlçe) beþ il için SAP'den sýrayla güncellenecek." & vbCrLf & vbCrLf & _
         "SAP oturumu açýk olmalýdýr; iþlem uzun sürebilir. Ýlerleme bu ekranda kartta izlenir (birim, il ve geçen süre); " & _
         "sonunda yönetim merkezi yenilenir." & vbCrLf & vbCrLf & "Devam edilsin mi?", vbYesNo + vbQuestion, "AKSORA | TÜM BÝRÝMLERÝ GÜNCELLE") <> vbYes Then Exit Sub
@@ -9055,7 +9056,7 @@ Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
         AKSORA_ADMIN_IPTAL = False
         MsgBox "Güncelleme durduruldu (" & sonuc & ")." & vbCrLf & "Çalýþan il tamamlandý, kalanlar atlandý." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbExclamation, "AKSORA | TÜM BÝRÝMLER"
     Else
-        MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbInformation, "AKSORA | TÜM BÝRÝMLER"
+        MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC & AKSORA_YAYINLA_SESSIZ(), vbInformation, "AKSORA | TÜM BÝRÝMLER"
     End If
 End Sub
 

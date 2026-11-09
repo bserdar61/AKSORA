@@ -434,6 +434,7 @@ Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
     Dim adres As String, satir As Long, sutun As Long, basladi As Boolean
     Dim toplamBas As Double, arayuzBas As Double
     If AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
     If Not AKSORA_ADMIN_TOPLU Then
         If MsgBox("Beþ ilin stoklarý SAP'den sýrayla alýnacak." & vbCrLf & _
                   "Baþarýsýz ilin önceki kayýtlarý korunur. Devam edilsin mi?", _
@@ -555,6 +556,7 @@ Temizle:
     ' Hata yoksa Yatirim ve Ilce de ayni veriyle tamamlanir; veri yoksa / hata varsa ortak veri birakilir.
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & AK_ORTAK_ZINCIR()
     AKSORA_ORTAK_BIRAK
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & AKSORA_YAYINLA_SESSIZ()
     If Len(Hata) > 0 Then
         MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
     Else
@@ -1412,4 +1414,125 @@ Public Sub AKSORA_KARS_BUTUN_ILLER()
     Exit Sub
 Hata:
     MsgBox "Güncelleme tamamlandý; karþýlaþtýrma açýlamadý: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+'---------- YAYIN: ortak klasore izleme kopyasi ----------
+' Admin (SAP'ye bagli) AKSORA her guncellemeden sonra ortak klasore "AKSORA_YAYIN.xlsm" kaydeder.
+' Bu kopya izleme modundadir (dosya adinda YAYIN): butun sayfalar, filtreler, Excel'e aktar ve cikti calisir;
+' SAP'ye baglanilmaz. Birim sifreleri aynen gecerlidir. Klasor bir kez secilir (_AKSORA_YAYIN_KLASOR).
+
+Public Function AKSORA_YAYIN_MODU() As Boolean
+    AKSORA_YAYIN_MODU = (InStr(1, ThisWorkbook.Name, "AKSORA_YAYIN", vbTextCompare) > 0)
+End Function
+
+Public Sub AKSORA_YAYIN_UYARI()
+    MsgBox "Bu dosya AKSORA YAYIN kopyasýdýr (izleme modu)." & vbCrLf & vbCrLf & _
+        "SAP güncellemesi bu kopyada kapalýdýr; veriler AKSORA yöneticisi tarafýndan güncellenip ortak klasöre yayýnlanýr." & vbCrLf & _
+        "Bütün sayfalar, filtreler, Excel'e aktar ve çýktý kullanýlabilir." & vbCrLf & vbCrLf & _
+        "En güncel veri için dosyayý kapatýp ortak klasörden yeniden açýn.", vbInformation, "AKSORA | YAYIN"
+End Sub
+
+Private Function AK_YAYIN_KLASOR() As String
+    Dim p As String
+    On Error Resume Next
+    p = ThisWorkbook.names("_AKSORA_YAYIN_KLASOR").RefersTo
+    On Error GoTo 0
+    If Len(p) >= 3 Then p = Mid$(p, 3, Len(p) - 3): p = Replace(p, """""", """")
+    AK_YAYIN_KLASOR = p
+End Function
+
+Private Sub AK_YAYIN_KLASOR_YAZ(ByVal p As String)
+    ThisWorkbook.names.Add Name:="_AKSORA_YAYIN_KLASOR", RefersTo:="=""" & Replace(p, """", """""") & """", Visible:=False
+End Sub
+
+' Yayin klasorunu sec / degistir / kapat (Alt+F8: AKSORA_YAYIN_AYAR).
+Public Sub AKSORA_YAYIN_AYAR()
+    Dim p As String, fd As Object, cvp As VbMsgBoxResult
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    p = AK_YAYIN_KLASOR()
+    cvp = MsgBox("Ortak klasöre yayýn: " & IIf(Len(p) = 0 Or p = "YOK", "KAPALI", p) & vbCrLf & vbCrLf & _
+        "EVET: klasör seç (yayýn açýlýr)" & vbCrLf & "HAYIR: yayýný kapat" & vbCrLf & "ÝPTAL: deðiþtirme", _
+        vbQuestion + vbYesNoCancel, "AKSORA | YAYIN AYARI")
+    If cvp = vbCancel Then Exit Sub
+    If cvp = vbNo Then AK_YAYIN_KLASOR_YAZ "YOK": MsgBox "Yayýn kapatýldý.", vbInformation, "AKSORA": Exit Sub
+    Set fd = application.FileDialog(4)
+    fd.Title = "AKSORA yayýn klasörü (ortak alan)"
+    fd.AllowMultiSelect = False
+    If Len(p) > 0 And p <> "YOK" Then fd.InitialFileName = p & application.PathSeparator
+    If fd.Show <> -1 Then Exit Sub
+    p = fd.SelectedItems(1)
+    AK_YAYIN_KLASOR_YAZ p
+    If MsgBox("Yayýn klasörü: " & p & vbCrLf & vbCrLf & "Þimdi yayýnlansýn mý?", vbQuestion + vbYesNo, "AKSORA | YAYIN") = vbYes Then AKSORA_YAYINLA
+End Sub
+
+' Elle yayin (Alt+F8: AKSORA_YAYINLA).
+Public Sub AKSORA_YAYINLA()
+    Dim m As String
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    If Len(AK_YAYIN_KLASOR()) = 0 Or AK_YAYIN_KLASOR() = "YOK" Then AKSORA_YAYIN_AYAR: Exit Sub
+    m = AKSORA_YAYINLA_SESSIZ()
+    MsgBox Mid$(m, 3), IIf(InStr(m, "yapýlamadý") > 0, vbExclamation, vbInformation), "AKSORA | YAYIN"
+End Sub
+
+' Guncelleme sonunda cagrilir; sonuc metnine eklenecek satir doner. Klasor hic secilmediyse bir kez sorulur.
+Public Function AKSORA_YAYINLA_SESSIZ() As String
+    Dim p As String, hedef As String, alt As String, kok As String, f As Integer, kim As String, no As Long
+    On Error GoTo Hata
+    If AKSORA_YAYIN_MODU() Then Exit Function
+    p = AK_YAYIN_KLASOR()
+    If p = "YOK" Then Exit Function
+    If Len(p) = 0 Then
+        If MsgBox("AKSORA'yý ortak klasörde yayýnlamak ister misiniz?" & vbCrLf & vbCrLf & _
+            "Her güncellemeden sonra ortak alana AKSORA_YAYIN.xlsm (SAP'siz izleme kopyasý) kaydedilir; " & _
+            "yetkili herkes birim þifresiyle açýp kullanýr." & vbCrLf & vbCrLf & _
+            "EVET: klasör seç  •  HAYIR: bir daha sorma (Alt+F8: AKSORA_YAYIN_AYAR)", vbQuestion + vbYesNo, "AKSORA | YAYIN") <> vbYes Then
+            AK_YAYIN_KLASOR_YAZ "YOK": Exit Function
+        End If
+        AKSORA_YAYIN_AYAR_SESSIZ
+        p = AK_YAYIN_KLASOR()
+        If Len(p) = 0 Or p = "YOK" Then Exit Function
+    End If
+    If Not AKSORA_KLASOR_HAZIRLA(p) Then Err.Raise vbObjectError + 1501, , "Klasöre ulaþýlamadý: " & p
+    kok = p & application.PathSeparator
+    hedef = kok & "AKSORA_YAYIN.xlsm"
+    application.StatusBar = "AKSORA | Ortak klasöre yayýnlanýyor..."
+    On Error Resume Next
+    SetAttr hedef, vbNormal
+    Err.Clear
+    ThisWorkbook.SaveCopyAs hedef
+    no = Err.Number
+    On Error GoTo Hata
+    If no <> 0 Then
+        ' Dosya baskasinda aciksa ustune yazilamaz: tarihli ad ile kaydedilir.
+        alt = kok & "AKSORA_YAYIN_" & Format$(Now, "yyyymmdd_hhnn") & ".xlsm"
+        ThisWorkbook.SaveCopyAs alt
+        hedef = alt
+    End If
+    On Error Resume Next
+    SetAttr hedef, vbReadOnly
+    kim = Environ$("USERNAME")
+    f = FreeFile
+    Open kok & "AKSORA_YAYIN_BILGI.txt" For Output As #f
+    Print #f, "AKSORA yayini: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  Yayinlayan: " & kim
+    Print #f, "Dosya: " & Mid$(hedef, Len(kok) + 1)
+    Print #f, "Izleme kopyasidir; SAP guncellemesi kapalidir. Birim sifreleriyle acilir."
+    Close #f
+    On Error GoTo Hata
+    application.StatusBar = False
+    AKSORA_YAYINLA_SESSIZ = vbCrLf & vbCrLf & "Ortak klasöre yayýnlandý: " & hedef & _
+        IIf(no <> 0, vbCrLf & "(AKSORA_YAYIN.xlsm baþka bir kullanýcýda açýk olduðu için tarihli adla kaydedildi.)", "")
+    Exit Function
+Hata:
+    On Error Resume Next
+    application.StatusBar = False
+    AKSORA_YAYINLA_SESSIZ = vbCrLf & vbCrLf & "Ortak klasöre yayýn yapýlamadý: " & Err.Description
+End Function
+
+Private Sub AKSORA_YAYIN_AYAR_SESSIZ()
+    Dim fd As Object
+    On Error Resume Next
+    Set fd = application.FileDialog(4)
+    fd.Title = "AKSORA yayýn klasörü (ortak alan)"
+    fd.AllowMultiSelect = False
+    If fd.Show = -1 Then AK_YAYIN_KLASOR_YAZ fd.SelectedItems(1) Else AK_YAYIN_KLASOR_YAZ "YOK"
 End Sub

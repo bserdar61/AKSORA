@@ -142,6 +142,7 @@ End Function
 Public Function AKSORA_SAP_GUNCELLEME_IZNI() As Boolean
     Dim secilen As String, yuklu As String
     If AKSORA_V11_MESGUL Then Exit Function
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Function
     On Error GoTo Hata
 
     secilen = AKSORA_AKTIF_IL()
