@@ -810,6 +810,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Keşif: AKSORA_YATIRIM_KESIF_YUKLE — matris (PYP satırı + ad satırı + malzeme sütunu) ya da tek proje (Y_PROJE_TARA + InputBox PYP). Kayıt _Y_KESIF (il,PYP,mal,miktar,tanım; "#il" satırı proje adı/dosya/tarih). Yüklenen projelerin eski keşfi değişir.
 - Hesap (Y_PRJ_VERI): proje stoğu = PYP hareket toplamı; havuz/serbest = MB52 depo stoğu − projelerde kalan; fiyat MB52 değer/miktar, yoksa MB51 tutar/miktar. Sayfa: kartlar, YÜKLENİCİ DURUMU, PROJELER (Durum EKSİK/FAZLA/TAMAM/BAŞLAMADI), MALZEME DETAYI (seçili proje: hakediş sütunları, en çok 6; tümü: İhtiyaç = keşif − sarf − projelerde − yüklenici havuzu − D002). Sürüm BX25=PRJ_V1. Panel düğmesi "PROJE / HAKEDİŞ".
 
+- 2026-11-11: Proje takibi düzeltme: boş veride IIf içindeki 0/0 "Overflow" verdi (IIf iki dalı da hesaplar); MB51 kısa başlıklar (Kayıt trh., Blg.bşlk.metni, Hrk.tü.mtn, Ö, iki "PYP öğesi") eşlendi — iki PYP sütununda daha dolu olan satırın kendi PYP'si.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
