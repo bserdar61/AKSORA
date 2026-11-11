@@ -304,6 +304,7 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
     If mYonlendirme Then AKSORA_BIRIM_OLAY = True: Exit Function
     If Not TypeOf sh Is Worksheet Then Exit Function
     If AKSORA_MUSTERI_GECIS_KORU(sh) Then AKSORA_BIRIM_OLAY = True: Exit Function
+    If sh.Name = "Y_TEMÝNAT" Then Y_TEMINAT_LISTE_ONAR sh
     If sh.Name = ADM Then
         ' Sifre girilmeden (sekme / Ctrl+PgDn ile) yonetim merkezine gecilemez.
         If Not mAdmOturum Then
@@ -3039,12 +3040,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     If nL > 0 Then
         Y_GIRIS_HUCRE ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 8))
         ws.Range("BZ20").Value2 = "Depoda": ws.Range("BZ21").Value2 = "Sahada": ws.Range("BZ22").Value2 = "Kýsmi"
-        With ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 7)).Validation
-            .Delete
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="=$BZ$20:$BZ$22"
-            .IgnoreBlank = True: .InCellDropdown = True
-            .ErrorMessage = "Depoda, Sahada veya Kýsmi seçiniz."
-        End With
+        Y_KONUM_LISTE ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 7))
         Set rr = ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 7))
         Y_DURUM_KF rr, "Sahada", RGB(220, 252, 231), RGB(21, 128, 61)
         Y_DURUM_KF rr, "Kýsmi", RGB(254, 243, 199), RGB(180, 83, 9)
@@ -3164,6 +3160,30 @@ Public Sub Y_BOLUM(ByVal ws As Worksheet, ByVal r As Long, ByVal baslik As Strin
 End Sub
 
 '' Filtre sonrasi Teminat sayfasinda kalinir (Excel baska yatirim sayfasina gecerse geri alinir).
+' Konum secim listesi (Depoda / Sahada / Kismi): hucre araligina bagli degil, sabit secenekler.
+Private Sub Y_KONUM_LISTE(ByVal r As Range)
+    With r.Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="Depoda,Sahada,Kýsmi"
+        .IgnoreBlank = True: .InCellDropdown = True
+        .ErrorTitle = "AKSORA": .ErrorMessage = "Depoda, Sahada veya Kýsmi seçiniz."
+    End With
+End Sub
+
+' Teminat sayfasi acildiginda Konum listesi yeniden uygulanir (ok kaybolmus olsa da geri gelir).
+Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
+    Dim a As Long, b As Long
+    On Error Resume Next
+    If ws.Name <> "Y_TEMÝNAT" Then Exit Sub
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If b < a Or Len(CStr(ws.Cells(a, 7).Value2)) = 0 Then Exit Sub
+    ws.Unprotect ""
+    Y_KONUM_LISTE ws.Range(ws.Cells(a, 7), ws.Cells(b, 7))
+    ws.Range(ws.Cells(a, 7), ws.Cells(b, 8)).Locked = False
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
 Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
     On Error Resume Next
     If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws

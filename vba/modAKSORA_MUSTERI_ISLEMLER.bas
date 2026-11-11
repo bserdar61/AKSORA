@@ -303,14 +303,15 @@ Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
     On Error GoTo 0
 End Sub
 
-' Stok sayfasinda filtre uygulandiktan hemen sonra (2 sn) kendiliginden arama sayfasina
-' gecilirse kullanici stok sayfasinda tutulur. Dugme ile yapilan gecisler etkilenmez.
+' Stok sayfasinda filtre uygulandiktan hemen sonra (2 sn) kendiliginden baska bir sayfaya
+' (arama, panel vb.) gecilirse kullanici stok sayfasinda tutulur. Dugme ile yapilan gecisler
+' olaylar kapaliyken yapildigindan etkilenmez.
 Public Function AKSORA_MUSTERI_GECIS_KORU(ByVal sh As Object) As Boolean
     Dim ad As String, gecen As Double, hedef As Worksheet, ev As Boolean
     If Not TypeOf sh Is Worksheet Then Exit Function
-    If sh.Name <> "M_MALZEME_ARA" Then Exit Function
     ad = AKSORA_MUSTERI_STOK_HESAP_SAYFA
     If Len(ad) = 0 Then Exit Function
+    If sh.Name = ad Then Exit Function
     gecen = Timer - AKSORA_MUSTERI_STOK_HESAP_ZAMAN
     If gecen < 0 Then gecen = gecen + 86400#
     AKSORA_MUSTERI_STOK_HESAP_SAYFA = vbNullString

@@ -797,6 +797,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - İzleme modu = dosya adında AKSORA_YAYIN (AKSORA_YAYIN_MODU): SAP_SESSION_AL, AKSORA_SAP_GUNCELLEME_IZNI, BÜTÜN İLLER, TÜM BİRİMLER kapalı (AKSORA_YAYIN_UYARI). Sayfalar, filtre, Excel'e aktar, çıktı, birim şifreleri aynen.
 - Kullanıcıya önerilen yol: kişisel SAP kullanıcısı yerine IT'den salt okunur teknik SAP kullanıcısı + sunucuda zamanlanmış çalışma (faz 2), Power BI (faz 3).
 
+## 11.11.2026 (taban up51)
+- Kapanışta çift "kaydedilsin mi": Workbook_BeforeClose sonunda ThisWorkbook.Saved = True (UYGULAMA_MODU_KAPAT dosyayı kirletiyordu).
+- Müşteri stok filtresinde sayfa atlaması: AKSORA_MUSTERI_GECIS_KORU artık her hedef sayfa için (2 sn içinde) stok sayfasına döndürür (önce yalnız M_MALZEME_ARA).
+- Teminat Konum listesi: Y_KONUM_LISTE sabit "Depoda,Sahada,Kısmi"; Y_TEMINAT_LISTE_ONAR sayfa açılışında (AKSORA_BIRIM_OLAY) listeyi ve kilit açıklığını yeniden uygular.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

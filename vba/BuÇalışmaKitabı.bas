@@ -260,6 +260,10 @@ Private Sub Workbook_BeforeClose( _
 
     UYGULAMA_MODU_KAPAT
 
+    ' Soru yukarida soruldu (kaydedildi ya da kaydetmeden cikildi). Uygulama modunun kapatilmasi
+    ' gorunum ayarlarini degistirdigi icin Excel ikinci kez "kaydedilsin mi" sormasin.
+    ThisWorkbook.Saved = True
+
 End Sub
 
 
