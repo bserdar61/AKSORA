@@ -4392,3 +4392,148 @@ Public Function ADM_YAPILACAK_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal 
 Son:
     ADM_YAPILACAK_CIZ = r
 End Function
+
+'---------- PROJE MALZEME TAKIBI: SAP (MB51, /AKSORA_PRJ duzeni) ----------
+' Ilin EPP uretim yeri; depo: D002 + ilin yuklenici depolari; kayit tarihi yil basi - bugun; hareket turu: hepsi.
+' Donus: satirlar (1..n, 1..15): depo, PYP (satirin kendi proje stogu), karsi PYP, hareket turu, malzeme, tanim,
+' birim, miktar (isaretli), tutar, kayit tarihi, belge basligi (hakedis), malzeme belgesi, kalem, ozel stok, hareket metni.
+Public Function AKSORA_PRJ_MB51_OKU(ByVal il As String, ByRef bilgi As String) As Variant
+    Dim ses As Object, msg As String, uy As String, dp() As String, x As Variant, n As Long, alv As Object, v As Variant
+    Dim pop As Object, t As String, bos() As String, b0 As Double, bas As Date, son As Date
+    uy = AKSORA_IL_TESIS(il, "EPP")
+    ReDim dp(0 To 0): dp(0) = "D002"
+    For Each x In AKSORA_IL_YUKLENICI(il)
+        If Left$(CStr(x), 1) <> "Z" Then n = UBound(dp) + 1: ReDim Preserve dp(0 To n): dp(n) = CStr(x)
+    Next x
+    bas = DateSerial(Year(Date), 1, 1): son = Date
+    Set ses = SAP_SESSION_AL("EPP", msg)
+    If ses Is Nothing Then Err.Raise vbObjectError + 2601, , "SAP EPP oturumu bulunamadý. " & msg
+    AKSORA_SAP_TESHIS_YAZ "Proje " & il & " | MB51 " & uy & " | depo " & Join(dp, ",") & " | " & Format$(bas, "dd.mm.yyyy") & " - " & Format$(son, "dd.mm.yyyy")
+    ses.StartTransaction "MB51": ATIL_BEKLE ses
+    If ses.FindById("wnd[0]/usr/ctxtWERKS-LOW", False) Is Nothing Then _
+        Err.Raise vbObjectError + 2602, , "MB51 seçim ekraný açýlmadý: " & ATIL_SBAR(ses)
+    ' Malzeme ve hareket turu: onceki secimler temizlenir (hepsi).
+    ses.FindById("wnd[0]/usr/btn%_MATNR_%_APP_%-VALU_PUSH").Press: ATIL_BEKLE ses
+    ATIL_COKLU_SIL ses
+    ses.FindById("wnd[1]/tbar[0]/btn[8]").Press: ATIL_BEKLE ses
+    ses.FindById("wnd[0]/usr/btn%_BWART_%_APP_%-VALU_PUSH").Press: ATIL_BEKLE ses
+    ATIL_COKLU_SIL ses
+    ses.FindById("wnd[1]/tbar[0]/btn[8]").Press: ATIL_BEKLE ses
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/ctxtMATNR-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtMATNR-HIGH").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtBWART-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtBWART-HIGH").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = vbNullString
+    On Error GoTo 0
+    ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
+    ATIL_COKLU_PANO ses, "LGORT", dp
+    ses.FindById("wnd[0]/usr/ctxtBUDAT-LOW").Text = Format$(bas, "dd.mm.yyyy")
+    ses.FindById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = Format$(son, "dd.mm.yyyy")
+    ATIL_DUZ_LISTE ses, "Proje"
+    ses.FindById("wnd[0]/usr/ctxtALV_DEF").Text = "/AKSORA_PRJ"
+    b0 = Timer
+    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    ATIL_BEKLE ses
+    AKSORA_SAP_TESHIS_YAZ "Proje " & il & " | sorgu " & AKSORA_SAYI_METNI(ATIL_GECEN(b0), "0.0") & " sn | " & ATIL_SBAR(ses)
+    Set pop = ses.FindById("wnd[1]", False)
+    If Not pop Is Nothing Then
+        t = vbNullString
+        On Error Resume Next
+        t = pop.Text
+        On Error GoTo 0
+        ATIL_METIN_TOPLA pop, t, 0
+        If ATIL_BOS_MESAJ(t) Then pop.SendVKey 0: ATIL_BEKLE ses: bilgi = "MB51: hareket yok": Exit Function
+        Err.Raise vbObjectError + 2603, , "SAP penceresi: " & Trim$(t)
+    End If
+    Set alv = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False)
+    If alv Is Nothing Then
+        t = ATIL_SBAR(ses)
+        If ATIL_BOS_MESAJ(t) Then bilgi = "MB51: hareket yok": Exit Function
+        If InStr(Y_NORM(t), "DUZEN") > 0 Then Err.Raise vbObjectError + 2604, , _
+            "MB51'de /AKSORA_PRJ düzeni bulunamadý (SAP: " & t & "). Düzeni 'Düz liste' görünümünde bu adla kaydedin."
+        Err.Raise vbObjectError + 2605, , "MB51 sonuç vermedi: " & t
+    End If
+    v = AKSORA_ALV_METIN_AL(ses, alv, "PRJ_" & uy)
+    If Not IsArray(v) Then Err.Raise vbObjectError + 2606, , "MB51 listesi okunamadý (yerel dosya). Ayrýntý: AKSORA_SAP_TESHIS.txt"
+    AKSORA_PRJ_MB51_OKU = PRJ_MB51_COZ(v, uy, bilgi)
+End Function
+
+' MB51 listesi: sutunlar basliktan bulunur (sira onemli degil). Ara toplam (*) ve bos satirlar atlanir.
+Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilgi As String) As Variant
+    Dim r As Long, c As Long, h As Long, a As String, k(1 To 16) As Long, sonuc() As Variant, n As Long, q As Double, tt As Double
+    Dim mal As String, hb As String, i As Long, tr As Date, atla As Long
+    For r = 1 To application.Min(UBound(v, 1), 40)
+        For c = 1 To UBound(v, 2)
+            If Y_NORM(CStr(v(r, c))) = "MALZEME" Then h = r: Exit For
+        Next c
+        If h > 0 Then Exit For
+    Next r
+    If h = 0 Then Err.Raise vbObjectError + 2607, , "MB51 listesinde 'Malzeme' sütunu bulunamadý (/AKSORA_PRJ düzenini kontrol edin)."
+    For c = 1 To UBound(v, 2)
+        a = Replace(Replace(Y_NORM(CStr(v(h, c))), ".", ""), "  ", " ")
+        hb = hb & " | " & CStr(v(h, c))
+        If k(1) = 0 And (a = "DPYR" Or a = "DEPO YERI") Then k(1) = c
+        If k(2) = 0 And InStr(a, "PROJE YAPI PLANI") > 0 Then k(2) = c
+        If k(3) = 0 And a = "PYP OGESI" Then k(3) = c
+        If k(4) = 0 And (a = "ITU" Or a = "HTU" Or a = "ISLEM TURU" Or a = "HAREKET TURU") Then k(4) = c
+        If k(5) = 0 And a = "MALZEME" Then k(5) = c
+        If k(6) = 0 And InStr(a, "KISA METNI") > 0 Then k(6) = c
+        If k(7) = 0 And (a = "BIRIM" Or a = "TOB" Or a = "TEMEL OLCU BIRIMI") Then k(7) = c
+        If k(8) = 0 And a = "MIKTAR" Then k(8) = c
+        If k(9) = 0 And Left$(a, 5) = "TUTAR" Then k(9) = c
+        If k(10) = 0 And InStr(a, "KAYIT TARIHI") > 0 Then k(10) = c
+        If k(11) = 0 And InStr(a, "BELGE BASLIGI") > 0 Then k(11) = c
+        If k(12) = 0 And (a = "MLZBLG" Or a = "MALZEME BELGESI") Then k(12) = c
+        If k(13) = 0 And (a = "KLM" Or InStr(a, "BELGESI KLM") > 0 Or a = "KALEM") Then k(13) = c
+        If k(14) = 0 And InStr(a, "OZEL STOK") > 0 Then k(14) = c
+        If k(15) = 0 And InStr(a, "HAREKET TUR") > 0 And InStr(a, "METN") > 0 Then k(15) = c
+        If k(16) = 0 And (a = "UY" Or a = "URETIM YERI") Then k(16) = c
+    Next c
+    AKSORA_SAP_TESHIS_YAZ "Proje | baþlýk (satýr " & h & ")" & hb
+    For i = 1 To 13
+        If i <> 3 And i <> 9 And i <> 11 And i <> 12 And i <> 13 And k(i) = 0 Then Err.Raise vbObjectError + 2608, , _
+            "/AKSORA_PRJ düzeninde gerekli sütun eksik (" & Choose(i, "Depo yeri", "Proje yapý planý öðesi", "PYP öðesi", "ÝTü", "Malzeme", _
+            "Malzeme kýsa metni", "Birim", "Miktar", "Tutar", "Kayýt tarihi", "Belge baþlýðý", "Malzeme belgesi", "Kalem") & "). Baþlýk:" & Left$(hb, 250)
+    Next i
+    ReDim sonuc(1 To application.Max(1, UBound(v, 1) - h), 1 To 15)
+    For r = h + 1 To UBound(v, 1)
+        mal = Y_KOD_NORM(v(r, k(5)))
+        If Len(mal) = 0 Or Left$(Trim$(CStr(v(r, k(5)))), 1) = "*" Or Y_NORM(CStr(v(r, k(5)))) = "MALZEME" Then GoTo Sonraki
+        If k(16) > 0 Then If Len(Trim$(CStr(v(r, k(16))))) > 0 And Trim$(CStr(v(r, k(16)))) <> uy Then atla = atla + 1: GoTo Sonraki
+        If Not ATIL_SAYI_DENE(v(r, k(8)), q) Then atla = atla + 1: GoTo Sonraki
+        tt = 0
+        If k(9) > 0 Then If Not ATIL_SAYI_DENE(v(r, k(9)), tt) Then tt = 0
+        tr = ATIL_TARIH(CStr(v(r, k(10))))
+        n = n + 1
+        sonuc(n, 1) = UCase$(Trim$(CStr(v(r, k(1)))))
+        sonuc(n, 2) = UCase$(Trim$(CStr(v(r, k(2)))))
+        If k(3) > 0 Then sonuc(n, 3) = UCase$(Trim$(CStr(v(r, k(3)))))
+        sonuc(n, 4) = Trim$(CStr(v(r, k(4))))
+        sonuc(n, 5) = mal
+        sonuc(n, 6) = Trim$(CStr(v(r, k(6))))
+        sonuc(n, 7) = Trim$(CStr(v(r, k(7))))
+        sonuc(n, 8) = q
+        sonuc(n, 9) = tt
+        sonuc(n, 10) = CDbl(tr)
+        If k(11) > 0 Then sonuc(n, 11) = Trim$(CStr(v(r, k(11))))
+        If k(12) > 0 Then sonuc(n, 12) = Trim$(CStr(v(r, k(12))))
+        If k(13) > 0 Then sonuc(n, 13) = Trim$(CStr(v(r, k(13))))
+        If k(14) > 0 Then sonuc(n, 14) = UCase$(Trim$(CStr(v(r, k(14)))))
+        If k(15) > 0 Then sonuc(n, 15) = Trim$(CStr(v(r, k(15))))
+Sonraki:
+    Next r
+    bilgi = "MB51: " & n & " hareket" & IIf(atla > 0, " (" & atla & " satýr atlandý)", "")
+    AKSORA_SAP_TESHIS_YAZ "Proje | " & bilgi
+    If n = 0 Then Exit Function
+    PRJ_MB51_COZ = PRJ_KIRP(sonuc, n)
+End Function
+
+Private Function PRJ_KIRP(ByRef a() As Variant, ByVal n As Long) As Variant
+    Dim b() As Variant, r As Long, c As Long
+    ReDim b(1 To n, 1 To UBound(a, 2))
+    For r = 1 To n
+        For c = 1 To UBound(a, 2): b(r, c) = a(r, c): Next c
+    Next r
+    PRJ_KIRP = b
+End Function

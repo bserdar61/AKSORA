@@ -803,6 +803,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Teminat Konum: her hücrede sağda ▼ (NumberFormat "@* "▼"", şekil yok); tıklayınca CommandBar açılır menü (AKSORA_KONUM; AKSORA_YATIRIM_KONUM_SECIM → AKSORA_YATIRIM_KONUM_SEC, satır bellekte mKonumSatir — hücreye yazmak her tıklamada tüm kitabı yeniden hesaplatıp titretiyordu; ONAR hazırsa atlar; menü bir kez kurulup yeniden kullanılır; menü kapanınca seçim aynı satır F sütununa alınır ki aynı Konum hücresine tekrar tıklanabilsin). Form kutusu ve doğrulama listesi kaldırıldı. T_CiktiListe '@*' biçimini '@' yapar. Değişimden sonra Y_TEMINAT_KAL.
 - Teminat Konum listesi: Y_KONUM_LISTE sabit "Depoda,Sahada,Kısmi"; Y_TEMINAT_LISTE_ONAR sayfa açılışında (AKSORA_BIRIM_OLAY) listeyi ve kilit açıklığını yeniden uygular.
 
+## PROJE MALZEME TAKİBİ (11.11.2026) — Y_HAKEDİŞ sayfası yerine
+- Kaynak: kullanıcının manuel Excel'i (PROJE ENVANTER keşif matrisi + SARF-2510 MB51 221 + D002/GR-1/GR-2/KET MB52). SAP akışı: 101 → HAVUZ.7050 (Q proje stoğu), 415 HAVUZ → proje PYP, 221 sarf (belge başlığı N.HAKEDİŞ). MB51 sütunu "Proje yapı planı öğesi" = satırın kendi PYP'si, "PYP öğesi" = karşı.
+- Doğrulama: tüm hareketli MB51'den yüklenici depo stokları 23.10 MB52 ile M122 75/75, M123 111/111, M124 89/89; malzeme İHTİYAÇ kullanıcı BO sütunu 167/167 (fx/prj_sim.py).
+- SAP: MB51 düzeni /AKSORA_PRJ (16 sütun, düz liste). AKSORA_PRJ_MB51_OKU (modAKSORA_ANALIZ): EPP ÜY, depo D002 + AKSORA_IL_YUKLENICI (Z hariç), yıl başı–bugün, hareket türü boş. Kayıt _Y_PRJ_<IL> (A1 PRJ_V1).
+- Keşif: AKSORA_YATIRIM_KESIF_YUKLE — matris (PYP satırı + ad satırı + malzeme sütunu) ya da tek proje (Y_PROJE_TARA + InputBox PYP). Kayıt _Y_KESIF (il,PYP,mal,miktar,tanım; "#il" satırı proje adı/dosya/tarih). Yüklenen projelerin eski keşfi değişir.
+- Hesap (Y_PRJ_VERI): proje stoğu = PYP hareket toplamı; havuz/serbest = MB52 depo stoğu − projelerde kalan; fiyat MB52 değer/miktar, yoksa MB51 tutar/miktar. Sayfa: kartlar, YÜKLENİCİ DURUMU, PROJELER (Durum EKSİK/FAZLA/TAMAM/BAŞLAMADI), MALZEME DETAYI (seçili proje: hakediş sütunları, en çok 6; tümü: İhtiyaç = keşif − sarf − projelerde − yüklenici havuzu − D002). Sürüm BX25=PRJ_V1. Panel düğmesi "PROJE / HAKEDİŞ".
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
