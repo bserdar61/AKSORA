@@ -800,7 +800,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## 11.11.2026 (taban up51)
 - Kapanışta çift "kaydedilsin mi": Workbook_BeforeClose sonunda ThisWorkbook.Saved = True (UYGULAMA_MODU_KAPAT dosyayı kirletiyordu).
 - Müşteri stok filtresinde sayfa atlaması: AKSORA_MUSTERI_GECIS_KORU artık her hedef sayfa için (2 sn içinde) stok sayfasına döndürür (önce yalnız M_MALZEME_ARA).
-- Teminat Konum: her hücrede sağda ▼ (NumberFormat "@* "▼"", şekil yok); tıklayınca CommandBar açılır menü (AKSORA_KONUM; AKSORA_YATIRIM_KONUM_SECIM → AKSORA_YATIRIM_KONUM_SEC, satır BX35). Form kutusu ve doğrulama listesi kaldırıldı. T_CiktiListe '@*' biçimini '@' yapar. Değişimden sonra Y_TEMINAT_KAL.
+- Teminat Konum: her hücrede sağda ▼ (NumberFormat "@* "▼"", şekil yok); tıklayınca CommandBar açılır menü (AKSORA_KONUM; AKSORA_YATIRIM_KONUM_SECIM → AKSORA_YATIRIM_KONUM_SEC, satır bellekte mKonumSatir — hücreye yazmak her tıklamada tüm kitabı yeniden hesaplatıp titretiyordu; ONAR hazırsa atlar). Form kutusu ve doğrulama listesi kaldırıldı. T_CiktiListe '@*' biçimini '@' yapar. Değişimden sonra Y_TEMINAT_KAL.
 - Teminat Konum listesi: Y_KONUM_LISTE sabit "Depoda,Sahada,Kısmi"; Y_TEMINAT_LISTE_ONAR sayfa açılışında (AKSORA_BIRIM_OLAY) listeyi ve kilit açıklığını yeniden uygular.
 
 ## Sıradaki işler

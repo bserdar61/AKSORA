@@ -2,6 +2,7 @@ Attribute VB_Name = "modAKSORA_BIRIM"
 Option Explicit
 
 Private Const HUB As String = "BIRIM SECIM"
+Private mKonumSatir As Long
 ' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutar ve uzerindeyse sarfi bolge mudurlugu yapar:
 ' ilceden beklenmez, "BÖLGE SARF EDECEK" gosterilir, ilce durumuna ve yonetim uyarilarina girmez.
 Private Const I_ISG_BOLGE_TL As Double = 12000#
@@ -3177,11 +3178,25 @@ Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
     If ws.Name <> "Y_TEMÝNAT" Then Exit Sub
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     If b < a Or Len(CStr(ws.Cells(a, 7).Value2)) = 0 Then Exit Sub
+    ' Zaten hazirsa dokunulmaz (her acilista sayfa yeniden bicimlenip titremesin).
+    If Left$(CStr(ws.Cells(a, 7).NumberFormat), 2) = "@*" And Left$(CStr(ws.Cells(b, 7).NumberFormat), 2) = "@*" _
+        And Not ws.Cells(a, 7).Locked Then
+        If ws.Shapes.Count > 0 Then
+            Dim s As Shape
+            Set s = Nothing: Set s = ws.Shapes("Y_TM_KONUM")
+            If s Is Nothing Then Exit Sub
+        Else
+            Exit Sub
+        End If
+    End If
+    application.ScreenUpdating = False
     ws.Unprotect ""
+    ws.Shapes("Y_TM_KONUM").Delete
     Y_KONUM_LISTE ws.Range(ws.Cells(a, 7), ws.Cells(b, 7))
     ws.Range(ws.Cells(a, 7), ws.Cells(b, 8)).Locked = False
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
+    application.ScreenUpdating = True
 End Sub
 
 ' Konum secimi: Konum hucresine tiklayinca filtre listesi gibi kucuk menu (Depoda / Sahada / Kismi).
@@ -3189,15 +3204,13 @@ End Sub
 Public Sub AKSORA_YATIRIM_KONUM_SECIM(ByVal ws As Worksheet, ByVal hedef As Range)
     Dim a As Long, b As Long, cb As Object, c As Object, x As Variant, s As Shape
     On Error Resume Next
-    ' Onceki surumun acilir kutusu kaldirilir.
-    Set s = ws.Shapes("Y_TM_KONUM")
-    If Not s Is Nothing Then ws.Unprotect "": s.Delete: ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     On Error GoTo 0
     If hedef.Cells.Count <> 1 Then Exit Sub
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     If hedef.Column <> 7 Or hedef.Row < a Or hedef.Row > b Then Exit Sub
     If Len(CStr(ws.Cells(hedef.Row, 1).Value2)) = 0 Then Exit Sub
-    ws.Range("BX35").Value2 = hedef.Row
+    ' Satir bellekte tutulur (hucreye yazmak her tiklamada butun kitabi yeniden hesaplatiyordu).
+    mKonumSatir = hedef.Row
     On Error Resume Next
     application.CommandBars("AKSORA_KONUM").Delete
     Set cb = application.CommandBars.Add(Name:="AKSORA_KONUM", Position:=5, Temporary:=True)
@@ -3216,7 +3229,7 @@ Public Sub AKSORA_YATIRIM_KONUM_SEC()
     On Error GoTo Son
     Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
     t = CStr(application.CommandBars.ActionControl.Parameter)
-    r = CLng(Val(CStr(ws.Range("BX35").Value2)))
+    r = mKonumSatir
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     If r < a Or r > b Then Exit Sub
     If Len(t) = 0 Or t = CStr(ws.Cells(r, 7).Value2) Then Exit Sub
