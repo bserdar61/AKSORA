@@ -4623,7 +4623,7 @@ Public Function AKSORA_PRJ_ME2N_OKU(ByVal il As String, ByRef bilgi As String) A
         End If
     Next x
     bilgi = "ME2N: " & n & " açýk sipariþ kalemi"
-    If n > 0 And td = 0 Then bilgi = bilgi & " (teslim tarihi sütunu yok: ME2N /AKSORA düzenine 'Teslimat tarihi' ekleyin)"
+    If n > 0 And td = 0 Then bilgi = bilgi & " (teslim tarihi listede yok: sipariþ tarihi gösterilir)"
     AKSORA_SAP_TESHIS_YAZ "Proje | " & bilgi
     If n = 0 Then Exit Function
     AKSORA_PRJ_ME2N_OKU = PRJ_KIRP(v, n)

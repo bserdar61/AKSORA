@@ -24,6 +24,7 @@ Private mPrjBilgi As String
 Private mKesBilgi As String
 Private mSD As Object
 Private mSDt As Object
+Private mSDb As Object
 Private mSO As Object
 Private mSOd As Object
 Private mSN As Object
@@ -9902,7 +9903,7 @@ Private Sub Y_PRJ_VERI(ByVal il As String)
     ' Acik siparisler (ME2N): D002 (yatirim deposu) miktari ve en yakin teslim tarihi; diger depolar yalniz not icin.
     Set mSD = CreateObject("Scripting.Dictionary"): Set mSDt = CreateObject("Scripting.Dictionary")
     Set mSO = CreateObject("Scripting.Dictionary"): Set mSOd = CreateObject("Scripting.Dictionary")
-    Set mSN = CreateObject("Scripting.Dictionary")
+    Set mSN = CreateObject("Scripting.Dictionary"): Set mSDb = CreateObject("Scripting.Dictionary")
     mSasBilgi = "Açýk sipariþ okunmadý"
     Set g = Nothing
     On Error Resume Next
@@ -9929,6 +9930,16 @@ Private Sub Y_PRJ_VERI(ByVal il As String)
                                     mSDt(m) = td
                                 ElseIf td < CDbl(mSDt(m)) Then
                                     mSDt(m) = td
+                                End If
+                            End If
+                            ' Teslim tarihi yoksa en eski siparis (belge) tarihi
+                            If IsNumeric(v(r, 9)) Then
+                                If CDbl(v(r, 9)) > 0 Then
+                                    If Not mSDb.Exists(m) Then
+                                        mSDb(m) = CDbl(v(r, 9))
+                                    ElseIf CDbl(v(r, 9)) < CDbl(mSDb(m)) Then
+                                        mSDb(m) = CDbl(v(r, 9))
+                                    End If
                                 End If
                             End If
                             nt = Y_PRJ_METIN_NORM(CStr(v(r, 5)))
@@ -10003,7 +10014,13 @@ End Function
 ' En yakin teslim tarihi metni; tarihi gecmisse gecikme suresiyle.
 Private Function Y_PRJ_TESLIM(ByVal m As String) As String
     Dim td As Double, g As Long
-    If Not mSDt.Exists(m) Then Exit Function
+    If Not mSDt.Exists(m) Then
+        If mSDb.Exists(m) Then
+            td = CDbl(mSDb(m)): g = CLng(CDbl(Date) - td)
+            Y_PRJ_TESLIM = " (sipariþ " & Format$(CDate(td), "dd.mm.yyyy") & IIf(g > 0, ", " & Y_PRJ_GUN(g) & " önce", "") & ")"
+        End If
+        Exit Function
+    End If
     td = CDbl(mSDt(m))
     If td < CDbl(Date) Then
         g = CLng(CDbl(Date) - td)
