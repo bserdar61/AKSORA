@@ -53,7 +53,7 @@ def derle(temel, klasor, cikti):
     if eksik:
         raise SystemExit('kaynak yok: ' + ', '.join(eksik))
     akis['dir']['veri'] = ovba.compress(vbadir.build(recs))
-    akis['_VBA_PROJECT']['veri'] = struct.pack('<HHBH', 0x61CC, 0xFFFF, 0, 0)
+    akis['_VBA_PROJECT']['veri'] = struct.pack('<HHBH', 0x61CC, 0xFFFF, 0, 3)
     vba['cocuk'] = [c for c in vba['cocuk'] if not c['ad'].startswith('__SRP_')]
     yeni = os.path.join(tmp, 'vbaProject.bin')
     cfb.write(kok, yeni)

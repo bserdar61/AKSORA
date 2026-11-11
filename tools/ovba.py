@@ -58,8 +58,8 @@ def _chunk(src):
                 key = bytes(src[i:i + 3])
                 cands = table.get(key)
                 if cands:
-                    maxoff = 1 << (16 - bc)
-                    for c in reversed(cands[-64:]):
+                    maxoff = 1 << bc
+                    for c in reversed(cands[-256:]):
                         off = i - c
                         if off > maxoff:
                             break

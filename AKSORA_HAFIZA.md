@@ -17,6 +17,7 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   2) Düzenle (tools/ed.py, scratch dizininden: F('modX').R(eski,yeni).save()), denetim: tools/vbalint.py, decl_check, xmod_check, proc_size, dup_check (scratch dizininden).
   3) `python3 tools/vbakod.py derle <son xlsm> <scratch>/raw final/AKSORA.xlsm` (offset 0, _VBA_PROJECT 0xFFFF → Excel kaynaktan derler; geri okuma doğrulanır).
 - Scratchpad oturum sıfırlanınca silinir; araçlar artık depoda.
+- DİKKAT: sıkıştırmada sıkıştırılmamış parça (header bit15=0) olmamalı; VBE 'error occurred while loading' verir. Ofset biti = bitcount (üst bitler), maxoff = 1<<bitcount. _VBA_PROJECT = CC61 FFFF 00 0300. Doğrulama: oletools decompress_stream ile karşılaştır.
 - Yeni modül eklenmez; yeni kod mevcut modüllere eklenir.
 
 ## Kilitli şablonlar
