@@ -4554,3 +4554,88 @@ Private Function PRJ_KIRP(ByRef a() As Variant, ByVal n As Long) As Variant
     Next r
     PRJ_KIRP = b
 End Function
+
+' ==================== PROJE: ACIK SIPARISLER (ME2N) ====================
+' Ilin EPP uretim yerinde teslim alinmamis siparisler (ME2N, WE101). Gunluk "acik SAS" mailinin SAP'den dogrudan hali.
+' Donus (n, 1 To 12): belge, kalem, depo, malzeme, tanim, acik miktar, birim, teslim tarihi, belge tarihi, satici, net fiyat, PB.
+Public Function AKSORA_PRJ_ME2N_OKU(ByVal il As String, ByRef bilgi As String) As Variant
+    Dim ses As Object, msg As String, uy As String, g As Object, kol As Object, c As Collection, x As Variant, an As Variant
+    Dim v() As Variant, n As Long, q As Double, fy As Double, sb As String, tip As String, td As Long
+    an = Array("BELGE", "KALEM", "DEPO", "MAL", "TANIM", "ACIK", "BIRIM", "TESLIM", "TARIH", "KISI", "FIYAT", "PB")
+    uy = AKSORA_IL_TESIS(il, "EPP")
+    Set ses = SAP_SESSION_AL("EPP", msg)
+    If ses Is Nothing Then Err.Raise vbObjectError + 2621, , "SAP EPP oturumu bulunamadý. " & msg
+    SA_TX_AC ses, "ME2N", "wnd[0]/usr/ctxtLISTU", "EPP"
+    SA_ALAN_BOSALT ses, "ctxtEN_EBELN-LOW": SA_ALAN_BOSALT ses, "ctxtEN_EBELN-HIGH"
+    SA_ALAN_BOSALT ses, "ctxtEM_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtEM_MATNR-HIGH"
+    SA_ALAN_BOSALT ses, "ctxtS_MATNR-LOW": SA_ALAN_BOSALT ses, "ctxtS_MATNR-HIGH"
+    SA_YAZ ses, "wnd[0]/usr/ctxtLISTU", "ALV", "ME2N proje"
+    ses.FindById("wnd[0]").SendVKey 0
+    SA_YAZ ses, "wnd[0]/usr/ctxtSELPA-LOW", "WE101", "ME2N proje"
+    SA_YAZ ses, "wnd[0]/usr/ctxtS_WERKS-LOW", uy, "ME2N proje"
+    SA_ALAN_BOSALT ses, "ctxtS_WERKS-HIGH"
+    SA_BAS ses, "wnd[0]/tbar[1]/btn[8]", "ME2N proje"
+    Set g = SA_GRID_BUL(ses)
+    If g Is Nothing Then
+        On Error Resume Next
+        sb = ses.FindById("wnd[0]/sbar").Text: tip = ses.FindById("wnd[0]/sbar").MessageType
+        On Error GoTo 0
+        AKSORA_SAP_TESHIS_YAZ "ME2N proje " & uy & " liste yok: " & sb
+        If tip = "E" Or tip = "A" Then Err.Raise vbObjectError + 2622, , "ME2N: " & sb
+        bilgi = "ME2N: açýk sipariþ yok"
+        Exit Function
+    End If
+    If Not SA_KOLON_VAR(g, "EBELN") Then
+        If SA_DUZEN_YUKLE(ses, g, "/AKSORA") Then Set g = SA_GRID_BUL(ses)
+    End If
+    Set kol = SA_KOLONLAR(g, Array( _
+        Array("BELGE", "EBELN", "SATINALMA BELGESI|SAS"), Array("KALEM", "EBELP", "KALEM"), _
+        Array("DEPO", "LGORT", "DPYR|DEPO YERI"), Array("MAL", "EMATN|MATNR", "MALZEME"), Array("TANIM", "TXZ01", "KISA METIN"), _
+        Array("ACIK", "MGLIEF", "TSL.YAPILACAK|TESLIMATI YAPILACAK|TESLIMATI YAPILACAK (MIKTAR)|TESLIM EDILECEK"), _
+        Array("BIRIM", "MEINS", "SOB|SAS OLCU BIRIMI"), _
+        Array("TESLIM", "EINDT|SLFDT", "TESLIMAT TARIHI|TESLIM TARIHI|TSL.TARIHI|TESLIMAT TRH."), _
+        Array("TARIH", "BEDAT", "BELGE TARIHI"), Array("KISI", "SUPERFIELD|NAME1|LIFNR", "SATICI/TESLIMAT YAPAN URT.YERI|SATICI"), _
+        Array("FIYAT", "NETPR", "NET FIYAT"), Array("PB", "WAERS", "PB|PARA BIRIMI")), "ME2N proje")
+    If Len(kol("MAL")) = 0 Or Len(kol("ACIK")) = 0 Then _
+        Err.Raise vbObjectError + 2623, , "ME2N listesinde malzeme / teslimatý yapýlacak miktar sütunu bulunamadý (teþhis dosyasýnda sütunlar yazýlý)."
+    Set c = SA_IZGARA_OKU(g, kol, an)
+    On Error Resume Next
+    ses.SendCommand "/n"
+    On Error GoTo 0
+    ReDim v(1 To application.Max(1, c.Count), 1 To 12)
+    For Each x In c
+        If ATIL_SAYI_DENE(x(5), q) Then
+            If q > 0.0000001 Then
+                n = n + 1
+                v(n, 1) = x(0): v(n, 2) = x(1): v(n, 3) = UCase$(x(2)): v(n, 4) = Y_KOD_NORM(x(3)): v(n, 5) = x(4)
+                v(n, 6) = q: v(n, 7) = x(6): v(n, 8) = PRJ_TARIH(x(7)): v(n, 9) = PRJ_TARIH(x(8)): v(n, 10) = x(9)
+                If ATIL_SAYI_DENE(x(10), fy) Then v(n, 11) = fy Else v(n, 11) = 0#
+                v(n, 12) = UCase$(x(11))
+                If v(n, 8) > 0 Then td = td + 1
+            End If
+        End If
+    Next x
+    bilgi = "ME2N: " & n & " açýk sipariþ kalemi"
+    If n > 0 And td = 0 Then bilgi = bilgi & " (teslim tarihi sütunu yok: ME2N /AKSORA düzenine 'Teslimat tarihi' ekleyin)"
+    AKSORA_SAP_TESHIS_YAZ "Proje | " & bilgi
+    If n = 0 Then Exit Function
+    AKSORA_PRJ_ME2N_OKU = PRJ_KIRP(v, n)
+End Function
+
+' Tarih metni (gg.aa.yyyy / yyyy-aa-gg / yyyyaagg) -> seri sayi; gelecek tarihler de gecerli. Gecersiz: 0.
+Private Function PRJ_TARIH(ByVal t As String) As Double
+    Dim g As Long, a As Long, y As Long
+    t = Trim$(t)
+    If t Like "##.##.####" Or t Like "##/##/####" Or t Like "##-##-####" Then
+        g = CLng(Left$(t, 2)): a = CLng(Mid$(t, 4, 2)): y = CLng(Mid$(t, 7, 4))
+    ElseIf t Like "####-##-##" Or t Like "####.##.##" Or t Like "####/##/##" Then
+        y = CLng(Left$(t, 4)): a = CLng(Mid$(t, 6, 2)): g = CLng(Mid$(t, 9, 2))
+    ElseIf t Like "########" Then
+        y = CLng(Left$(t, 4)): a = CLng(Mid$(t, 5, 2)): g = CLng(Right$(t, 2))
+    Else
+        Exit Function
+    End If
+    If y < 1990 Or y > 2100 Or a < 1 Or a > 12 Or g < 1 Or g > 31 Then Exit Function
+    If Month(DateSerial(y, a, g)) <> a Then Exit Function
+    PRJ_TARIH = CDbl(DateSerial(y, a, g))
+End Function

@@ -22,6 +22,12 @@ Private mPDp As Object
 Private mPL As Collection
 Private mPrjBilgi As String
 Private mKesBilgi As String
+Private mSD As Object
+Private mSDt As Object
+Private mSO As Object
+Private mSOd As Object
+Private mSN As Object
+Private mSasBilgi As String
 ' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutar ve uzerindeyse sarfi bolge mudurlugu yapar:
 ' ilceden beklenmez, "BÖLGE SARF EDECEK" gosterilir, ilce durumuna ve yonetim uyarilarina girmez.
 Private Const I_ISG_BOLGE_TL As Double = 12000#
@@ -3871,7 +3877,7 @@ Private Sub Y_ALT_SAYFALAR(ByVal il As String)
     If Err.Number <> 0 Then Y_SERIT "Teminat sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
     ' Hakedis sayfasi yalniz il veya tasarim surumu degisince yeniden kurulur (girisler korunur).
     With ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
-        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V1" Then
+        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V2" Then
             Y_HAKEDIS_KUR il
         End If
     End With
@@ -9790,7 +9796,7 @@ End Function
 Private Sub Y_PRJ_VERI(ByVal il As String)
     Dim g As Worksheet, v As Variant, r As Long, son As Long, k As String, m As String, w As String, dp As String
     Dim q As Double, i As Long, sh As Worksheet, uy As String, sv As Variant, fs As Object, fq As Object, x As Variant
-    Dim hn As Long, a() As String, j As Long, tmp As String
+    Dim hn As Long, a() As String, j As Long, tmp As String, nS As Long, nG As Long, td As Double, nt As String
     Set mPK = CreateObject("Scripting.Dictionary"): Set mPAd = CreateObject("Scripting.Dictionary")
     Set mPT = CreateObject("Scripting.Dictionary"): Set mPS = CreateObject("Scripting.Dictionary")
     Set mPH = CreateObject("Scripting.Dictionary"): Set mPHN = CreateObject("Scripting.Dictionary")
@@ -9893,6 +9899,60 @@ Private Sub Y_PRJ_VERI(ByVal il As String)
             If fq(x) <> 0 Then mPF(m) = fs(x) / fq(x)
         End If
     Next x
+    ' Acik siparisler (ME2N): D002 (yatirim deposu) miktari ve en yakin teslim tarihi; diger depolar yalniz not icin.
+    Set mSD = CreateObject("Scripting.Dictionary"): Set mSDt = CreateObject("Scripting.Dictionary")
+    Set mSO = CreateObject("Scripting.Dictionary"): Set mSOd = CreateObject("Scripting.Dictionary")
+    Set mSN = CreateObject("Scripting.Dictionary")
+    mSasBilgi = "Açýk sipariþ okunmadý"
+    Set g = Nothing
+    On Error Resume Next
+    Set g = ThisWorkbook.Worksheets("_Y_SAS_" & il)
+    On Error GoTo 0
+    If Not g Is Nothing Then
+        If CStr(g.Range("A1").Value2) = "SAS_V1" Then
+            son = AKSORA_SON_SATIR(g, 4)
+            If son >= 2 Then
+                v = g.Range("A2:L" & son).Value2
+                For r = 1 To UBound(v, 1)
+                    m = CStr(v(r, 4)): dp = UCase$(Trim$(CStr(v(r, 3))))
+                    q = 0
+                    If IsNumeric(v(r, 6)) Then q = CDbl(v(r, 6))
+                    If Len(m) > 0 And q > 0 Then
+                        If dp = "D002" Then
+                            nS = nS + 1
+                            Y_PEKLE mSD, m, q
+                            td = 0
+                            If IsNumeric(v(r, 8)) Then td = CDbl(v(r, 8))
+                            If td > 0 Then
+                                If td < CDbl(Date) Then nG = nG + 1
+                                If Not mSDt.Exists(m) Then
+                                    mSDt(m) = td
+                                ElseIf td < CDbl(mSDt(m)) Then
+                                    mSDt(m) = td
+                                End If
+                            End If
+                            nt = Y_PRJ_METIN_NORM(CStr(v(r, 5)))
+                            If Len(nt) > 0 Then Y_PEKLE mSN, nt & "|" & m, q
+                        Else
+                            Y_PEKLE mSO, m, q
+                            If Not mSOd.Exists(m) Then
+                                mSOd(m) = dp
+                            ElseIf InStr(CStr(mSOd(m)), dp) = 0 Then
+                                mSOd(m) = CStr(mSOd(m)) & "/" & dp
+                            End If
+                        End If
+                        ' Stokta / MB51'de fiyati olmayan malzemede sipariþ net fiyati (TL)
+                        If Not mPF.Exists(m) And IsNumeric(v(r, 11)) Then
+                            If CDbl(v(r, 11)) > 0 And (CStr(v(r, 12)) = "TRY" Or CStr(v(r, 12)) = "TL") Then mPF(m) = CDbl(v(r, 11))
+                        End If
+                        Y_PRJ_TANIM m, CStr(v(r, 5)), CStr(v(r, 7))
+                    End If
+                Next r
+            End If
+            mSasBilgi = "Açýk sipariþ (ME2N): " & Format$(CDate(g.Range("B1").Value2), "dd.mm.yyyy hh:nn") & _
+                "  •  D002: " & nS & " kalem" & IIf(nG > 0, ", " & nG & " gecikmiþ", "")
+        End If
+    End If
     ' Projeler (PYP sirasi) ve depo: en cok hareket gordugu yuklenici deposu
     Set mPL = New Collection
     If mPM.Count > 0 Then
@@ -9928,6 +9988,78 @@ Private Sub Y_PRJ_TANIM(ByVal m As String, ByVal tanim As String, ByVal birim As
     If Len(CStr(t(1))) = 0 Then t(1) = birim
     mPT(m) = t
 End Sub
+
+' Kod esleme icin tanim: harf ve rakam disindakiler atilir ("ARMATUR,LED,TEDAS MYD,SINIF 14" = "ARMATUR LED TEDAS MYD/SINIF 14").
+Private Function Y_PRJ_METIN_NORM(ByVal t As String) As String
+    Dim i As Long, ch As String
+    t = Y_NORM(t)
+    For i = 1 To Len(t)
+        ch = Mid$(t, i, 1)
+        If ch Like "[A-Z0-9]" Then Y_PRJ_METIN_NORM = Y_PRJ_METIN_NORM & ch
+    Next i
+    If Len(Y_PRJ_METIN_NORM) < 8 Then Y_PRJ_METIN_NORM = vbNullString
+End Function
+
+' En yakin teslim tarihi metni; tarihi gecmisse gecikme suresiyle.
+Private Function Y_PRJ_TESLIM(ByVal m As String) As String
+    Dim td As Double, g As Long
+    If Not mSDt.Exists(m) Then Exit Function
+    td = CDbl(mSDt(m))
+    If td < CDbl(Date) Then
+        g = CLng(CDbl(Date) - td)
+        Y_PRJ_TESLIM = " (teslim " & Format$(CDate(td), "dd.mm.yyyy") & ", " & Y_PRJ_GUN(g) & " GECÝKMÝÞ)"
+    Else
+        Y_PRJ_TESLIM = " (teslim " & Format$(CDate(td), "dd.mm.yyyy") & ")"
+    End If
+End Function
+
+Private Function Y_PRJ_GUN(ByVal g As Long) As String
+    If g < 30 Then Y_PRJ_GUN = g & " gün": Exit Function
+    Y_PRJ_GUN = (g \ 30) & " ay" & IIf(g Mod 30 > 0, " " & (g Mod 30) & " gün", "")
+End Function
+
+' Ayni tanimla baska kodla D002'ye siparis (kesif eski kodu, siparis yeni kodu kullaniyor olabilir).
+Private Function Y_PRJ_BENZER(ByVal m As String) As String
+    Dim t As String, x As Variant, k As String
+    If Not mPT.Exists(m) Then Exit Function
+    t = Y_PRJ_METIN_NORM(CStr(mPT(m)(0)))
+    If Len(t) = 0 Then Exit Function
+    For Each x In mSN.keys
+        If Left$(CStr(x), Len(t) + 1) = t & "|" Then
+            k = Mid$(CStr(x), Len(t) + 2)
+            If k <> m Then Y_PRJ_BENZER = "  •  ayný malzeme baþka kodla sipariþte: " & k & " (" & Y_PRJ_MT(CDbl(mSN(x))) & ")": Exit Function
+        End If
+    Next x
+End Function
+
+' Tum projeler: ihtiyac (siparis oncesi) ve D002 acik siparisine gore tek eylem.
+Private Function Y_PRJ_NOT(ByVal m As String, ByVal ih0 As Double, ByVal sq As Double) As String
+    Dim ih As Double, t As String
+    ih = ih0 - sq
+    If ih0 > 0.0000001 Then
+        If sq <= 0.0000001 Then
+            t = "Satýn al: " & Y_PRJ_MT(ih0)
+            t = t & Y_PRJ_BENZER(m)
+            If Y_PD(mSO, m) > 0 Then t = t & "  •  " & CStr(mSOd(m)) & " deposuna sipariþte: " & Y_PRJ_MT(Y_PD(mSO, m))
+        ElseIf ih > 0.0000001 Then
+            t = "Satýn al: " & Y_PRJ_MT(ih) & "  •  sipariþte " & Y_PRJ_MT(sq) & Y_PRJ_TESLIM(m)
+        Else
+            t = "Sipariþte: " & Y_PRJ_MT(sq) & Y_PRJ_TESLIM(m)
+            If -ih > 0.0000001 Then t = t & "  •  " & Y_PRJ_MT(-ih) & " fazla sipariþ"
+        End If
+    ElseIf sq > 0.0000001 Then
+        If ih0 < -0.0000001 Then
+            t = "Sipariþ gereksiz: " & Y_PRJ_MT(sq) & " (stokta zaten " & Y_PRJ_MT(-ih0) & " fazla)  •  iptal / azalt"
+        Else
+            t = "Sipariþ gereksiz: " & Y_PRJ_MT(sq) & " (ihtiyaç karþýlandý)  •  iptal / azalt"
+        End If
+    ElseIf ih0 < -0.0000001 Then
+        t = "Fazla: " & Y_PRJ_MT(-ih0) & " (stokta)"
+    Else
+        t = "Tamam"
+    End If
+    Y_PRJ_NOT = t
+End Function
 
 Private Function Y_PRJ_F(ByVal m As String) As Double
     If mPF.Exists(m) Then Y_PRJ_F = CDbl(mPF(m))
@@ -10004,7 +10136,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     liste.ControlFormat.Value = p
     liste.ControlFormat.DropDownLines = application.Min(30, i)
     liste.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_PRJ_SEC")
-    ws.Range("A9").Value2 = mPrjBilgi & "     |     " & mKesBilgi & "     |     Stok: yatýrým ve yüklenici stoklarý (MB52)"
+    ws.Range("A9").Value2 = mPrjBilgi & "     |     " & mKesBilgi & "     |     " & mSasBilgi & "     |     Stok: yatýrým ve yüklenici stoklarý (MB52)"
     With ws.Range("A9").Font
         .Name = "Aptos": .Size = 9: .Italic = True: .Color = RGB(100, 116, 139)
     End With
@@ -10053,7 +10185,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ws.PageSetup.Zoom = False: ws.PageSetup.FitToPagesWide = 1: ws.PageSetup.FitToPagesTall = False
     ws.PageSetup.PrintArea = "$A$1:$O$" & r
     On Error GoTo 0
-    ws.Range("BX25").Value2 = "PRJ_V1"
+    ws.Range("BX25").Value2 = "PRJ_V2"
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
 End Sub
@@ -10216,7 +10348,7 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
     Dim mats As Object, x As Variant, m As String, w As Variant, n As Long, a1 As Long, blok() As Variant, hk() As Long, nh As Long
     Dim i As Long, j As Long, c As Long, k As Double, s As Double, p As Double, f As Double, ih As Double, bas As Variant
     Dim yuk As Object, hv As Double, d2 As Double, an() As Double, sira() As Long, tmp As Long, tt As Double, nc As Long
-    Dim dp As String, ad As String, dg As Double, rr As Range, nt As String, tn As Variant
+    Dim dp As String, ad As String, dg As Double, rr As Range, nt As String, tn As Variant, sq As Double
     Set mats = CreateObject("Scripting.Dictionary")
     If Len(secim) > 0 Then
         For Each x In mPM(secim).keys: mats(CStr(x)) = True: Next x
@@ -10253,10 +10385,10 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
         For Each w In mPL
             For Each x In mPM(CStr(w)).keys: mats(CStr(x)) = True: Next x
         Next w
-        nc = 11
+        nc = 12
         bas = Array("Malzeme", "Malzeme Tanýmý", "Birim", "Keþif", "Sarf", "Projelerde Kalan", "Yüklenici Havuz", "D002 Stok", _
-            "Ýhtiyaç (+/-)", "Ýhtiyaç Tutarý", "Ne Yapýlmalý")
-        Y_BOLUM ws, r, "MALZEME ÝHTÝYACI  –  TÜM PROJELER", "Ýhtiyaç = keþif - sarf - projelerde - yüklenici havuzu - D002.  Artý: satýn al, eksi: fazla.", nc
+            "Açýk Sipariþ (D002)", "Ýhtiyaç (+/-)", "Ýhtiyaç Tutarý", "Ne Yapýlmalý")
+        Y_BOLUM ws, r, "MALZEME ÝHTÝYACI  –  TÜM PROJELER", "Ýhtiyaç = keþif - sarf - projelerde - yüklenici havuzu - D002 - açýk sipariþ.  Artý: satýn al, eksi: fazla.", nc
         Set yuk = CreateObject("Scripting.Dictionary")
         For Each x In mDS.keys
             dg = InStr(CStr(x), "|")
@@ -10296,6 +10428,7 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
                 Else
                     nt = "Satýn al: " & Y_PRJ_MT(ih)
                 End If
+                If Left$(nt, 5) <> "Havuz" And Left$(nt, 4) <> "D002" And Y_PD(mSD, m) > 0 Then nt = nt & "  •  D002'ye sipariþte " & Y_PRJ_MT(Y_PD(mSD, m)) & Y_PRJ_TESLIM(m)
                 an(n) = 3000000000# + ih * f
             ElseIf ih < -0.0000001 Then
                 If p > 0.0000001 Then
@@ -10316,15 +10449,22 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
             hv = 0
             For Each w In yuk.keys: hv = hv + Y_PRJ_HAVUZ(CStr(w), m): Next w
             d2 = Y_PD(mDS, "D002|" & m)
+            sq = Y_PD(mSD, m)
             ih = k - s - p - hv - d2
-            blok(n, 4) = k: blok(n, 5) = s: blok(n, 6) = p: blok(n, 7) = hv: blok(n, 8) = d2: blok(n, 9) = ih
-            blok(n, 10) = Round(ih * f, 2)
-            If ih > 0.0000001 Then
-                blok(n, 11) = "Satýn al: " & Y_PRJ_MT(ih): an(n) = 3000000000# + ih * f
+            blok(n, 4) = k: blok(n, 5) = s: blok(n, 6) = p: blok(n, 7) = hv: blok(n, 8) = d2: blok(n, 9) = sq: blok(n, 10) = ih - sq
+            blok(n, 11) = Round((ih - sq) * f, 2)
+            blok(n, 12) = Y_PRJ_NOT(m, ih, sq)
+            ' Sira: satin al (tutar), sipariste, gereksiz siparis, fazla, tamam
+            If ih - sq > 0.0000001 Then
+                an(n) = 4000000000# + (ih - sq) * f
+            ElseIf ih > 0.0000001 Then
+                an(n) = 3000000000# + ih * f
+            ElseIf sq > 0.0000001 Then
+                an(n) = 2000000000# + sq * f
             ElseIf ih < -0.0000001 Then
-                blok(n, 11) = "Fazla: " & Y_PRJ_MT(-ih) & " (stokta)": an(n) = 1000000000# - ih * f
+                an(n) = 1000000000# - ih * f
             Else
-                blok(n, 11) = "Tamam": an(n) = 0
+                an(n) = 0
             End If
         End If
     Next x
@@ -10345,8 +10485,8 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
     If Len(secim) > 0 Then
         Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, nc - 1))
     Else
-        Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, 9))
-        ws.Range(ws.Cells(a1, 10), ws.Cells(a1 + n - 1, 10)).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
+        Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, 10))
+        ws.Range(ws.Cells(a1, 11), ws.Cells(a1 + n - 1, 11)).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
     End If
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 3)).HorizontalAlignment = xlCenter
@@ -10373,6 +10513,15 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
     End With
     With rr.FormatConditions.Add(Type:=xlTextString, String:="D002", TextOperator:=xlBeginsWith)
         .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Sipariþte", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Sipariþ gereksiz", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(126, 34, 206): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="GECÝKMÝÞ", TextOperator:=xlContains)
+        .Interior.Color = RGB(254, 243, 199)
     End With
     ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 + n - 1, nc)).AutoFilter
     Y_PRJ_DETAY_YAZ = a1 + n - 1
@@ -10404,18 +10553,28 @@ End Sub
 ' SAP MB51 (/AKSORA_PRJ) okunur, _Y_PRJ_<IL> kaydina yazilir, sayfa yenilenir.
 Public Sub AKSORA_YATIRIM_PRJ_SAP()
     Dim il As String, v As Variant, bilgi As String, kart As Boolean, g As Worksheet, n As Long, ev As Boolean
+    Dim sv As Variant, sBilgi As String, hN As Long, hS As String
     If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
     If AKSORA_V11_MESGUL Then Exit Sub
     il = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_HAKEDÝÞ").Range("BX22").Value2)))
     If Len(il) = 0 Then il = Y_AKTIF_IL()
     If MsgBox(Y_IL_ADI(il) & " projeleri için SAP MB51 okunacak:" & vbCrLf & vbCrLf & _
         "Üretim yeri " & AKSORA_IL_TESIS(il, "EPP") & "  •  D002 ve yüklenici depolarý  •  " & Format$(DateSerial(Year(Date), 1, 1), "dd.mm.yyyy") & _
-        " - bugün  •  bütün hareketler  •  düzen /AKSORA_PRJ" & vbCrLf & vbCrLf & "SAP EPP oturumu açýk olmalý. Devam edilsin mi?", _
+        " - bugün  •  bütün hareketler  •  düzen /AKSORA_PRJ" & vbCrLf & _
+        "Ardýndan açýk sipariþler (ME2N, teslim alýnmamýþ) okunur." & vbCrLf & vbCrLf & "SAP EPP oturumu açýk olmalý. Devam edilsin mi?", _
         vbQuestion + vbYesNo, "AKSORA | PROJE MALZEME TAKÝBÝ") <> vbYes Then Exit Sub
     ev = application.EnableEvents
     kart = AKSORA_BEKLE_AC("AKSORA  |  PROJE MALZEME TAKÝBÝ", "SAP MB51 okunuyor...", 0.15)
     On Error GoTo Hata
     v = AKSORA_PRJ_MB51_OKU(il, bilgi)
+    ' Acik siparisler: okunamazsa onceki kayit korunur, MB51 sonucu yine kaydedilir.
+    If kart Then AKSORA_BEKLE_ILERLE 0.6, "Açýk sipariþler okunuyor (ME2N)..."
+    On Error Resume Next
+    sv = AKSORA_PRJ_ME2N_OKU(il, sBilgi)
+    hN = Err.Number: hS = Err.Description
+    Err.Clear
+    On Error GoTo Hata
+    If hN <> 0 Then sBilgi = "ME2N okunamadý, önceki kayýt korundu: " & hS
     If kart Then AKSORA_BEKLE_ILERLE 0.8, "Kaydediliyor ve hesaplanýyor..."
     application.EnableEvents = False: application.ScreenUpdating = False
     Set g = Y_KAYIT_SAYFA("_Y_PRJ_" & il)
@@ -10427,10 +10586,24 @@ Public Sub AKSORA_YATIRIM_PRJ_SAP()
         g.Range("K2:O" & n + 1).NumberFormat = "@"
         g.Range("A2").Resize(n, 15).Value2 = v
     End If
+    If hN = 0 Then
+        Set g = Y_KAYIT_SAYFA("_Y_SAS_" & il)
+        g.Cells.Clear
+        n = 0
+        If IsArray(sv) Then n = UBound(sv, 1)
+        g.Range("A1:C1").Value2 = Array("SAS_V1", CDbl(Now), n)
+        If n > 0 Then
+            g.Range("A2:E" & n + 1).NumberFormat = "@"
+            g.Range("G2:G" & n + 1).NumberFormat = "@"
+            g.Range("J2:J" & n + 1).NumberFormat = "@"
+            g.Range("L2:L" & n + 1).NumberFormat = "@"
+            g.Range("A2").Resize(n, 12).Value2 = sv
+        End If
+    End If
     Y_HAKEDIS_KUR il
     application.EnableEvents = ev: application.ScreenUpdating = True
     If kart Then AKSORA_BEKLE_KAPAT
-    MsgBox "Proje hareketleri okundu." & vbCrLf & vbCrLf & bilgi, vbInformation, "AKSORA | PROJE MALZEME TAKÝBÝ"
+    MsgBox "Proje hareketleri okundu." & vbCrLf & vbCrLf & bilgi & vbCrLf & sBilgi, vbInformation, "AKSORA | PROJE MALZEME TAKÝBÝ"
     Exit Sub
 Hata:
     Dim hM As String

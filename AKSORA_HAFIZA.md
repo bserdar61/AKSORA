@@ -812,6 +812,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-11: Proje takibi düzeltme: boş veride IIf içindeki 0/0 "Overflow" verdi (IIf iki dalı da hesaplar); MB51 kısa başlıklar (Kayıt trh., Blg.bşlk.metni, Hrk.tü.mtn, Ö, iki "PYP öğesi") eşlendi — iki PYP sütununda daha dolu olan satırın kendi PYP'si.
 
+- 2026-11-11: Proje takibi + açık siparişler: SAP'DEN OKU, MB51'den sonra ME2N (WE101, ilin EPP ü.yeri) okur → _Y_SAS_<IL> (belge, kalem, depo, mal, tanım, açık mkt, birim, teslim, belge trh, satıcı, net fiyat, PB). Yalnız D002 satırları ihtiyaçtan düşülür; diğer depolar not. Tüm projeler tablosu: "Açık Sipariş (D002)" sütunu, Ne Yapılmalı: Satın al / Siparişte (teslim, GECİKMİŞ) / Sipariş gereksiz (iptal-azalt) / Fazla / Tamam; aynı tanımla başka kodla sipariş uyarısı (örn. 1000005087 ↔ 1000009010); fiyatsız malzemeye SAS TL net fiyatı. Sayfa sürümü BX25=PRJ_V2. Taban up52.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
