@@ -10024,7 +10024,8 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ws.Range("BZ1:BZ4").NumberFormat = "@"
     ws.Range("BZ1").Value2 = nP & " proje  •  " & AKSORA_SAYI_METNI(top(7), "#,##0") & " keþif kalemi"
     ws.Range("BZ2").Value2 = Y_TL(top(0))
-    ws.Range("BZ3").Value2 = Y_TL(top(1)) & IIf(top(0) > 0, "  •  %" & AKSORA_SAYI_METNI(100 * top(1) / top(0), "0"), "")
+    ws.Range("BZ3").Value2 = Y_TL(top(1))
+    If top(0) > 0 Then ws.Range("BZ3").Value2 = ws.Range("BZ3").Value2 & "  •  %" & AKSORA_SAYI_METNI(100 * top(1) / top(0), "0")
     ws.Range("BZ4").Value2 = "Eksik " & ADM_TL_KISA(top(3)) & "  •  Fazla " & ADM_TL_KISA(top(4))
     y = ws.Rows(3).Top + 1
     kw = (w - 3 * 12) / 4

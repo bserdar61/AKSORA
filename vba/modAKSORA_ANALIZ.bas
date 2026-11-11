@@ -4462,7 +4462,7 @@ End Function
 ' MB51 listesi: sutunlar basliktan bulunur (sira onemli degil). Ara toplam (*) ve bos satirlar atlanir.
 Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilgi As String) As Variant
     Dim r As Long, c As Long, h As Long, a As String, k(1 To 16) As Long, sonuc() As Variant, n As Long, q As Double, tt As Double
-    Dim mal As String, hb As String, i As Long, tr As Date, atla As Long
+    Dim mal As String, hb As String, i As Long, tr As Date, atla As Long, p1 As Long, p2 As Long, d1 As Long, d2 As Long
     For r = 1 To application.Min(UBound(v, 1), 40)
         For c = 1 To UBound(v, 2)
             If Y_NORM(CStr(v(r, c))) = "MALZEME" Then h = r: Exit For
@@ -4475,22 +4475,39 @@ Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilg
         hb = hb & " | " & CStr(v(h, c))
         If k(1) = 0 And (a = "DPYR" Or a = "DEPO YERI") Then k(1) = c
         If k(2) = 0 And InStr(a, "PROJE YAPI PLANI") > 0 Then k(2) = c
-        If k(3) = 0 And a = "PYP OGESI" Then k(3) = c
+        If a = "PYP OGESI" Then
+            If p1 = 0 Then p1 = c Else If p2 = 0 Then p2 = c
+        End If
         If k(4) = 0 And (a = "ITU" Or a = "HTU" Or a = "ISLEM TURU" Or a = "HAREKET TURU") Then k(4) = c
         If k(5) = 0 And a = "MALZEME" Then k(5) = c
         If k(6) = 0 And InStr(a, "KISA METNI") > 0 Then k(6) = c
         If k(7) = 0 And (a = "BIRIM" Or a = "TOB" Or a = "TEMEL OLCU BIRIMI") Then k(7) = c
         If k(8) = 0 And a = "MIKTAR" Then k(8) = c
         If k(9) = 0 And Left$(a, 5) = "TUTAR" Then k(9) = c
-        If k(10) = 0 And InStr(a, "KAYIT TARIHI") > 0 Then k(10) = c
-        If k(11) = 0 And InStr(a, "BELGE BASLIGI") > 0 Then k(11) = c
+        If k(10) = 0 And (InStr(a, "KAYIT TARIHI") > 0 Or a = "KAYIT TRH") Then k(10) = c
+        If k(11) = 0 And (InStr(a, "BELGE BASLIGI") > 0 Or InStr(a, "BLGBSLK") > 0) Then k(11) = c
         If k(12) = 0 And (a = "MLZBLG" Or a = "MALZEME BELGESI") Then k(12) = c
         If k(13) = 0 And (a = "KLM" Or InStr(a, "BELGESI KLM") > 0 Or a = "KALEM") Then k(13) = c
-        If k(14) = 0 And InStr(a, "OZEL STOK") > 0 Then k(14) = c
-        If k(15) = 0 And InStr(a, "HAREKET TUR") > 0 And InStr(a, "METN") > 0 Then k(15) = c
+        If k(14) = 0 And (InStr(a, "OZEL STOK") > 0 Or a = "O") Then k(14) = c
+        If k(15) = 0 And ((InStr(a, "HAREKET TUR") > 0 And InStr(a, "METN") > 0) Or a = "HRKTUMTN") Then k(15) = c
         If k(16) = 0 And (a = "UY" Or a = "URETIM YERI") Then k(16) = c
     Next c
-    AKSORA_SAP_TESHIS_YAZ "Proje | baþlýk (satýr " & h & ")" & hb
+    ' Kisa basliklarda "Proje yapi plani ogesi" de "PYP ogesi" gorunur: iki sutun varsa daha dolu olan satirin kendi PYP'si,
+    ' digeri karsi PYP (yalniz 415 gibi aktarimlarda dolu).
+    If k(2) = 0 Then
+        If p2 > 0 Then
+            For r = h + 1 To UBound(v, 1)
+                If Len(Trim$(CStr(v(r, p1)))) > 0 Then d1 = d1 + 1
+                If Len(Trim$(CStr(v(r, p2)))) > 0 Then d2 = d2 + 1
+            Next r
+            If d2 > d1 Then k(2) = p2: k(3) = p1 Else k(2) = p1: k(3) = p2
+        Else
+            k(2) = p1
+        End If
+    ElseIf k(3) = 0 Then
+        k(3) = p1
+    End If
+    AKSORA_SAP_TESHIS_YAZ "Proje | baþlýk (satýr " & h & ")" & hb & " | PYP süt=" & k(2) & " karþý=" & k(3)
     For i = 1 To 13
         If i <> 3 And i <> 9 And i <> 11 And i <> 12 And i <> 13 And k(i) = 0 Then Err.Raise vbObjectError + 2608, , _
             "/AKSORA_PRJ düzeninde gerekli sütun eksik (" & Choose(i, "Depo yeri", "Proje yapý planý öðesi", "PYP öðesi", "ÝTü", "Malzeme", _
