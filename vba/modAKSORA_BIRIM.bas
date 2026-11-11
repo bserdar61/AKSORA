@@ -3878,7 +3878,7 @@ Private Sub Y_ALT_SAYFALAR(ByVal il As String)
     If Err.Number <> 0 Then Y_SERIT "Teminat sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
     ' Hakedis sayfasi yalniz il veya tasarim surumu degisince yeniden kurulur (girisler korunur).
     With ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
-        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V2" Then
+        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V3" Then
             Y_HAKEDIS_KUR il
         End If
     End With
@@ -10140,6 +10140,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ' Dugmeler ve proje secimi
     Y_DUGME ws, "Y_PRJ_SAP", "SAP'DEN OKU  (MB51)", 0, ws.Rows(8).Top + 4, 210, 32, RGB(0, 125, 110), "AKSORA_YATIRIM_PRJ_SAP"
     Y_DUGME ws, "Y_PRJ_KESIF", "KEÞÝF ÝÇE AKTAR", 222, ws.Rows(8).Top + 4, 190, 32, RGB(16, 57, 94), "AKSORA_YATIRIM_KESIF_YUKLE"
+    Y_DUGME ws, "Y_PRJ_EXCEL", "EXCEL'E AKTAR", 424, ws.Rows(8).Top + 4, 170, 32, RGB(39, 160, 94), "AKSORA_YATIRIM_PRJ_EXCEL"
     Y_METIN ws, "Y_PRJ_SEC_ETIKET", "Proje:", w - 520, ws.Rows(8).Top + 4, 90, 32, 10, RGB(28, 54, 83), True, msoAlignRight
     Set liste = ws.Shapes.AddFormControl(xlDropDown, w - 420, ws.Rows(8).Top + 10, 420, 20)
     liste.Name = "Y_PRJ_SECIM": liste.Placement = xlFreeFloating
@@ -10191,6 +10192,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
         ws.Cells(r, 1).Value2 = "Veri yok. 1) KEÞÝF ÝÇE AKTAR ile projelerin keþfini yükleyin  2) SAP'DEN OKU ile MB51 hareketlerini alýn."
         ws.Cells(r, 1).Font.Italic = True: ws.Cells(r, 1).Font.Color = RGB(100, 116, 139)
     Else
+        r = Y_PRJ_KARAR_YAZ(ws, r) + 2
         r = Y_PRJ_YUKLENICI_YAZ(ws, r, il)
         r = Y_PRJ_PROJE_YAZ(ws, r + 2, secim)
         r = Y_PRJ_DETAY_YAZ(ws, r + 2, secim)
@@ -10202,9 +10204,144 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     ws.PageSetup.Zoom = False: ws.PageSetup.FitToPagesWide = 1: ws.PageSetup.FitToPagesTall = False
     ws.PageSetup.PrintArea = "$A$1:$O$" & r
     On Error GoTo 0
-    ws.Range("BX25").Value2 = "PRJ_V2"
+    ws.Range("BX25").Value2 = "PRJ_V3"
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
+End Sub
+
+' Yonetici ozeti: tum projelerde malzeme bazli karar listesi (ne, kac kalem, kac TL, ne yapilmali).
+Private Function Y_PRJ_KARAR_YAZ(ByVal ws As Worksheet, ByVal r As Long) As Long
+    Dim mats As Object, yuk As Object, x As Variant, w As Variant, m As String, f As Double, o As Variant, dg As Long
+    Dim k As Double, s As Double, p As Double, hv As Double, d2 As Double, sq As Double, ih As Double, yas As Double
+    Dim c(1 To 7) As Long, t(1 To 7) As Double, i As Long, a1 As Long, blok() As Variant, nt As String
+    Set mats = CreateObject("Scripting.Dictionary"): Set yuk = CreateObject("Scripting.Dictionary")
+    For Each w In mPL
+        For Each x In mPM(CStr(w)).keys: mats(CStr(x)) = True: Next x
+    Next w
+    For Each x In mDS.keys
+        dg = InStr(CStr(x), "|")
+        If Left$(CStr(x), dg - 1) <> "D002" Then yuk(Left$(CStr(x), dg - 1)) = True
+    Next x
+    For Each x In mats.keys
+        m = CStr(x): f = Y_PRJ_F(m)
+        k = 0: s = 0: p = 0: hv = 0
+        For Each w In mPL
+            k = k + Y_PD(mPK, CStr(w) & "|" & m): s = s + Y_PD(mPS, CStr(w) & "|" & m): p = p + Y_PD(mPP, CStr(w) & "|" & m)
+        Next w
+        For Each w In yuk.keys: hv = hv + Y_PRJ_HAVUZ(CStr(w), m): Next w
+        d2 = Y_PD(mDS, "D002|" & m): sq = Y_PD(mSD, m)
+        ih = k - s - p - hv - d2
+        If ih - sq > 0.0000001 Then c(1) = c(1) + 1: t(1) = t(1) + (ih - sq) * f
+        If sq > 0.0000001 Then
+            If ih > 0.0000001 Then c(2) = c(2) + 1: t(2) = t(2) + application.Min(sq, ih) * f
+            If sq - application.Max(0, ih) > 0.0000001 Then c(3) = c(3) + 1: t(3) = t(3) + (sq - application.Max(0, ih)) * f
+            If mSDb.Exists(m) Then
+                If yas = 0 Or CDbl(mSDb(m)) < yas Then yas = CDbl(mSDb(m))
+            End If
+        ElseIf ih > 0.0000001 Then
+            If Len(Y_PRJ_BENZER(m)) > 0 Then c(7) = c(7) + 1
+        End If
+        If ih < -0.0000001 Then c(4) = c(4) + 1: t(4) = t(4) + (-ih) * f
+        If f = 0 And Abs(ih) > 0.0000001 Then c(6) = c(6) + 1
+    Next x
+    For Each w In mPL
+        o = Y_PRJ_OZET(CStr(w))
+        If o(1) < 0.005 And o(2) < 0.005 Then c(5) = c(5) + 1: t(5) = t(5) + o(0)
+    Next w
+    Y_BOLUM ws, r, "YÖNETÝCÝ ÖZETÝ  –  TÜM PROJELER", "Tutarlar stok / sipariþ birim fiyatýyla. Ayrýntý: aþaðýdaki MALZEME ÝHTÝYACI tablosu.", 15
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 15)), Array("#", "Konu", "Kalem", "Tutar", "Ne Yapýlmalý")
+    ws.Range(ws.Cells(r + 1, 5), ws.Cells(r + 1, 15)).HorizontalAlignment = xlCenterAcrossSelection
+    ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 28
+    a1 = r + 2
+    ReDim blok(1 To 7, 1 To 5)
+    blok(1, 2) = "Satýn alýnacak": blok(1, 5) = "Sipariþi ve stoðu olmayan eksik: satýnalma talebi açýlmalý."
+    blok(2, 2) = "Sipariþte bekleyen": blok(2, 5) = "Ýhtiyacý karþýlayan açýk sipariþ" & _
+        IIf(yas > 0, "; en eski " & Format$(CDate(yas), "dd.mm.yyyy") & " (" & Y_PRJ_GUN(CLng(application.Max(0, CDbl(Date) - yas))) & " önce): tedarikçi takip edilmeli.", ": tedarikçi takip edilmeli.")
+    blok(3, 2) = "Ýptal / azaltýlabilir sipariþ": blok(3, 5) = "Ýhtiyacýn üstündeki sipariþ miktarý: satýnalma ile iptal / azaltma görüþülmeli."
+    blok(4, 2) = "Fazla stok": blok(4, 5) = "Havuz / D002'de projelerin ihtiyacý dýþýnda: yeni projelere ya da diðer illere kullandýrýlmalý."
+    blok(5, 2) = "Baþlamayan proje": blok(5, 5) = "Hiç sarf ve ayrýlan malzeme yok (tutar = keþif): iþ programý ve malzeme planý kontrol edilmeli."
+    blok(6, 2) = "Fiyatý bilinmeyen malzeme": blok(6, 5) = "Stokta, MB51'de ve sipariþte fiyatý yok: TL tutarlarýna katýlmadý."
+    blok(7, 2) = "Baþka kodla sipariþte": blok(7, 5) = "Keþifteki kod ile sipariþ kodu farklý (ayný taným): çift alým riski, keþif kodu kontrol edilmeli."
+    For i = 1 To 7
+        blok(i, 1) = i: blok(i, 3) = c(i)
+        If i <= 5 Then blok(i, 4) = Round(t(i), 2) Else blok(i, 4) = "-"
+        If c(i) = 0 Then blok(i, 5) = "Yok."
+    Next i
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 6, 5)).Value2 = blok
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 6, 15))
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 6, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + 6, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + 6, 3)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + 6, 4)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + 6, 4)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + 6, 2)).Font.bold = True
+    ws.Range(ws.Cells(a1, 5), ws.Cells(a1 + 6, 5)).IndentLevel = 1
+    For i = 1 To 7
+        If c(i) > 0 Then ws.Cells(a1 + i - 1, 2).Font.Color = Choose(i, RGB(185, 28, 28), RGB(29, 78, 216), RGB(126, 34, 206), _
+            RGB(180, 83, 9), RGB(71, 85, 105), RGB(161, 98, 7), RGB(161, 98, 7)) Else ws.Cells(a1 + i - 1, 2).Font.Color = RGB(148, 163, 184)
+    Next i
+    ws.Range(ws.Rows(a1), ws.Rows(a1 + 6)).RowHeight = 21
+    Y_PRJ_KARAR_YAZ = a1 + 6
+End Function
+
+' Sayfanin Excel ciktisi (masaustu): ozet, yuklenici, projeler, malzeme tablolari; AKSORA imzali.
+Public Sub AKSORA_YATIRIM_PRJ_EXCEL()
+    Dim ws As Worksheet, wb As Workbook, h As Worksheet, son As Long, il As String, yol As String, sc As Boolean, ev As Boolean, i As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    son = application.Max(AKSORA_SON_SATIR(ws, 1), AKSORA_SON_SATIR(ws, 2))
+    If son < 12 Then MsgBox "Aktarýlacak veri yok.", vbInformation, "AKSORA": Exit Sub
+    sc = application.ScreenUpdating: ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Set h = wb.Worksheets(1)
+    h.Name = "PROJE TAKIBI"
+    ActiveWindow.DisplayGridlines = False
+    For i = 1 To 15: h.Columns(i).ColumnWidth = ws.Columns(i).ColumnWidth: Next i
+    ws.Range("A9:O" & son).Copy
+    h.Range("A5").PasteSpecial xlPasteValuesAndNumberFormats
+    h.Range("A5").PasteSpecial xlPasteFormats
+    application.CutCopyMode = False
+    For i = 9 To son: h.Rows(i - 4).RowHeight = ws.Rows(i).RowHeight: Next i
+    h.Range("A1").Value2 = "AKSORA | PROJE MALZEME TAKÝBÝ  |  " & Y_IL_ADI(il)
+    With h.Range("A1").Font
+        .Name = "Aptos": .Size = 16: .bold = True: .Color = RGB(12, 45, 79)
+    End With
+    h.Range("A2").Value2 = "Rapor tarihi: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    h.Range("A3").Value2 = CStr(ws.Range("BZ1").Value2) & "     |     Keþif: " & CStr(ws.Range("BZ2").Value2) & _
+        "     |     Sarf: " & CStr(ws.Range("BZ3").Value2) & "     |     " & CStr(ws.Range("BZ4").Value2)
+    h.Range("A2:A3").Font.Name = "Aptos": h.Range("A2:A3").Font.Size = 10
+    h.Range("A3").Font.bold = True
+    With h.PageSetup
+        .Orientation = xlLandscape: .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+    End With
+    h.Activate
+    h.Range("A1").Select
+    AKSORA_IMZA_UYGULA wb
+    yol = AKSORA_MASAUSTU() & application.PathSeparator & "AKSORA_Proje_Takibi_" & il & "_" & Format$(Now, "yyyymmdd_hhnn") & ".xlsx"
+    application.DisplayAlerts = False
+    On Error Resume Next
+    wb.SaveAs Filename:=yol, FileFormat:=51
+    If Err.Number <> 0 Then yol = vbNullString
+    On Error GoTo Hata
+    application.DisplayAlerts = True
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Len(yol) > 0 Then
+        MsgBox "Masaüstüne kaydedildi:" & vbCrLf & yol, vbInformation, "AKSORA | PROJE MALZEME TAKÝBÝ"
+    Else
+        MsgBox "Liste açýldý ancak kaydedilemedi; Farklý Kaydet ile kaydedin.", vbExclamation, "AKSORA"
+    End If
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    application.CutCopyMode = False
+    application.DisplayAlerts = True
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox "Excel'e aktarýlamadý: " & hM, vbExclamation, "AKSORA"
 End Sub
 
 ' Yuklenici durumu: depodaki proje + havuz stogu ile projelerinin kalan ihtiyaci.

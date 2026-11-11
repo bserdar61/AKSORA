@@ -2812,6 +2812,11 @@ End Function
 
 ' AKSORA imzasi (butun Excel'e aktar ciktilari): baslik ve "AKSORA" satiri (1-2) kilitli, sayfa altinda AKSORA,
 ' dosya ozelliklerinde ve gizli imza sayfasinda uretim kaydi. Veriler serbest: filtre, siralama, bicim, satir ekle/sil calisir.
+' Diger birimlerin Excel ciktilari icin ayni AKSORA imzasi.
+Public Sub AKSORA_IMZA_UYGULA(ByVal wb As Workbook)
+    T_AksoraImza wb
+End Sub
+
 Private Sub T_AksoraImza(ByVal wb As Workbook)
     Dim ws As Worksheet, im As Worksheet, kim As String, no As String, metin As String, pc As Boolean
     On Error Resume Next
