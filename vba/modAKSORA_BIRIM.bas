@@ -3160,14 +3160,14 @@ Public Sub Y_BOLUM(ByVal ws As Worksheet, ByVal r As Long, ByVal baslik As Strin
 End Sub
 
 '' Filtre sonrasi Teminat sayfasinda kalinir (Excel baska yatirim sayfasina gecerse geri alinir).
-' Konum secim listesi (Depoda / Sahada / Kismi): hucre araligina bagli degil, sabit secenekler.
+' Konum hucreleri: sagda filtre oku (hucre bicimi; sekil yok). Tiklayinca secim menusu acilir
+' (AKSORA_YATIRIM_KONUM_SECIM). Dogrulama oku bazi Excel'lerde gorunmedigi icin kullanilmaz.
 Private Sub Y_KONUM_LISTE(ByVal r As Range)
-    With r.Validation
-        .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="Depoda,Sahada,Kýsmi"
-        .IgnoreBlank = True: .InCellDropdown = True
-        .ErrorTitle = "AKSORA": .ErrorMessage = "Depoda, Sahada veya Kýsmi seçiniz."
-    End With
+    On Error Resume Next
+    r.Validation.Delete
+    r.NumberFormat = "@* """ & ChrW(9660) & """"
+    r.HorizontalAlignment = xlGeneral
+    r.IndentLevel = 1
 End Sub
 
 ' Teminat sayfasi acildiginda Konum listesi yeniden uygulanir (ok kaybolmus olsa da geri gelir).
@@ -3184,63 +3184,41 @@ Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
     ws.EnableSelection = xlNoRestrictions
 End Sub
 
-' Konum secimi: secilen Konum hucresinin uzerine form denetimi acilir liste (Depo secimiyle ayni tur;
-' hucre dogrulama oku bazi Excel'lerde gorunmuyordu). Secim hucreye yazilir, normal degisim akisi calisir.
+' Konum secimi: Konum hucresine tiklayinca filtre listesi gibi kucuk menu (Depoda / Sahada / Kismi).
+' Secim hucreye yazilir; normal degisim akisi (kayit, sahada gunu, toplamlar) Workbook_SheetChange ile calisir.
 Public Sub AKSORA_YATIRIM_KONUM_SECIM(ByVal ws As Worksheet, ByVal hedef As Range)
-    Dim a As Long, b As Long, s As Shape, goster As Boolean, i As Long, korumali As Boolean
+    Dim a As Long, b As Long, cb As Object, c As Object, x As Variant, s As Shape
     On Error Resume Next
+    ' Onceki surumun acilir kutusu kaldirilir.
     Set s = ws.Shapes("Y_TM_KONUM")
+    If Not s Is Nothing Then ws.Unprotect "": s.Delete: ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     On Error GoTo 0
-    If Y_ARALIK(ws, "BX27", a, b) Then
-        If hedef.Cells.Count = 1 Then
-            If hedef.Column = 7 And hedef.Row >= a And hedef.Row <= b Then
-                goster = (Len(CStr(ws.Cells(hedef.Row, 1).Value2)) > 0)
-            End If
-        End If
-    End If
-    If Not goster And s Is Nothing Then Exit Sub
-    If Not goster Then
-        If s.Visible = msoFalse Then Exit Sub
-    End If
+    If hedef.Cells.Count <> 1 Then Exit Sub
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If hedef.Column <> 7 Or hedef.Row < a Or hedef.Row > b Then Exit Sub
+    If Len(CStr(ws.Cells(hedef.Row, 1).Value2)) = 0 Then Exit Sub
+    ws.Range("BX35").Value2 = hedef.Row
     On Error Resume Next
-    korumali = ws.ProtectDrawingObjects Or ws.ProtectContents
-    If korumali Then ws.Unprotect ""
-    If goster Then
-        If s Is Nothing Then
-            Set s = ws.Shapes.AddFormControl(xlDropDown, hedef.Left, hedef.Top, hedef.Width, hedef.Height)
-            s.Name = "Y_TM_KONUM"
-            s.ControlFormat.AddItem "Depoda"
-            s.ControlFormat.AddItem "Sahada"
-            s.ControlFormat.AddItem "Kýsmi"
-            s.ControlFormat.DropDownLines = 3
-            s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_KONUM_SEC")
-            s.Placement = xlFreeFloating
-        End If
-        s.Left = hedef.Left: s.Top = hedef.Top: s.Width = hedef.Width: s.Height = hedef.Height
-        Select Case CStr(hedef.Value2)
-            Case "Sahada": i = 2
-            Case "Kýsmi": i = 3
-            Case Else: i = 1
-        End Select
-        s.ControlFormat.Value = i
-        ws.Range("BX35").Value2 = hedef.Row
-        s.Visible = msoTrue
-    Else
-        s.Visible = msoFalse
-    End If
-    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
-    ws.EnableSelection = xlNoRestrictions
+    application.CommandBars("AKSORA_KONUM").Delete
+    Set cb = application.CommandBars.Add(Name:="AKSORA_KONUM", Position:=5, Temporary:=True)
+    For Each x In Array("Depoda", "Sahada", "Kýsmi")
+        Set c = cb.Controls.Add(Type:=1, Temporary:=True)
+        c.Caption = CStr(x)
+        c.Parameter = CStr(x)
+        c.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_KONUM_SEC")
+        If CStr(hedef.Value2) = CStr(x) Then c.State = -1
+    Next x
+    cb.ShowPopup
 End Sub
 
 Public Sub AKSORA_YATIRIM_KONUM_SEC()
-    Dim ws As Worksheet, s As Shape, r As Long, a As Long, b As Long, t As String, ev As Boolean
+    Dim ws As Worksheet, r As Long, a As Long, b As Long, t As String, ev As Boolean
     On Error GoTo Son
     Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
-    Set s = ws.Shapes("Y_TM_KONUM")
+    t = CStr(application.CommandBars.ActionControl.Parameter)
     r = CLng(Val(CStr(ws.Range("BX35").Value2)))
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     If r < a Or r > b Then Exit Sub
-    t = CStr(s.ControlFormat.List(s.ControlFormat.Value))
     If Len(t) = 0 Or t = CStr(ws.Cells(r, 7).Value2) Then Exit Sub
     ev = application.EnableEvents
     application.EnableEvents = True

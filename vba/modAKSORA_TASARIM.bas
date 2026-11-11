@@ -2270,6 +2270,8 @@ Private Sub T_CiktiListe(ByVal ws As Worksheet)
         gen(j - 1) = ws.Columns(kol(j)).ColumnWidth
         fmt(j - 1) = ws.Cells(hdr + 1, kol(j)).NumberFormat
         If IsNull(fmt(j - 1)) Then fmt(j - 1) = "General"
+        ' Ekrandaki secim oku (metin + dolgu + ok) ciktiya tasinmaz.
+        If Left$(CStr(fmt(j - 1)), 2) = "@*" Then fmt(j - 1) = "@"
         hiz(j - 1) = ws.Cells(hdr + 1, kol(j)).HorizontalAlignment
         If IsNull(hiz(j - 1)) Then hiz(j - 1) = xlGeneral
     Next j
