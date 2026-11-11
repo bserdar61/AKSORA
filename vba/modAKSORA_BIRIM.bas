@@ -3184,24 +3184,70 @@ Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
     ws.EnableSelection = xlNoRestrictions
 End Sub
 
-' Konum hucresine cift tik: Depoda -> Sahada -> Kismi -> Depoda. Deger yazilinca normal degisim akisi
-' (kayit, sahada gunu, toplamlar) Workbook_SheetChange ile calisir.
-Public Sub AKSORA_YATIRIM_KONUM_CIFT_TIK(ByVal ws As Worksheet, ByVal hedef As Range, ByRef Cancel As Boolean)
-    Dim a As Long, b As Long, t As String, ev As Boolean
+' Konum secimi: secilen Konum hucresinin uzerine form denetimi acilir liste (Depo secimiyle ayni tur;
+' hucre dogrulama oku bazi Excel'lerde gorunmuyordu). Secim hucreye yazilir, normal degisim akisi calisir.
+Public Sub AKSORA_YATIRIM_KONUM_SECIM(ByVal ws As Worksheet, ByVal hedef As Range)
+    Dim a As Long, b As Long, s As Shape, goster As Boolean, i As Long, korumali As Boolean
+    On Error Resume Next
+    Set s = ws.Shapes("Y_TM_KONUM")
+    On Error GoTo 0
+    If Y_ARALIK(ws, "BX27", a, b) Then
+        If hedef.Cells.Count = 1 Then
+            If hedef.Column = 7 And hedef.Row >= a And hedef.Row <= b Then
+                goster = (Len(CStr(ws.Cells(hedef.Row, 1).Value2)) > 0)
+            End If
+        End If
+    End If
+    If Not goster And s Is Nothing Then Exit Sub
+    If Not goster Then
+        If s.Visible = msoFalse Then Exit Sub
+    End If
+    On Error Resume Next
+    korumali = ws.ProtectDrawingObjects Or ws.ProtectContents
+    If korumali Then ws.Unprotect ""
+    If goster Then
+        If s Is Nothing Then
+            Set s = ws.Shapes.AddFormControl(xlDropDown, hedef.Left, hedef.Top, hedef.Width, hedef.Height)
+            s.Name = "Y_TM_KONUM"
+            s.ControlFormat.AddItem "Depoda"
+            s.ControlFormat.AddItem "Sahada"
+            s.ControlFormat.AddItem "Kýsmi"
+            s.ControlFormat.DropDownLines = 3
+            s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_KONUM_SEC")
+            s.Placement = xlFreeFloating
+        End If
+        s.Left = hedef.Left: s.Top = hedef.Top: s.Width = hedef.Width: s.Height = hedef.Height
+        Select Case CStr(hedef.Value2)
+            Case "Sahada": i = 2
+            Case "Kýsmi": i = 3
+            Case Else: i = 1
+        End Select
+        s.ControlFormat.Value = i
+        ws.Range("BX35").Value2 = hedef.Row
+        s.Visible = msoTrue
+    Else
+        s.Visible = msoFalse
+    End If
+    If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+Public Sub AKSORA_YATIRIM_KONUM_SEC()
+    Dim ws As Worksheet, s As Shape, r As Long, a As Long, b As Long, t As String, ev As Boolean
+    On Error GoTo Son
+    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    Set s = ws.Shapes("Y_TM_KONUM")
+    r = CLng(Val(CStr(ws.Range("BX35").Value2)))
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
-    If hedef.Cells.Count <> 1 Then Exit Sub
-    If hedef.Column <> 7 Or hedef.Row < a Or hedef.Row > b Then Exit Sub
-    If Len(CStr(ws.Cells(hedef.Row, 1).Value2)) = 0 Then Exit Sub
-    Cancel = True
-    Select Case CStr(hedef.Value2)
-        Case "Depoda": t = "Sahada"
-        Case "Sahada": t = "Kýsmi"
-        Case Else: t = "Depoda"
-    End Select
+    If r < a Or r > b Then Exit Sub
+    t = CStr(s.ControlFormat.List(s.ControlFormat.Value))
+    If Len(t) = 0 Or t = CStr(ws.Cells(r, 7).Value2) Then Exit Sub
     ev = application.EnableEvents
     application.EnableEvents = True
-    hedef.Value2 = t
+    ws.Cells(r, 7).Value2 = t
     application.EnableEvents = ev
+    Y_TEMINAT_KAL ws
+Son:
 End Sub
 
 Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
@@ -3837,6 +3883,8 @@ Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
                 End If
             Next c
             sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+            ' Degisimden sonra baska yatirim sayfasina gecilirse teminat sayfasina donulur.
+            Y_TEMINAT_KAL sh
         End If
     End If
 Cikis:

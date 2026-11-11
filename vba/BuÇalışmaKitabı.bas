@@ -221,12 +221,12 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
     If Left$(sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM sh, Target Else AKSORA_YATIRIM_DEGISIM sh, Target
 End Sub
 
-' Teminat takibi: Konum hucresine cift tik -> Depoda / Sahada / Kismi sirayla.
-Private Sub Workbook_SheetBeforeDoubleClick(ByVal sh As Object, ByVal Target As Range, Cancel As Boolean)
+' Teminat takibi: Konum hucresi secilince uzerinde secim listesi (Depoda / Sahada / Kismi) acilir.
+Private Sub Workbook_SheetSelectionChange(ByVal sh As Object, ByVal Target As Range)
     If AKSORA_V13_ACILIS Then Exit Sub
     If sh.Name <> "Y_TEMÝNAT" Then Exit Sub
     On Error Resume Next
-    AKSORA_YATIRIM_KONUM_CIFT_TIK sh, Target, Cancel
+    AKSORA_YATIRIM_KONUM_SECIM sh, Target
 End Sub
 
 ' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
