@@ -51,7 +51,7 @@ Public Sub AKSORA_IL_CANLI_ARSIV_KAYDET()
         Set hedef = ThisWorkbook.Worksheets(ad)
         On Error GoTo Hata
         If hedef Is Nothing Then
-            Set hedef = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+            Set hedef = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
             hedef.Name = ad
         Else
             If CStr(hedef.Range("A1").Value2) <> "AKSORA_CANLI_ARSIV_V1" Or _
@@ -156,7 +156,7 @@ Public Sub AKSORA_IL_STOK_ILK_ARSIV()
         If AKSORA_ARSIV_VAR(ad) Then
             mevcut = mevcut + 1
         Else
-            Set arsiv = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+            Set arsiv = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
             arsiv.Name = ad
             son = AKSORA_SON_SATIR(ws, "A")
             arsiv.Range("A1").Value2 = "AKSORA_IL_ARSIV_V2"
@@ -255,7 +255,7 @@ Public Sub AKSORA_DIGER_IL_ARSIV_HAZIRLA()
             Set mevcut = ThisWorkbook.Worksheets(ad)
             On Error GoTo Hata
             If mevcut Is Nothing Then
-                Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+                Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
                 ws.Name = ad
                 ws.Range("A1").Value2 = "AKSORA_CANLI_ARSIV_V1"
                 ws.Range("B1").Value2 = CStr(il)

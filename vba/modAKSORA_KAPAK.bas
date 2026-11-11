@@ -216,7 +216,7 @@ Private Sub AKSORA_V8_TARIH_YAZ(ByVal ws As Worksheet)
     Set p = ws.Shapes(PRE & "STATUS")
 
 
-    y = p.Top + p.Height + 6
+    y = p.top + p.Height + 6
 
     ht = 19
 
@@ -303,42 +303,42 @@ Private Sub AKSORA_V8_YERLESIM(ByVal ws As Worksheet)
     gap = 10
 
 
-    dt.Top = st.Top + st.Height + 5
+    dt.top = st.top + st.Height + 5
 
     dt.Left = st.Left
 
     dt.Width = st.Width
 
 
-    bt.Top = dt.Top + dt.Height + gap
+    bt.top = dt.top + dt.Height + gap
 
-    cr.Top = bt.Top + bt.Height + 15
-
-
-    bottomLimit = pnl.Top + pnl.Height - 7
+    cr.top = bt.top + bt.Height + 15
 
 
-    If cr.Top + cr.Height > bottomLimit Then
+    bottomLimit = pnl.top + pnl.Height - 7
 
-        y = cr.Top + cr.Height - bottomLimit
 
-        st.Top = st.Top - y
-        dt.Top = dt.Top - y
-        bt.Top = bt.Top - y
-        cr.Top = cr.Top - y
+    If cr.top + cr.Height > bottomLimit Then
+
+        y = cr.top + cr.Height - bottomLimit
+
+        st.top = st.top - y
+        dt.top = dt.top - y
+        bt.top = bt.top - y
+        cr.top = cr.top - y
 
     End If
 
 
-    If st.Top < pnl.Top Then
+    If st.top < pnl.top Then
 
-        st.Top = pnl.Top + 4
+        st.top = pnl.top + 4
 
-        dt.Top = st.Top + st.Height + 3
+        dt.top = st.top + st.Height + 3
 
-        bt.Top = dt.Top + dt.Height + 5
+        bt.top = dt.top + dt.Height + 5
 
-        cr.Top = bt.Top + bt.Height + 6
+        cr.top = bt.top + bt.Height + 6
 
     End If
 
@@ -466,9 +466,9 @@ End Sub
 Public Sub AKSORA_V8_GIRIS()
     Dim ac As Boolean, no As Long, metin As String
     ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME STOK BÝRÝMÝ", "Ýl stoklarý ve ekranlar hazýrlanýyor...")
-    On Error GoTo Son
+    On Error GoTo son
     V8_GIRIS_ASIL
-Son:
+son:
     no = Err.Number: metin = Err.Description
     If ac Then AKSORA_BEKLE_KAPAT
     If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
@@ -605,7 +605,7 @@ Private Sub AKSORA_GIRIS_AC()
     Dim kap As Worksheet
     Dim ws As Worksheet
 
-    Dim nm As String
+    Dim nM As String
     Dim r As Long
 
     Dim ev As Boolean
@@ -641,10 +641,10 @@ Private Sub AKSORA_GIRIS_AC()
     '------------------------------------------------------
     For r = 2 To 100
 
-        nm = Trim$(CStr(kap.Cells(r, "BA").Value))
+        nM = Trim$(CStr(kap.Cells(r, "BA").Value))
 
 
-        If Len(nm) = 0 Then Exit For
+        If Len(nM) = 0 Then Exit For
 
 
         Set ws = Nothing
@@ -652,7 +652,7 @@ Private Sub AKSORA_GIRIS_AC()
 
         On Error Resume Next
 
-        Set ws = ThisWorkbook.Worksheets(nm)
+        Set ws = ThisWorkbook.Worksheets(nM)
 
         On Error GoTo Hata
 

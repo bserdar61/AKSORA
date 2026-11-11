@@ -32,8 +32,8 @@ Public Sub AKSORA_TELIF_ETIKET(ByVal frm As Object)
     If c Is Nothing Then Exit Sub
     With c
         .Caption = AKSORA_TELIF()
-        .Left = 0: .Width = frm.InsideWidth: .Height = 12: .Top = frm.InsideHeight - 15
-        .Font.Name = "Segoe UI": .Font.Size = 7: .Font.Bold = False: .Font.Italic = False
+        .Left = 0: .Width = frm.InsideWidth: .Height = 12: .top = frm.InsideHeight - 15
+        .Font.Name = "Segoe UI": .Font.Size = 7: .Font.bold = False: .Font.Italic = False
         .ForeColor = RGB(163, 174, 189): .BackStyle = fmBackStyleTransparent
         .TextAlign = fmTextAlignCenter: .WordWrap = False: .Visible = True
     End With

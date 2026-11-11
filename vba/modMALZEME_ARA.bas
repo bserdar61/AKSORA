@@ -175,7 +175,7 @@ Private Function MALZEME_ARA_SAYFA_AL() As Worksheet
 
         Set ws = _
             ThisWorkbook.Worksheets.Add( _
-                after:=ThisWorkbook.Worksheets( _
+                After:=ThisWorkbook.Worksheets( _
                     ThisWorkbook.Worksheets.Count))
 
         ws.Name = ARA_SAYFA
@@ -514,7 +514,7 @@ ByVal ws As Worksheet)
         ws.Shapes.AddShape( _
             msoShapeRoundedRectangle, _
             hedef.Left, _
-            hedef.Top, _
+            hedef.top, _
             hedef.Width, _
             hedef.Height)
 
@@ -561,7 +561,7 @@ ByVal ws As Worksheet)
         ws.Shapes.AddShape( _
             msoShapeRoundedRectangle, _
             hedef.Left, _
-            hedef.Top, _
+            hedef.top, _
             hedef.Width, _
             hedef.Height)
 

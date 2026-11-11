@@ -12,9 +12,11 @@ eklenirken bu kurallar birebir uygulanır; "aynı olanlara dokunulmaz".
   `claude/aksora-vba-error-fix-a7b5so` dalında `vba/*.bas` olarak tutulur.
 
 ## Derleme (Linux)
-- Kaynaklar: scratchpad `raw/*.txt` (cp1254, CRLF). Değişiklik → `tools/vbalint.py` →
-  `tools/build_bin.py <temel vbaProject.bin> raw new_vbaProject.bin` →
-  `tools/build_base.py <temel xlsm> new_vbaProject.bin final/AKSORA.xlsm`.
+- Araçlar depoda: `tools/vbakod.py` (+ ovba.py, vbadir.py, cfb.py; `pip install olefile`).
+  1) `python3 tools/vbakod.py cikar <kullanıcının son xlsm'i> <scratch>/raw` → modüller raw/*.txt (cp1254, CRLF; kaynak gerçeği).
+  2) Düzenle (tools/ed.py, scratch dizininden: F('modX').R(eski,yeni).save()), denetim: tools/vbalint.py, decl_check, xmod_check, proc_size, dup_check (scratch dizininden).
+  3) `python3 tools/vbakod.py derle <son xlsm> <scratch>/raw final/AKSORA.xlsm` (offset 0, _VBA_PROJECT 0xFFFF → Excel kaynaktan derler; geri okuma doğrulanır).
+- Scratchpad oturum sıfırlanınca silinir; araçlar artık depoda.
 - Yeni modül eklenmez; yeni kod mevcut modüllere eklenir.
 
 ## Kilitli şablonlar
@@ -816,7 +818,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-11: Proje takibi: YÖNETİCİ ÖZETİ (7 karar satırı: satın alınacak, siparişte, iptal/azalt, fazla stok, başlamayan proje, fiyatsız, başka kodla sipariş) ve EXCEL'E AKTAR (masaüstü, AKSORA_IMZA_UYGULA = T_AksoraImza). ME2N'de teslim tarihi yok → sipariş tarihi/yaşı. MB51 0 dönerse eski kayıt korunur; MS_AlvMetin dosya 1 sn sabit kalınca okunur. BX25=PRJ_V3. Taban up53. Açık soru: Artvin D011 de yatırım deposu — hesaba katılsın mı?
 
-## Sıradaki işler
+- 2026-11-11: Proje takibi SAHA TESPİTİ: proje seçilince detayda sarı "Sahada Kullanılan" sütunu (toplam kullanım). Kayıt _Y_SAHA (il, PYP, mal, miktar, tarih, kullanıcı). Kullanılan = max(hakediş, saha); hakedişe girmemiş = fark, projede kalan fiili = SAP projede kalan - fark (negatif = ayrılmadan kullanılmış → 415). Tamamlanma fiiliye göre; tüm projeler malzeme ihtiyacı değişmez (fiziksel denge). Değişim: Y_SAHA_DEGISIM (BX26 sütun, BX27-28 satırlar; KUR başında silinir). Hakediş sütunu en fazla 5 ("5+"). Özet 8. satır: hakedişe girmemiş. BX25=PRJ_V4. Taban up54.\n\n## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
 - Kalite Kontrol birimi: kullanıcıdan MB51 /KK düzeni, IQ09 üretici/garanti alanları ve tasarım onayı bekleniyor.

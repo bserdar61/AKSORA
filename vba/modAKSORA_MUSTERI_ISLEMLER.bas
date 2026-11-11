@@ -4,7 +4,7 @@ Private mHazir As Boolean
 Public AKSORA_MUSTERI_STOK_HESAP_SAYFA As String
 Public AKSORA_MUSTERI_STOK_HESAP_ZAMAN As Double
 #If VBA7 Then
-Private Declare PtrSafe Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hwnd As LongPtr) As Long
+Private Declare PtrSafe Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hWnd As LongPtr) As Long
 #Else
 Private Declare Function M_PencereKilit Lib "user32" Alias "LockWindowUpdate" (ByVal hwnd As Long) As Long
 #End If
@@ -90,7 +90,7 @@ End Sub
 Public Function AKSORA_PENCERE_KILIT(ByVal kilitle As Boolean) As Boolean
     On Error Resume Next
     If kilitle Then
-        AKSORA_PENCERE_KILIT = (M_PencereKilit(application.hwnd) <> 0)
+        AKSORA_PENCERE_KILIT = (M_PencereKilit(application.hWnd) <> 0)
     Else
         M_PencereKilit 0
     End If
@@ -118,20 +118,20 @@ Public Sub AKSORA_MUSTERI_ALT_BANT(ByVal ws As Worksheet)
     For Each s In ws.Shapes
         If Left$(s.Name, 14) = "MUSTERI_HIZLI_" Then
             s.Placement = xlFreeFloating
-            If Abs(s.Top - (h.Top + 1)) > 0.5 Then s.Top = h.Top + 1
+            If Abs(s.top - (h.top + 1)) > 0.5 Then s.top = h.top + 1
             If Abs(s.Height - (h.Height - 2)) > 0.5 Then s.Height = h.Height - 2
         End If
     Next s
     Set r = ws.Range("B28:AB29")
     alt.Placement = xlFreeFloating
-    If Abs(alt.Top - r.Top) > 0.5 Then alt.Top = r.Top
+    If Abs(alt.top - r.top) > 0.5 Then alt.top = r.top
     If Abs(alt.Height - r.Height) > 0.5 Then alt.Height = r.Height
     alt.Visible = msoTrue
     alt.ZOrder msoBringToFront
     Set yazi = M_SEKIL(ws, "AKSORA15_ALT_KURUM")
     If Not yazi Is Nothing Then
         yazi.Placement = xlFreeFloating
-        yazi.Left = alt.Left: yazi.Width = alt.Width: yazi.Top = alt.Top: yazi.Height = alt.Height
+        yazi.Left = alt.Left: yazi.Width = alt.Width: yazi.top = alt.top: yazi.Height = alt.Height
         t = Trim$(Replace(Replace(yazi.TextFrame2.TextRange.Text, vbCr, ""), vbLf, ""))
         If Len(t) = 0 Then
             yazi.TextFrame2.TextRange.Text = "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & M_IL_ADI() & " Ýl Müdürlüðü"
@@ -147,12 +147,12 @@ Public Sub AKSORA_MUSTERI_ALT_BANT(ByVal ws As Worksheet)
     If Not s Is Nothing Then
         s.Placement = xlFreeFloating
         s.Left = alt.Left: s.Width = alt.Width
-        s.Top = alt.Top + alt.Height: s.Height = 16
+        s.top = alt.top + alt.Height: s.Height = 16
         s.ZOrder msoBringToFront
     End If
     Set foto = M_SEKIL(ws, "AKSORA15_TEK_ARKA_PLAN")
     If Not foto Is Nothing Then
-        If alt.Top > foto.Top And Abs(foto.Top + foto.Height - alt.Top) > 0.5 Then foto.Height = alt.Top - foto.Top
+        If alt.top > foto.top And Abs(foto.top + foto.Height - alt.top) > 0.5 Then foto.Height = alt.top - foto.top
     End If
     If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _
         UserInterfaceOnly:=True, AllowFiltering:=True
@@ -286,7 +286,7 @@ Public Sub AKSORA_MUSTERI_PANEL_GOSTER()
     If hedef Is Nothing Then Exit Sub
     If AKSORA_ADMIN_TOPLU Then AKSORA_MUSTERI_PANEL_YENILE: Exit Sub
     ev = application.EnableEvents
-    kilit = (M_PencereKilit(application.hwnd) <> 0)
+    kilit = (M_PencereKilit(application.hWnd) <> 0)
     application.ScreenUpdating = False
     application.EnableEvents = False
     ThisWorkbook.Activate
@@ -351,7 +351,7 @@ Public Sub AKSORA_MUSTERI_SAYFA_AC()
     If M_STOK(hedef.Name) Then kart = AKSORA_BEKLE_AC("AKSORA  |  MÜÞTERÝ BÝRÝMÝ", "Sayfa açýlýyor...", 0.4)
     AKSORA_MUSTERI_STOK_HESAP_SAYFA = vbNullString
     ' Gecis boyunca pencere cizimi kilitlenir; yeni sayfa tek seferde ve hazir halde gorunur.
-    kilit = (M_PencereKilit(application.hwnd) <> 0)
+    kilit = (M_PencereKilit(application.hWnd) <> 0)
     application.ScreenUpdating = False
     application.EnableEvents = False
     hedef.Visible = xlSheetVisible
@@ -454,7 +454,7 @@ Private Sub M_STOK_KUR(ByVal ws As Worksheet)
     If eski Is Nothing Then Exit Sub
     ad = eski.Name
     If eski.Type <> msoFormControl Then
-        x = eski.Left: y = eski.Top: bw = eski.Width: h = eski.Height
+        x = eski.Left: y = eski.top: bw = eski.Width: h = eski.Height
         eski.Delete
         Set liste = ws.Shapes.AddFormControl(xlDropDown, x, y, bw, h)
         liste.Name = ad: liste.Placement = xlFreeFloating
@@ -561,10 +561,10 @@ Private Sub M_DEPO_KONUM(ByVal ws As Worksheet, ByVal liste As Shape)
     Set baslik = ws.Shapes("AKT1_DEPO_KART_BASLIK")
     With liste
         .Left = baslik.Left
-        .Top = kart.Top + kart.Height * 0.52
+        .top = kart.top + kart.Height * 0.52
         .Width = kart.Left + kart.Width - .Left - 8
         .Height = application.Min(17, kart.Height * 0.34)
-        .Top = application.Min(kart.Top + kart.Height * 0.52, kart.Top + kart.Height - .Height - 6)
+        .top = application.Min(kart.top + kart.Height * 0.52, kart.top + kart.Height - .Height - 6)
         .Placement = xlFreeFloating
         .ZOrder msoBringToFront
     End With
@@ -740,7 +740,7 @@ Private Sub M_BOS_RAPOR(ByVal ws As Worksheet)
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
     If Not s Is Nothing Then
         s.TextFrame2.TextRange.Text = "AKSORA  |  " & baslik & "  |  Veriler SAP'den alýnýr."
-        s.Left = tablo.Left: s.Top = tablo.Top + tablo.Height + 4
+        s.Left = tablo.Left: s.top = tablo.top + tablo.Height + 4
         s.Width = tablo.Width
         On Error Resume Next
         s.TextFrame2.WordWrap = msoFalse: s.TextFrame2.MarginLeft = 2
@@ -806,7 +806,7 @@ SonrakiGrafik:
             If Not s Is Nothing Then
                 s.TextFrame2.TextRange.Text = AKSORA_SAYI_METNI(CDbl(oranlar(j)) / toplamPay, "0.0%")
                 s.Visible = msoTrue
-                If Not a Is Nothing Then s.Top = a.Top
+                If Not a Is Nothing Then s.top = a.top
                 If Not payBas Is Nothing Then
                     s.Left = payBas.Left: s.Width = payBas.Width
                     s.TextFrame2.MarginLeft = payBas.TextFrame2.MarginLeft
@@ -873,7 +873,7 @@ Private Sub M_LEJANT_KARE(ByVal ws As Worksheet)
             If s.AutoShapeType = msoShapeRoundedRectangle Then s.Adjustments.Item(1) = 0.2
             If Not a Is Nothing Then
                 s.Left = a.Left - kenar - 6
-                s.Top = a.Top + (a.Height - kenar) / 2
+                s.top = a.top + (a.Height - kenar) / 2
             End If
         End If
     Next s
@@ -1310,7 +1310,7 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
             End If
             e4.Left = e3.Left: e4.Width = e3.Width
             e4.TextFrame2.TextRange.ParagraphFormat.Alignment = e3.TextFrame2.TextRange.ParagraphFormat.Alignment
-            d4.Left = d3.Left: d4.Top = e4.Top + (d3.Top - e3.Top)
+            d4.Left = d3.Left: d4.top = e4.top + (d3.top - e3.top)
             d4.Visible = msoTrue
             On Error GoTo 0
         End If
@@ -1369,10 +1369,10 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         ws.ScrollArea = "A1:AB30"
         Set s = Nothing: Set s = M_SEKIL(ws, "AKSORA15_PANEL_TARIHI")
         If s Is Nothing Then
-            Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, e3.Left, e3.Top + e3.Height, e3.Width, 16)
+            Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, e3.Left, e3.top + e3.Height, e3.Width, 16)
             s.Name = "AKSORA15_PANEL_TARIHI"
         End If
-        s.Left = e3.Left: s.Top = e3.Top + e3.Height: s.Width = e3.Width: s.Height = 16
+        s.Left = e3.Left: s.top = e3.top + e3.Height: s.Width = e3.Width: s.Height = 16
         s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = RGB(217, 240, 245)
         s.line.Visible = msoFalse: s.Placement = xlFreeFloating
         With s.TextFrame2
@@ -1404,7 +1404,7 @@ Private Sub M_PANEL_KUR(ByVal ws As Worksheet, ByVal calisiyor As Boolean)
         h = sr.Height - 8
         If h < 16 Then h = sr.Height
         dg.Height = h: dg.Width = 196
-        dg.Top = sr.Top + (sr.Height - h) / 2
+        dg.top = sr.top + (sr.Height - h) / 2
         dg.Left = sr.Left + sr.Width - dg.Width - 10
         dg.Fill.Visible = msoTrue
         dg.Fill.TwoColorGradient msoGradientVertical, 1
@@ -1778,11 +1778,11 @@ Private Sub M_KART_TASI(ByVal ws As Worksheet, ByVal kartlar As Variant, ByVal s
     ReDim uye(1 To ws.Shapes.Count)
     For Each s In ws.Shapes
         j = j + 1: uye(j) = -1
-        cx = s.Left + s.Width / 2: cy = s.Top + s.Height / 2
+        cx = s.Left + s.Width / 2: cy = s.top + s.Height / 2
         For i = 0 To ust
             Set k = kartlar(i)
             If s.Name <> k.Name And s.Width < k.Width And s.Height <= k.Height Then
-                If cx >= k.Left And cx <= k.Left + k.Width And cy >= k.Top And cy <= k.Top + k.Height Then
+                If cx >= k.Left And cx <= k.Left + k.Width And cy >= k.top And cy <= k.top + k.Height Then
                     uye(j) = i: Exit For
                 End If
             End If
@@ -1875,22 +1875,22 @@ Private Sub M_EV_SIMGE(ByVal ws As Worksheet)
     On Error Resume Next
     cati.LockAspectRatio = msoFalse: govde.LockAspectRatio = msoFalse
     cati.Rotation = 0: govde.Rotation = 0
-    w = z.Width: h = z.Height: t = z.Top
+    w = z.Width: h = z.Height: t = z.top
     cx = Round(z.Left + w / 2, 1)
     cw = Round(w * 0.78 / 1.5, 0) * 1.5: gw = Round(w * 0.48 / 1.5, 0) * 1.5
     cati.Width = cw: cati.Height = Round(h * 0.3, 1)
-    cati.Left = cx - cw / 2: cati.Top = t + Round(h * 0.18, 1)
+    cati.Left = cx - cw / 2: cati.top = t + Round(h * 0.18, 1)
     govde.Width = gw: govde.Height = Round(h * 0.42, 1)
-    govde.Left = cx - gw / 2: govde.Top = cati.Top + cati.Height - 1
+    govde.Left = cx - gw / 2: govde.top = cati.top + cati.Height - 1
     pw = Round(w * 0.1 / 0.75, 0) * 0.75
     If Not r0 Is Nothing Then
         r0.Width = pw: r0.Height = Round(h * 0.2, 1)
-        r0.Left = cx - pw - Round(w * 0.05, 1): r0.Top = govde.Top + (govde.Height - r0.Height) / 2
+        r0.Left = cx - pw - Round(w * 0.05, 1): r0.top = govde.top + (govde.Height - r0.Height) / 2
         r0.Visible = msoTrue
     End If
     If Not r1 Is Nothing Then
         r1.Width = pw: r1.Height = Round(h * 0.2, 1)
-        r1.Left = cx + Round(w * 0.05, 1): r1.Top = govde.Top + (govde.Height - r1.Height) / 2
+        r1.Left = cx + Round(w * 0.05, 1): r1.top = govde.top + (govde.Height - r1.Height) / 2
         r1.Visible = msoTrue
     End If
     If Not r2 Is Nothing Then r2.Visible = msoFalse
@@ -1951,7 +1951,7 @@ Private Sub M_DUZEN_RAPOR(ByVal ws As Worksheet, ByVal w As Double)
     For Each s In ws.Shapes
         If InStr(s.Name, "FILIGRAN") > 0 Then
             s.Left = sag - s.Width
-            If Not z Is Nothing Then s.Top = z.Top + z.Height + 8
+            If Not z Is Nothing Then s.top = z.top + z.Height + 8
         End If
     Next s
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
@@ -1983,7 +1983,7 @@ Private Sub M_DUZEN_ARAMA(ByVal ws As Worksheet, ByVal w As Double)
     Set s = M_SEKIL(ws, "btnMalzemeAnaPanel")
     If Not s Is Nothing Then
         s.Left = w - 12 - s.Width
-        s.Top = ws.Rows(1).Top + (ws.Rows(3).Top - ws.Rows(1).Top - s.Height) / 2
+        s.top = ws.Rows(1).top + (ws.Rows(3).top - ws.Rows(1).top - s.Height) / 2
         s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(255, 255, 255): s.line.Weight = 0.75
     End If
     ' Il paneli O:P alanina tam oturur.
@@ -2087,7 +2087,7 @@ Private Sub M_DEPO_DAGILIM(ByVal ws As Worksheet)
     On Error Resume Next
     ws.Shapes("AKSORA_RP_DM_HATA").Delete
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
-    If Not s Is Nothing Then y = s.Top + s.Height + 20 Else y = 500
+    If Not s Is Nothing Then y = s.top + s.Height + 20 Else y = 500
     Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_HATA", "Depo bazýnda malzeme daðýlýmý kurulamadý: Hata " & no & " - " & metin, _
         2, y, 700, 20, 9, RGB(153, 27, 27), True, msoAlignLeft)
     On Error GoTo 0
@@ -2197,19 +2197,19 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     tw = ws.Range(ws.Cells(1, 1), ws.Cells(1, kolSay)).Width
     Set z = M_SEKIL(ws, "AKSORA_RP_HALKA_ZEMIN")
     If z Is Nothing Then
-        x2 = tw + 12: sag = x2 + tw: ust = ws.Rows(9).Top
+        x2 = tw + 12: sag = x2 + tw: ust = ws.Rows(9).top
     Else
-        x2 = z.Left: sag = z.Left + z.Width: ust = z.Top + z.Height
+        x2 = z.Left: sag = z.Left + z.Width: ust = z.top + z.Height
     End If
     Set s = M_SEKIL(ws, "AKSORA_RP_ALT")
-    If Not s Is Nothing Then ust = application.Max(ust, s.Top + s.Height)
+    If Not s Is Nothing Then ust = application.Max(ust, s.top + s.Height)
     r = 9
     Do While ws.Cells(r, 1).Value2 <> "TOPLAM" And r < 2000
         r = r + 1
     Loop
-    If r < 2000 Then ust = application.Max(ust, ws.Rows(r).Top + ws.Rows(r).Height)
+    If r < 2000 Then ust = application.Max(ust, ws.Rows(r).top + ws.Rows(r).Height)
     bas = 9
-    Do While ws.Rows(bas).Top < ust + 22
+    Do While ws.Rows(bas).top < ust + 22
         bas = bas + 1
     Loop
     ' Baslik satiri, tablo basligi, veri, TOPLAM
@@ -2266,9 +2266,9 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     End With
     ws.Range("BX31").Value2 = bas: ws.Range("BX32").Value2 = ilkVeri + nM
     ' Bolum basligi ve depo secimi (tablo genisliginde)
-    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_BASLIK", "DEPO BAZINDA MALZEME DAÐILIMI", 2, ws.Rows(bas).Top, tw * 0.5, 30, 12, RGB(12, 45, 79), True, msoAlignLeft)
-    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_SECIM_ETIKET", "DEPO:", tw * 0.5, ws.Rows(bas).Top, 40, 30, 9, RGB(39, 76, 106), True, msoAlignRight)
-    Set liste = ws.Shapes.AddFormControl(xlDropDown, tw * 0.5 + 46, ws.Rows(bas).Top + 6, tw * 0.5 - 46, 18)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_BASLIK", "DEPO BAZINDA MALZEME DAÐILIMI", 2, ws.Rows(bas).top, tw * 0.5, 30, 12, RGB(12, 45, 79), True, msoAlignLeft)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_SECIM_ETIKET", "DEPO:", tw * 0.5, ws.Rows(bas).top, 40, 30, 9, RGB(39, 76, 106), True, msoAlignRight)
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, tw * 0.5 + 46, ws.Rows(bas).top + 6, tw * 0.5 - 46, 18)
     liste.Name = "AKSORA_RP_DM_LISTE": liste.Placement = xlFreeFloating
     With liste.ControlFormat
         .RemoveAllItems
@@ -2287,8 +2287,8 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     liste.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_DAGILIM_SEC"
     ' Sag: grafik alani (ust grafik alaniyla ayni sol/sag cizgi)
     zw = sag - x2
-    zh = application.Max(340, tablo.Top + tablo.Height - ws.Rows(bas).Top)
-    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x2, ws.Rows(bas).Top, zw, zh)
+    zh = application.Max(340, tablo.top + tablo.Height - ws.Rows(bas).top)
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x2, ws.Rows(bas).top, zw, zh)
     s.Name = "AKSORA_RP_DM_ZEMIN": s.Placement = xlFreeFloating
     s.Adjustments.Item(1) = 0.02
     If Not z Is Nothing Then
@@ -2300,7 +2300,7 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     End If
     s.Shadow.Visible = msoFalse
     yazi = secim: If Len(CStr(dep(secim)(0))) > 0 Then yazi = secim & "  |  " & CStr(dep(secim)(0))
-    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_GRAFIK_BASLIK", yazi & "  —  MALZEME DAÐILIMI", x2 + 12, ws.Rows(bas).Top + 10, zw - 24, 24, 12, RGB(12, 45, 79), True, msoAlignCenter)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_GRAFIK_BASLIK", yazi & "  —  MALZEME DAÐILIMI", x2 + 12, ws.Rows(bas).top + 10, zw - 24, 24, 12, RGB(12, 45, 79), True, msoAlignCenter)
     ' Ilk 9 malzeme + Diger
     m = nM: If m > 10 Then m = 10
     ReDim adlar(1 To m): ReDim oranlar(1 To m)
@@ -2315,7 +2315,7 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
         RGB(14, 165, 233), RGB(34, 197, 94), RGB(236, 72, 153), RGB(100, 116, 139), RGB(202, 138, 4))
     gs = application.Min(zh - 70, zw * 0.42)
     If gs < 120 Then gs = 120
-    Set co = ws.ChartObjects.Add(x2 + zw * 0.04, ws.Rows(bas).Top + 50, gs, gs)
+    Set co = ws.ChartObjects.Add(x2 + zw * 0.04, ws.Rows(bas).top + 50, gs, gs)
     co.Name = "AKSORA_RP_DM_GRAFIK": co.Placement = xlFreeFloating
     With co.Chart
         Do While .SeriesCollection.Count > 0: .SeriesCollection(1).Delete: Loop
@@ -2334,15 +2334,15 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
         On Error GoTo 0
     End With
     Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_MERKEZ", "TOPLAM" & vbLf & AKSORA_SAYI_METNI(toplamMk, "#,##0") & vbLf & M_ADET(nM) & " çeþit malzeme", _
-        co.Left + gs * 0.2, co.Top + gs * 0.36, gs * 0.6, gs * 0.28, 10, RGB(12, 45, 79), True, msoAlignCenter)
+        co.Left + gs * 0.2, co.top + gs * 0.36, gs * 0.6, gs * 0.28, 10, RGB(12, 45, 79), True, msoAlignCenter)
     s.TextFrame2.WordWrap = msoTrue
     ' Lejant: renk, malzeme kodu + kisa tanim, pay
     lx = co.Left + gs + zw * 0.05: lw = x2 + zw - 14 - lx
-    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_LISTE_BASLIK", "MALZEME", lx + 16, co.Top - 4, lw - 80, 20, 9, RGB(26, 57, 88), True, msoAlignLeft)
-    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_PAY_BASLIK", "PAY", lx + lw - 60, co.Top - 4, 60, 20, 9, RGB(26, 57, 88), True, msoAlignRight)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_LISTE_BASLIK", "MALZEME", lx + 16, co.top - 4, lw - 80, 20, 9, RGB(26, 57, 88), True, msoAlignLeft)
+    Set s = M_DM_YAZI(ws, "AKSORA_RP_DM_PAY_BASLIK", "PAY", lx + lw - 60, co.top - 4, 60, 20, 9, RGB(26, 57, 88), True, msoAlignRight)
     adim = application.Min(24, (gs - 20) / m)
     For i = 1 To m
-        satirY = co.Top + 20 + (i - 1) * adim
+        satirY = co.top + 20 + (i - 1) * adim
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, lx, satirY + 4, 10, 10)
         s.Name = "AKSORA_RP_DM_HALKA_RENK_" & i
         s.Fill.ForeColor.RGB = renkler((i - 1) Mod 10): s.line.Visible = msoFalse: s.Shadow.Visible = msoFalse
@@ -2357,7 +2357,7 @@ Private Sub M_DEPO_DAGILIM_KUR(ByVal ws As Worksheet)
     Next i
     ' Logo bolumun altina
     For Each s In ws.Shapes
-        If InStr(s.Name, "FILIGRAN") > 0 Then s.Left = sag - s.Width: s.Top = ws.Rows(bas).Top + zh + 8
+        If InStr(s.Name, "FILIGRAN") > 0 Then s.Left = sag - s.Width: s.top = ws.Rows(bas).top + zh + 8
     Next s
 End Sub
 

@@ -1168,7 +1168,7 @@ End Sub
                 Dim dict As Object
                 Dim anahtar As Variant
 
-                Dim nm As Name
+                Dim nM As Name
                 Dim BulunanAd As Name
                 Dim KisaAd As String
                 Dim RefersToMetni As String
@@ -1218,9 +1218,9 @@ End Sub
 
                 Set BulunanAd = Nothing
 
-                For Each nm In ThisWorkbook.names
+                For Each nM In ThisWorkbook.names
 
-                    KisaAd = nm.Name
+                    KisaAd = nM.Name
 
                     If InStrRev(KisaAd, "!") > 0 Then
                         KisaAd = Mid$(KisaAd, InStrRev(KisaAd, "!") + 1)
@@ -1229,11 +1229,11 @@ End Sub
                     KisaAd = Replace(KisaAd, "'", "")
 
                     If StrComp(KisaAd, "_EPP_DEPO_LISTESI", vbTextCompare) = 0 Then
-                        Set BulunanAd = nm
+                        Set BulunanAd = nM
                         Exit For
                     End If
 
-                Next nm
+                Next nM
 
                 RefersToMetni = _
                 "='" & Replace(ws.Name, "'", "''") & _

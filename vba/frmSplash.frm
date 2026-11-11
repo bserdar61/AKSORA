@@ -1,5 +1,5 @@
 Attribute VB_Name = "frmSplash"
-Attribute VB_Base = "0{243D4FDB-4FAE-463A-81DD-968BE190950D}{64ECC92A-8779-4C4F-A28D-4549F87CB7A0}"
+Attribute VB_Base = "0{F872CD4F-60AB-4BDD-BE09-339982C3C5A4}{1E57857C-3340-4A90-A61F-836AD5BFF6A3}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -14,13 +14,13 @@ Option Explicit
         ByVal lpWindowName As String) As LongPtr
 
     Private Declare PtrSafe Function SetForegroundWindow Lib "user32" ( _
-        ByVal hwnd As LongPtr) As Long
+        ByVal hWnd As LongPtr) As Long
 
     Private Declare PtrSafe Function BringWindowToTop Lib "user32" ( _
-        ByVal hwnd As LongPtr) As Long
+        ByVal hWnd As LongPtr) As Long
 
     Private Declare PtrSafe Function SetWindowPos Lib "user32" ( _
-        ByVal hwnd As LongPtr, _
+        ByVal hWnd As LongPtr, _
         ByVal hWndInsertAfter As LongPtr, _
         ByVal x As Long, _
         ByVal y As Long, _

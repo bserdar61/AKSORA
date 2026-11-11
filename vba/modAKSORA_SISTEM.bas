@@ -322,7 +322,7 @@ Private Sub AKSORA_V13_ARAMA_ZEMIN()
     Set s = ws.Shapes("AKSORA_ARAMA_SABIT_ACIKLAMA")
     On Error GoTo 0
     Set alan = ws.Range("M20:N20")
-    If s Is Nothing Then Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, alan.Left, alan.Top, alan.Width, alan.Height)
+    If s Is Nothing Then Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, alan.Left, alan.top, alan.Width, alan.Height)
     With s
         .Name = "AKSORA_ARAMA_SABIT_ACIKLAMA"
         .TextFrame.Characters.Text = "Seçili ildeki mevcut stoklar aranýr."

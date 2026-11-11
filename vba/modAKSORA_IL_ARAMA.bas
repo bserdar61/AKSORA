@@ -7,7 +7,7 @@ Private Const sayfa As String = "MALZEME_ARA"
 Private Const ON_EK As String = "AKSORA_V4_"
 
 Public Sub AKSORA_IL_ARAMA_KUR()
-    Dim ws As Worksheet, sh As Shape, nm As String, secim As String
+    Dim ws As Worksheet, sh As Shape, nM As String, secim As String
     Dim i As Long, il As Variant, scr As Boolean, ev As Boolean
     Dim adres As Variant, eskiAlan As Range, yeniAlan As Range, metin As Variant
     scr = application.ScreenUpdating: ev = application.EnableEvents
@@ -78,17 +78,17 @@ Public Sub AKSORA_IL_ARAMA_KUR()
            Left$(sh.Name, 10) = "AKSORA_V2_" Then sh.Delete
     Next i
     For Each sh In ws.Shapes
-        nm = ""
+        nM = ""
         On Error Resume Next
-        nm = UCase$(Trim$(sh.TextFrame.Characters.Text))
+        nM = UCase$(Trim$(sh.TextFrame.Characters.Text))
         On Error GoTo Hata
-        If nm = "ANA" Or nm = "ANA PANEL" Then
+        If nM = "ANA" Or nM = "ANA PANEL" Then
             sh.Left = ws.Range("M3").Left + 1
-            sh.Top = ws.Range("M3").Top + 1
+            sh.top = ws.Range("M3").top + 1
             sh.Width = ws.Range("M3").Width - 2
             sh.Height = ws.Range("M3").Height - 2
             sh.Placement = xlFreeFloating
-        ElseIf nm = "ARA" Then
+        ElseIf nM = "ARA" Then
             sh.OnAction = "'" & ThisWorkbook.Name & "'!AKSORA_IL_ARAMA_YAP"
         End If
     Next sh
@@ -155,7 +155,7 @@ Private Sub AKSORA_V4_DUGME(ByVal ws As Worksheet, ByVal etiket As String, ByVal
     Dim sh As Shape, alan As Range, kod As String
     Set alan = ws.Range("M" & satir & ":N" & (satir + 1))
     kod = AKSORA_V4_NORM(etiket)
-    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, alan.Left + 2, alan.Top + 1, alan.Width - 4, alan.Height - 2)
+    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, alan.Left + 2, alan.top + 1, alan.Width - 4, alan.Height - 2)
     sh.Name = ON_EK & kod
     sh.TextFrame.Characters.Text = etiket
     sh.TextFrame.HorizontalAlignment = xlHAlignCenter

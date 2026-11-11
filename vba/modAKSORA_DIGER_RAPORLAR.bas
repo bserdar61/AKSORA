@@ -234,34 +234,34 @@ Private Sub AK_UstBanner(ByVal ws As Worksheet)
     Set alan = ws.Range("A1:Q2")
     yol = AK_Yol(AK_BANNER)
     If Len(yol) > 0 Then
-        Set sh = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, alan.Left, alan.Top, alan.Width, alan.Height)
+        Set sh = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, alan.Left, alan.top, alan.Width, alan.Height)
         sh.Name = AK_ON & "BANNER"
         AK_Kilitle sh
     Else
         alan.Interior.Color = RGB(24, 58, 94)
     End If
     Set sh = AK_Metin(ws, AK_ON & "BASLIK", "AKSORA  |  " & AK_Baslik(ws.Name), _
-                      alan.Left + 20, alan.Top + 12, ws.Range("M1").Left - alan.Left - 20, _
+                      alan.Left + 20, alan.top + 12, ws.Range("M1").Left - alan.Left - 20, _
                       45, 24, vbWhite, True)
     sh.TextFrame2.VerticalAnchor = msoAnchorMiddle
 End Sub
 
 Private Sub AK_Kart(ByVal ws As Worksheet, ByVal adres As String, ByVal baslik As String, _
                     ByVal deger As String, ByVal no As String, ByVal renk As Long)
-    Dim a As Range, sh As Shape, nm As String
+    Dim a As Range, sh As Shape, nM As String
     Set a = ws.Range(adres)
-    nm = Replace(adres, ":", "_")
-    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 3, a.Top + 5, a.Width - 6, a.Height - 10)
+    nM = Replace(adres, ":", "_")
+    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 3, a.top + 5, a.Width - 6, a.Height - 10)
     With sh
-        .Name = AK_ON & "KART_" & nm
+        .Name = AK_ON & "KART_" & nM
         .Fill.ForeColor.RGB = RGB(243, 249, 255)
         .line.ForeColor.RGB = RGB(210, 227, 243)
         .line.Weight = 1
     End With
     AK_Kilitle sh
-    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 12, a.Top + 22, 46, 46)
+    Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 12, a.top + 22, 46, 46)
     With sh
-        .Name = AK_ON & "NO_" & nm
+        .Name = AK_ON & "NO_" & nM
         .Fill.ForeColor.RGB = renk
         .line.Visible = msoFalse
         .TextFrame2.TextRange.Text = no
@@ -273,10 +273,10 @@ Private Sub AK_Kart(ByVal ws As Worksheet, ByVal adres As String, ByVal baslik A
         .TextFrame2.VerticalAnchor = msoAnchorMiddle
     End With
     AK_Kilitle sh
-    Set sh = AK_Metin(ws, AK_ON & "ETIKET_" & nm, baslik, _
-                      a.Left + 70, a.Top + 18, a.Width - 84, 25, 12, RGB(28, 54, 83), True)
-    Set sh = AK_Metin(ws, AK_ON & "DEGER_" & nm, deger, _
-                      a.Left + 70, a.Top + 47, a.Width - 84, 38, 17, RGB(22, 58, 96), True)
+    Set sh = AK_Metin(ws, AK_ON & "ETIKET_" & nM, baslik, _
+                      a.Left + 70, a.top + 18, a.Width - 84, 25, 12, RGB(28, 54, 83), True)
+    Set sh = AK_Metin(ws, AK_ON & "DEGER_" & nM, deger, _
+                      a.Left + 70, a.top + 47, a.Width - 84, 38, 17, RGB(22, 58, 96), True)
     sh.ZOrder msoBringToFront
 End Sub
 
@@ -323,7 +323,7 @@ End Function
 
 Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
                       ByVal degerKol As Long, ByVal toplam As Long)
-    Dim alan As Range, co As ChartObject, CH As Chart, sr As Series
+    Dim alan As Range, co As ChartObject, ch As Chart, sr As Series
     Dim adlar() As String, tutarlar() As Double, renkler As Variant
     Dim r As Long, n As Long, i As Long, deger As Double, genel As Double
     Dim x As Double, y As Double, panelLeft As Double, panelWidth As Double
@@ -365,7 +365,7 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
     Else
         Set alan = ws.Range("F8:Q23")
     End If
-    x = alan.Left: y = alan.Top
+    x = alan.Left: y = alan.top
     If AKSORA_TASARIM_AKTIF() Then
         panelWidth = alan.Width * 0.39
     Else
@@ -387,8 +387,8 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
        alan.Width - panelWidth - 34, alan.Height - 62)
     co.Name = AK_ON & "HALKA_GRAFIK"
     co.Placement = xlFreeFloating
-    Set CH = co.Chart
-    With CH
+    Set ch = co.Chart
+    With ch
         .ChartType = xlDoughnut
         .HasLegend = False
         .HasTitle = False
@@ -410,11 +410,11 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
             .Format.line.Weight = 1.6
         End With
     Next i
-    CH.Refresh
+    ch.Refresh
     DoEvents
-    pw = CH.PlotArea.InsideWidth: ph = CH.PlotArea.InsideHeight
-    cx = co.Left + CH.PlotArea.InsideLeft + pw / 2
-    cy = co.Top + CH.PlotArea.InsideTop + ph / 2
+    pw = ch.PlotArea.InsideWidth: ph = ch.PlotArea.InsideHeight
+    cx = co.Left + ch.PlotArea.InsideLeft + pw / 2
+    cy = co.top + ch.PlotArea.InsideTop + ph / 2
         pw = application.Min(pw, ph) * 0.72 * 0.9
 
     Set sh = AK_HalkaYazi(ws, AK_ON & "HALKA_MERKEZ", _
@@ -432,7 +432,7 @@ Private Sub AK_Grafik(ByVal ws As Worksheet, ByVal son As Long, _
         .VerticalAnchor = msoAnchorMiddle
     End With
 
-    CH.HasTitle = False
+    ch.HasTitle = False
     sh.ZOrder msoBringToFront
 
         Set sh = AK_HalkaYazi(ws, AK_ON & "HALKA_LISTE_BASLIK", _
@@ -498,14 +498,14 @@ Private Sub AK_Filigran(ByVal ws As Worksheet, ByVal toplam As Long)
     If Len(yol) = 0 Then Exit Sub
     r = application.Max(24, toplam + 4)
     Set alan = ws.Range("J" & r & ":Q" & (r + 11))
-    Set sh = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, alan.Left, alan.Top, -1, -1)
+    Set sh = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, alan.Left, alan.top, -1, -1)
     With sh
         .Name = AK_ON & "FILIGRAN"
         .LockAspectRatio = msoTrue
         If .Width > alan.Width Then .Width = alan.Width
         If .Height > alan.Height Then .Height = alan.Height
         .Left = alan.Left + (alan.Width - .Width) / 2
-        .Top = alan.Top + (alan.Height - .Height) / 2
+        .top = alan.top + (alan.Height - .Height) / 2
     End With
     AK_Kilitle sh
 End Sub
@@ -517,7 +517,7 @@ Private Sub AK_AltYazi(ByVal ws As Worksheet, ByVal toplam As Long)
     ws.Range(ws.Cells(r, 1), ws.Cells(r, 5)).Borders.LineStyle = xlNone
     Set sh = AK_Metin(ws, AK_ON & "ALT", _
         "AKSORA  |  " & AK_Baslik(ws.Name) & "  |  Veriler SAP raporundan alýnýr.", _
-        ws.Range("A" & r).Left + 3, ws.Range("A" & r).Top + 3, _
+        ws.Range("A" & r).Left + 3, ws.Range("A" & r).top + 3, _
         ws.Range("H" & r).Left - ws.Range("A" & r).Left, 18, _
         10, RGB(99, 124, 153), False)
 End Sub
@@ -533,7 +533,7 @@ Private Sub AK_AnaButonu(ByVal ws As Worksheet)
             On Error GoTo 0
             If yazi = "ANA" Or yazi = "ANA PANEL" Then
                 sh.Left = hedef.Left + 2
-                sh.Top = hedef.Top + 2
+                sh.top = hedef.top + 2
                 sh.Width = hedef.Width - 4
                 sh.Height = hedef.Height - 4
                 sh.Placement = xlFreeFloating
@@ -635,7 +635,7 @@ Public Sub AKSORA_DORT_RAPOR_INCE_DUZELTME()
                     .Height = hedef.Height
                     If .Width > hedef.Width Then .Width = hedef.Width
                     .Left = hedef.Left + (hedef.Width - .Width) / 2
-                    .Top = hedef.Top + (hedef.Height - .Height) / 2
+                    .top = hedef.top + (hedef.Height - .Height) / 2
                     .Placement = xlFreeFloating
                     .Locked = True
                 End With
@@ -726,7 +726,7 @@ Public Sub AKSORA_UC_RAPOR_AMBLEM_KONUM()
                 If sh.Type = msoPicture Or sh.Type = msoLinkedPicture Then
                     ' Yalnizca tablonun saginda, alt kisimdaki amblem resmini sec.
                     ' Ust banner veya buton resimleri kesinlikle secilmez.
-                    If sh.Top >= ws.Rows(20).Top And sh.Left >= ws.Range("J1").Left Then
+                    If sh.top >= ws.Rows(20).top And sh.Left >= ws.Range("J1").Left Then
                         If hedef Is Nothing Then
                             Set hedef = sh
                         ElseIf InStr(1, sh.Name, "AMBLEM", vbTextCompare) > 0 Or _
@@ -749,7 +749,7 @@ Public Sub AKSORA_UC_RAPOR_AMBLEM_KONUM()
                     .Height = alan.Height
                     If .Width > alan.Width Then .Width = alan.Width
                     .Left = alan.Left + (alan.Width - .Width) / 2
-                    .Top = alan.Top + (alan.Height - .Height) / 2
+                    .top = alan.top + (alan.Height - .Height) / 2
                 End With
                 adet = adet + 1
             End If
@@ -1082,7 +1082,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
                     With sh
                         .Placement = xlFreeFloating
                         .Left = ws.Cells(r, "A").Left + 3
-                        .Top = ws.Cells(r, "A").Top + 2
+                        .top = ws.Cells(r, "A").top + 2
                         .Width = ws.Range("A" & r & ":E" & r).Width - 6
                         .Height = 19
                         .Locked = True
@@ -1108,7 +1108,7 @@ Public Sub AKSORA_RAPOR_ALT_YAZI_YERLESTIR(ByVal sayfaAdi As String)
     If Not Bulundu Then
         Set sh = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, _
             ws.Cells(r, "A").Left + 3, _
-            ws.Cells(r, "A").Top + 2, _
+            ws.Cells(r, "A").top + 2, _
             ws.Range("A" & r & ":E" & r).Width - 6, 19)
 
         With sh
@@ -1205,7 +1205,7 @@ Public Sub AKSORA_RAPOR_AMBLEM_HIZALA(ByVal sayfaAdi As String)
         .Width = 80
         If .Height > 80 Then .Height = 80
         .Left = alan.Left + (alan.Width - .Width) / 2
-        .Top = alan.Top
+        .top = alan.top
         .Placement = xlFreeFloating
         .Locked = True
         .Visible = msoTrue

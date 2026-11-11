@@ -9,7 +9,7 @@ Public AKSORA_PANEL_GUNCELLENEN As String
 
 Public Sub AKSORA_ANA_PANEL_UYGULA()
     Dim ws As Worksheet, s As Shape, r As Range
-    Dim i As Long, nm As String, f As String, banner As String
+    Dim i As Long, nM As String, f As String, banner As String
     Dim ev As Boolean, scr As Boolean, hataNo As Long, hataAciklama As String
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets("ANA PANEL")
@@ -24,10 +24,10 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
 
     ' Sadece onceki AKSORA dekorlarini sil; gercek islev butonlari korunur.
     For i = ws.Shapes.Count To 1 Step -1
-        nm = ws.Shapes(i).Name
-        If Left$(nm, 8) = "AKSORA3_" Or Left$(nm, 8) = "AKSORA4_" Or _
-           Left$(nm, 8) = "AKSORA5_" Or Left$(nm, 8) = "AKSORA6_" Or Left$(nm, 8) = "AKSORA7_" Or Left$(nm, 8) = "AKSORA8_" Or Left$(nm, 8) = "AKSORA9_" Or Left$(nm, 9) = "AKSORA10_" Or Left$(nm, 9) = "AKSORA11_" Or Left$(nm, 9) = "AKSORA12_" Or Left$(nm, 9) = "AKSORA13_" Or Left$(nm, 9) = "AKSORA14_" Or Left$(nm, 9) = "AKSORA15_" Or _
-           Left$(nm, 10) = "AKSORA_BG_" Then
+        nM = ws.Shapes(i).Name
+        If Left$(nM, 8) = "AKSORA3_" Or Left$(nM, 8) = "AKSORA4_" Or _
+           Left$(nM, 8) = "AKSORA5_" Or Left$(nM, 8) = "AKSORA6_" Or Left$(nM, 8) = "AKSORA7_" Or Left$(nM, 8) = "AKSORA8_" Or Left$(nM, 8) = "AKSORA9_" Or Left$(nM, 9) = "AKSORA10_" Or Left$(nM, 9) = "AKSORA11_" Or Left$(nM, 9) = "AKSORA12_" Or Left$(nM, 9) = "AKSORA13_" Or Left$(nM, 9) = "AKSORA14_" Or Left$(nM, 9) = "AKSORA15_" Or _
+           Left$(nM, 10) = "AKSORA_BG_" Then
             ws.Shapes(i).Delete
         End If
     Next i
@@ -65,7 +65,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
     End With
     Set r = ws.Range("B7:AB27")
     Set s = ws.Shapes.AddPicture(f, msoFalse, msoTrue, _
-                                 r.Left, r.Top, r.Width, r.Height)
+                                 r.Left, r.top, r.Width, r.Height)
     s.Name = p & "TEK_ARKA_PLAN"
     s.Placement = xlFreeFloating
     s.LockAspectRatio = msoFalse
@@ -77,7 +77,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
     If Len(Dir$(banner)) > 0 Then
         Set r = ws.Range("B2:AB5")
         Set s = ws.Shapes.AddPicture(banner, msoFalse, msoTrue, _
-                                    r.Left, r.Top, r.Width, r.Height)
+                                    r.Left, r.top, r.Width, r.Height)
         s.Name = p & "BANNER": s.Placement = xlFreeFloating
     End If
     ' Orijinal fotograflu banner AB sutununa kadar tek parca uzatildi.
@@ -96,8 +96,8 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
 
     ' Mevcut butonlarin yeri ve makro baglantisi aynen korunur.
     For Each s In ws.Shapes
-        nm = LCase$(s.Name)
-        Select Case nm
+        nM = LCase$(s.Name)
+        Select Case nM
             Case "btntumstok"
                 V11_BUTON s, RGB(0, 110, 94), RGB(64, 238, 183), vbWhite, 15, True
             Case "btnbaglantikontrol", "btnarama", "btnmalzemeara", "btnmalzemearama"
@@ -105,7 +105,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
             Case "btncdp", "btnepp", "btnilce", "btnyuk"
                 V11_BUTON s, RGB(16, 57, 94), RGB(65, 179, 220), vbWhite, 10, False
             Case Else
-                If Left$(nm, 2) = "go" Then
+                If Left$(nM, 2) = "go" Then
                     V11_BUTON s, RGB(236, 250, 255), RGB(112, 195, 228), RGB(15, 68, 106), 9, False
                 End If
         End Select
@@ -114,7 +114,7 @@ Public Sub AKSORA_ANA_PANEL_UYGULA()
     ' IL DEGISTIR: durum seridiyle ayni hizada, sagda AB sinirinda biter.
     Set r = ws.Range("W6:AB6")
     Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, _
-                              r.Left, r.Top, r.Width, r.Height)
+                              r.Left, r.top, r.Width, r.Height)
     s.Name = p & "IL_DEGISTIR"
     s.TextFrame2.TextRange.Text = ChrW(8592) & "  IL DEGISTIR"
     V11_BUTON s, RGB(255, 235, 210), RGB(255, 235, 210), RGB(150, 75, 20), 10, False
@@ -155,7 +155,7 @@ Private Sub V11_KART(ByVal ws As Worksheet, ByVal sol As String, _
     Dim a As Shape, k As Long, rowNo As Long, yy As Double, rh As Double
     Dim labels As Variant, adres As String, valColor As Long
     Set r = ws.Range(sol & "7:" & bitis & "13")
-    x = r.Left: y = r.Top + 8: w = r.Width: h = r.Height - 8
+    x = r.Left: y = r.top + 8: w = r.Width: h = r.Height - 8
 
     ' Tek parca govde; baslik ile govde arasinda beyaz bosluk YOK.
     Set a = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
@@ -259,13 +259,13 @@ End Sub
 Private Sub V8_ALT_SERIT(ByVal ws As Worksheet)
     Dim r As Range, a As Shape
     Set r = ws.Range("B28:AB29")
-    Set a = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.Top, r.Width, r.Height)
+    Set a = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.top, r.Width, r.Height)
     a.Name = p & "ALT_ZEMIN": a.Fill.ForeColor.RGB = RGB(13, 47, 79)
     a.line.Visible = msoFalse
     V8_YAZI ws, p & "ALT_KURUM", "CORUH ELEKTRIK DAGITIM A.S.  |  ARTVIN IL MUDURLUGU", _
-        r.Left, r.Top + 2, r.Width, r.Height / 2 - 1, 10, vbWhite, True, msoAlignCenter
+        r.Left, r.top + 2, r.Width, r.Height / 2 - 1, 10, vbWhite, True, msoAlignCenter
     V8_YAZI ws, p & "ALT_IMZA", StrConv(AKSORA_SAHIBI(), vbProperCase) & "  |  Elektrik-Elektronik Muhendisi", _
-        r.Left, r.Top + r.Height / 2, r.Width, r.Height / 2 - 2, 9, RGB(220, 238, 248), False, msoAlignCenter
+        r.Left, r.top + r.Height / 2, r.Width, r.Height / 2 - 2, 9, RGB(220, 238, 248), False, msoAlignCenter
     ' Orijinal hucreleri silme: eski footer metni korunur.
 End Sub
 
@@ -280,7 +280,7 @@ Private Sub V11_PANEL_TARIHI(ByVal ws As Worksheet)
             c.Font.Color = RGB(217, 240, 245)
         End If
     Next c
-    Set a = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.Top, r.Width, r.Height)
+    Set a = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.top, r.Width, r.Height)
     a.Name = p & "TARIH_ZEMIN"
     a.Fill.ForeColor.RGB = RGB(217, 240, 245)
     a.line.Visible = msoFalse
@@ -291,7 +291,7 @@ Private Sub V11_PANEL_TARIHI(ByVal ws As Worksheet)
         metin = "Panel kontrolü: Güncelleme bekleniyor"
     End If
     V8_YAZI ws, p & "PANEL_TARIHI", metin, _
-        r.Left, r.Top, r.Width, r.Height, 9, RGB(43, 88, 115), False, msoAlignCenter
+        r.Left, r.top, r.Width, r.Height, 9, RGB(43, 88, 115), False, msoAlignCenter
 End Sub
 
 Private Sub V11_BUTON(ByVal s As Shape, ByVal dolgu As Long, _
@@ -343,9 +343,9 @@ Private Sub V6_RECT(ByVal ws As Worksheet, ByVal ad As String, _
                     ByVal saydamlik As Double, ByVal yuvarlak As Boolean)
     Dim s As Shape
     If yuvarlak Then
-        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, r.Left, r.Top, r.Width, r.Height)
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, r.Left, r.top, r.Width, r.Height)
     Else
-        Set s = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.Top, r.Width, r.Height)
+        Set s = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.top, r.Width, r.Height)
     End If
     s.Name = ad
     s.Fill.ForeColor.RGB = renk: s.Fill.Transparency = saydamlik
@@ -447,7 +447,7 @@ Public Sub AKSORA_ANA_PANEL_DURUM_RENK_YENILE()
     Set buton = ws.Shapes(p & "IL_DEGISTIR")
     If Not buton Is Nothing Then
         With ws.Range("B6:AB6")
-            AKSORA_IL_DEGISTIR_STIL buton, .Left, .Top, .Width, .Height
+            AKSORA_IL_DEGISTIR_STIL buton, .Left, .top, .Width, .Height
         End With
     End If
     V22_KART_SON_SATIR ws
@@ -472,7 +472,7 @@ Public Sub AKSORA_IL_DEGISTIR_STIL(ByVal dg As Shape, ByVal sol As Double, ByVal
     h = yukseklik - 8
     If h < 16 Then h = yukseklik
     dg.Height = h: dg.Width = 196
-    dg.Top = ust + (yukseklik - h) / 2
+    dg.top = ust + (yukseklik - h) / 2
     dg.Left = sol + genislik - dg.Width - 10
     dg.Fill.Visible = msoTrue
     dg.Fill.TwoColorGradient msoGradientVertical, 1
@@ -519,7 +519,7 @@ Private Sub V22_KART_SON_SATIR(ByVal ws As Worksheet)
                 .Font.Fill.ForeColor.RGB = e3.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
             End With
             If d4 Is Nothing Then
-                Set d4 = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, d3.Left, e4.Top, d3.Width, e4.Height)
+                Set d4 = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, d3.Left, e4.top, d3.Width, e4.Height)
                 d4.Name = p & "KART_DEGER_" & k & "4"
                 d4.Fill.Visible = msoFalse: d4.line.Visible = msoFalse
                 d4.Placement = xlFreeFloating
@@ -537,7 +537,7 @@ Private Sub V22_KART_SON_SATIR(ByVal ws As Worksheet)
             End If
             d4.DrawingObject.Formula = ""
             d4.Left = d3.Left: d4.Width = d3.Width
-            d4.Top = e4.Top: d4.Height = e4.Height
+            d4.top = e4.top: d4.Height = e4.Height
             adet = V22_DEPO_ADET(CStr(stoklar(i)))
             d4.TextFrame2.TextRange.Text = IIf(adet > 0, AKSORA_SAYI_METNI(adet, "#,##0"), "-")
             d4.Visible = msoTrue

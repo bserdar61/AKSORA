@@ -7,7 +7,7 @@ Option Explicit
 ' KPI, tablo, banner, amblem ve ANA PANEL butonuna dokunmaz.
 
 Public Sub AKSORA_CDP_HALKA_GRAFIK()
-    Dim ws As Worksheet, co As ChartObject, CH As Chart, sr As Series
+    Dim ws As Worksheet, co As ChartObject, ch As Chart, sr As Series
     Dim alan As Range, r As Long, son As Long, toplamSatiri As Long
     Dim i As Long, n As Long, genel As Double, deger As Double
     Dim adlar() As String, tutarlar() As Double, renkler As Variant
@@ -81,7 +81,7 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
 
     Set alan = ws.Range("F8:Q23")
     x = alan.Left
-    y = alan.Top
+    y = alan.top
     panelWidth = alan.Width * 0.31
     panelLeft = x + alan.Width - panelWidth
 
@@ -103,8 +103,8 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
              alan.Width - panelWidth - 34, alan.Height - 62)
     co.Name = "AKSORA_CDP_HALKA_GRAFIK"
     co.Placement = xlFreeFloating
-    Set CH = co.Chart
-    With CH
+    Set ch = co.Chart
+    With ch
         .ChartType = xlDoughnut
         .HasLegend = False
         .HasTitle = False
@@ -127,12 +127,12 @@ Public Sub AKSORA_CDP_HALKA_GRAFIK()
         End With
     Next i
     ' Excel yerlesimi hesaplasin; merkez sabit yuzdeyle tahmin edilmez.
-    CH.Refresh
+    ch.Refresh
     DoEvents
-    pw = CH.PlotArea.InsideWidth
-    ph = CH.PlotArea.InsideHeight
-    cx = co.Left + CH.PlotArea.InsideLeft + pw / 2
-    cy = co.Top + CH.PlotArea.InsideTop + ph / 2
+    pw = ch.PlotArea.InsideWidth
+    ph = ch.PlotArea.InsideHeight
+    cx = co.Left + ch.PlotArea.InsideLeft + pw / 2
+    cy = co.top + ch.PlotArea.InsideTop + ph / 2
 
     ' Merkez etiketi dogrudan gercek grafik merkezine yerlestirilir.
     Set s = CDP_H3_Yazi(ws, "AKSORA_CDP_H3_MERKEZ", _
@@ -252,7 +252,7 @@ Public Sub AKSORA_YUKLENICI_HALKA_YAZI_DUZELT()
     ' Halka ortasinin kesin konumu: grafik PlotArea'sinin ic merkezi.
     With hedef.Chart.PlotArea
         cx = hedef.Left + .InsideLeft + .InsideWidth / 2
-        cy = hedef.Top + .InsideTop + .InsideHeight / 2
+        cy = hedef.top + .InsideTop + .InsideHeight / 2
     End With
 
     ' Toplam degerini mevcut rapor tablosunun TOPLAM satirindan al.
@@ -295,7 +295,7 @@ Public Sub AKSORA_YUKLENICI_HALKA_YAZI_DUZELT()
         If sh.Type = msoTextBox Or sh.Type = msoAutoShape Then
             If sh.Name <> "AKSORA_YUK_HALKA_MERKEZ" Then
                 If sh.Left < cx + 110 And sh.Left + sh.Width > cx - 110 _
-                   And sh.Top < cy + 85 And sh.Top + sh.Height > cy - 85 Then
+                   And sh.top < cy + 85 And sh.top + sh.Height > cy - 85 Then
                     On Error Resume Next
                     If sh.TextFrame2.HasText Then
                         If InStr(1, sh.TextFrame2.TextRange.Text, "TOPLAM STOK", vbTextCompare) > 0 Then sh.Delete

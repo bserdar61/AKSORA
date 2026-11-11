@@ -131,7 +131,7 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
     Dim bos As Long, gecersiz As Long, okunan As Long
     Dim ev As Boolean, sc As Boolean, al As Boolean, kart As Boolean
     Dim lo As Double, hi As Double, secili As Double, enCok As Long, poz As Long, sifirVar As Boolean, liste As String
-    Dim out() As Variant, n As Long, i As Long, gecis As Long, durum As String, nt As String
+    Dim out() As Variant, n As Long, i As Long, gecis As Long, durum As String, nT As String
     Dim nTek As Long, nBel As Long, nSif As Long, ozet As String, tarih As Date, ilk As Long
 
     dosya = application.GetOpenFilename("Excel dosyalarý (*.xlsx;*.xlsm;*.xls),*.xlsx;*.xlsm;*.xls", , "Birim fiyat dosyasýný seçin")
@@ -182,11 +182,11 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
             If Not d.Exists(k) Then
                 Set pd = CreateObject("Scripting.Dictionary")
                 ham = vbNullString: If cT > 0 Then If Not IsError(v(r, cT)) Then ham = CStr(v(r, cT))
-                nt = vbNullString: If cG > 0 Then If Not IsError(v(r, cG)) Then nt = CStr(v(r, cG))
+                nT = vbNullString: If cG > 0 Then If Not IsError(v(r, cG)) Then nT = CStr(v(r, cG))
                 If IsError(v(r, cP)) Then
-                    d.Add k, Array(m, vbNullString, ham, nt, pd)
+                    d.Add k, Array(m, vbNullString, ham, nT, pd)
                 Else
-                    d.Add k, Array(m, Trim$(CStr(v(r, cP))), ham, nt, pd)
+                    d.Add k, Array(m, Trim$(CStr(v(r, cP))), ham, nT, pd)
                 End If
             End If
             kayit = d(k)
@@ -215,24 +215,24 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
                     sifirVar = True
                 End If
             Next fk
-            nt = vbNullString
+            nT = vbNullString
             If poz = 0 Then
-                durum = "SIFIR": secili = 0: nt = "Listede yalnýzca 0 fiyatý var"
+                durum = "SIFIR": secili = 0: nT = "Listede yalnýzca 0 fiyatý var"
             ElseIf (hi - lo) <= TOL_MUTLAK Or (hi - lo) / hi <= TOL_ORAN Then
                 durum = "TEK"
-                If poz > 1 Then nt = "Kuruþ farklarý birleþtirildi: " & liste
-                If sifirVar Then nt = nt & IIf(Len(nt) > 0, " | ", "") & "0 fiyatlý satýrlar yok sayýldý"
+                If poz > 1 Then nT = "Kuruþ farklarý birleþtirildi: " & liste
+                If sifirVar Then nT = nT & IIf(Len(nT) > 0, " | ", "") & "0 fiyatlý satýrlar yok sayýldý"
             Else
                 ' Ayni malzeme + parti icin farkli fiyatlar: listede en sik gecen fiyat alinir
                 ' (esitlikte yuksek olan). YENI ve CIKMA/BDSZ partileri ayri tutulur.
                 durum = "TEK"
-                nt = "Farklý fiyatlar (" & liste & "); en sýk geçen fiyat alýndý"
+                nT = "Farklý fiyatlar (" & liste & "); en sýk geçen fiyat alýndý"
             End If
             If (gecis = 1 And durum <> "TEK") Or (gecis = 2 And durum = "TEK") Then
                 i = i + 1
                 out(i, 1) = kayit(0): out(i, 2) = kayit(1)
                 If durum = "TEK" Then out(i, 3) = secili Else out(i, 3) = Empty
-                out(i, 4) = durum: out(i, 5) = kayit(2): out(i, 6) = kayit(3): out(i, 7) = nt
+                out(i, 4) = durum: out(i, 5) = kayit(2): out(i, 6) = kayit(3): out(i, 7) = nT
                 If durum = "TEK" Then
                     nTek = nTek + 1
                 ElseIf durum = "BELIRSIZ" Then
@@ -251,7 +251,7 @@ Public Sub AKSORA_MUSTERI_FIYAT_LISTESI_YUKLE()
     Set wsF = ThisWorkbook.Worksheets(FIYAT_SAYFA)
     On Error GoTo Hata
     If wsF Is Nothing Then
-        Set wsF = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        Set wsF = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         wsF.Name = FIYAT_SAYFA
     End If
     wsF.Visible = xlSheetVisible

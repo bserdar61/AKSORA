@@ -1397,15 +1397,15 @@ End Function
 
 
 Private Sub MS_Coklu(ByVal ses As Object, ByVal alan As String, ByVal degerler As Variant, ByVal ilk As String, ByVal son As String)
-    Dim sil As Object, ip As String, sp As String, tip As String
+    Dim sIl As Object, ip As String, sp As String, tip As String
     Dim visS As Long, visI As Long, nv As Long, i As Long, satirNo As Long, deger As String
     ses.FindById("wnd[0]/usr/btn%_" & alan & "_%_APP_%-VALU_PUSH").Press
-    Set sil = ses.FindById("wnd[1]/tbar[0]/btn[16]", False)
-    If sil Is Nothing Then Err.Raise vbObjectError + 1913, , "SAP çoklu seçim temizleme düðmesi bulunamadý."
-    tip = AKFIX_NORMAL(sil.Tooltip)
+    Set sIl = ses.FindById("wnd[1]/tbar[0]/btn[16]", False)
+    If sIl Is Nothing Then Err.Raise vbObjectError + 1913, , "SAP çoklu seçim temizleme düðmesi bulunamadý."
+    tip = AKFIX_NORMAL(sIl.Tooltip)
     If InStr(tip, "DELETE") = 0 And InStr(tip, "SIL") = 0 Then _
-        Err.Raise vbObjectError + 1914, , "SAP çoklu seçim temizleme düðmesi doðrulanamadý: " & sil.Tooltip
-    sil.Press
+        Err.Raise vbObjectError + 1914, , "SAP çoklu seçim temizleme düðmesi doðrulanamadý: " & sIl.Tooltip
+    sIl.Press
     sp = "wnd[1]/usr/tabsTAB_STRIP/tabpSIVA/ssubSCREEN_HEADER:SAPLALDB:3010/tblSAPLALDBSINGLE/"
     ip = "wnd[1]/usr/tabsTAB_STRIP/tabpINTL/ssubSCREEN_HEADER:SAPLALDB:3020/tblSAPLALDBINTERVAL/"
     ses.FindById("wnd[1]/usr/tabsTAB_STRIP/tabpSIVA").Select
@@ -2331,7 +2331,7 @@ Private Function MS_ArsivSayfa(ByVal il As String, ByVal i As Long, ByVal olustu
         ' Yeni kayit sayfasi ekranda gorunmeden eklenir; etkin sayfa geri secilir.
         sc = application.ScreenUpdating: application.ScreenUpdating = False
         Set onceki = ActiveSheet
-        Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = ad
         ws.Visible = xlSheetVeryHidden
         If Not onceki Is Nothing Then onceki.Activate

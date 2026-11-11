@@ -875,7 +875,7 @@ Public Function STOK_SON_SATIR(ByVal ws As Worksheet) As Long
     On Error Resume Next
     Set sonHucre = ws.Cells.Find( _
         What:="*", _
-        after:=ws.Cells(1, 1), _
+        After:=ws.Cells(1, 1), _
         LookIn:=xlFormulas, _
         LookAt:=xlPart, _
         SearchOrder:=xlByRows, _
@@ -897,7 +897,7 @@ Public Function STOK_SON_SUTUN(ByVal ws As Worksheet) As Long
     On Error Resume Next
     Set sonHucre = ws.Cells.Find( _
         What:="*", _
-        after:=ws.Cells(1, 1), _
+        After:=ws.Cells(1, 1), _
         LookIn:=xlFormulas, _
         LookAt:=xlPart, _
         SearchOrder:=xlByColumns, _

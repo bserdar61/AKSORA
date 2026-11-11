@@ -230,7 +230,7 @@ Private Sub T_Panel(ByVal ws As Worksheet)
     If eski.AlternativeText <> "AKSORA_P1_SADE_V1" Then
         f = AKSORA_GORSEL("AKSORA_PANEL_SADE_P1.png")
         If Len(Dir$(f)) = 0 Then Err.Raise vbObjectError + 9311, , "Sade panel görseli bulunamadý."
-        Set s = ws.Shapes.AddPicture(f, msoFalse, msoTrue, r.Left, r.Top, r.Width, r.Height)
+        Set s = ws.Shapes.AddPicture(f, msoFalse, msoTrue, r.Left, r.top, r.Width, r.Height)
         s.Name = AKT_PREFIX & "PANEL_GECICI"
         eski.Delete
         s.Name = "AKSORA15_TEK_ARKA_PLAN"
@@ -238,7 +238,7 @@ Private Sub T_Panel(ByVal ws As Worksheet)
     Else
         Set s = eski
     End If
-    T_Yerlestir s, r.Left, r.Top, r.Width, r.Height
+    T_Yerlestir s, r.Left, r.top, r.Width, r.Height
     s.ZOrder msoSendToBack
     ' Bes il icin gomulu, tek parca baslik; etiket veya logo parcasi yok.
     Set r = ws.Range("B2:AB5")
@@ -334,7 +334,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     For k = 0 To 11
         If CStr(ws.Cells(6, k + 1).Value2) <> CStr(basliklar(k)) Then ws.Cells(6, k + 1).Value2 = basliklar(k)
     Next k
-    w = ws.Range("A1:L1").Width: y = ws.Rows(1).Top
+    w = ws.Range("A1:L1").Width: y = ws.Rows(1).top
     Set s = T_Dik(ws, AKT_PREFIX & "STOK_BASLIK_ZEMIN", 0, y, w, 32, RGB(12, 45, 79))
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_MARKA", "AKSORA", 12, y + 3, 102, 26, 20, vbWhite, True, msoAlignLeft)
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_SLOGAN", "Stok ve Verimlilik", 118, y + 5, 135, 22, 10, RGB(198, 240, 97), True, msoAlignLeft)
@@ -342,7 +342,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_BASLIK", t, 260, y + 5, w - 680, 22, 11, vbWhite, True, msoAlignLeft)
     degerler = Array("C2", "C3", "C4")
     basliklar = Array("Son Güncelleme", "Toplam Stok Satýrý", "Toplam Stok Deðeri")
-    h = ws.Rows(2).Height: y = ws.Rows(2).Top
+    h = ws.Rows(2).Height: y = ws.Rows(2).top
     ' Kaynak hucreler ve formule bagli canli degerler korunur.
     ' Kesintisiz zemin, kart aralarinda C2 tarihinin sizmasini engeller.
     Set s = T_Dik(ws, AKT_PREFIX & "STOK_KPI_ALT_ZEMIN", 0, y, w, h, RGB(230, 240, 247))
@@ -434,7 +434,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     sag = w - 6
     Set s = T_Sekil(ws, "btnAnaPanelDon")
     If s Is Nothing Then Err.Raise vbObjectError + 9312, , "ANA PANEL butonu eksik."
-    T_Yerlestir s, sag - 88, ws.Rows(1).Top + 5, 88, 22
+    T_Yerlestir s, sag - 88, ws.Rows(1).top + 5, 88, 22
     T_Buton s, RGB(16, 57, 94), vbWhite, 9
     s.TextFrame2.TextRange.Text = "ANA PANEL"
     sag = sag - 94: adet = UBound(dugmeler) + 1
@@ -442,7 +442,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     For k = UBound(dugmeler) To 0 Step -1
         ad = CStr(dugmeler(k)): Set s = T_Sekil(ws, ad)
         If s Is Nothing Then Err.Raise vbObjectError + 9313, , "Güncelleme butonu eksik: " & ad
-        T_Yerlestir s, sag - bw, ws.Rows(1).Top + 5, bw, 22
+        T_Yerlestir s, sag - bw, ws.Rows(1).top + 5, bw, 22
         T_Buton s, RGB(26, 83, 134), vbWhite, 8
         ' Tum stok sayfasi dugmeleri ayni yoldan: hizli okuma, ayni sayfaya donus, tek ozet.
         s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_STOK_SAYFA_GUNCELLE"
@@ -453,12 +453,12 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     If s Is Nothing Then
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, 0, 0, 96, 22): s.Name = "btnStokCikti"
     End If
-    T_Yerlestir s, sag - 96, ws.Rows(1).Top + 5, 96, 22
+    T_Yerlestir s, sag - 96, ws.Rows(1).top + 5, 96, 22
     T_Buton s, RGB(15, 118, 110), vbWhite, 8
     s.TextFrame2.TextRange.Text = "ÇIKTI AL"
     s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_CIKTI_AL"
     sag = sag - 96 - 5
-    Set s = T_ExcelDugme(ws, sag - 110, ws.Rows(1).Top + 5, 110, 22)
+    Set s = T_ExcelDugme(ws, sag - 110, ws.Rows(1).top + 5, 110, 22)
     sag = sag - 110 - 5
     AKSORA_STOK_AZ ws
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")
@@ -475,7 +475,7 @@ Private Sub T_RaporYap(ByVal ws As Worksheet)
     ws.Rows("1:2").RowHeight = 19: ws.Rows("3:6").RowHeight = 17
     ws.Rows(7).RowHeight = 8: ws.Rows(8).RowHeight = 30
     Set r = ws.Range("A1:T2")
-    Set s = T_Dik(ws, AKT_PREFIX & "RAPOR_UST_ZEMIN", r.Left, r.Top, r.Width, r.Height, RGB(12, 45, 79))
+    Set s = T_Dik(ws, AKT_PREFIX & "RAPOR_UST_ZEMIN", r.Left, r.top, r.Width, r.Height, RGB(12, 45, 79))
     Select Case AKFIX_NORMAL(ws.Name)
         Case "CDP_RAPOR": kod = "CDP STOK RAPORU"
         Case "EPP_RAPOR": kod = "EPP STOK RAPORU"
@@ -484,18 +484,18 @@ Private Sub T_RaporYap(ByVal ws As Worksheet)
         Case "YUKLENICI_RAPOR": kod = "YÜKLENÝCÝ STOK RAPORU"
     End Select
     Set s = T_Yazi(ws, AKT_PREFIX & "RAPOR_BASLIK", "AKSORA | " & kod, _
-        r.Left + 16, r.Top + 5, r.Width - 155, r.Height - 10, 20, vbWhite, True, msoAlignLeft)
+        r.Left + 16, r.top + 5, r.Width - 155, r.Height - 10, 20, vbWhite, True, msoAlignLeft)
     Set s = T_Sekil(ws, p & "BANNER"): If Not s Is Nothing Then s.Visible = msoFalse
     Set s = T_Sekil(ws, p & "BASLIK"): If Not s Is Nothing Then s.Visible = msoFalse
     Set s = T_Sekil(ws, "btnAnaPanelDon")
     If s Is Nothing Then Err.Raise vbObjectError + 9314, , "Rapor ANA PANEL butonu eksik."
-    T_Yerlestir s, r.Left + r.Width - 108, r.Top + 7, 96, r.Height - 14
+    T_Yerlestir s, r.Left + r.Width - 108, r.top + 7, 96, r.Height - 14
     T_Buton s, RGB(16, 57, 94), vbWhite, 9
     s.TextFrame2.TextRange.Text = "ANA PANEL"
     alanlar = Array("A3:E6", "F3:J6", "K3:Q6")
     For i = 0 To 2
         ad = alanlar(i): Set r = ws.Range(CStr(ad))
-        x = r.Left + 3: y = r.Top + 3: w = r.Width - 6: h = r.Height - 6
+        x = r.Left + 3: y = r.top + 3: w = r.Width - 6: h = r.Height - 6
         If i = 2 Then w = ws.Range("T6").Left + ws.Range("T6").Width - x - 3
         Set s = T_Sekil(ws, p & "KART_" & Replace(CStr(ad), ":", "_"))
         If s Is Nothing Then Err.Raise vbObjectError + 9315, , "Mevcut rapor KPI kartý eksik."
@@ -594,7 +594,7 @@ Private Sub T_RaporLogo(ByVal ws As Worksheet)
     Set s = T_Sekil(ws, ad)
     If s Is Nothing Then Exit Sub
     Set z = T_Sekil(ws, "AKSORA_RP_HALKA_ZEMIN")
-    If z Is Nothing Then y = ws.Range("T25").Top Else y = z.Top + z.Height + 6
+    If z Is Nothing Then y = ws.Range("T25").top Else y = z.top + z.Height + 6
     x = ws.Range("T1").Left + ws.Range("T1").Width
     With s
         On Error Resume Next
@@ -603,7 +603,7 @@ Private Sub T_RaporLogo(ByVal ws As Worksheet)
         On Error GoTo 0
         .LockAspectRatio = msoTrue: .Width = 58
         If .Height > 58 Then .Height = 58
-        .Left = x - .Width - 4: .Top = y
+        .Left = x - .Width - 4: .top = y
         .Placement = xlFreeFloating: .Locked = True: .Visible = msoTrue
         .ZOrder msoBringToFront
     End With
@@ -651,7 +651,7 @@ Private Sub T_Yerlestir(ByVal s As Shape, ByVal x As Double, ByVal y As Double, 
     If s Is Nothing Then Err.Raise vbObjectError + 9316, , "Tasarým için gereken þekil bulunamadý."
     If w < 1 Or h < 1 Then Err.Raise vbObjectError + 9317, , "Tasarým alaný yetersiz."
     With s
-        .LockAspectRatio = msoFalse: .Left = x: .Top = y: .Width = w: .Height = h
+        .LockAspectRatio = msoFalse: .Left = x: .top = y: .Width = w: .Height = h
         .Placement = xlFreeFloating: .Locked = True: .Visible = msoTrue
     End With
 End Sub
@@ -812,10 +812,10 @@ Private Sub T_PanelTekBanner(ByVal ws As Worksheet, ByVal r As Range)
     Next s
     Set s = T_Sekil(ws, ad)
     If s Is Nothing Then
-        Set s = AKSORA_MALZEME_BANT_EKLE(ws, il, r.Left, r.Top)
+        Set s = AKSORA_MALZEME_BANT_EKLE(ws, il, r.Left, r.top)
         s.Name = ad
     End If
-    T_Yerlestir s, r.Left, r.Top, r.Width, r.Height
+    T_Yerlestir s, r.Left, r.top, r.Width, r.Height
     s.Visible = msoTrue: s.OnAction = "": s.ZOrder msoBringToFront
 End Sub
 
@@ -828,7 +828,7 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         Set s = T_Sekil(ws, CStr(buton(i)))
         If Not s Is Nothing Then
             Set r = ws.Range(CStr(alan(i)))
-            T_Yerlestir s, r.Left, r.Top + 1, r.Width, r.Height - 2
+            T_Yerlestir s, r.Left, r.top + 1, r.Width, r.Height - 2
         End If
     Next i
     ' ATIL STOK dugmesi: stok karsilastir dugmesinin kopyasi (yoksa bir kez olusturulur).
@@ -878,7 +878,7 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
     i = 0
     For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma", "goTransfer")
         Set s = T_Sekil(ws, CStr(ad))
-        If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.Top + 1, bw, r.Height - 2
+        If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.top + 1, bw, r.Height - 2
         i = i + 1
     Next ad
     For Each ad In Array("AKSORA15_UST_ZEMIN", "AKSORA15_ALT_ZEMIN", "AKSORA15_TARIH_ZEMIN")
@@ -889,13 +889,13 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
                 Case "AKSORA15_ALT_ZEMIN": Set r = ws.Range("B28:AB29")
                 Case Else: Set r = ws.Range("B30:AB30")
             End Select
-            T_Yerlestir s, r.Left, r.Top, r.Width, r.Height
+            T_Yerlestir s, r.Left, r.top, r.Width, r.Height
         End If
     Next ad
     Set s = T_Sekil(ws, "AKSORA15_IL_DEGISTIR")
     If Not s Is Nothing Then
         Set r = ws.Range("B6:AB6")
-        AKSORA_IL_DEGISTIR_STIL s, r.Left, r.Top, r.Width, r.Height
+        AKSORA_IL_DEGISTIR_STIL s, r.Left, r.top, r.Width, r.Height
     End If
 End Sub
 
@@ -910,16 +910,16 @@ Public Sub AKSORA_KAPAK_GENISLIK_UYUM(ByVal ws As Worksheet, ByVal wn As Window)
     If genislik < taban Then genislik = taban
     Set s = T_Sekil(ws, "AKSORA_KAPAK_YENI_V6")
     If Not s Is Nothing Then
-        T_Yerlestir s, 0, 0, genislik, ws.Rows(23).Top
+        T_Yerlestir s, 0, 0, genislik, ws.Rows(23).top
         s.ZOrder msoSendToBack
     End If
     Set s = T_Sekil(ws, "AKSORA_V4_PANEL")
     If Not s Is Nothing Then
-        T_Yerlestir s, 0, ws.Rows(23).Top, genislik, ws.Range("A23:AE38").Height
+        T_Yerlestir s, 0, ws.Rows(23).top, genislik, ws.Range("A23:AE38").Height
         s.ZOrder msoSendToBack
     End If
     ' Tum alt ogeler panelin icinde belirlenen tek yerlesime baglidir.
-    y = ws.Rows(23).Top + 12
+    y = ws.Rows(23).top + 12
     Set s = T_Sekil(ws, "AKSORA_V4_TITLE")
     If Not s Is Nothing Then T_Yerlestir s, 8, y, genislik - 16, 28
     y = y + 34
@@ -1066,7 +1066,7 @@ Private Sub T_RaporGrafikSinirla(ByVal ws As Worksheet)
                 co.Chart.Refresh
                 pw = co.Chart.PlotArea.InsideWidth: ph = co.Chart.PlotArea.InsideHeight
                 cx = co.Left + co.Chart.PlotArea.InsideLeft + pw / 2
-                cy = co.Top + co.Chart.PlotArea.InsideTop + ph / 2
+                cy = co.top + co.Chart.PlotArea.InsideTop + ph / 2
                 pw = application.Min(pw, ph) * 0.72 * 0.9
                 If pw > 0 Then T_Yerlestir merkez, cx - pw / 2, cy - 20, pw, 40
                 merkez.ZOrder msoBringToFront
@@ -1533,7 +1533,7 @@ End Function
 Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     Dim a As Shape, s As Shape, b As Shape, x As Double, y As Double, t As String, p As Variant, koruma As Boolean
     Dim yerinde As Boolean
-    On Error GoTo Son
+    On Error GoTo son
     If T_CiktiTur(ws.Name) = 0 Then Exit Sub
     If T_CiktiTur(ws.Name) = 1 Then AKSORA_STOK_AZ ws
     If T_Stok(ws) Then Exit Sub
@@ -1542,7 +1542,7 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
     If a Is Nothing Then Exit Sub
     If InStr(AKFIX_NORMAL(ws.Name), "KARSILASTIRMA") > 0 Then
         ' Karsilastirma sayfalarinda ANA PANEL sag panelde; cikti dugmesi altina.
-        x = a.Left: y = a.Top + a.Height + 6
+        x = a.Left: y = a.top + a.Height + 6
     Else
         x = a.Left
         For Each b In ws.Shapes
@@ -1551,16 +1551,16 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
                 t = vbNullString
                 On Error Resume Next
                 t = b.OnAction
-                On Error GoTo Son
-                If Len(t) > 0 And Abs(b.Top - a.Top) < a.Height And b.Left < a.Left And b.Left > a.Left - 800 Then
+                On Error GoTo son
+                If Len(t) > 0 And Abs(b.top - a.top) < a.Height And b.Left < a.Left And b.Left > a.Left - 800 Then
                     If b.Left < x Then x = b.Left
                 End If
             End If
         Next b
-        x = x - 6 - application.Max(a.Width, 90): y = a.Top
+        x = x - 6 - application.Max(a.Width, 90): y = a.top
     End If
     Set s = T_Sekil(ws, "btnCiktiAl")
-    If Not s Is Nothing Then yerinde = (Abs(s.Left - x) < 1 And Abs(s.Top - y) < 1)
+    If Not s Is Nothing Then yerinde = (Abs(s.Left - x) < 1 And Abs(s.top - y) < 1)
     If yerinde And (T_CiktiTur(ws.Name) <> 1 Or Not T_Sekil(ws, "btnExcelAktar") Is Nothing) And _
         (Not T_TopluSayfa(ws.Name) Or Not T_Sekil(ws, "btnTopluAktar") Is Nothing) And _
         (ws.Name <> "I_STOK_KARÞILAÞTIRMA" Or Not T_Sekil(ws, "btnDemontajAktar") Is Nothing) And _
@@ -1578,9 +1578,9 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
             t = vbNullString: t = b.OnAction
             If Len(t) > 0 Or b.Type = msoFormControl Then b.DrawingObject.PrintObject = False
         Next b
-        On Error GoTo Son
+        On Error GoTo son
     End If
-    s.Left = x: s.Top = y: s.Width = application.Max(a.Width, 90): s.Height = a.Height
+    s.Left = x: s.top = y: s.Width = application.Max(a.Width, 90): s.Height = a.Height
     s.Placement = xlFreeFloating
     If T_CiktiTur(ws.Name) = 1 Then T_ExcelDugme ws, x - 6 - 110, y, 110, a.Height
     If T_TopluSayfa(ws.Name) Then
@@ -1597,7 +1597,7 @@ Public Sub AKSORA_CIKTI_DUGME(ByVal ws As Worksheet)
             "AKSORA_ILCE_DEMONTAJ_AKTAR", x + application.Max(a.Width, 90) + 6, y, application.Max(a.Width, 90), a.Height
     End If
     If koruma Then T_KorumaKapat ws, p
-Son:
+son:
 End Sub
 
 ' Ek dugme (yoksa olusturulur) verilen konuma yerlestirilir; kagida basilmaz.
@@ -1617,7 +1617,7 @@ Private Sub T_EkDugme(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As 
     s.TextFrame2.WordWrap = msoTrue
     On Error GoTo 0
     s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & makro
-    s.Left = x: s.Top = y: s.Width = w: s.Height = h
+    s.Left = x: s.top = y: s.Width = w: s.Height = h
     s.Placement = xlFreeFloating
     On Error Resume Next
     s.DrawingObject.PrintObject = False
@@ -1635,7 +1635,7 @@ Private Function T_ExcelDugme(ByVal ws As Worksheet, ByVal x As Double, ByVal y 
     T_Buton s, RGB(33, 115, 70), vbWhite, 8
     s.TextFrame2.TextRange.Text = "EXCEL'E AKTAR"
     s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_EXCEL_AKTAR"
-    s.Left = x: s.Top = y: s.Width = w: s.Height = h
+    s.Left = x: s.top = y: s.Width = w: s.Height = h
     s.Placement = xlFreeFloating
     On Error Resume Next
     s.DrawingObject.PrintObject = False
@@ -1725,14 +1725,14 @@ End Sub
 
 ' Stok sayfasindaki liste A-Z siralanir (zaten siraliysa dokunulmaz). Filtre varsa yeniden uygulanir.
 Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
-    Dim cM As Long, cT As Long, cS As Long, k As Long, son As Long, v As Variant, yeni As Variant, degisti As Boolean
+    Dim cM As Long, cT As Long, cs As Long, k As Long, son As Long, v As Variant, yeni As Variant, degisti As Boolean
     Dim p As Variant, koruma As Boolean, sc As Boolean, ev As Boolean, durum As Boolean, imza As String
-    On Error GoTo Son
+    On Error GoTo son
     If T_CiktiTur(ws.Name) <> 1 Then Exit Sub
     If T_Stok(ws) Then
-        cM = 7: cT = 8: cS = 0: k = 12
+        cM = 7: cT = 8: cs = 0: k = 12
     Else
-        cM = 5: cT = 6: cS = 10: k = 14
+        cM = 5: cT = 6: cs = 10: k = 14
     End If
     son = AKSORA_SON_SATIR(ws, cM)
     If son < 8 Then Exit Sub
@@ -1745,7 +1745,7 @@ Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
         If mAzImza(ws.Name) = imza Then Exit Sub
     End If
     v = ws.Range(ws.Cells(7, 1), ws.Cells(son, k)).Value2
-    yeni = AKSORA_STOK_DIZI_AZ(v, Array(cT, cM, 2, cS), degisti)
+    yeni = AKSORA_STOK_DIZI_AZ(v, Array(cT, cM, 2, cs), degisti)
     If Not degisti Then mAzImza(ws.Name) = imza: Exit Sub
     sc = application.ScreenUpdating: ev = application.EnableEvents: durum = True
     application.ScreenUpdating = False: application.EnableEvents = False
@@ -1756,7 +1756,7 @@ Public Sub AKSORA_STOK_AZ(ByVal ws As Worksheet)
     application.ScreenUpdating = sc: application.EnableEvents = ev
     mAzImza(ws.Name) = T_AzImza(ws, son, cM, cT)
     Exit Sub
-Son:
+son:
     On Error Resume Next
     If koruma Then T_KorumaKapat ws, p
     If durum Then application.ScreenUpdating = sc: application.EnableEvents = ev
@@ -1808,7 +1808,7 @@ End Sub
 Public Sub AKSORA_EXCEL_TOPLU_AKTAR()
     Dim ws As Worksheet, son As Long, v As Variant, i As Long, depolar As Object, k As Variant, kodlar() As String
     Dim ac As Boolean, ev As Boolean, klasor As String, tarihMetin As String, tarih As Variant, ok As Long, bos As Long
-    Dim hata As String, n As Long, j As Long, t As String, no As Long, metin As String, ad As String
+    Dim Hata As String, n As Long, j As Long, t As String, no As Long, metin As String, ad As String
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
     Set ws = ActiveSheet
     If Not T_TopluSayfa(ws.Name) Then Exit Sub
@@ -1862,7 +1862,7 @@ Public Sub AKSORA_EXCEL_TOPLU_AKTAR()
         ElseIf no = vbObjectError + 9601 Then
             bos = bos + 1
         Else
-            hata = hata & vbCrLf & ad & ": " & IIf(no = 0, "kaydedilemedi", metin)
+            Hata = Hata & vbCrLf & ad & ": " & IIf(no = 0, "kaydedilemedi", metin)
         End If
         ThisWorkbook.Activate: ws.Activate
     Next i
@@ -1875,19 +1875,19 @@ Cikis:
     application.EnableEvents = ev: application.ScreenUpdating = True
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
-    If no <> 0 And ok = 0 And bos = 0 And Len(hata) = 0 Then
+    If no <> 0 And ok = 0 And bos = 0 And Len(Hata) = 0 Then
         MsgBox "Aktarým yapýlamadý." & vbCrLf & vbCrLf & metin, vbExclamation, "AKSORA"
         Exit Sub
     End If
     MsgBox ok & " depo Excel dosyasý olarak kaydedildi." & _
-        IIf(bos > 0, vbCrLf & bos & " depoda aktarýlacak satýr yok (yalnýz hurda / çýkma)." , "") & _
-        IIf(Len(hata) > 0, vbCrLf & vbCrLf & "Kaydedilemeyenler:" & hata, "") & vbCrLf & vbCrLf & "Klasör: " & klasor, _
-        IIf(Len(hata) > 0, vbExclamation, vbInformation), "AKSORA  |  TÜM DEPOLARI AKTAR"
+        IIf(bos > 0, vbCrLf & bos & " depoda aktarýlacak satýr yok (yalnýz hurda / çýkma).", "") & _
+        IIf(Len(Hata) > 0, vbCrLf & vbCrLf & "Kaydedilemeyenler:" & Hata, "") & vbCrLf & vbCrLf & "Klasör: " & klasor, _
+        IIf(Len(Hata) > 0, vbExclamation, vbInformation), "AKSORA  |  TÜM DEPOLARI AKTAR"
     If ok > 0 Then AKSORA_KLASOR_AC klasor
     Exit Sub
 Hata:
     no = Err.Number: metin = Err.Description
-    hata = hata & vbCrLf & metin
+    Hata = Hata & vbCrLf & metin
     Resume Cikis
 End Sub
 
@@ -1939,15 +1939,15 @@ End Sub
 
 ' Stok sayim listesi (kullanicinin SAP sayim formu).
 Private Sub T_CiktiSayim(ByVal ws As Worksheet)
-    Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cS As Long, son As Long, r As Long, n As Long
-    Dim kaynak As Variant, veri() As Variant, cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
+    Dim cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cs As Long, son As Long, r As Long, n As Long
+    Dim kaynak As Variant, veri() As Variant, Cikis() As Variant, gor As Range, ar As Range, i As Long, j As Long, k As Long
     Dim parti As String, mk As Variant, seriVar As Boolean, depo As String, ust As String, tarih As Variant
     Dim adet() As Double, x As Long, tum As Object, sec As Object, kk As Variant, gorV As Variant, gor1 As Boolean
     Dim depoAd As String, tarihMetin As String
     If T_Stok(ws) Then
-        cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cS = 0
+        cM = 7: cT = 8: cP = 6: cQ = 9: cB = 10: cs = 0
     Else
-        cM = 5: cT = 6: cP = 9: cQ = 7: cB = 8: cS = 10
+        cM = 5: cT = 6: cP = 9: cQ = 7: cB = 8: cs = 10
     End If
     son = AKSORA_SON_SATIR(ws, cM)
     ' Gorunur satirlar tek seferde (A-Z siralamada depo filtresi binlerce parca uretir).
@@ -1979,8 +1979,8 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
                         If Not IsError(mk) Then
                             If IsNumeric(mk) And Len(CStr(mk)) > 0 Then adet(n) = CDbl(mk)
                         End If
-                        If cS > 0 Then
-                            veri(n, 7) = T_CiktiMetin(kaynak(i, cS))
+                        If cs > 0 Then
+                            veri(n, 7) = T_CiktiMetin(kaynak(i, cs))
                             If Len(veri(n, 7)) > 0 Then seriVar = True
                         End If
                     End If
@@ -2011,14 +2011,14 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     ' Seri numarali stoklarda (sayac vb.) seri numarasi sutunu eklenir.
     k = IIf(seriVar, 10, 9)
-    ReDim cikis(1 To n, 1 To k)
+    ReDim Cikis(1 To n, 1 To k)
     For i = 1 To n
-        cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
-        cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+        Cikis(i, 1) = veri(i, 1): Cikis(i, 2) = veri(i, 8): Cikis(i, 3) = veri(i, 2)
+        Cikis(i, 4) = veri(i, 3): Cikis(i, 5) = veri(i, 4)
         x = 6
-        If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
-        cikis(i, x) = veri(i, 5)
-        cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
+        If seriVar Then Cikis(i, 6) = veri(i, 7): x = 7
+        Cikis(i, x) = veri(i, 5)
+        Cikis(i, x + 1) = T_CiktiMiktar(adet(i), CStr(veri(i, 6)))
     Next i
     ust = T_SayfaBaslik(ws.Name) & "  |  " & Trim$(CStr(ws.Range("A5").Value2)) & "  |  Depo: " & depo
     tarih = ws.Range("C2").Value
@@ -2045,22 +2045,22 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         End If
         ' Excel: miktar sayi, birim ayri sutun; FARK = SAYILAN - miktar (SAYILAN girilince).
         k = IIf(seriVar, 11, 10)
-        ReDim cikis(1 To n, 1 To k)
+        ReDim Cikis(1 To n, 1 To k)
         For i = 1 To n
-            cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
-            cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+            Cikis(i, 1) = veri(i, 1): Cikis(i, 2) = veri(i, 8): Cikis(i, 3) = veri(i, 2)
+            Cikis(i, 4) = veri(i, 3): Cikis(i, 5) = veri(i, 4)
             x = 6
-            If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
-            cikis(i, x) = veri(i, 5)
-            cikis(i, x + 1) = adet(i)
-            cikis(i, x + 2) = veri(i, 6)
+            If seriVar Then Cikis(i, 6) = veri(i, 7): x = 7
+            Cikis(i, x) = veri(i, 5)
+            Cikis(i, x + 1) = adet(i)
+            Cikis(i, x + 2) = veri(i, 6)
         Next i
         If seriVar Then
             T_ExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
-                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), cikis, n, Array(11, 8, 18, 13, 46, 18, 9, 14, 8, 14, 12), 8, ust, depo
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), Cikis, n, Array(11, 8, 18, 13, 46, 18, 9, 14, 8, 14, 12), 8, ust, depo
         Else
             T_ExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
-                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), cikis, n, Array(11, 8, 18, 13, 46, 9, 14, 8, 14, 12), 7, ust, depo
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK"), Cikis, n, Array(11, 8, 18, 13, 46, 9, 14, 8, 14, 12), 7, ust, depo
         End If
         Exit Sub
     End If
@@ -2070,25 +2070,25 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
         mExcelYol = AKSORA_MASAUSTU() & application.PathSeparator & _
             AKSORA_DOSYA_ADI(depoAd & " - SAYIM - " & T_SayfaKisa(ws.Name) & " - " & tarihMetin) & ".xlsx"
         k = IIf(seriVar, 12, 11)
-        ReDim cikis(1 To n, 1 To k)
+        ReDim Cikis(1 To n, 1 To k)
         For i = 1 To n
-            cikis(i, 1) = veri(i, 1): cikis(i, 2) = veri(i, 8): cikis(i, 3) = veri(i, 2)
-            cikis(i, 4) = veri(i, 3): cikis(i, 5) = veri(i, 4)
+            Cikis(i, 1) = veri(i, 1): Cikis(i, 2) = veri(i, 8): Cikis(i, 3) = veri(i, 2)
+            Cikis(i, 4) = veri(i, 3): Cikis(i, 5) = veri(i, 4)
             x = 6
-            If seriVar Then cikis(i, 6) = veri(i, 7): x = 7
-            cikis(i, x) = veri(i, 5)
-            cikis(i, x + 1) = adet(i)
-            cikis(i, x + 2) = veri(i, 6)
+            If seriVar Then Cikis(i, 6) = veri(i, 7): x = 7
+            Cikis(i, x) = veri(i, 5)
+            Cikis(i, x + 1) = adet(i)
+            Cikis(i, x + 2) = veri(i, 6)
         Next i
         mExcelKapat = False
         On Error GoTo SayimHata
         If seriVar Then
             T_SayimExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
-                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), cikis, n, _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), Cikis, n, _
                 Array(9.89, 7, 14.66, 11, 34, 16, 7.5, 11, 6.5, 14, 12, 14), 8, ust
         Else
             T_SayimExcelYaz Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
-                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), cikis, n, _
+                "Tahditsiz klnb.", "Birim", "SAYILAN", "FARK", "AÇIKLAMA"), Cikis, n, _
                 Array(9.89, 7, 14.66, 11, 40.55, 7.5, 11, 6.5, 15, 13, 22), 7, ust
         End If
         mExcelYol = vbNullString: mSayimKilit = vbNullString
@@ -2096,12 +2096,12 @@ Private Sub T_CiktiSayim(ByVal ws As Worksheet)
     End If
     If seriVar Then
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Seri numarasý", "Parti", _
-            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 22, 20), _
+            "Tahditsiz klnb.", "SAYILAN", "FARK"), Cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 16, 7.5, 13.5, 22, 20), _
             Array("@", "@", "@", "@", "@", "@", "@", "@", "@", "@"), _
             Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust, Array(5, 4, 2)
     Else
         T_CiktiYaz ws.Name, Array("Üretim yeri", "Depo", "Depo yeri tanýmý", "Malzeme", "Malzeme kýsa metni", "Parti", _
-            "Tahditsiz klnb.", "SAYILAN", "FARK"), cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 7.5, 13.5, 28, 26), _
+            "Tahditsiz klnb.", "SAYILAN", "FARK"), Cikis, n, Array(9.89, 7, 14.66, 11, 40.55, 7.5, 13.5, 28, 26), _
             Array("@", "@", "@", "@", "@", "@", "@", "@", "@"), _
             Array(xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlLeft, xlLeft), 24, True, ust, Array(5, 4, 2)
     End If
@@ -2288,7 +2288,7 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
         If s.Visible = msoTrue Then
             If s.Name <> "btnCiktiAl" And s.Name <> "btnAnaPanelDon" Then
                 If s.Left + s.Width > sagX Then sagX = s.Left + s.Width
-                If s.Top + s.Height > altY Then altY = s.Top + s.Height
+                If s.top + s.Height > altY Then altY = s.top + s.Height
             End If
         End If
     Next s
@@ -2301,7 +2301,7 @@ Private Sub T_CiktiGorunum(ByVal ws As Worksheet)
         End If
     Next j
     r = 1
-    Do While ws.Rows(r).Top + ws.Rows(r).Height < altY And r < 5000
+    Do While ws.Rows(r).top + ws.Rows(r).Height < altY And r < 5000
         r = r + 1
     Loop
     If r > sonS Then sonS = r

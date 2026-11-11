@@ -511,7 +511,7 @@ End Sub
 Private Sub AKFIX_BOS_SERITLERI_TEMIZLE(ByVal ws As Worksheet)
     Dim son As Long, bitis As Long, dolu As Range, alan As Range
     ' Find gizli/filtrelenmis satirlari da gorur. Gorunen son satir kullanilmaz.
-    Set dolu = ws.Range("A:L").Find(What:="*", after:=ws.Range("A1"), _
+    Set dolu = ws.Range("A:L").Find(What:="*", After:=ws.Range("A1"), _
         LookIn:=xlFormulas, LookAt:=xlPart, SearchOrder:=xlByRows, _
         SearchDirection:=xlPrevious, MatchCase:=False, SearchFormat:=False)
     son = 6

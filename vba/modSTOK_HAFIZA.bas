@@ -27,7 +27,7 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
 
     Dim anahtar As Variant
     Dim YeniSatir As Variant
-    Dim EskiSatir As Variant
+    Dim eskiSatir As Variant
     Dim durum As String
     Dim deltaBuffer() As Variant, deltaCikti() As Variant
     Dim deltaKayit As Variant, deltaIlk As Long, c As Long, d As Long
@@ -96,12 +96,12 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
 
         For Each anahtar In TumAnahtarlar.keys
 
-            EskiSatir = Empty
+            eskiSatir = Empty
             YeniSatir = Empty
             durum = vbNullString
 
             If eski.Exists(CStr(anahtar)) Then
-                EskiSatir = eski(CStr(anahtar))
+                eskiSatir = eski(CStr(anahtar))
             End If
 
             If yeni.Exists(CStr(anahtar)) Then
@@ -118,11 +118,11 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
 
             ElseIf eski.Exists(CStr(anahtar)) And yeni.Exists(CStr(anahtar)) Then
 
-                If STOK_HAFIZA_DEGISIK_MI(EskiSatir, YeniSatir) Then
+                If STOK_HAFIZA_DEGISIK_MI(eskiSatir, YeniSatir) Then
 
-                    If STOK_HAFIZA_DOUBLE(YeniSatir(9)) > STOK_HAFIZA_DOUBLE(EskiSatir(9)) Then
+                    If STOK_HAFIZA_DOUBLE(YeniSatir(9)) > STOK_HAFIZA_DOUBLE(eskiSatir(9)) Then
                         durum = "ARTTI"
-                    ElseIf STOK_HAFIZA_DOUBLE(YeniSatir(9)) < STOK_HAFIZA_DOUBLE(EskiSatir(9)) Then
+                    ElseIf STOK_HAFIZA_DOUBLE(YeniSatir(9)) < STOK_HAFIZA_DOUBLE(eskiSatir(9)) Then
                         durum = "AZALDI"
                     Else
                         durum = "DEÐÝÞTÝ"
@@ -135,7 +135,7 @@ Public Sub STOK_HAFIZA_KAYDET(Optional ByVal arsivIl As String = "")
             If Len(durum) > 0 Then
 
                 deltaKayit = STOK_HAFIZA_DELTA_DIZISI(SnapshotID, SnapshotZamani, _
-                    CStr(anahtar), EskiSatir, YeniSatir, durum)
+                    CStr(anahtar), eskiSatir, YeniSatir, durum)
                 For c = 1 To 15
                     deltaBuffer(DegisimSayisi + 1, c) = deltaKayit(c)
                 Next c
@@ -362,7 +362,7 @@ Private Function STOK_HAFIZA_SAYFA_AL(ByVal sayfaAdi As String) As Worksheet
 
     If ws Is Nothing Then
         Set ws = ThisWorkbook.Worksheets.Add( _
-                    after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+                    After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = sayfaAdi
     End If
 
@@ -379,7 +379,7 @@ End Function
 
 Private Function STOK_HAFIZA_SOZLUK_OLUSTUR( _
 ByVal ws As Worksheet, _
-ByVal IlkSatir As Long, _
+ByVal ilkSatir As Long, _
 ByVal sonSatir As Long) As Object
 
     Dim d As Object
@@ -389,12 +389,12 @@ ByVal sonSatir As Long) As Object
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = vbTextCompare
 
-    If sonSatir < IlkSatir Then
+    If sonSatir < ilkSatir Then
         Set STOK_HAFIZA_SOZLUK_OLUSTUR = d
         Exit Function
     End If
 
-    veri = ws.Range("A" & IlkSatir & ":L" & sonSatir).Value2
+    veri = ws.Range("A" & ilkSatir & ":L" & sonSatir).Value2
 
     For i = 1 To UBound(veri, 1)
 
@@ -457,40 +457,40 @@ ByVal depo As Variant, _
 ByVal malzeme As Variant, _
 ByVal parti As Variant) As String
 
-    Dim sUY As String
+    Dim sUy As String
     Dim sDepo As String
     Dim sMalzeme As String
     Dim sParti As String
 
-    sUY = Trim$(CStr(uy))
+    sUy = Trim$(CStr(uy))
     sDepo = UCase$(Trim$(CStr(depo)))
     sMalzeme = Trim$(CStr(malzeme))
     sParti = UCase$(Trim$(CStr(parti)))
 
-    If Len(sUY) = 0 Or Len(sDepo) = 0 Or Len(sMalzeme) = 0 Then
+    If Len(sUy) = 0 Or Len(sDepo) = 0 Or Len(sMalzeme) = 0 Then
         STOK_HAFIZA_ANAHTAR = vbNullString
     Else
         STOK_HAFIZA_ANAHTAR = _
-            sUY & "|" & sDepo & "|" & sMalzeme & "|" & sParti
+            sUy & "|" & sDepo & "|" & sMalzeme & "|" & sParti
     End If
 
 End Function
 
 Private Function STOK_HAFIZA_DEGISIK_MI( _
-ByVal EskiSatir As Variant, _
+ByVal eskiSatir As Variant, _
 ByVal YeniSatir As Variant) As Boolean
 
-    If Abs(STOK_HAFIZA_DOUBLE(EskiSatir(9)) - STOK_HAFIZA_DOUBLE(YeniSatir(9))) > 0.0000001 Then
+    If Abs(STOK_HAFIZA_DOUBLE(eskiSatir(9)) - STOK_HAFIZA_DOUBLE(YeniSatir(9))) > 0.0000001 Then
         STOK_HAFIZA_DEGISIK_MI = True
         Exit Function
     End If
 
-    If CDec(STOK_HAFIZA_DOUBLE(EskiSatir(11))) <> CDec(STOK_HAFIZA_DOUBLE(YeniSatir(11))) Then
+    If CDec(STOK_HAFIZA_DOUBLE(eskiSatir(11))) <> CDec(STOK_HAFIZA_DOUBLE(YeniSatir(11))) Then
         STOK_HAFIZA_DEGISIK_MI = True
         Exit Function
     End If
 
-    If StrComp(Trim$(CStr(EskiSatir(7))), Trim$(CStr(YeniSatir(7))), vbTextCompare) <> 0 Then
+    If StrComp(Trim$(CStr(eskiSatir(7))), Trim$(CStr(YeniSatir(7))), vbTextCompare) <> 0 Then
         STOK_HAFIZA_DEGISIK_MI = True
         Exit Function
     End If
@@ -501,18 +501,18 @@ Private Function STOK_HAFIZA_DELTA_DIZISI( _
 ByVal SnapshotID As String, _
 ByVal SnapshotZamani As Date, _
 ByVal anahtar As String, _
-ByVal EskiSatir As Variant, _
+ByVal eskiSatir As Variant, _
 ByVal YeniSatir As Variant, _
 ByVal durum As String) As Variant
     Dim kayit As Variant, x(1 To 15) As Variant
-    If IsEmpty(YeniSatir) Then kayit = EskiSatir Else kayit = YeniSatir
+    If IsEmpty(YeniSatir) Then kayit = eskiSatir Else kayit = YeniSatir
     x(1) = SnapshotID: x(2) = SnapshotZamani: x(3) = durum: x(4) = anahtar
     x(5) = kayit(1): x(6) = kayit(2): x(7) = kayit(3)
     x(8) = kayit(7): x(9) = kayit(8): x(10) = kayit(6): x(11) = kayit(10)
     x(12) = 0: x(13) = 0: x(14) = 0: x(15) = 0
-    If Not IsEmpty(EskiSatir) Then
-        x(12) = STOK_HAFIZA_DOUBLE(EskiSatir(9))
-        x(14) = STOK_HAFIZA_DOUBLE(EskiSatir(11))
+    If Not IsEmpty(eskiSatir) Then
+        x(12) = STOK_HAFIZA_DOUBLE(eskiSatir(9))
+        x(14) = STOK_HAFIZA_DOUBLE(eskiSatir(11))
     End If
     If Not IsEmpty(YeniSatir) Then
         x(13) = STOK_HAFIZA_DOUBLE(YeniSatir(9))
@@ -534,7 +534,7 @@ ByVal SnapshotZamani As Date)
     ' Clear all previous content in A:L, including stray cells and formulas.
     ' Formatting and N2/O2 metadata are preserved as in the existing routine.
     Set sonHucre = wsCurrent.Range("A:L").Find(What:="*", _
-        after:=wsCurrent.Range("A1"), LookIn:=xlFormulas, LookAt:=xlPart, _
+        After:=wsCurrent.Range("A1"), LookIn:=xlFormulas, LookAt:=xlPart, _
         SearchOrder:=xlByRows, SearchDirection:=xlPrevious, _
         MatchCase:=False, SearchFormat:=False)
     If Not sonHucre Is Nothing Then

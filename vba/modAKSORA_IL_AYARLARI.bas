@@ -322,14 +322,14 @@ Public Sub AKSORA_PANEL_IL_GORSELI_YENILE()
     If korumali Then ws.Unprotect
 
     If yeni Is Nothing Then
-        Set yeni = AKSORA_MALZEME_BANT_EKLE(ws, il, eski.Left, eski.Top)
+        Set yeni = AKSORA_MALZEME_BANT_EKLE(ws, il, eski.Left, eski.top)
         yeni.Name = ad
     End If
 
     With yeni
         .LockAspectRatio = msoFalse
         .Left = eski.Left
-        .Top = eski.Top
+        .top = eski.top
         .Width = eski.Width
         .Height = eski.Height
         .Placement = xlFreeFloating

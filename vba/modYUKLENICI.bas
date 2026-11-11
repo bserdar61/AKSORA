@@ -1274,7 +1274,7 @@ End Sub
     Set sonHucre = _
     ws.Cells.Find( _
     What:="*", _
-    after:=ws.Cells(1, 1), _
+    After:=ws.Cells(1, 1), _
     LookAt:=xlPart, _
     LookIn:=xlFormulas, _
     SearchOrder:=xlByRows, _
@@ -1308,7 +1308,7 @@ End Sub
     Set sonHucre = _
     ws.Cells.Find( _
     What:="*", _
-    after:=ws.Cells(1, 1), _
+    After:=ws.Cells(1, 1), _
     LookAt:=xlPart, _
     LookIn:=xlFormulas, _
     SearchOrder:=xlByColumns, _

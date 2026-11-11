@@ -83,7 +83,7 @@ Public Sub PANEL_ILK_SEKME_YAP(ByVal ws As Worksheet)
 
     If ws.Name = "ANA PANEL" Then
         If ws.Index <> kapak.Index + 1 Then
-            ws.Move after:=kapak
+            ws.Move After:=kapak
         End If
     End If
 
@@ -525,13 +525,13 @@ ByVal alan As String, _
 ByVal kod As String)
 
     Dim r As Range
-    Dim IlkSatir As Long
+    Dim ilkSatir As Long
     Dim ilkSutun As Long
     Dim sonSutun As Long
 
     Set r = ws.Range(alan)
 
-    IlkSatir = r.Row
+    ilkSatir = r.Row
     ilkSutun = r.Column
     sonSutun = r.Column + r.Columns.Count - 1
 
@@ -543,8 +543,8 @@ ByVal kod As String)
     End With
 
     With ws.Range( _
-        ws.Cells(IlkSatir, ilkSutun), _
-        ws.Cells(IlkSatir, sonSutun))
+        ws.Cells(ilkSatir, ilkSutun), _
+        ws.Cells(ilkSatir, sonSutun))
 
         .Merge
         .Value = baslik
@@ -557,28 +557,28 @@ ByVal kod As String)
 
     End With
 
-    PANEL_KART_SATIR ws, IlkSatir + 1, ilkSutun, sonSutun, _
+    PANEL_KART_SATIR ws, ilkSatir + 1, ilkSutun, sonSutun, _
         "DURUM", kod & "_DURUM"
 
-    PANEL_KART_SATIR ws, IlkSatir + 2, ilkSutun, sonSutun, _
+    PANEL_KART_SATIR ws, ilkSatir + 2, ilkSutun, sonSutun, _
         "SON GÜNCELLEME", kod & "_TARIH"
 
-    PANEL_KART_SATIR ws, IlkSatir + 3, ilkSutun, sonSutun, _
+    PANEL_KART_SATIR ws, ilkSatir + 3, ilkSutun, sonSutun, _
         "STOK SATIRI", kod & "_SATIR"
 
-    PANEL_KART_SATIR ws, IlkSatir + 4, ilkSutun, sonSutun, _
+    PANEL_KART_SATIR ws, ilkSatir + 4, ilkSutun, sonSutun, _
         "STOK DEÐERÝ", kod & "_DEGER"
 
     If kod = "CDP" Or kod = "EPP" Then
 
-        PANEL_KART_SATIR ws, IlkSatir + 5, ilkSutun, sonSutun, _
+        PANEL_KART_SATIR ws, ilkSatir + 5, ilkSutun, sonSutun, _
             "SAP BAÐLANTI", kod & "_SAP"
 
     Else
 
         With ws.Range( _
-            ws.Cells(IlkSatir + 5, ilkSutun), _
-            ws.Cells(IlkSatir + 5, sonSutun))
+            ws.Cells(ilkSatir + 5, ilkSutun), _
+            ws.Cells(ilkSatir + 5, sonSutun))
 
             .Merge
             .Value = "STOK GRUBU"
@@ -590,8 +590,8 @@ ByVal kod As String)
     End If
 
     With ws.Range( _
-        ws.Cells(IlkSatir + 6, ilkSutun), _
-        ws.Cells(IlkSatir + 6, sonSutun))
+        ws.Cells(ilkSatir + 6, ilkSutun), _
+        ws.Cells(ilkSatir + 6, sonSutun))
 
         .Merge
         .Value = "Hazýr"
@@ -652,9 +652,9 @@ Private Sub PANEL_ANA_BUTON(ByVal ws As Worksheet)
     Set shp = ws.Shapes.AddShape( _
         msoShapeRoundedRectangle, _
         ws.Range("G15").Left, _
-        ws.Range("G15").Top, _
+        ws.Range("G15").top, _
         ws.Range("N18").Left + ws.Range("N18").Width - ws.Range("G15").Left, _
-        ws.Range("N18").Top + ws.Range("N18").Height - ws.Range("G15").Top)
+        ws.Range("N18").top + ws.Range("N18").Height - ws.Range("G15").top)
 
     With shp
 
@@ -688,9 +688,9 @@ Private Sub PANEL_BAGLANTI_BUTON(ByVal ws As Worksheet)
     Set shp = ws.Shapes.AddShape( _
         msoShapeRoundedRectangle, _
         ws.Range("B15").Left, _
-        ws.Range("B15").Top, _
+        ws.Range("B15").top, _
         ws.Range("E18").Left + ws.Range("E18").Width - ws.Range("B15").Left, _
-        ws.Range("E18").Top + ws.Range("E18").Height - ws.Range("B15").Top)
+        ws.Range("E18").top + ws.Range("E18").Height - ws.Range("B15").top)
 
     With shp
 
@@ -812,7 +812,7 @@ ByVal ad As String)
 
     Set shp = ws.Shapes.AddShape( _
         msoShapeRoundedRectangle, _
-        r.Left, r.Top, r.Width, r.Height)
+        r.Left, r.top, r.Width, r.Height)
 
     With shp
 
@@ -851,7 +851,7 @@ ByVal ad As String)
 
     Set shp = ws.Shapes.AddShape( _
         msoShapeRoundedRectangle, _
-        r.Left, r.Top, r.Width, r.Height)
+        r.Left, r.top, r.Width, r.Height)
 
     With shp
 
@@ -1661,9 +1661,9 @@ Public Sub AKSORA_DURUM_RENK_GUVENLI()
                     If shp.Left >= kartAlani.Left _
                        And shp.Left < _
                            kartAlani.Left + kartAlani.Width _
-                       And shp.Top >= kartAlani.Top _
-                       And shp.Top < _
-                           kartAlani.Top + kartAlani.Height Then
+                       And shp.top >= kartAlani.top _
+                       And shp.top < _
+                           kartAlani.top + kartAlani.Height Then
 
 
                         If shp.TextFrame2.HasText Then

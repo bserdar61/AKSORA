@@ -464,7 +464,7 @@ Private Sub AKG_HEDEF_ARSIV_KONTROL(ByVal il As String)
 
         Dim akv As Variant
         ' Arsiv tek seferde okunur (hucre hucre okuma il gecisinde uzun donmaya yol aciyordu).
-        akv = ar.Range("A7:K" & Application.Max(7, son)).Value2
+        akv = ar.Range("A7:K" & application.Max(7, son)).Value2
 
         For r = 7 To son
 

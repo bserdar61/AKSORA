@@ -61,7 +61,7 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
         Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
         On Error GoTo Hata
         If ws Is Nothing Then
-            Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+            Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
             ws.Name = CStr(adlar(i))
             ws.Range("BX1").Value2 = etiket
         End If
@@ -189,7 +189,7 @@ Private Sub TEMA_KOPYALA(ByVal kaynak As Worksheet, ByVal ws As Worksheet, ByVal
             mAsama = ws.Name & " / en-boy kilidi: " & s.Name
             yeni.LockAspectRatio = msoFalse
             mAsama = ws.Name & " / konum: " & s.Name
-            yeni.Left = s.Left: yeni.Top = s.Top
+            yeni.Left = s.Left: yeni.top = s.top
             mAsama = ws.Name & " / boyut: " & s.Name
             yeni.Width = s.Width: yeni.Height = s.Height
         End If
@@ -259,7 +259,7 @@ Private Sub TEMA_MUSTERI_ANA_DUZEN(ByVal ws As Worksheet)
     s.PictureFormat.CropTop = h * CDbl(sinirlar(bolum)) / 742
     s.PictureFormat.CropBottom = h * (742 - CDbl(sinirlar(bolum + 1))) / 742
     s.LockAspectRatio = msoFalse
-    s.Left = r.Left: s.Top = r.Top: s.Width = r.Width: s.Height = r.Height
+    s.Left = r.Left: s.top = r.top: s.Width = r.Width: s.Height = r.Height
     s.Name = "MUSTERI_ANA_BANNER": s.Placement = xlFreeFloating
     s.ZOrder msoBringToFront
     mAsama = "M_ANA PANEL / alt bant hizalama"
@@ -270,27 +270,27 @@ Private Sub TEMA_MUSTERI_ANA_DUZEN(ByVal ws As Worksheet)
     Set r = ws.Range("B28:AB29")
     Set z = TEMA_ANA_SEKIL(ws, "AKSORA15_ALT_ZEMIN")
     If z Is Nothing Then
-        Set z = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.Top, r.Width, r.Height)
+        Set z = ws.Shapes.AddShape(msoShapeRectangle, r.Left, r.top, r.Width, r.Height)
         z.Name = "AKSORA15_ALT_ZEMIN"
     End If
-    z.Left = r.Left: z.Top = r.Top: z.Width = r.Width: z.Height = r.Height
+    z.Left = r.Left: z.top = r.top: z.Width = r.Width: z.Height = r.Height
     z.Fill.ForeColor.RGB = RGB(13, 47, 79): z.line.Visible = msoFalse
     z.ZOrder msoBringToFront
     TEMA_ANA_YAZI ws, "AKSORA15_ALT_KURUM", _
         "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & il & " Ýl Müdürlüðü", _
-        r.Left, r.Top + 1, r.Width, r.Height / 2 - 1, 9, RGB(255, 255, 255), True
+        r.Left, r.top + 1, r.Width, r.Height / 2 - 1, 9, RGB(255, 255, 255), True
     TEMA_ANA_YAZI ws, "AKSORA15_ALT_IMZA", _
         StrConv(AKSORA_SAHIBI(), vbProperCase) & " | Elektrik-Elektronik Mühendisi", _
-        r.Left, r.Top + r.Height / 2, r.Width, r.Height / 2 - 1, 8, RGB(220, 238, 248), False
+        r.Left, r.top + r.Height / 2, r.Width, r.Height / 2 - 1, 8, RGB(220, 238, 248), False
     Set r = ws.Range("B30:AB30")
     Set z = TEMA_ANA_SEKIL(ws, "AKSORA15_TARIH_ZEMIN")
     If Not z Is Nothing Then
-        z.Left = r.Left: z.Top = r.Top: z.Width = r.Width: z.Height = r.Height
+        z.Left = r.Left: z.top = r.top: z.Width = r.Width: z.Height = r.Height
         z.ZOrder msoBringToFront
     End If
     TEMA_ANA_YAZI ws, "AKSORA15_PANEL_TARIHI", _
         "Müþteri Operasyonlarý Yönetimi | Görsel tasarým aþamasý", _
-        r.Left, r.Top, r.Width, r.Height, 8, RGB(43, 88, 115), False
+        r.Left, r.top, r.Width, r.Height, 8, RGB(43, 88, 115), False
     mAsama = "M_ANA PANEL / kart etiketleri"
     For Each s In ws.Shapes
         ad = s.Name
@@ -331,7 +331,7 @@ Private Sub TEMA_MUSTERI_ANA_DUZEN(ByVal ws As Worksheet)
     Set s = TEMA_ANA_SEKIL(ws, "MUSTERI_TEMA_GERI")
     If Not s Is Nothing Then
         Set r = ws.Range("B6:E6")
-        s.Left = r.Left: s.Top = r.Top + 1: s.Width = r.Width: s.Height = r.Height - 2
+        s.Left = r.Left: s.top = r.top + 1: s.Width = r.Width: s.Height = r.Height - 2
         s.TextFrame2.TextRange.Font.Size = 8
         s.TextFrame2.MarginLeft = 4: s.TextFrame2.MarginRight = 4
         s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
@@ -354,7 +354,7 @@ Private Sub TEMA_ANA_YAZI(ByVal ws As Worksheet, ByVal ad As String, ByVal metin
         Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
         s.Name = ad
     End If
-    s.Left = x: s.Top = y: s.Width = w: s.Height = h
+    s.Left = x: s.top = y: s.Width = w: s.Height = h
     With s.TextFrame2
         .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
         .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
@@ -419,7 +419,7 @@ Private Sub TEMA_MUSTERI_ANA_V12(ByVal ws As Worksheet)
         Set s = TEMA_ANA_SEKIL(ws, CStr(dugmeler(i)))
         If Not s Is Nothing Then
             s.Left = r.Left + i * (yeniW + bosluk): s.Width = yeniW
-            s.Top = r.Top + 1: s.Height = r.Height - 2
+            s.top = r.top + 1: s.Height = r.Height - 2
             s.TextFrame2.TextRange.Text = CStr(basliklar(i))
             s.TextFrame2.TextRange.Font.Size = 10
             s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
@@ -434,7 +434,7 @@ Private Sub TEMA_MUSTERI_ANA_V12(ByVal ws As Worksheet)
     bosluk = 8: yeniW = (r.Width - 6 * bosluk) / 7
     For i = 0 To 6
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, _
-            r.Left + i * (yeniW + bosluk), r.Top + 1, yeniW, r.Height - 2)
+            r.Left + i * (yeniW + bosluk), r.top + 1, yeniW, r.Height - 2)
         s.Name = "MUSTERI_HIZLI_" & CStr(i)
         s.Adjustments.Item(1) = 0.12
         s.Fill.ForeColor.RGB = RGB(244, 251, 255)
@@ -456,7 +456,7 @@ Private Sub TEMA_MUSTERI_ANA_V12(ByVal ws As Worksheet)
     Set r = ws.Range("B28:AB29")
     TEMA_ANA_YAZI ws, "AKSORA15_ALT_KURUM", _
         "ÇORUH ELEKTRÝK DAÐITIM A.Þ. | " & TEMA_IL_ADI() & " Ýl Müdürlüðü", _
-        r.Left, r.Top, r.Width, r.Height, 9, RGB(255, 255, 255), True
+        r.Left, r.top, r.Width, r.Height, 9, RGB(255, 255, 255), True
     For Each c In ws.Range("B28:AB31").Cells
         c.MergeArea.ClearContents
     Next c
@@ -510,32 +510,32 @@ Private Sub TEMA_MUSTERI_ANA_V13(ByVal ws As Worksheet)
     If Not foto Is Nothing Then
         foto.LockAspectRatio = msoFalse
         foto.Left = x: foto.Width = w
-        foto.Height = alt.Top - foto.Top
+        foto.Height = alt.top - foto.top
         foto.line.Visible = msoFalse
     End If
     Set s = TEMA_ANA_SEKIL(ws, "AKSORA15_UST_ZEMIN")
     If Not s Is Nothing Then
         s.Left = x: s.Width = w
-        s.Top = banner.Top: s.Height = banner.Height
+        s.top = banner.top: s.Height = banner.Height
     End If
     Set dugme = TEMA_ANA_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
     If Not dugme Is Nothing Then
         dugme.Left = sag - dugme.Width
-        dugme.Top = banner.Top + banner.Height
-        If Not foto Is Nothing Then dugme.Height = foto.Top - dugme.Top
+        dugme.top = banner.top + banner.Height
+        If Not foto Is Nothing Then dugme.Height = foto.top - dugme.top
         dugme.line.Visible = msoFalse
     End If
     ' Hucre zeminine bagli farkli kenarlar yerine ayni sinirli tek durum seridi.
     Set serit = TEMA_ANA_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
     If serit Is Nothing And Not foto Is Nothing Then
-        Set serit = ws.Shapes.AddShape(msoShapeRectangle, x, banner.Top + banner.Height, _
-            w, foto.Top - banner.Top - banner.Height)
+        Set serit = ws.Shapes.AddShape(msoShapeRectangle, x, banner.top + banner.Height, _
+            w, foto.top - banner.top - banner.Height)
         serit.Name = "MUSTERI_ANA_SECIM_SERIDI"
     End If
     If Not serit Is Nothing Then
         serit.Left = x: serit.Width = w
-        serit.Top = banner.Top + banner.Height
-        If Not foto Is Nothing Then serit.Height = foto.Top - serit.Top
+        serit.top = banner.top + banner.Height
+        If Not foto Is Nothing Then serit.Height = foto.top - serit.top
         serit.Fill.ForeColor.RGB = RGB(216, 243, 234)
         serit.line.Visible = msoFalse
         serit.ZOrder msoSendToBack
@@ -543,7 +543,7 @@ Private Sub TEMA_MUSTERI_ANA_V13(ByVal ws As Worksheet)
     Set yazi = TEMA_ANA_SEKIL(ws, "AKSORA15_ALT_KURUM")
     If Not yazi Is Nothing Then
         yazi.Left = x: yazi.Width = w
-        yazi.Top = alt.Top: yazi.Height = alt.Height
+        yazi.top = alt.top: yazi.Height = alt.Height
         With yazi.TextFrame2
             .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
             .VerticalAnchor = msoAnchorMiddle
@@ -576,7 +576,7 @@ Private Sub TEMA_MUSTERI_ANA_V13(ByVal ws As Worksheet)
     aralik = 8: bw = (r.Width - 5 * aralik) / 6
     For i = 0 To 5
         Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + 1 + i * (bw + aralik), _
-            r.Top + 1, bw, r.Height - 2)
+            r.top + 1, bw, r.Height - 2)
         s.Name = "MUSTERI_HIZLI_" & CStr(i)
         s.Adjustments.Item(1) = 0.12
         s.Fill.ForeColor.RGB = RGB(244, 251, 255)
@@ -690,7 +690,7 @@ Private Sub TEMA_MUSTERI_ARAMA_V15(ByVal ws As Worksheet)
     Next s
     If Not ara Is Nothing Then
         Set r = ws.Range("K6:M6")
-        ara.Left = r.Left + 4: ara.Top = ws.Rows(6).Top + 1
+        ara.Left = r.Left + 4: ara.top = ws.Rows(6).top + 1
         ara.Width = r.Width - 4: ara.Height = ws.Rows(6).Height - 2
         ara.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_MUSTERI_ARAMA_HAZIRLIK"
     End If
@@ -702,12 +702,12 @@ Private Sub TEMA_MUSTERI_ARAMA_V15(ByVal ws As Worksheet)
     Set s = TEMA_ANA_SEKIL(ws, "MUSTERI_ARAMA_IL_BASLIK")
     If Not ilButonu Is Nothing Then
         If s Is Nothing Then
-            Set s = ws.Shapes.AddShape(msoShapeRectangle, ilButonu.Left, ws.Rows(6).Top, _
-                ilButonu.Width, ilButonu.Top - ws.Rows(6).Top - 4)
+            Set s = ws.Shapes.AddShape(msoShapeRectangle, ilButonu.Left, ws.Rows(6).top, _
+                ilButonu.Width, ilButonu.top - ws.Rows(6).top - 4)
             s.Name = "MUSTERI_ARAMA_IL_BASLIK"
         End If
         s.Left = ilButonu.Left: s.Width = ilButonu.Width
-        s.Top = ws.Rows(6).Top: s.Height = ilButonu.Top - s.Top - 4
+        s.top = ws.Rows(6).top: s.Height = ilButonu.top - s.top - 4
         s.Fill.ForeColor.RGB = RGB(24, 55, 88): s.line.Visible = msoFalse
         With s.TextFrame2
             .MarginLeft = 4: .MarginRight = 4: .MarginTop = 0: .MarginBottom = 0
@@ -990,7 +990,7 @@ Private Function TEMA_DOSYA_RESIM(ByVal hedef As Worksheet, ByVal kaynak As Work
         .CropRight = orijinal.PictureFormat.CropRight
     End With
     s.LockAspectRatio = msoFalse
-    s.Left = orijinal.Left: s.Top = orijinal.Top
+    s.Left = orijinal.Left: s.top = orijinal.top
     s.Width = orijinal.Width: s.Height = orijinal.Height
     s.Rotation = orijinal.Rotation
     s.AlternativeText = orijinal.AlternativeText
@@ -1050,13 +1050,13 @@ Private Function TEMA_YEREL_SEKIL(ByVal hedef As Worksheet, ByVal kaynakSekil As
     Select Case kaynakSekil.Type
         Case msoAutoShape
             Set s = hedef.Shapes.AddShape(kaynakSekil.AutoShapeType, kaynakSekil.Left, _
-                kaynakSekil.Top, kaynakSekil.Width, kaynakSekil.Height)
+                kaynakSekil.top, kaynakSekil.Width, kaynakSekil.Height)
         Case msoTextBox
             Set s = hedef.Shapes.AddTextbox(msoTextOrientationHorizontal, kaynakSekil.Left, _
-                kaynakSekil.Top, kaynakSekil.Width, kaynakSekil.Height)
+                kaynakSekil.top, kaynakSekil.Width, kaynakSekil.Height)
         Case msoLine
-            Set s = hedef.Shapes.AddLine(kaynakSekil.Left, kaynakSekil.Top, _
-                kaynakSekil.Left + kaynakSekil.Width, kaynakSekil.Top + kaynakSekil.Height)
+            Set s = hedef.Shapes.AddLine(kaynakSekil.Left, kaynakSekil.top, _
+                kaynakSekil.Left + kaynakSekil.Width, kaynakSekil.top + kaynakSekil.Height)
     End Select
     ' PickUp/Apply sekil bicimini aktarir; Windows panosu ve Shape.Copy kullanilmaz.
     kaynakSekil.PickUp
@@ -1099,7 +1099,7 @@ Private Function TEMA_FORM_KUR(ByVal hedef As Worksheet, ByVal kaynakSekil As Sh
     Dim s As Shape, baslik As String
     ' Tema asamasinda form/ActiveX denetimi yerine islemsiz gorunum olusturulur.
     ' ControlFormat, AddFormControl ve Windows panosu kullanilmaz.
-    Set s = hedef.Shapes.AddShape(msoShapeRectangle, kaynakSekil.Left, kaynakSekil.Top, _
+    Set s = hedef.Shapes.AddShape(msoShapeRectangle, kaynakSekil.Left, kaynakSekil.top, _
         kaynakSekil.Width, kaynakSekil.Height)
     baslik = "TÜMÜ"
     If LCase$(Left$(kaynakSekil.Name, 9)) <> "drop down" Then
@@ -1199,7 +1199,7 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         For Each s In ws.Shapes
             If s.Visible = msoTrue Then
                 genislik = application.Max(genislik, s.Left + s.Width)
-                altSinir = application.Max(altSinir, s.Top + s.Height)
+                altSinir = application.Max(altSinir, s.top + s.Height)
             End If
         Next s
         With ThisWorkbook.Windows(1)
@@ -1329,7 +1329,7 @@ Private Sub TEMA_MUSTERI_TOPLU_BUTON(ByVal ws As Worksheet)
     On Error GoTo 0
     If vurgu Is Nothing Then Set vurgu = ws.Shapes.AddShape(msoShapeRectangle, 0, 0, 3, 10): vurgu.Name = "AKSORA_TOPLU_VURGU"
     With vurgu
-        .Left = s.Left + 6: .Top = s.Top + 10
+        .Left = s.Left + 6: .top = s.top + 10
         .Width = 3: .Height = application.Max(6, s.Height - 20)
         .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
         .Shadow.Visible = msoFalse
@@ -1340,7 +1340,7 @@ Private Sub TEMA_MUSTERI_TOPLU_BUTON(ByVal ws As Worksheet)
     If Not durum Is Nothing Then
         With durum
             .Left = s.Left - 2: .Width = s.Width + 4
-            .Top = s.Top + s.Height + 2
+            .top = s.top + s.Height + 2
             .Fill.Visible = msoFalse: .line.Visible = msoFalse
             .Placement = xlFreeFloating
         End With

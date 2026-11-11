@@ -38,7 +38,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
         .Width = 64
         .Height = 64
         .Left = merkez - 32
-        .Top = 15
+        .top = 15
         .BackColor = RGB(248, 252, 255)
         .BorderStyle = fmBorderStyleNone
         .PictureSizeMode = fmPictureSizeModeZoom
@@ -46,7 +46,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
 
     With frm.lblBaslik
         .Caption = "AKSORA"
-        .Top = 85
+        .top = 85
         .Height = 32
         .Font.Size = 23
         .Font.bold = True
@@ -55,7 +55,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
 
         With frm.lblAltBaslik
         .Caption = "Stok ve Verimlilik, AKSORA!"
-        .Top = 119
+        .top = 119
         .Height = 24
         .Font.Name = "Segoe UI"
         .Font.Size = 12
@@ -66,7 +66,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
 
     With frm.lblDurum
         .Caption = "Sistem hazýrlanýyor..."
-        .Top = 155
+        .top = 155
         .Height = 20
         .Font.Size = 9
         .Font.bold = False
@@ -77,7 +77,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
         .AutoSize = False
         .Caption = vbNullString
         .Left = merkez - 140
-        .Top = 182
+        .top = 182
         .Width = 280
         .Height = 7
         .BackStyle = fmBackStyleOpaque
@@ -89,7 +89,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
         .AutoSize = False
         .Caption = vbNullString
         .Left = frm.lblBarArka.Left
-        .Top = frm.lblBarArka.Top
+        .top = frm.lblBarArka.top
         .Width = 1
         .Height = frm.lblBarArka.Height
         .BackStyle = fmBackStyleOpaque
@@ -100,7 +100,7 @@ Public Sub AKSORA_SPLASH_GORSEL_UYGULA(ByVal frm As Object)
 
     With frm.lblImza
         .Caption = AKSORA_TELIF()
-        .Top = 207
+        .top = 207
         .Height = 18
         .Font.Size = 8
         .Font.bold = False

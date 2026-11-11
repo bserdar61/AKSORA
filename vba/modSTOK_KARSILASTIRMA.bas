@@ -65,9 +65,9 @@ Public Sub STOK_KARSILASTIR()
     Dim tarih1 As Date
     Dim tarih2 As Date
 
-    Dim D1 As Object
-    Dim D2 As Object
-    Dim Tum As Object
+    Dim d1 As Object
+    Dim d2 As Object
+    Dim tum As Object
     Dim Kimlik1 As Object
     Dim Kimlik2 As Object
 
@@ -120,31 +120,31 @@ Public Sub STOK_KARSILASTIR()
     application.ScreenUpdating = False
 
     AKFIX_KARS_GECMIS_FARK = 0
-    Set D1 = STOK_KARS_DURUM_OLUSTUR(Snap1)
-    Set D2 = STOK_KARS_DURUM_OLUSTUR(Snap2)
+    Set d1 = STOK_KARS_DURUM_OLUSTUR(Snap1)
+    Set d2 = STOK_KARS_DURUM_OLUSTUR(Snap2)
 
-    If D1 Is Nothing Or D2 Is Nothing Then
+    If d1 Is Nothing Or d2 Is Nothing Then
         Err.Raise _
             vbObjectError + 7301, _
             "STOK_KARSILASTIR", _
             "Seçilen stok durumlarý oluþturulamadý."
     End If
 
-    Set Kimlik1 = STOK_KARS_KIMLIK_SETI(D1)
-    Set Kimlik2 = STOK_KARS_KIMLIK_SETI(D2)
+    Set Kimlik1 = STOK_KARS_KIMLIK_SETI(d1)
+    Set Kimlik2 = STOK_KARS_KIMLIK_SETI(d2)
 
-    Set Tum = CreateObject("Scripting.Dictionary")
-    Tum.CompareMode = vbTextCompare
+    Set tum = CreateObject("Scripting.Dictionary")
+    tum.CompareMode = vbTextCompare
 
-    For Each anahtar In D1.keys
-        If Not Tum.Exists(CStr(anahtar)) Then
-            Tum.Add CStr(anahtar), True
+    For Each anahtar In d1.keys
+        If Not tum.Exists(CStr(anahtar)) Then
+            tum.Add CStr(anahtar), True
         End If
     Next anahtar
 
-    For Each anahtar In D2.keys
-        If Not Tum.Exists(CStr(anahtar)) Then
-            Tum.Add CStr(anahtar), True
+    For Each anahtar In d2.keys
+        If Not tum.Exists(CStr(anahtar)) Then
+            tum.Add CStr(anahtar), True
         End If
     Next anahtar
 
@@ -152,22 +152,22 @@ Public Sub STOK_KARSILASTIR()
 
     CikisSatir = 16
 
-    For Each anahtar In Tum.keys
+    For Each anahtar In tum.keys
 
         r1 = Empty
         r2 = Empty
         durum = vbNullString
 
-        If D1.Exists(CStr(anahtar)) Then
-            r1 = D1(CStr(anahtar))
+        If d1.Exists(CStr(anahtar)) Then
+            r1 = d1(CStr(anahtar))
         End If
 
-        If D2.Exists(CStr(anahtar)) Then
-            r2 = D2(CStr(anahtar))
+        If d2.Exists(CStr(anahtar)) Then
+            r2 = d2(CStr(anahtar))
         End If
 
-        If Not D1.Exists(CStr(anahtar)) And _
-           D2.Exists(CStr(anahtar)) Then
+        If Not d1.Exists(CStr(anahtar)) And _
+           d2.Exists(CStr(anahtar)) Then
 
             If Kimlik1.Exists(STOK_KARS_KIMLIK(r2)) Then
                 durum = "ARTTI"
@@ -177,8 +177,8 @@ Public Sub STOK_KARSILASTIR()
                 yeni = yeni + 1
             End If
 
-        ElseIf D1.Exists(CStr(anahtar)) And _
-               Not D2.Exists(CStr(anahtar)) Then
+        ElseIf d1.Exists(CStr(anahtar)) And _
+               Not d2.Exists(CStr(anahtar)) Then
 
             If Kimlik2.Exists(STOK_KARS_KIMLIK(r1)) Then
                 durum = "AZALDI"
@@ -573,7 +573,7 @@ Private Function STOK_KARS_SAYFA_AL() As Worksheet
 
         Set ws = _
             ThisWorkbook.Worksheets.Add( _
-                after:=ThisWorkbook.Worksheets( _
+                After:=ThisWorkbook.Worksheets( _
                     ThisWorkbook.Worksheets.Count))
 
         ws.Name = KARS_SAYFA
@@ -915,7 +915,7 @@ ByVal ad As String)
         alan.Left + _
         ((sira - 1) * ButonGenislik)
 
-    ust = alan.Top
+    ust = alan.top
 
     Set shp = _
         ws.Shapes.AddShape( _
@@ -1023,7 +1023,7 @@ ByVal ws As Worksheet)
         ws.Shapes.AddShape( _
             msoShapeRoundedRectangle, _
             hedef.Left, _
-            hedef.Top, _
+            hedef.top, _
             hedef.Width, _
             hedef.Height)
 
@@ -1060,7 +1060,7 @@ ByVal ws As Worksheet)
         .Placement = xlMoveAndSize
 
         .Left = hedef.Left
-        .Top = hedef.Top
+        .top = hedef.top
         .Width = hedef.Width
         .Height = hedef.Height
 
@@ -1207,7 +1207,7 @@ Private Function STOK_KARS_ICERIK_SON(ByVal ws As Worksheet) As Long
     Dim sonHucre As Range
     STOK_KARS_ICERIK_SON = 16
     Set sonHucre = ws.Range("A:N").Find(What:="*", _
-        after:=ws.Range("A1"), LookIn:=xlFormulas, LookAt:=xlPart, _
+        After:=ws.Range("A1"), LookIn:=xlFormulas, LookAt:=xlPart, _
         SearchOrder:=xlByRows, SearchDirection:=xlPrevious, _
         MatchCase:=False, SearchFormat:=False)
     If Not sonHucre Is Nothing Then
@@ -1255,8 +1255,8 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
     Dim eLoc() As String, ePar() As String, eIl() As String, eQ() As Double, eRem() As Double, eRow() As Long, eTxt() As String
     Dim grup As Object, mallar As Object, tesisIl As Object, iller As Variant, sec As String, il As Variant
     Dim a As Object, b As Object, kk As Variant, q1 As Double, q2 As Double, rec As Variant, mk As String, g As Variant
-    Dim dec() As Long, inc() As Long, nd As Long, ni As Long, tmp As Long, cikti() As Variant, satirlar() As String, parca() As String
-    Dim metin As String, lab As String, tamami As Boolean, ok As String, ilR As String, cq As Long
+    Dim dec() As Long, inc() As Long, nD As Long, ni As Long, tmp As Long, cikti() As Variant, satirlar() As String, parca() As String
+    Dim metin As String, lab As String, tamami As Boolean, ok As String, ilR As String, cQ As Long
     Dim durumlar As Variant, icNakil As Boolean, sp() As String, ownT As String, ownD As String, degisti As Boolean
     If son < 16 Then Exit Sub
     v = ws.Range("A16:J" & son).Value2
@@ -1316,16 +1316,16 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
     ' Ilce (K) ve yuklenici (M) depolari: _KH_ gunluk kaydi (yoksa ilce biriminin _IH_ gecmisi, yalniz K).
     For Each il In iller
         Set a = STOK_KARS_WS("_KH_" & CStr(il))
-        c = 0: cq = 0
-        If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cq = STOK_KARS_GUN_KOL(a, t2)
-        If c > 0 And cq > 0 And c <> cq Then
-            STOK_KARS_GECMIS_EKLE a, c, cq, True, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
+        c = 0: cQ = 0
+        If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cQ = STOK_KARS_GUN_KOL(a, t2)
+        If c > 0 And cQ > 0 And c <> cQ Then
+            STOK_KARS_GECMIS_EKLE a, c, cQ, True, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
         Else
             Set a = STOK_KARS_WS("_IH_" & CStr(il))
-            c = 0: cq = 0
-            If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cq = STOK_KARS_GUN_KOL(a, t2)
-            If c > 0 And cq > 0 And c <> cq Then
-                STOK_KARS_GECMIS_EKLE a, c, cq, False, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
+            c = 0: cQ = 0
+            If Not a Is Nothing Then c = STOK_KARS_GUN_KOL(a, t1): cQ = STOK_KARS_GUN_KOL(a, t2)
+            If c > 0 And cQ > 0 And c <> cQ Then
+                STOK_KARS_GECMIS_EKLE a, c, cQ, False, CStr(il), mallar, n, eLoc, ePar, eIl, eQ, eRem, eRow, eTxt, grup
             End If
         End If
     Next il
@@ -1335,16 +1335,16 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
         ReDim dec(0 To UBound(g) + 1): ReDim inc(0 To UBound(g) + 1)
         ' 1) ayni il icinde
         For Each il In iller
-            nd = 0: ni = 0
+            nD = 0: ni = 0
             For i = 0 To UBound(g)
                 p = CLng(g(i))
                 If eIl(p) = CStr(il) Then
-                    If eQ(p) < 0 Then dec(nd) = p: nd = nd + 1 Else inc(ni) = p: ni = ni + 1
+                    If eQ(p) < 0 Then dec(nD) = p: nD = nD + 1 Else inc(ni) = p: ni = ni + 1
                 End If
             Next i
-            If nd > 0 And ni > 0 Then
-                For i = 0 To nd - 2
-                    For j = i + 1 To nd - 1
+            If nD > 0 And ni > 0 Then
+                For i = 0 To nD - 2
+                    For j = i + 1 To nD - 1
                         If eRem(dec(j)) > eRem(dec(i)) Then tmp = dec(i): dec(i) = dec(j): dec(j) = tmp
                     Next j
                 Next i
@@ -1353,7 +1353,7 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
                         If eRem(inc(j)) > eRem(inc(i)) Then tmp = inc(i): inc(i) = inc(j): inc(j) = tmp
                     Next j
                 Next i
-                For i = 0 To nd - 1
+                For i = 0 To nD - 1
                     For j = 0 To ni - 1
                         p = dec(i): q = inc(j)
                         If eRem(p) > 0.0000001 And eRem(q) > 0.0000001 And Abs(eRem(p) - eRem(q)) < 0.0000001 Then
@@ -1361,7 +1361,7 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
                         End If
                     Next j
                 Next i
-                For i = 0 To nd - 1
+                For i = 0 To nD - 1
                     For j = 0 To ni - 1
                         p = dec(i): q = inc(j)
                         If eRem(p) > 0.0000001 And eRem(q) > 0.0000001 Then
@@ -1376,18 +1376,18 @@ Private Sub STOK_KARS_NEREDEN(ByVal ws As Worksheet, ByVal son As Long, ByVal t1
         For i = 0 To UBound(g)
             p = CLng(g(i))
             If eQ(p) < 0 And eRem(p) > 0.0000001 Then
-                c = 0: cq = 0
+                c = 0: cQ = 0
                 For j = 0 To UBound(g)
                     q = CLng(g(j))
-                    If eQ(q) > 0 And eIl(q) <> eIl(p) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(p)) < 0.0000001 Then c = c + 1: cq = q
+                    If eQ(q) > 0 And eIl(q) <> eIl(p) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(p)) < 0.0000001 Then c = c + 1: cQ = q
                 Next j
                 If c = 1 Then
                     c = 0
                     For j = 0 To UBound(g)
                         q = CLng(g(j))
-                        If eQ(q) < 0 And eIl(q) <> eIl(cq) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(cq)) < 0.0000001 Then c = c + 1
+                        If eQ(q) < 0 And eIl(q) <> eIl(cQ) And eRem(q) > 0.0000001 And Abs(eRem(q) - eRem(cQ)) < 0.0000001 Then c = c + 1
                     Next j
-                    If c = 1 Then STOK_KARS_E_BAGLA p, cq, eRem(p), eLoc, ePar, eRem, eTxt
+                    If c = 1 Then STOK_KARS_E_BAGLA p, cQ, eRem(p), eLoc, ePar, eRem, eTxt
                 End If
             End If
         Next i
@@ -1608,7 +1608,7 @@ End Sub
 Public Sub STOK_KH_KAYDET(ByVal il As String, ByVal wsIlc As Worksheet, ByVal wsYuk As Worksheet)
     Dim ws As Worksheet, d As Object, kaynak As Variant, kw As Worksheet, v As Variant, r As Long, son As Long, k As String
     Dim c As Long, x As Variant, satir As String, tampon As String, j As Long, tarih As Date, kk As Variant
-    On Error GoTo Son
+    On Error GoTo son
     il = UCase$(Trim$(il))
     If Len(il) = 0 Then Exit Sub
     tarih = Now
@@ -1632,7 +1632,7 @@ Public Sub STOK_KH_KAYDET(ByVal il As String, ByVal wsIlc As Worksheet, ByVal ws
     If d.Count = 0 Then Exit Sub
     Set ws = STOK_KARS_WS("_KH_" & il)
     If ws Is Nothing Then
-        Set ws = ThisWorkbook.Worksheets.Add(after:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = "_KH_" & il
         ws.Visible = xlSheetVeryHidden
     End If
@@ -1666,5 +1666,5 @@ Public Sub STOK_KH_KAYDET(ByVal il As String, ByVal wsIlc As Worksheet, ByVal ws
         tampon = tampon & satir
     Next kk
     If Len(tampon) > 0 Then j = j + 1: ws.Cells(j, c).Value2 = tampon
-Son:
+son:
 End Sub

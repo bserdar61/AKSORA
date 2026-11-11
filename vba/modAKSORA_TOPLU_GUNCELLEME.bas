@@ -258,7 +258,7 @@ Public Sub AKSORA_V11_ARAMA_DUGME()
     On Error GoTo 0
     ws.Rows("26:31").RowHeight = 22
     Set a = ws.Range("M26:N28")
-    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 2, a.Top + 2, a.Width - 4, a.Height - 4)
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 2, a.top + 2, a.Width - 4, a.Height - 4)
     With s
         .Name = "AKSORA_TOPLU_GUNCELLE"
         .AlternativeText = "AKSORA_V12_M26_N28"
@@ -285,7 +285,7 @@ Public Sub AKSORA_V11_ARAMA_DUGME()
         .OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_BUTUN_ILLERI_GUNCELLE"
     End With
     Set onceki = s
-    Set s = ws.Shapes.AddShape(msoShapeRectangle, a.Left + 8, a.Top + 12, 3, a.Height - 24)
+    Set s = ws.Shapes.AddShape(msoShapeRectangle, a.Left + 8, a.top + 12, 3, a.Height - 24)
     With s
         .Name = "AKSORA_TOPLU_VURGU"
         .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
@@ -293,7 +293,7 @@ Public Sub AKSORA_V11_ARAMA_DUGME()
         .OnAction = onceki.OnAction
     End With
     Set a = ws.Range("M29:N31")
-    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, a.Left, a.Top, a.Width, a.Height)
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, a.Left, a.top, a.Width, a.Height)
     With s
         .Name = "AKSORA_TOPLU_DURUM"
         .TextFrame2.TextRange.Text = "Arama, her ilin yukarýdaki tarihli stoklarýný kullanýr."
@@ -629,11 +629,11 @@ Public Sub AKSORA_V11_KARS_UYARI(ByVal ws As Worksheet)
 
     If Not buton Is Nothing Then
         x = buton.Left
-        y = buton.Top + buton.Height + 35
+        y = buton.top + buton.Height + 35
     End If
 
     If Not alt Is Nothing Then
-        y = alt.Top + alt.Height + 8
+        y = alt.top + alt.Height + 8
     End If
 
     If genislik < 100 Then genislik = 240
@@ -661,7 +661,7 @@ Public Sub AKSORA_V11_KARS_UYARI(ByVal ws As Worksheet)
 
     With s
         .Name = "AKSORA_GECMIS_KAYIT_NOTU"
-        .Left = x: .Top = y: .Width = genislik: .Height = 64
+        .Left = x: .top = y: .Width = genislik: .Height = 64
         .Placement = xlFreeFloating
         .Locked = True
         .Fill.Visible = msoFalse
@@ -1332,17 +1332,17 @@ End Function
 ' Stok karsilastirma sag paneli: BUTUN ILLERI GUNCELLE (malzeme aramadaki dugmenin aynisi). Iller arasi
 ' NEREDEN / NEREYE icin bes il ayni anda guncellenmeli. Bitince karsilastirma sayfasina donulur ve karsilastirilir.
 Public Sub AKSORA_KARS_TOPLU_DUGME(ByVal ws As Worksheet)
-    Dim ref As Shape, nt As Shape, s As Shape, ana As Shape, x As Double, y As Double, w As Double, h As Double
+    Dim ref As Shape, nT As Shape, s As Shape, ana As Shape, x As Double, y As Double, w As Double, h As Double
     On Error Resume Next
     ws.Shapes("AKSORA_KARS_TOPLU").Delete
     ws.Shapes("AKSORA_KARS_TOPLU_VURGU").Delete
     ws.Shapes("AKSORA_KARS_TOPLU_NOT").Delete
     Set ref = ws.Shapes("AKSKV1_ARTVIN")
-    Set nt = ws.Shapes("AKSORA_GECMIS_KAYIT_NOTU")
+    Set nT = ws.Shapes("AKSORA_GECMIS_KAYIT_NOTU")
     On Error GoTo 0
     If ref Is Nothing Then Exit Sub
     x = ref.Left: w = ref.Width: h = 58
-    If nt Is Nothing Then y = ref.Top + ref.Height + 110 Else y = nt.Top + nt.Height + 14
+    If nT Is Nothing Then y = ref.top + ref.Height + 110 Else y = nT.top + nT.Height + 14
     Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
     With s
         .Name = "AKSORA_KARS_TOPLU"

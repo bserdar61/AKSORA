@@ -56,15 +56,15 @@ Public Sub AKSORA_KARS_IL_KUR()
             If ac = "ANA" Or ac = "ANA PANEL" Or (Not anaBulundu And _
                 sh.Left >= w.Range("N4").Left And _
                 sh.Left < w.Range("Q4").Left And _
-                sh.Top >= w.Range("O4").Top And _
-                sh.Top < w.Range("O6").Top And _
+                sh.top >= w.Range("O4").top And _
+                sh.top < w.Range("O6").top And _
                 sh.Width < w.Range("O6:P7").Width / 2) Then
                 If Not anaBulundu Then
                     With sh
                         .Placement = xlFreeFloating
                         .LockAspectRatio = msoFalse
                         .Left = w.Range("O3").Left + 2
-                        .Top = w.Range("O3").Top + 1
+                        .top = w.Range("O3").top + 1
                         .Width = w.Range("O3").Width - 4
                         .Height = w.Range("O3").Height - 2
                         .ZOrder msoBringToFront
@@ -108,7 +108,7 @@ Private Sub AKSKV1_BUTON(ByVal w As Worksheet, ByVal etiket As String, ByVal sir
     Dim r As Range, sh As Shape, kod As String
     Set r = w.Range("O8:P9")
     kod = AKSKV1_NORM(etiket)
-    Set sh = w.Shapes.AddShape(msoShapeRoundedRectangle, r.Left + 2, r.Top + sira * 46, r.Width - 4, 40)
+    Set sh = w.Shapes.AddShape(msoShapeRoundedRectangle, r.Left + 2, r.top + sira * 46, r.Width - 4, 40)
     sh.Name = PREFIX & kod
     sh.TextFrame.Characters.Text = etiket
     sh.TextFrame.HorizontalAlignment = xlHAlignCenter
@@ -295,7 +295,7 @@ Public Sub AKSORA_KARS_ALT_YAZI_SABITLE()
     If yazi Is Nothing Then
         Set yazi = ws.Shapes.AddTextbox( _
             msoTextOrientationHorizontal, _
-            buton.Left, buton.Top + buton.Height + 4, _
+            buton.Left, buton.top + buton.Height + 4, _
             buton.Width, 22)
     End If
 
@@ -303,7 +303,7 @@ Public Sub AKSORA_KARS_ALT_YAZI_SABITLE()
         .Name = "AKSORA_KARS_SABIT_ACIKLAMA"
         .Placement = xlFreeFloating
         .Left = buton.Left
-        .Top = buton.Top + buton.Height + 4
+        .top = buton.top + buton.Height + 4
         .Width = buton.Width
         .Height = 22
         .Visible = msoTrue
