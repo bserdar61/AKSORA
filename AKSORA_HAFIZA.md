@@ -800,7 +800,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## 11.11.2026 (taban up51)
 - Kapanışta çift "kaydedilsin mi": Workbook_BeforeClose sonunda ThisWorkbook.Saved = True (UYGULAMA_MODU_KAPAT dosyayı kirletiyordu).
 - Müşteri stok filtresinde sayfa atlaması: AKSORA_MUSTERI_GECIS_KORU artık her hedef sayfa için (2 sn içinde) stok sayfasına döndürür (önce yalnız M_MALZEME_ARA).
-- Teminat Konum: çift tık ile Depoda→Sahada→Kısmi (Workbook_SheetBeforeDoubleClick → AKSORA_YATIRIM_KONUM_CIFT_TIK); liste ok görünmese de Alt+↓ açar.
+- Teminat Konum: hücre seçilince üstünde form denetimi açılır liste Y_TM_KONUM (Workbook_SheetSelectionChange → AKSORA_YATIRIM_KONUM_SECIM; OnAction AKSORA_YATIRIM_KONUM_SEC, satır BX35). Çift tık kaldırıldı. Konum değişiminden sonra Y_TEMINAT_KAL (yatırım stok sayfasına atlama).
 - Teminat Konum listesi: Y_KONUM_LISTE sabit "Depoda,Sahada,Kısmi"; Y_TEMINAT_LISTE_ONAR sayfa açılışında (AKSORA_BIRIM_OLAY) listeyi ve kilit açıklığını yeniden uygular.
 
 ## Sıradaki işler
