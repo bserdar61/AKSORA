@@ -4480,12 +4480,12 @@ Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilg
         End If
         If k(4) = 0 And (a = "ITU" Or a = "HTU" Or a = "ISLEM TURU" Or a = "HAREKET TURU") Then k(4) = c
         If k(5) = 0 And a = "MALZEME" Then k(5) = c
-        If k(6) = 0 And InStr(a, "KISA METNI") > 0 Then k(6) = c
+        If k(6) = 0 And (InStr(a, "KISA METN") > 0 Or InStr(a, "KISA MTN") > 0 Or a = "TANIM" Or a = "MALZEME TANIMI" Or a = "KISA METIN") Then k(6) = c
         If k(7) = 0 And (a = "BIRIM" Or a = "TOB" Or a = "TEMEL OLCU BIRIMI") Then k(7) = c
         If k(8) = 0 And a = "MIKTAR" Then k(8) = c
         If k(9) = 0 And Left$(a, 5) = "TUTAR" Then k(9) = c
         If k(10) = 0 And (InStr(a, "KAYIT TARIHI") > 0 Or a = "KAYIT TRH") Then k(10) = c
-        If k(11) = 0 And (InStr(a, "BELGE BASLIGI") > 0 Or InStr(a, "BLGBSLK") > 0) Then k(11) = c
+        If k(11) = 0 And (InStr(a, "BELGE BASLIGI") > 0 Or InStr(a, "BLGBSLK") > 0 Or InStr(a, "BSLKMTN") > 0 Or InStr(a, "BASLIK METNI") > 0) Then k(11) = c
         If k(12) = 0 And (a = "MLZBLG" Or a = "MALZEME BELGESI") Then k(12) = c
         If k(13) = 0 And (a = "KLM" Or InStr(a, "BELGESI KLM") > 0 Or a = "KALEM") Then k(13) = c
         If k(14) = 0 And (InStr(a, "OZEL STOK") > 0 Or a = "O") Then k(14) = c
@@ -4509,7 +4509,7 @@ Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilg
     End If
     AKSORA_SAP_TESHIS_YAZ "Proje | baþlýk (satýr " & h & ")" & hb & " | PYP süt=" & k(2) & " karþý=" & k(3)
     For i = 1 To 13
-        If i <> 3 And i <> 9 And i <> 11 And i <> 12 And i <> 13 And k(i) = 0 Then Err.Raise vbObjectError + 2608, , _
+        If i <> 3 And i <> 6 And i <> 9 And i <> 11 And i <> 12 And i <> 13 And k(i) = 0 Then Err.Raise vbObjectError + 2608, , _
             "/AKSORA_PRJ düzeninde gerekli sütun eksik (" & Choose(i, "Depo yeri", "Proje yapý planý öðesi", "PYP öðesi", "ÝTü", "Malzeme", _
             "Malzeme kýsa metni", "Birim", "Miktar", "Tutar", "Kayýt tarihi", "Belge baþlýðý", "Malzeme belgesi", "Kalem") & "). Baþlýk:" & Left$(hb, 250)
     Next i
@@ -4528,7 +4528,7 @@ Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilg
         If k(3) > 0 Then sonuc(n, 3) = UCase$(Trim$(CStr(v(r, k(3)))))
         sonuc(n, 4) = Trim$(CStr(v(r, k(4))))
         sonuc(n, 5) = mal
-        sonuc(n, 6) = Trim$(CStr(v(r, k(6))))
+        If k(6) > 0 Then sonuc(n, 6) = Trim$(CStr(v(r, k(6))))
         sonuc(n, 7) = Trim$(CStr(v(r, k(7))))
         sonuc(n, 8) = q
         sonuc(n, 9) = tt
