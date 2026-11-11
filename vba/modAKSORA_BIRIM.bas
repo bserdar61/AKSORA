@@ -26,6 +26,7 @@ Private mSD As Object
 Private mSDt As Object
 Private mSDb As Object
 Private mSH As Object
+Private mPrjIl As String
 Private mSO As Object
 Private mSOd As Object
 Private mSN As Object
@@ -9800,6 +9801,7 @@ Private Sub Y_PRJ_VERI(ByVal il As String)
     Dim g As Worksheet, v As Variant, r As Long, son As Long, k As String, m As String, w As String, dp As String
     Dim q As Double, i As Long, sh As Worksheet, uy As String, sv As Variant, fs As Object, fq As Object, x As Variant
     Dim hN As Long, a() As String, j As Long, tmp As String, nS As Long, nG As Long, td As Double, nT As String
+    mPrjIl = il
     Set mPK = CreateObject("Scripting.Dictionary"): Set mPAd = CreateObject("Scripting.Dictionary")
     Set mPT = CreateObject("Scripting.Dictionary"): Set mPS = CreateObject("Scripting.Dictionary")
     Set mPH = CreateObject("Scripting.Dictionary"): Set mPHN = CreateObject("Scripting.Dictionary")
@@ -10127,6 +10129,47 @@ Private Function Y_PRJ_OZET(ByVal w As String) As Variant
     Y_PRJ_OZET = o
 End Function
 
+' Secili projede bir malzemenin satiri: projede kalan (fiili), kalan ihtiyac, siralama anahtari ve "Ne Yapilmali".
+' Saha tespiti: kullanilan = max(hakedis, saha); hakedise girmemis kisim projede kalandan duser.
+Private Function Y_PRJ_SATIR(ByVal w As String, ByVal m As String, ByVal dp As String, ByRef pf As Double, ByRef ih As Double, ByRef sr As Double) As String
+    Dim k As Double, s As Double, p As Double, u As Double, f As Double, hv As Double, d2 As Double, nT As String
+    f = Y_PRJ_F(m)
+    k = Y_PD(mPK, w & "|" & m): s = Y_PD(mPS, w & "|" & m): p = Y_PD(mPP, w & "|" & m)
+    u = s
+    If mSH.Exists(w & "|" & m) Then u = application.Max(s, CDbl(mSH(w & "|" & m)))
+    pf = p - (u - s)
+    p = application.Max(0, pf)
+    ih = k - u - p
+    If ih > 0.0000001 Then
+        hv = 0
+        If Len(dp) > 0 Then hv = Y_PRJ_HAVUZ(dp, m)
+        d2 = Y_PD(mDS, "D002|" & m)
+        If hv >= ih - 0.0000001 Then
+            nT = "Havuzdan ayýr (" & dp & ")"
+        ElseIf hv + d2 >= ih - 0.0000001 Then
+            nT = IIf(hv > 0, "Havuz + D002'den gönder", "D002'den gönder")
+        ElseIf hv + d2 > 0 Then
+            nT = "Stok yetmez: " & Y_PRJ_MT(ih - hv - d2) & " satýn al"
+        Else
+            nT = "Satýn al: " & Y_PRJ_MT(ih)
+        End If
+        If Left$(nT, 5) <> "Havuz" And Left$(nT, 4) <> "D002" And Y_PD(mSD, m) > 0 Then nT = nT & "  •  D002'ye sipariþte " & Y_PRJ_MT(Y_PD(mSD, m)) & Y_PRJ_TESLIM(m)
+        sr = 3000000000# + ih * f
+    ElseIf ih < -0.0000001 Then
+        If p > 0.0000001 Then
+            nT = "Fazla: " & Y_PRJ_MT(application.Min(p, -ih)) & " havuza iade"
+        Else
+            nT = "Keþif aþýldý: +" & Y_PRJ_MT(u - k)
+        End If
+        sr = 1000000000# - ih * f
+    Else
+        nT = "Tamam": sr = 0
+    End If
+    If pf < -0.0000001 Then nT = nT & "  •  ayrýlmadan kullanýlmýþ: " & Y_PRJ_MT(-pf) & " (415 ile projeye ayýr)"
+    If u - s > 0.0000001 Then nT = nT & "  •  hakediþe girmemiþ: " & Y_PRJ_MT(u - s)
+    Y_PRJ_SATIR = nT
+End Function
+
 Private Sub Y_PRJ_MIK(ByVal rg As Range)
     Dim c As Range
     rg.NumberFormat = "#,##0;[Red]-#,##0"
@@ -10249,31 +10292,39 @@ Private Sub Y_SAHA_DEGISIM(ByVal sh As Worksheet, ByVal hedef As Range)
     ev = application.EnableEvents
     On Error GoTo Hata
     application.EnableEvents = False: application.ScreenUpdating = False
+    If mPK Is Nothing Or mPrjIl <> il Then Y_PRJ_VERI il
     For Each c In alan.Cells
         m = Trim$(CStr(sh.Cells(c.Row, 1).Value2))
         If Len(m) > 0 Then
             If IsEmpty(c.Value2) Then
                 Y_SAHA_YAZ il, pyp, m, -1: sonMal = m
+                If mSH.Exists(pyp & "|" & m) Then mSH.Remove pyp & "|" & m
             ElseIf Len(Trim$(CStr(c.Value2))) = 0 Then
                 Y_SAHA_YAZ il, pyp, m, -1: sonMal = m
+                If mSH.Exists(pyp & "|" & m) Then mSH.Remove pyp & "|" & m
             ElseIf IsNumeric(c.Value2) Then
                 x = CDbl(c.Value2)
-                If x < 0 Then hata = "Negatif miktar girilemez." Else Y_SAHA_YAZ il, pyp, m, x: sonMal = m
+                If x < 0 Then
+                    hata = "Negatif miktar girilemez."
+                    c.ClearContents
+                Else
+                    Y_SAHA_YAZ il, pyp, m, x: sonMal = m: mSH(pyp & "|" & m) = x
+                End If
             Else
                 hata = "Sayý girin (örnek: 12 veya 12,5)."
+                c.ClearContents
             End If
         End If
     Next c
-    sr = ActiveWindow.ScrollRow: sc = ActiveWindow.ScrollColumn
-    Y_HAKEDIS_KUR il
-    ActiveWindow.ScrollRow = sr: ActiveWindow.ScrollColumn = sc
-    ' Bir sonraki malzemenin giris hucresi secilir (siralama degisse bile ayni malzemeden devam)
-    kol = CLng(Val(CStr(sh.Range("BX26").Value2))): a = CLng(Val(CStr(sh.Range("BX27").Value2))): b = CLng(Val(CStr(sh.Range("BX28").Value2)))
-    If kol > 0 And a > 0 Then
-        For r = a To b
-            If CStr(sh.Cells(r, 1).Value2) = sonMal Then sh.Cells(application.Min(b, r + 1), kol).Select: Exit For
-        Next r
-    End If
+    ' Yerinde guncelleme: satirlar yer degistirmez, sayfa yeniden kurulmaz.
+    sh.Unprotect ""
+    For Each c In alan.Cells
+        m = Trim$(CStr(sh.Cells(c.Row, 1).Value2))
+        If Len(m) > 0 Then Y_SAHA_SATIR_YAZ sh, c.Row, kol, pyp, m
+    Next c
+    Y_SAHA_PROJE_YAZ sh, pyp
+    sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    sh.EnableSelection = xlNoRestrictions
     application.EnableEvents = ev: application.ScreenUpdating = True
     If Len(hata) > 0 Then MsgBox hata, vbExclamation, "AKSORA | SAHA TESPÝTÝ"
     Exit Sub
@@ -10285,6 +10336,51 @@ Hata:
     application.EnableEvents = ev: application.ScreenUpdating = True
     On Error GoTo 0
     MsgBox "Saha giriþi kaydedilemedi: " & hM, vbExclamation, "AKSORA | SAHA TESPÝTÝ"
+End Sub
+
+' Detay satiri: projede kalan (fiili), kalan ihtiyac, ne yapilmali (giris sutununun sagindaki 3 sutun).
+Private Sub Y_SAHA_SATIR_YAZ(ByVal sh As Worksheet, ByVal r As Long, ByVal kol As Long, ByVal pyp As String, ByVal m As String)
+    Dim pf As Double, ih As Double, sr As Double, i As Long
+    sh.Cells(r, kol + 3).Value2 = Y_PRJ_SATIR(pyp, m, Y_PRJ_DEPO(pyp), pf, ih, sr)
+    sh.Cells(r, kol + 1).Value2 = pf: sh.Cells(r, kol + 2).Value2 = ih
+    For i = 1 To 2
+        If Abs(sh.Cells(r, kol + i).Value2 - Int(sh.Cells(r, kol + i).Value2)) > 0.0000001 Then
+            sh.Cells(r, kol + i).NumberFormat = "#,##0.###;[Red]-#,##0.###"
+        Else
+            sh.Cells(r, kol + i).NumberFormat = "#,##0;[Red]-#,##0"
+        End If
+    Next i
+End Sub
+
+' Projeler tablosundaki secili proje satiri ve ust kartlar (tamamlanma, eksik / fazla) yerinde.
+Private Sub Y_SAHA_PROJE_YAZ(ByVal sh As Worksheet, ByVal pyp As String)
+    Dim o As Variant, r As Long, son As Long, t As String
+    o = Y_PRJ_OZET(pyp)
+    son = CLng(Val(CStr(sh.Range("BX27").Value2)))
+    For r = 11 To son
+        If CStr(sh.Cells(r, 1).Value2) = pyp And VarType(sh.Cells(r, 4).Value2) = vbDouble Then
+            If o(0) > 0 Then sh.Cells(r, 6).Value2 = o(8) / o(0)
+            If o(6) > 0 Then t = CLng(o(6)) & ". hakediþ" Else t = "-"
+            If o(9) > 0.005 Then t = t & "  •  saha +" & ADM_TL_KISA(o(9))
+            sh.Cells(r, 7).Value2 = t
+            sh.Cells(r, 8).Value2 = Round(o(2), 2): sh.Cells(r, 9).Value2 = Round(o(3), 2): sh.Cells(r, 10).Value2 = Round(o(4), 2)
+            If o(8) < 0.005 And o(2) < 0.005 Then
+                sh.Cells(r, 11).Value2 = "BAÞLAMADI"
+            ElseIf o(3) > 0.005 Then
+                sh.Cells(r, 11).Value2 = "EKSÝK"
+            ElseIf o(4) > 0.005 Then
+                sh.Cells(r, 11).Value2 = "FAZLA"
+            Else
+                sh.Cells(r, 11).Value2 = "TAMAM"
+            End If
+            Exit For
+        End If
+    Next r
+    t = Y_TL(o(1))
+    If o(0) > 0 Then t = t & "  •  %" & AKSORA_SAYI_METNI(100 * o(1) / o(0), "0")
+    If o(0) > 0 And o(9) > 0.005 Then t = t & "  (sahada %" & AKSORA_SAYI_METNI(100 * o(8) / o(0), "0") & ")"
+    sh.Range("BZ3").Value2 = t
+    sh.Range("BZ4").Value2 = "Eksik " & ADM_TL_KISA(o(3)) & "  •  Fazla " & ADM_TL_KISA(o(4))
 End Sub
 
 ' _Y_SAHA kaydi: il, PYP, malzeme, sahada kullanilan, tarih, kullanici. x < 0: kayit silinir.
@@ -10677,39 +10773,9 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
                 End If
                 If tt <> 0 Then blok(n, 5 + i) = tt
             Next i
-            ' Saha tespiti: kullanilan = max(hakedis, saha); hakedise girmemis kisim projede kalandan duser.
-            u = s
-            If mSH.Exists(secim & "|" & m) Then blok(n, 7 + nh) = CDbl(mSH(secim & "|" & m)): u = application.Max(s, CDbl(mSH(secim & "|" & m)))
-            pf = p - (u - s)
-            blok(n, 6 + nh) = s: blok(n, 8 + nh) = pf
-            p = application.Max(0, pf): s = u
-            ih = k - s - p: blok(n, 9 + nh) = ih
-            If ih > 0.0000001 Then
-                hv = 0: If Len(dp) > 0 Then hv = Y_PRJ_HAVUZ(dp, m)
-                d2 = Y_PD(mDS, "D002|" & m)
-                If hv >= ih - 0.0000001 Then
-                    nT = "Havuzdan ayýr (" & dp & ")"
-                ElseIf hv + d2 >= ih - 0.0000001 Then
-                    nT = IIf(hv > 0, "Havuz + D002'den gönder", "D002'den gönder")
-                ElseIf hv + d2 > 0 Then
-                    nT = "Stok yetmez: " & Y_PRJ_MT(ih - hv - d2) & " satýn al"
-                Else
-                    nT = "Satýn al: " & Y_PRJ_MT(ih)
-                End If
-                If Left$(nT, 5) <> "Havuz" And Left$(nT, 4) <> "D002" And Y_PD(mSD, m) > 0 Then nT = nT & "  •  D002'ye sipariþte " & Y_PRJ_MT(Y_PD(mSD, m)) & Y_PRJ_TESLIM(m)
-                an(n) = 3000000000# + ih * f
-            ElseIf ih < -0.0000001 Then
-                If p > 0.0000001 Then
-                    nT = "Fazla: " & Y_PRJ_MT(application.Min(p, -ih)) & " havuza iade"
-                Else
-                    nT = "Keþif aþýldý: +" & Y_PRJ_MT(s - k)
-                End If
-                an(n) = 1000000000# - ih * f
-            Else
-                nT = "Tamam": an(n) = 0
-            End If
-            If blok(n, 8 + nh) < -0.0000001 Then nT = nT & "  •  ayrýlmadan kullanýlmýþ: " & Y_PRJ_MT(-blok(n, 8 + nh)) & " (415 ile projeye ayýr)"
-            If u - blok(n, 6 + nh) > 0.0000001 Then nT = nT & "  •  hakediþe girmemiþ: " & Y_PRJ_MT(u - blok(n, 6 + nh))
+            nT = Y_PRJ_SATIR(secim, m, dp, pf, ih, an(n))
+            If mSH.Exists(secim & "|" & m) Then blok(n, 7 + nh) = CDbl(mSH(secim & "|" & m))
+            blok(n, 6 + nh) = s: blok(n, 8 + nh) = pf: blok(n, 9 + nh) = ih
             blok(n, nc) = nT
         Else
             k = 0: s = 0: p = 0
