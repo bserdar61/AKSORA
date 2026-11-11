@@ -10114,7 +10114,7 @@ Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     Y_SAYFA_SIFIRLA ws
     Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
     If s Is Nothing Then w = 1544 Else w = s.Width
-    Y_KOLONLAR ws, Array(104, application.Max(170, w - 1364), 64, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 184)
+    Y_KOLONLAR ws, Array(104, application.Max(170, w - 1272), 64, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92)
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 40: ws.Rows(9).RowHeight = 18: ws.Rows(10).RowHeight = 10
     Y_PRJ_VERI il
@@ -10265,6 +10265,7 @@ Private Function Y_PRJ_YUKLENICI_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByV
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).NumberFormat = "@"
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 10)).Value2 = blok
     Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 10))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
     ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, 9)).NumberFormat = "#,##0.00 ""TL"""
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 3)).HorizontalAlignment = xlCenter
@@ -10313,6 +10314,7 @@ Private Function Y_PRJ_PROJE_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
     If t(0) > 0 Then ws.Cells(a1 + n, 6).Value2 = t(1) / t(0)
     ws.Cells(a1 + n, 8).Value2 = Round(t(2), 2): ws.Cells(a1 + n, 9).Value2 = Round(t(3), 2): ws.Cells(a1 + n, 10).Value2 = Round(t(4), 2)
     Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 11))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
     Y_TOPLAM_SATIRI ws.Range(ws.Cells(a1 + n, 1), ws.Cells(a1 + n, 11))
     ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n, 5)).NumberFormat = "#,##0.00 ""TL"""
     ws.Range(ws.Cells(a1, 8), ws.Cells(a1 + n, 10)).NumberFormat = "#,##0.00 ""TL"""
@@ -10380,7 +10382,7 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
         bas(5 + nh) = "Sarf Toplam": bas(6 + nh) = "Projede Kalan": bas(7 + nh) = "Kalan Ýhtiyaç": bas(8 + nh) = "Ne Yapýlmalý"
         dp = Y_PRJ_DEPO(secim)
         ad = secim & IIf(mPAd.Exists(secim), "  –  " & mPAd(secim), "")
-        Y_BOLUM ws, r, "MALZEME DETAYI  –  " & ad, "Kalan ihtiyaç = keþif - sarf - projede kalan.  Depo: " & IIf(Len(dp) > 0, dp, "-"), nc
+        Y_BOLUM ws, r, "MALZEME DETAYI  –  " & ad, "Kalan ihtiyaç = keþif - sarf - projede kalan.  Depo: " & IIf(Len(dp) > 0, dp, "-"), 15
     Else
         For Each w In mPL
             For Each x In mPM(CStr(w)).keys: mats(CStr(x)) = True: Next x
@@ -10388,14 +10390,15 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
         nc = 12
         bas = Array("Malzeme", "Malzeme Tanýmý", "Birim", "Keþif", "Sarf", "Projelerde Kalan", "Yüklenici Havuz", "D002 Stok", _
             "Açýk Sipariþ (D002)", "Ýhtiyaç (+/-)", "Ýhtiyaç Tutarý", "Ne Yapýlmalý")
-        Y_BOLUM ws, r, "MALZEME ÝHTÝYACI  –  TÜM PROJELER", "Ýhtiyaç = keþif - sarf - projelerde - yüklenici havuzu - D002 - açýk sipariþ.  Artý: satýn al, eksi: fazla.", nc
+        Y_BOLUM ws, r, "MALZEME ÝHTÝYACI  –  TÜM PROJELER", "Ýhtiyaç = keþif - sarf - projelerde - yüklenici havuzu - D002 - açýk sipariþ.  Artý: satýn al, eksi: fazla.", 15
         Set yuk = CreateObject("Scripting.Dictionary")
         For Each x In mDS.keys
             dg = InStr(CStr(x), "|")
             If Left$(CStr(x), dg - 1) <> "D002" Then yuk(Left$(CStr(x), dg - 1)) = True
         Next x
     End If
-    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, nc)), bas
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 15)), bas
+    If nc < 15 Then ws.Range(ws.Cells(r + 1, nc), ws.Cells(r + 1, 15)).HorizontalAlignment = xlCenterAcrossSelection
     ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 32
     a1 = r + 2
     If mats.Count = 0 Then Y_PRJ_DETAY_YAZ = a1: Exit Function
@@ -10481,7 +10484,9 @@ Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal s
     Next i
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).NumberFormat = "@"
     ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, nc)).Value2 = cikti
-    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, nc))
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 15))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
+    If nc = 15 Then ws.Range(ws.Cells(a1, nc), ws.Cells(a1 + n - 1, nc)).ShrinkToFit = True
     If Len(secim) > 0 Then
         Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, nc - 1))
     Else
@@ -10576,11 +10581,19 @@ Public Sub AKSORA_YATIRIM_PRJ_SAP()
     On Error GoTo Hata
     If hN <> 0 Then sBilgi = "ME2N okunamadý, önceki kayýt korundu: " & hS
     If kart Then AKSORA_BEKLE_ILERLE 0.8, "Kaydediliyor ve hesaplanýyor..."
+    If IsArray(v) Then n = UBound(v, 1)
+    If n = 0 Then
+        If kart Then AKSORA_BEKLE_KAPAT
+        kart = False
+        MsgBox "SAP MB51 listesinden hareket satýrý alýnamadý (" & bilgi & ")." & vbCrLf & vbCrLf & _
+            "Önceki proje kaydý korundu, sayfa deðiþmedi." & vbCrLf & _
+            "Tekrar deneyin; yine olursa AKSORA_SAP_TESHÝS.txt dosyasýný gönderin:" & vbCrLf & AKSORA_KAYIT_KLASORU(), _
+            vbExclamation, "AKSORA | PROJE MALZEME TAKÝBÝ"
+    End If
     application.EnableEvents = False: application.ScreenUpdating = False
     Set g = Y_KAYIT_SAYFA("_Y_PRJ_" & il)
-    g.Cells.Clear
-    If IsArray(v) Then n = UBound(v, 1)
-    g.Range("A1:F1").Value2 = Array("PRJ_V1", il, CDbl(Now), n, CDbl(DateSerial(Year(Date), 1, 1)), CDbl(Date))
+    If n > 0 Then g.Cells.Clear
+    If n > 0 Then g.Range("A1:F1").Value2 = Array("PRJ_V1", il, CDbl(Now), n, CDbl(DateSerial(Year(Date), 1, 1)), CDbl(Date))
     If n > 0 Then
         g.Range("A2:G" & n + 1).NumberFormat = "@"
         g.Range("K2:O" & n + 1).NumberFormat = "@"
@@ -10603,7 +10616,7 @@ Public Sub AKSORA_YATIRIM_PRJ_SAP()
     Y_HAKEDIS_KUR il
     application.EnableEvents = ev: application.ScreenUpdating = True
     If kart Then AKSORA_BEKLE_KAPAT
-    MsgBox "Proje hareketleri okundu." & vbCrLf & vbCrLf & bilgi & vbCrLf & sBilgi, vbInformation, "AKSORA | PROJE MALZEME TAKÝBÝ"
+    If n > 0 Then MsgBox "Proje hareketleri okundu." & vbCrLf & vbCrLf & bilgi & vbCrLf & sBilgi, vbInformation, "AKSORA | PROJE MALZEME TAKÝBÝ"
     Exit Sub
 Hata:
     Dim hM As String

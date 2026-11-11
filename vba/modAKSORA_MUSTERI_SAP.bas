@@ -778,7 +778,7 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
     Dim kol As String, pen As Object, yolAlan As Object, o As Object, rb As Object, radyolar As Collection
     Dim klasor As String, dosya As String, tam As String, bas As Double, boy As Long, eskiBoy As Long
     Dim metin As String, satirlar As Variant, alanlar As Variant, r As Long, c As Long, n As Long, enCok As Long
-    Dim v() As Variant, a As String, ofs As Long
+    Dim v() As Variant, a As String, ofs As Long, ayni As Long
     On Error GoTo Hata
     klasor = "C:\TEMP"
     ' Klasor yoksa olusturulur (her bilgisayarda ayni yol); olusturulamazsa kullanicinin TEMP klasoru.
@@ -866,7 +866,9 @@ Private Function MS_AlvMetin(ByVal ses As Object, ByVal alv As Object, ByVal eti
         DoEvents: MS_Sleep 250
         If Len(Dir$(tam)) > 0 Then
             boy = FileLen(tam)
-            If boy > 0 And boy = eskiBoy And Not ses.Busy Then Exit Do
+            ' Buyuk listede SAP dosyayi parca parca yazar: boyut 1 sn boyunca degismeyince okunur (yarim dosya okunmaz).
+            If boy > 0 And boy = eskiBoy And Not ses.Busy Then ayni = ayni + 1 Else ayni = 0
+            If ayni >= 4 Then Exit Do
             eskiBoy = boy
         End If
         If MS_Gecen(bas) > 180 Then MS_Teshis etiket & " metin dosyasý oluþmadý: " & tam: GoTo Temizle

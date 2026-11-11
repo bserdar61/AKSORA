@@ -4541,7 +4541,14 @@ Private Function PRJ_MB51_COZ(ByRef v As Variant, ByVal uy As String, ByRef bilg
 Sonraki:
     Next r
     bilgi = "MB51: " & n & " hareket" & IIf(atla > 0, " (" & atla & " satýr atlandý)", "")
-    AKSORA_SAP_TESHIS_YAZ "Proje | " & bilgi
+    AKSORA_SAP_TESHIS_YAZ "Proje | " & bilgi & " | liste satýrý: " & (UBound(v, 1) - h) & " | malzeme süt=" & k(5)
+    If n = 0 Then
+        For r = h + 1 To application.Min(UBound(v, 1), h + 3)
+            hb = vbNullString
+            For c = 1 To UBound(v, 2): hb = hb & " | " & CStr(v(r, c)): Next c
+            AKSORA_SAP_TESHIS_YAZ "Proje | örnek satýr " & r & hb
+        Next r
+    End If
     If n = 0 Then Exit Function
     PRJ_MB51_COZ = PRJ_KIRP(sonuc, n)
 End Function
