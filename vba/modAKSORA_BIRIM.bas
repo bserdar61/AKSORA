@@ -3212,16 +3212,28 @@ Public Sub AKSORA_YATIRIM_KONUM_SECIM(ByVal ws As Worksheet, ByVal hedef As Rang
     ' Satir bellekte tutulur (hucreye yazmak her tiklamada butun kitabi yeniden hesaplatiyordu).
     mKonumSatir = hedef.Row
     On Error Resume Next
-    application.CommandBars("AKSORA_KONUM").Delete
-    Set cb = application.CommandBars.Add(Name:="AKSORA_KONUM", Position:=5, Temporary:=True)
-    For Each x In Array("Depoda", "Sahada", "Kýsmi")
-        Set c = cb.Controls.Add(Type:=1, Temporary:=True)
-        c.Caption = CStr(x)
-        c.Parameter = CStr(x)
+    ' Menu bir kez kurulur ve yeniden kullanilir (her tiklamada kurup silmek seridi yeniden cizip titretiyordu).
+    Set cb = Nothing
+    Set cb = application.CommandBars("AKSORA_KONUM")
+    If cb Is Nothing Then
+        Set cb = application.CommandBars.Add(Name:="AKSORA_KONUM", Position:=5, Temporary:=True)
+        For Each x In Array("Depoda", "Sahada", "Kýsmi")
+            Set c = cb.Controls.Add(Type:=1, Temporary:=True)
+            c.Caption = CStr(x)
+            c.Parameter = CStr(x)
+        Next x
+    End If
+    For Each c In cb.Controls
         c.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_KONUM_SEC")
-        If CStr(hedef.Value2) = CStr(x) Then c.State = -1
-    Next x
+        c.State = IIf(CStr(hedef.Value2) = CStr(c.Parameter), -1, 0)
+    Next c
     cb.ShowPopup
+    ' Menu kapaninca secim ayni satirin Tutar hucresine alinir: Konum'a yeniden tiklayinca menu tekrar acilir.
+    Dim ev As Boolean
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    ws.Cells(hedef.Row, 6).Select
+    application.EnableEvents = ev
 End Sub
 
 Public Sub AKSORA_YATIRIM_KONUM_SEC()
@@ -3234,10 +3246,12 @@ Public Sub AKSORA_YATIRIM_KONUM_SEC()
     If r < a Or r > b Then Exit Sub
     If Len(t) = 0 Or t = CStr(ws.Cells(r, 7).Value2) Then Exit Sub
     ev = application.EnableEvents
+    application.ScreenUpdating = False
     application.EnableEvents = True
     ws.Cells(r, 7).Value2 = t
     application.EnableEvents = ev
     Y_TEMINAT_KAL ws
+    application.ScreenUpdating = True
 Son:
 End Sub
 
