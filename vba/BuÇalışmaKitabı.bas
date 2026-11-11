@@ -221,6 +221,14 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
     If Left$(sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM sh, Target Else AKSORA_YATIRIM_DEGISIM sh, Target
 End Sub
 
+' Teminat takibi: Konum hucresine cift tik -> Depoda / Sahada / Kismi sirayla.
+Private Sub Workbook_SheetBeforeDoubleClick(ByVal sh As Object, ByVal Target As Range, Cancel As Boolean)
+    If AKSORA_V13_ACILIS Then Exit Sub
+    If sh.Name <> "Y_TEMÝNAT" Then Exit Sub
+    On Error Resume Next
+    AKSORA_YATIRIM_KONUM_CIFT_TIK sh, Target, Cancel
+End Sub
+
 ' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
 Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
     Dim wn As Window

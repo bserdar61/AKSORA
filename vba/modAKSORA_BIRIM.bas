@@ -3184,6 +3184,26 @@ Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
     ws.EnableSelection = xlNoRestrictions
 End Sub
 
+' Konum hucresine cift tik: Depoda -> Sahada -> Kismi -> Depoda. Deger yazilinca normal degisim akisi
+' (kayit, sahada gunu, toplamlar) Workbook_SheetChange ile calisir.
+Public Sub AKSORA_YATIRIM_KONUM_CIFT_TIK(ByVal ws As Worksheet, ByVal hedef As Range, ByRef Cancel As Boolean)
+    Dim a As Long, b As Long, t As String, ev As Boolean
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If hedef.Cells.Count <> 1 Then Exit Sub
+    If hedef.Column <> 7 Or hedef.Row < a Or hedef.Row > b Then Exit Sub
+    If Len(CStr(ws.Cells(hedef.Row, 1).Value2)) = 0 Then Exit Sub
+    Cancel = True
+    Select Case CStr(hedef.Value2)
+        Case "Depoda": t = "Sahada"
+        Case "Sahada": t = "Kýsmi"
+        Case Else: t = "Depoda"
+    End Select
+    ev = application.EnableEvents
+    application.EnableEvents = True
+    hedef.Value2 = t
+    application.EnableEvents = ev
+End Sub
+
 Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
     On Error Resume Next
     If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws
