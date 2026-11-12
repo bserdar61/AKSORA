@@ -1,5 +1,5 @@
 Attribute VB_Name = "frmSplash"
-Attribute VB_Base = "0{6673AB41-F433-46B2-A5AE-23E65C811DF4}{56D5CD64-9BFB-4599-833A-BB123BE07A5F}"
+Attribute VB_Base = "0{6DE763FA-08DA-45B7-8E7C-ACACF0A27CFE}{2FCA6FF9-A09E-4DD7-A070-ADED28EBB9F1}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True

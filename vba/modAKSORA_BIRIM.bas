@@ -6105,7 +6105,8 @@ Private Function I_NAKIL(ByVal dE As Object, ByVal dY As Object) As Object
                 For i = 1 To a.Count
                     For j = 1 To b.Count
                         If ra(i) > 0.0005 And rb(j) > 0.0005 And UCase$(a(i)(1)) <> UCase$(b(j)(1)) Then
-                            If gec = 2 Or Abs(ra(i) - rb(j)) <= 0.0005 Then
+                            ' 2. gecis: alan depodaki artis verenin azalisini asmaz (fazlasi baska kaynaktan gelmis olabilir).
+                            If Abs(ra(i) - rb(j)) <= 0.0005 Or (gec = 2 And rb(j) <= ra(i) + 0.0005) Then
                                 m = application.Min(ra(i), rb(j))
                                 I_NAKIL_EKLE res, CStr(a(i)(0)), m, 0, CStr(b(j)(1))
                                 I_NAKIL_EKLE res, CStr(b(j)(0)), 0, m, CStr(a(i)(1))
@@ -6145,18 +6146,20 @@ Private Function I_NAKIL_METIN(ByVal nak As Object, ByVal k As String, ByVal dep
     Next x
 End Function
 
-' Armatur ikamesi: 150W yerine 250W / 70W armatur demontaji girilebilir (sahadaki eski armatur). Ayni depo + uretim
-' yerinde armaturlerin demontaj girisi once kendi malzemesine, artan kismi demontaji eksik diger armaturlere dagitilir.
+' Ekipman ikamesi: 150W yerine 250W armatur, 1250A hucre yerine 630A, farkli kVA trafo / pano, farkli boy direk
+' demontaji girilebilir (sahadan sokulen eski ekipman). Ayni depo + uretim yeri + kategoride (armatur, hucre, trafo, pano,
+' direk; kablo haric) demontaj girisi once kendi malzemesine, artan kismi demontaji eksik diger armaturlere dagitilir.
 ' grup: depo|UY|malzeme -> Array(kullanilan, girilen, ...). Toplam girilen degismez.
 Private Sub I_ARMATUR_DAGIT(ByVal grup As Object)
-    Dim k As Variant, p() As String, dk As Variant, aile As Object, x As Variant, g As Variant, havuz As Double, al As Double
+    Dim k As Variant, p() As String, dk As Variant, aile As Object, x As Variant, g As Variant, havuz As Double, al As Double, kat As String
     Set aile = CreateObject("Scripting.Dictionary"): aile.CompareMode = vbTextCompare
     For Each k In grup.keys
         p = Split(CStr(k), "|")
         If UBound(p) >= 2 Then
-            If I_KATEGORI(p(2)) = "ARMATÜR" Then
-                If Not aile.Exists(p(0) & "|" & p(1)) Then aile.Add p(0) & "|" & p(1), New Collection
-                aile(p(0) & "|" & p(1)).Add CStr(k)
+            kat = I_KATEGORI(p(2))
+            If kat = "ARMATÜR" Or kat = "HÜCRE" Or kat = "TRAFO" Or kat = "PANO" Or kat = "DÝREK" Then
+                If Not aile.Exists(p(0) & "|" & p(1) & "|" & kat) Then aile.Add p(0) & "|" & p(1) & "|" & kat, New Collection
+                aile(p(0) & "|" & p(1) & "|" & kat).Add CStr(k)
             End If
         End If
     Next k
