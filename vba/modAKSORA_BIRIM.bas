@@ -4945,9 +4945,11 @@ Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Lo
     ByVal dE As Object, ByVal dY As Object, ByVal isgL As Object)
     Dim anahtar As Object, grup As Object, k As Variant, x As Variant, p() As String, gk As String
     Dim qE As Double, qY As Double, qV As Double, t As Variant, g As Variant
-    Dim satir As String, tampon As String, j As Long, sonR As Long
+    Dim satir As String, tampon As String, j As Long, sonR As Long, nak As Object, dq As Double
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    ' Ilceler arasi nakil kullanim sayilmaz.
+    Set nak = I_NAKIL(dE, dY)
     For Each x In Array(dE, dY)
         For Each k In x.keys
             anahtar(k) = True
@@ -4967,13 +4969,15 @@ Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Lo
                 If I_DEMONTAJ_MI(p(3)) Then
                     If qY > qE Then g(1) = g(1) + (qY - qE)
                 ElseIf qY < qE Then
-                    g(0) = g(0) + (qE - qY)
-                    If qE > 0 Then g(2) = g(2) + (qE - qY) * qV / qE
+                    dq = application.Max(0, (qE - qY) - I_NAKIL_D(nak, CStr(k), 0))
+                    g(0) = g(0) + dq
+                    If qE > 0 Then g(2) = g(2) + dq * qV / qE
                 End If
                 grup(gk) = g
             End If
         End If
     Next k
+    I_ARMATUR_DAGIT grup
     sonR = AKSORA_SON_SATIR(ws, c)
     If sonR >= 2 Then ws.Range(ws.Cells(2, c), ws.Cells(sonR, c)).ClearContents
     ws.Columns(c).NumberFormat = "@"
@@ -6058,6 +6062,126 @@ End Sub
 ' Demontaj kontrolu: azalan her malzeme icin ayni depo + uretim yeri + malzemede
 ' CIKMA BEDELSIZ degerlemeli stok artisi aranir. Yoksa DEMONTAJ GÝRÝÞÝ YAPINIZ (kirmizi).
 
+' Ilceler arasi nakil: ayni uretim yeri + malzeme + degerlemede (demontaj disi) bir ilce deposunda azalis,
+' baska ilce deposunda artis. Once esit miktarlar, sonra kalanlar eslesir. Nakil kullanim sayilmaz (demontaj beklenmez).
+' Donus: depo|UY|malzeme|degerleme -> Array(cikan, giren, karsi depolar "K005=40|K007=10")
+Private Function I_NAKIL(ByVal dE As Object, ByVal dY As Object) As Object
+    Dim res As Object, az As Object, ar As Object, anahtar As Object, k As Variant, x As Variant, p() As String
+    Dim qE As Double, qY As Double, mk As Variant, a As Collection, b As Collection, i As Long, j As Long, gec As Long
+    Dim ra() As Double, rb() As Double, m As Double, t As Variant
+    Set res = CreateObject("Scripting.Dictionary"): res.CompareMode = vbTextCompare
+    Set az = CreateObject("Scripting.Dictionary"): az.CompareMode = vbTextCompare
+    Set ar = CreateObject("Scripting.Dictionary"): ar.CompareMode = vbTextCompare
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set I_NAKIL = res
+    For Each x In Array(dE, dY)
+        For Each k In x.keys: anahtar(k) = True: Next k
+    Next x
+    For Each k In anahtar.keys
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            If Not I_DEMONTAJ_MI(p(3)) Then
+                qE = 0: qY = 0
+                If dE.Exists(k) Then t = dE(k): qE = t(3)
+                If dY.Exists(k) Then t = dY(k): qY = t(3)
+                mk = p(1) & "|" & p(2) & "|" & p(3)
+                If qY < qE - 0.0005 Then
+                    If Not az.Exists(mk) Then az.Add mk, New Collection
+                    az(mk).Add Array(CStr(k), p(0), qE - qY)
+                ElseIf qY > qE + 0.0005 Then
+                    If Not ar.Exists(mk) Then ar.Add mk, New Collection
+                    ar(mk).Add Array(CStr(k), p(0), qY - qE)
+                End If
+            End If
+        End If
+    Next k
+    For Each mk In az.keys
+        If ar.Exists(mk) Then
+            Set a = az(mk): Set b = ar(mk)
+            ReDim ra(1 To a.Count): ReDim rb(1 To b.Count)
+            For i = 1 To a.Count: ra(i) = a(i)(2): Next i
+            For j = 1 To b.Count: rb(j) = b(j)(2): Next j
+            For gec = 1 To 2
+                For i = 1 To a.Count
+                    For j = 1 To b.Count
+                        If ra(i) > 0.0005 And rb(j) > 0.0005 And UCase$(a(i)(1)) <> UCase$(b(j)(1)) Then
+                            If gec = 2 Or Abs(ra(i) - rb(j)) <= 0.0005 Then
+                                m = application.Min(ra(i), rb(j))
+                                I_NAKIL_EKLE res, CStr(a(i)(0)), m, 0, CStr(b(j)(1))
+                                I_NAKIL_EKLE res, CStr(b(j)(0)), 0, m, CStr(a(i)(1))
+                                ra(i) = ra(i) - m: rb(j) = rb(j) - m
+                            End If
+                        End If
+                    Next j
+                Next i
+            Next gec
+        End If
+    Next mk
+End Function
+
+Private Sub I_NAKIL_EKLE(ByVal res As Object, ByVal k As String, ByVal cikan As Double, ByVal giren As Double, ByVal karsi As String)
+    Dim t As Variant
+    If res.Exists(k) Then t = res(k) Else t = Array(0#, 0#, "")
+    t(0) = t(0) + cikan: t(1) = t(1) + giren
+    t(2) = t(2) & IIf(Len(t(2)) > 0, "|", "") & karsi & "=" & I_MIKTAR_METNI(cikan + giren)
+    res(k) = t
+End Sub
+
+Private Function I_NAKIL_D(ByVal nak As Object, ByVal k As String, ByVal i As Long) As Double
+    If nak.Exists(k) Then I_NAKIL_D = CDbl(nak(k)(i))
+End Function
+
+' Nakil karsi depolari okunur metin: "K005 Hopa 40" (depolar: kod -> ad).
+Private Function I_NAKIL_METIN(ByVal nak As Object, ByVal k As String, ByVal depolar As Object) As String
+    Dim x As Variant, f() As String
+    If Not nak.Exists(k) Then Exit Function
+    For Each x In Split(CStr(nak(k)(2)), "|")
+        f = Split(CStr(x), "=")
+        I_NAKIL_METIN = I_NAKIL_METIN & IIf(Len(I_NAKIL_METIN) > 0, ", ", "") & f(0)
+        If Not depolar Is Nothing Then
+            If depolar.Exists(f(0)) Then I_NAKIL_METIN = I_NAKIL_METIN & " " & I_DEPO_KISA(CStr(depolar(f(0))))
+        End If
+        If UBound(f) >= 1 Then I_NAKIL_METIN = I_NAKIL_METIN & " " & f(1)
+    Next x
+End Function
+
+' Armatur ikamesi: 150W yerine 250W / 70W armatur demontaji girilebilir (sahadaki eski armatur). Ayni depo + uretim
+' yerinde armaturlerin demontaj girisi once kendi malzemesine, artan kismi demontaji eksik diger armaturlere dagitilir.
+' grup: depo|UY|malzeme -> Array(kullanilan, girilen, ...). Toplam girilen degismez.
+Private Sub I_ARMATUR_DAGIT(ByVal grup As Object)
+    Dim k As Variant, p() As String, dk As Variant, aile As Object, x As Variant, g As Variant, havuz As Double, al As Double
+    Set aile = CreateObject("Scripting.Dictionary"): aile.CompareMode = vbTextCompare
+    For Each k In grup.keys
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 2 Then
+            If I_KATEGORI(p(2)) = "ARMATÜR" Then
+                If Not aile.Exists(p(0) & "|" & p(1)) Then aile.Add p(0) & "|" & p(1), New Collection
+                aile(p(0) & "|" & p(1)).Add CStr(k)
+            End If
+        End If
+    Next k
+    For Each dk In aile.keys
+        If aile(dk).Count > 1 Then
+            havuz = 0
+            For Each x In aile(dk)
+                g = grup(x)
+                If g(1) > g(0) Then havuz = havuz + (g(1) - g(0)): g(1) = g(0): grup(x) = g
+            Next x
+            For Each x In aile(dk)
+                If havuz <= 0.0005 Then Exit For
+                g = grup(x)
+                If g(0) > g(1) Then
+                    al = application.Min(havuz, g(0) - g(1))
+                    g(1) = g(1) + al: havuz = havuz - al: grup(x) = g
+                End If
+            Next x
+            If havuz > 0.0005 Then
+                x = aile(dk)(1): g = grup(x): g(1) = g(1) + havuz: grup(x) = g
+            End If
+        End If
+    Next dk
+End Sub
+
 Private Function I_DEMONTAJ_MI(ByVal degerleme As String) As Boolean
     Dim t As String
     t = Y_NORM(degerleme)
@@ -6239,7 +6363,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Dim mEski As Double, mYeni As Double, vEski As Double, vYeni As Double, tE As Double, tY As Double
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
     Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
-    Dim birimler() As String, isgL As Object
+    Dim birimler() As String, isgL As Object, nak As Object, nk As Double
     Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
     Set isgL = I_ISG_LISTE()
     il = UCase$(Trim$(il))
@@ -6308,7 +6432,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     If Len(sec) > 0 And Not depolar.Exists(sec) Then sec = vbNullString
     ws.Range("BX30").Value2 = sec
     I_KARS_SECICI ws, depolar, sec
-    ' Kalemler ve demontaj gruplari (depo|uretim yeri|malzeme)
+    ' Kalemler ve demontaj gruplari (depo|uretim yeri|malzeme). Ilceler arasi nakil kullanim sayilmaz.
+    Set nak = I_NAKIL(dE, dY)
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
     Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
     For Each x In Array(dE, dY)
@@ -6328,10 +6453,12 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
         If I_DEMONTAJ_MI(p(3)) Then
             If mYeni > mEski Then g(1) = g(1) + (mYeni - mEski)
         ElseIf mYeni < mEski Then
-            g(0) = g(0) + (mEski - mYeni)
+            g(0) = g(0) + application.Max(0, (mEski - mYeni) - I_NAKIL_D(nak, CStr(k), 0))
         End If
         grup(gk) = g
+        I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
     Next k
+    I_ARMATUR_DAGIT grup
     n = 0
     If anahtar.Count > 0 Then
         ReDim blok(1 To anahtar.Count, 1 To 15): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
@@ -6349,6 +6476,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                     durum = "DEMONTAJ GÝRÝÞ": nDm = nDm + 1: sira = 5: kontrol = "Demontaj giriþi"
                 Else
                     durum = "ARTTI": nAr = nAr + 1: sira = 4
+                    If I_NAKIL_D(nak, CStr(k), 1) > 0.0005 Then kontrol = "Ýlçeler arasý nakil  •  " & I_NAKIL_METIN(nak, CStr(k), depolar) & " deposundan bu depoya"
                 End If
             Else
                 durum = "AZALDI": nAz = nAz + 1: sira = 3
@@ -6359,8 +6487,13 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                     sira = 3
                 ElseIf Not demontaj Then
                     g = grup(p(0) & "|" & p(1) & "|" & p(2))
-                    If g(1) <= 0.0005 Then
-                        kontrol = "DEMONTAJ GÝRÝÞÝ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni) & " " & CStr(t(2))
+                    nk = I_NAKIL_D(nak, CStr(k), 0)
+                    If nk >= (mEski - mYeni) - 0.0005 Then
+                        kontrol = "Ýlçeler arasý nakil  •  " & I_NAKIL_METIN(nak, CStr(k), depolar) & " deposuna (demontaj gerekmez)"
+                    ElseIf g(0) <= 0.0005 Then
+                        kontrol = "Demontaj girildi"
+                    ElseIf g(1) <= 0.0005 Then
+                        kontrol = "DEMONTAJ GÝRÝÞÝ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni - nk) & " " & CStr(t(2))
                         sira = 1: nEk = nEk + 1
                     ElseIf g(1) + 0.0005 < g(0) Then
                         kontrol = "EKSÝK DEMONTAJ  •  " & I_MIKTAR_METNI(g(0) - g(1)) & " " & CStr(t(2)) & " eksik (" & _
@@ -6369,6 +6502,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                     Else
                         kontrol = "Demontaj girildi"
                     End If
+                    If nk > 0.0005 And InStr(kontrol, "nakil") = 0 Then kontrol = kontrol & "  •  nakil " & I_NAKIL_METIN(nak, CStr(k), depolar)
                 End If
             End If
             n = n + 1
@@ -6424,8 +6558,10 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 ws.Cells(r, 14).Interior.Color = RGB(220, 38, 38): ws.Cells(r, 14).Font.Color = RGB(255, 255, 255): ws.Cells(r, 14).Font.bold = True
             ElseIf Left$(kontrol, 5) = "EKSÝK" Then
                 ws.Cells(r, 14).Interior.Color = RGB(254, 243, 199): ws.Cells(r, 14).Font.Color = RGB(180, 83, 9): ws.Cells(r, 14).Font.bold = True
-            ElseIf kontrol = "Demontaj girildi" Then
+            ElseIf Left$(kontrol, 16) = "Demontaj girildi" Then
                 ws.Cells(r, 14).Font.Color = RGB(21, 128, 61)
+            ElseIf InStr(kontrol, "nakil") > 0 Then
+                ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
             ElseIf kontrol = "Demontaj giriþi" Then
                 ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
             ElseIf InStr(kontrol, "gerekmez") > 0 Or InStr(kontrol, "kontrolü dýþý") > 0 Then

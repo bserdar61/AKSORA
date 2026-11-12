@@ -821,6 +821,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-11: Proje takibi SAHA TESPİTİ: proje seçilince detayda sarı "Sahada Kullanılan" sütunu (toplam kullanım). Kayıt _Y_SAHA (il, PYP, mal, miktar, tarih, kullanıcı). Kullanılan = max(hakediş, saha); hakedişe girmemiş = fark, projede kalan fiili = SAP projede kalan - fark (negatif = ayrılmadan kullanılmış → 415). Tamamlanma fiiliye göre; tüm projeler malzeme ihtiyacı değişmez (fiziksel denge). Değişim: Y_SAHA_DEGISIM (BX26 sütun, BX27-28 satırlar; KUR başında silinir). Hakediş sütunu en fazla 5 ("5+"). Özet 8. satır: hakedişe girmemiş. BX25=PRJ_V4. Taban up54.
 
+- 2026-11-12: Demontaj kontrolü (günlük I_STOK_KARŞILAŞTIRMA + aylık defter I_DEFTER_GUN): 1) İlçeler arası nakil (I_NAKIL): aynı UY+malzeme+değerleme (demontaj dışı) bir ilçe deposunda azalış, başka ilçe deposunda artış = nakil; önce eşit miktar, sonra kalan eşleşir; nakil kullanım sayılmaz. Satır notu "İlçeler arası nakil • K005 Hopa 40 deposuna (demontaj gerekmez)" / artan depoda "...deposundan bu depoya". 2) Armatür ikamesi (I_ARMATUR_DAGIT): aynı depo+UY'de armatür demontaj girişi önce kendi malzemesine, artanı demontajı eksik diğer armatürlere dağıtılır (150W düşülüp 250W/70W demontaj girilince eksik sayılmaz). Taban up55.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
