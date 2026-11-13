@@ -82,7 +82,7 @@ Olumlu tespitler: tüm modüllerde `Option Explicit` var; `.Select/.Activate` ku
 
 ## 4. v3.1 ile eklenenler
 
-Var olan hiçbir ekran ya da hesap değiştirilmedi. İki yeni modül ve mevcut kodda **sekiz tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
+Var olan hiçbir ekran ya da hesap değiştirilmedi. Üç yeni modül ve mevcut kodda **on tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
 
 ### Yönetim karnesi — trend (`modAKSORA_KPI`)
 Yönetim Merkezi'nde "Bugün Yapılacak 5 İş"in altına yeni tablo. Her rapor yenilemesinde sekiz gösterge günde bir satır olarak kaydedilir (`_AKSORA_KPI`, çok gizli sayfa) ve önceki kayıtla / 30 gün öncesiyle karşılaştırılır:
@@ -100,13 +100,16 @@ Her SAP güncellemesi (süresiyle), kullanıcıya gösterilen her hata, her yön
 ### Sistem sağlık kontrolü
 **SAĞLIK KONTROLÜ** düğmesi: Excel sürümü, dosya boyutu ve konumu, zorunlu sayfalar, bozuk adlar, Windows bileşenleri, SAP GUI erişimi, VBA proje kilidi, son 7 günün hataları. Yalnız okur; sonucu TAMAM / UYARI / HATA olarak Excel'e aktarır.
 
+### Akıcı bekleme kartı (`modAKSORA_AKICI`)
+Kart yalnız VBA "ilerle" dediği anda çiziliyordu; SAP sorgusu sürerken (10-20 sn) çubuk ve geçen süre donuyordu. Kart açıkken çalışan bir Windows zamanlayıcısı artık çubuğun üzerinde bir şerit gezdiriyor ve "Geçen süre" yazısını saniye saniye yeniliyor. Zamanlayıcı yalnız kartı çizer; SAP'ye ve sayfalara dokunmaz. SAP çağrısı beklenirken Windows'un zamanlayıcıyı çalıştırıp çalıştırmadığı Microsoft belgelerinde net değil; bu davranış sizin bilgisayarınızda denenerek görülecek.
+
 ### Depo düzeni
 - `src/vba/` — kodun okunabilir aynası (şifreler maskeli). Sürümler arası fark artık görülebilir.
 - `tools/aksora_vba.py` — kodu çıkarma, bağlantıları doğrulama, statik denetim.
 - `gelistirme/` — kurulum paketi.
 
 ### Doğrulama durumu (açık söylemek gerekirse)
-- Sekiz bağlantının çapa satırı gerçek kodda tam olarak bir kez bulundu.
+- On bağlantının çapa satırı gerçek kodda tam olarak bir kez bulundu.
 - Yeni modüller mevcut kodla ad çakışması, tanımsız değişken ve parametre sayısı açısından tarandı; saf hesap işlevleri LibreOffice Basic'te (VBA kipi) çalıştırılıp sınamadan geçti.
 - **Excel'de derlenmedi ve çalıştırılmadı; kurulum betiği (PowerShell) de bu ortamda çalıştırılamadı.** Bu yüzden kurulum önce yedek alır, kodu ekler, derleme sınamasını çalıştırır ve yalnız "OK" gelirse kaydeder. İlk kurulumu dosyanın bir kopyasında yapın.
 

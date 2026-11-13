@@ -418,6 +418,9 @@ Public Function AKSORA_GELISTIRME_SINAMA() As String
     b = CORE_AKTIF_MI()                     ' modAKSORA_CEKIRDEK derlenir
     b = AKSORA_PENCERE_KUCUK()              ' modAKSORA_EKRAN derlenir
     s = AKSORA_SAYI_METNI(1, "0")           ' modAKSORA_SISTEM derlenir
+    If Abs(AKSORA_AKICI_KONUM(0)) > 0.0001 Or Abs(AKSORA_AKICI_KONUM(1.2) - 1) > 0.0001 Then    ' modAKSORA_AKICI derlenir
+        AKSORA_GELISTIRME_SINAMA = "HATA: akıcı kart konum hesabı": Exit Function
+    End If
     If Len(AKSORA_KULLANICI()) = 0 Then AKSORA_GELISTIRME_SINAMA = "HATA: kullanıcı adı okunamadı": Exit Function
     AKSORA_GELISTIRME_SINAMA = "OK"
     Exit Function

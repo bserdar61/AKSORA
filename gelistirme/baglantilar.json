@@ -62,5 +62,21 @@
     "eslesme": "tam",
     "konum": "sonra",
     "satir": "    AKSORA_GUNLUK_YAZ \"HATA\", islem & \": \" & metin & \" (\" & no & \")\""
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Bekleme kartı açılınca akıcı çizim zamanlayıcısı başlar",
+    "capa": "AKSORA_BEKLE_ILERLE y0, mesaj",
+    "eslesme": "tam",
+    "konum": "sonra",
+    "satir": "    AKSORA_AKICI_BASLAT"
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Bekleme kartı kapanmadan önce zamanlayıcı durur",
+    "capa": "If mAdmYukleme Then Unload frmSplash",
+    "eslesme": "tam",
+    "konum": "once",
+    "satir": "    AKSORA_AKICI_DURDUR"
   }
 ]

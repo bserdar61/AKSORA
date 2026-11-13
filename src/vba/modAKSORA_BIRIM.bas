@@ -7502,6 +7502,7 @@ Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, O
     mAdmYukleme = True: mAdmYukSon = 0
     AKSORA_BEKLE_AC = True
     AKSORA_BEKLE_ILERLE y0, mesaj
+    AKSORA_AKICI_BASLAT
     Exit Function
 son:
     AKSORA_BEKLE_KIPI = False
@@ -7687,6 +7688,7 @@ End Sub
 Public Sub AKSORA_BEKLE_KAPAT()
     On Error Resume Next
     ADM_EKRAN_KILIT False
+    AKSORA_AKICI_DURDUR
     If mAdmYukleme Then Unload frmSplash
     mAdmYukleme = False: Set mAdmYukWs = Nothing
     On Error GoTo 0
