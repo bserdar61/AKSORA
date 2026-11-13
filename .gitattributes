@@ -1,0 +1,7 @@
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bas text eol=lf
+*.cls text eol=lf
+*.frm text eol=lf
+*.xlsm binary
+*.zip binary

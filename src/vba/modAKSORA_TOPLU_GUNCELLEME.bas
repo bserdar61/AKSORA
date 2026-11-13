@@ -1,0 +1,1538 @@
+Attribute VB_Name = "modAKSORA_TOPLU_GUNCELLEME"
+Option Explicit
+
+Private mTopluSaatAktif As Boolean
+Private mTopluSaatBas As Double
+Private mTopluSonSaniye As Long
+Private mTopluDurumMetni As String
+Public AKSORA_V11_MESGUL As Boolean
+Private mAK14Sureler As Object
+Private mAK14Toplam As Double
+Private mAK14Arayuz As Double
+Private Const PARA As String = "#,##0.00 ""TL"""
+Private Const miktar As String = "#,##0"
+Private mHzVeri(1 To 2) As Variant
+Private mHzHazir(1 To 2) As Boolean
+Private mHzIl(1 To 2) As String
+' Ortak MB52: Malzeme "5 il tek sorgu" okumasinin ham verisi (5 tesis, tum depolar, PANEL duzeni).
+' Yatirim ve Ilce birimleri ayni raporu il il cekiyordu; zincirde bu veri kullanilir (ek SAP sorgusu yok).
+Private mOrtakVeri(1 To 2) As Variant
+Private mOrtakZaman(1 To 2) As Date
+Public AKSORA_ORTAK_AKTIF As Boolean
+Private mHzZaman(1 To 2) As Double
+
+Public Sub AKSORA_V11_ESKI_KONTROL_SIL()
+    Dim ws As Worksheet
+    For Each ws In ThisWorkbook.Worksheets
+        AK12_KONTROL_SIL ws
+    Next ws
+    application.DisplayStatusBar = True
+    application.StatusBar = False
+End Sub
+
+Public Sub AKSORA_V11_BICIM_SAYFA(ByVal ws As Worksheet)
+    Dim h As Long, son As Long, kolon As Long, c As Long, ilk As Long
+    Dim baslik As String, alan As Range, metin As String, r As Long, hucre As Range
+    Select Case AKFIX_NORMAL(ws.Name)
+        Case "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK"
+            h = 6: kolon = 12: son = AKSORA_SON_SATIR(ws, "G")
+            ws.Range("C4").NumberFormat = PARA
+        Case "CDP_RAPOR", "EPP_RAPOR", "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR"
+            h = 8: kolon = ws.Cells(h, ws.Columns.Count).End(xlToLeft).Column
+            If kolon > 5 Then kolon = 5
+            son = AKSORA_SON_SATIR(ws, "A")
+            ' End at the last real depot/total row; leave the note outside the table.
+            Do While son > h
+                metin = AKFIX_NORMAL(CStr(ws.Cells(son, 1).Value2))
+                If metin = "TOPLAM" Or metin = "GENEL TOPLAM" Then Exit Do
+                If Len(metin) = 4 And Len(CStr(ws.Cells(son, 2).Value2)) > 0 Then Exit Do
+                son = son - 1
+            Loop
+            ws.Range("B5").NumberFormat = PARA
+        Case "MALZEME_ARA"
+            h = 12: kolon = 11: son = AKSORA_SON_SATIR(ws, "D")
+            ws.Range("I10").NumberFormat = PARA
+        Case "STOK_KARSILASTIRMA"
+            h = 15: kolon = 14: son = AKSORA_SON_SATIR(ws, "D")
+        Case "ANA PANEL"
+            ' Numeric dashboard money cells retain their values and merges.
+            For r = 1 To 40
+                For c = 1 To 16
+                    If ws.Cells(r, c).MergeArea.Cells(1, 1).Address = ws.Cells(r, c).Address Then
+                        If IsNumeric(ws.Cells(r, c).Value2) And Len(CStr(ws.Cells(r, c).Value2)) > 0 Then
+                            If InStr(1, ws.Cells(r, c).NumberFormat, "TL", vbTextCompare) > 0 Then ws.Cells(r, c).NumberFormat = PARA
+                        End If
+                    End If
+                Next c
+            Next r
+            Exit Sub
+        Case Else: Exit Sub
+    End Select
+    With ws.Range(ws.Cells(h, 1), ws.Cells(h, kolon))
+        .Font.Name = "Aptos"
+        .Font.Size = 10
+        .Font.bold = True
+        .VerticalAlignment = xlCenter
+        .HorizontalAlignment = xlCenter
+        .IndentLevel = 0
+        .ShrinkToFit = True
+    End With
+    If son <= h Then Exit Sub
+    ilk = h + 1
+    With ws.Range(ws.Cells(ilk, 1), ws.Cells(son, kolon))
+        .IndentLevel = 0
+        .VerticalAlignment = xlCenter
+        .Font.Name = "Aptos"
+        .Font.Size = 10
+    End With
+    For c = 1 To kolon
+        baslik = AKFIX_NORMAL(CStr(ws.Cells(h, c).Value2))
+        Set alan = ws.Range(ws.Cells(ilk, c), ws.Cells(son, c))
+        If InStr(baslik, "DEGER") > 0 Or InStr(baslik, "FIYAT") > 0 Or InStr(baslik, "TUTAR") > 0 Then
+            alan.HorizontalAlignment = xlRight
+            alan.NumberFormat = PARA
+        ElseIf InStr(baslik, "MIKTAR") > 0 Or InStr(baslik, "TAHDITSIZ") > 0 Or InStr(baslik, "STOK SATIRI") > 0 Or baslik = "FARK" Then
+            alan.HorizontalAlignment = xlRight
+            AKSORA_V13_MIKTAR_BICIMI alan
+        ElseIf InStr(baslik, "TANIM") > 0 Or InStr(baslik, "METNI") > 0 Or InStr(baslik, "ACIKLAMA") > 0 Or baslik = "MALZEME" Then
+            alan.HorizontalAlignment = xlLeft
+        Else
+            alan.HorizontalAlignment = xlCenter
+        End If
+    Next c
+    If AKFIX_NORMAL(ws.Name) = "MALZEME_ARA" Then
+        ws.Range("C" & ilk & ":F" & son).HorizontalAlignment = xlLeft
+    End If
+End Sub
+
+Public Sub AKSORA_V11_BICIMLER()
+    Dim ws As Worksheet
+    application.UseSystemSeparators = False
+    application.DecimalSeparator = ","
+    application.ThousandsSeparator = "."
+    For Each ws In ThisWorkbook.Worksheets
+        AKSORA_V11_BICIM_SAYFA ws
+    Next ws
+End Sub
+
+Public Function AKSORA_V11_IL_TARIH(ByVal il As String, Optional ByVal dogrulanmisCanli As String = "") As Date
+    Dim tip As Variant, kaynak As Variant, i As Long, t As Date, tarih As Date
+    Dim ar As Worksheet, ws As Worksheet, canli As String
+    il = AKFIX_NORMAL(il)
+    canli = dogrulanmisCanli
+    If Len(canli) = 0 Then canli = AKSORA_CANLI_STOK_IL()
+    tip = Array("CDP", "EPP", "TUM", "ILC", "YUK")
+    kaynak = Array("CDP_STOK", "EPP_STOK", "STOKLAR", "İLÇE_STOK", "YÜKLENİCİ_STOK")
+    For i = 0 To 4
+        tarih = 0
+        Set ar = Nothing
+        On Error Resume Next
+        Set ar = ThisWorkbook.Worksheets("_AKLIVE_" & il & "_" & tip(i))
+        On Error GoTo 0
+        If il = canli Then
+            Set ws = ThisWorkbook.Worksheets(CStr(kaynak(i)))
+            tarih = AK12_TARIH(ws.Range("C2").Value2)
+        End If
+        If tarih = 0 And Not ar Is Nothing Then
+            If CStr(ar.Range("A1").Value2) = "AKSORA_CANLI_ARSIV_V1" And _
+               CStr(ar.Range("B1").Value2) = il And _
+               CStr(ar.Range("C1").Value2) = CStr(tip(i)) Then
+                If Val(CStr(ar.Range("A4").Value2)) > 0 And _
+                   AKSORA_SON_SATIR(ar, "G") >= 7 Then
+                    tarih = AK12_TARIH(ar.Range("A3").Value2)
+                End If
+            End If
+        End If
+        If tarih = 0 Then Exit Function
+        If t = 0 Or tarih < t Then t = tarih
+    Next i
+    AKSORA_V11_IL_TARIH = t
+End Function
+
+' Il secim ekrani icin: ilin en son guncellenen stok grubunun tarihi (hic yoksa 0).
+Public Function AKSORA_IL_SON_TARIH(ByVal il As String) As Date
+    Dim tip As Variant, kaynak As Variant, i As Long, tarih As Date
+    Dim ar As Worksheet, canli As String
+    il = AKFIX_NORMAL(il)
+    ' Canli sayfalar okunamazsa (bos / karisik) tarih kayitlardan alinir; acilis durmaz.
+    On Error Resume Next
+    canli = AKSORA_CANLI_STOK_IL()
+    On Error GoTo 0
+    tip = Array("CDP", "EPP", "TUM", "ILC", "YUK")
+    kaynak = Array("CDP_STOK", "EPP_STOK", "STOKLAR", "İLÇE_STOK", "YÜKLENİCİ_STOK")
+    For i = 0 To 4
+        tarih = 0
+        If il = canli Then tarih = AK12_TARIH(ThisWorkbook.Worksheets(CStr(kaynak(i))).Range("C2").Value2)
+        If tarih = 0 Then
+            Set ar = Nothing
+            On Error Resume Next
+            Set ar = ThisWorkbook.Worksheets("_AKLIVE_" & il & "_" & tip(i))
+            On Error GoTo 0
+            If Not ar Is Nothing Then
+                If CStr(ar.Range("A1").Value2) = "AKSORA_CANLI_ARSIV_V1" And CStr(ar.Range("B1").Value2) = il Then
+                    tarih = AK12_TARIH(ar.Range("A3").Value2)
+                End If
+            End If
+        End If
+        If tarih > AKSORA_IL_SON_TARIH Then AKSORA_IL_SON_TARIH = tarih
+    Next i
+End Function
+
+Private Function AK_IL_ADI(ByVal il As String) As String
+    Select Case UCase$(Trim$(il))
+        Case "GIRESUN": AK_IL_ADI = "GİRESUN"
+        Case "RIZE": AK_IL_ADI = "RİZE"
+        Case "GUMUSHANE": AK_IL_ADI = "GÜMÜŞHANE"
+        Case "ARTVIN": AK_IL_ADI = "ARTVİN"
+        Case Else: AK_IL_ADI = UCase$(Trim$(il))
+    End Select
+End Function
+
+Private Function AK12_TARIH(ByVal v As Variant) As Date
+    Dim n As Double
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If IsNumeric(v) Then
+        n = CDbl(v)
+        If ThisWorkbook.Date1904 Then n = n + 1462
+        If n >= 1 And n < 2958466 Then AK12_TARIH = CDate(n)
+    ElseIf IsDate(v) Then
+        AK12_TARIH = CDate(v)
+    End If
+End Function
+Public Sub AKSORA_V11_ARAMA_TARIH()
+    Dim ws As Worksheet, il As Variant, s As Shape, tarih As Date, etiket As String, canli As String
+    Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
+    canli = AKSORA_CANLI_STOK_IL()
+    For Each il In Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+        Set s = Nothing
+        On Error Resume Next
+        Set s = ws.Shapes("AKSORA_V4_" & il)
+        On Error GoTo 0
+        If Not s Is Nothing Then
+            etiket = CStr(il)
+            Select Case il
+                Case "GIRESUN": etiket = "GİRESUN"
+                Case "RIZE": etiket = "RİZE"
+                Case "GUMUSHANE": etiket = "GÜMÜŞHANE"
+                Case "ARTVIN": etiket = "ARTVİN"
+            End Select
+            tarih = AKSORA_V11_IL_TARIH(CStr(il), canli)
+            If tarih > 0 Then
+                etiket = etiket & vbLf & Format$(tarih, "dd.mm.yyyy hh:nn")
+            Else
+                etiket = etiket & vbLf & "Henüz güncellenmedi"
+            End If
+            s.Placement = xlFreeFloating
+            With s.TextFrame2
+                .TextRange.Text = etiket
+                .TextRange.Font.Size = 9
+                .MarginTop = 2: .MarginBottom = 2
+                .VerticalAnchor = msoAnchorMiddle
+                .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+            End With
+        End If
+    Next il
+End Sub
+
+Public Sub AKSORA_V11_ARAMA_DUGME()
+    Dim ws As Worksheet, s As Shape, a As Range, onceki As Shape
+    Dim durum As Shape, vurgu As Shape
+    Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
+    On Error Resume Next
+    Set onceki = ws.Shapes("AKSORA_TOPLU_GUNCELLE")
+    Set durum = ws.Shapes("AKSORA_TOPLU_DURUM")
+    Set vurgu = ws.Shapes("AKSORA_TOPLU_VURGU")
+    On Error GoTo 0
+    If Not onceki Is Nothing Then
+        If onceki.AlternativeText = "AKSORA_V12_M26_N28" Then
+            If Not durum Is Nothing And Not vurgu Is Nothing Then
+                AKSORA_V12_BUTON_RENK
+                Exit Sub
+            End If
+        End If
+    End If
+    On Error Resume Next
+    ws.Shapes("AKSORA_TOPLU_GUNCELLE").Delete
+    ws.Shapes("AKSORA_TOPLU_DURUM").Delete
+    ws.Shapes("AKSORA_TOPLU_VURGU").Delete
+    On Error GoTo 0
+    ws.Rows("26:31").RowHeight = 22
+    Set a = ws.Range("M26:N28")
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, a.Left + 2, a.top + 2, a.Width - 4, a.Height - 4)
+    With s
+        .Name = "AKSORA_TOPLU_GUNCELLE"
+        .AlternativeText = "AKSORA_V12_M26_N28"
+        .Adjustments.Item(1) = 0.12
+        .TextFrame2.TextRange.Text = "BÜTÜN İLLERİ GÜNCELLE" & vbLf & "CDP + EPP  |  5 İL"
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 10
+        .TextFrame2.TextRange.Font.bold = msoTrue
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(225, 255, 246)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle
+        .TextFrame2.MarginLeft = 14: .TextFrame2.MarginRight = 10
+        .Fill.ForeColor.RGB = RGB(9, 45, 62)
+        .Fill.BackColor.RGB = RGB(0, 112, 84)
+        .Fill.TwoColorGradient msoGradientHorizontal, 1
+        .line.Visible = msoTrue
+        .line.ForeColor.RGB = RGB(28, 211, 163): .line.Weight = 1.25
+        .Shadow.Visible = msoTrue
+        .Shadow.ForeColor.RGB = RGB(10, 39, 50)
+        .Shadow.Transparency = 0.8
+        .Shadow.OffsetX = 1: .Shadow.OffsetY = 2
+        .Placement = xlFreeFloating
+        .Locked = True
+        .OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_BUTUN_ILLERI_GUNCELLE"
+    End With
+    Set onceki = s
+    Set s = ws.Shapes.AddShape(msoShapeRectangle, a.Left + 8, a.top + 12, 3, a.Height - 24)
+    With s
+        .Name = "AKSORA_TOPLU_VURGU"
+        .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+        .OnAction = onceki.OnAction
+    End With
+    Set a = ws.Range("M29:N31")
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, a.Left, a.top, a.Width, a.Height)
+    With s
+        .Name = "AKSORA_TOPLU_DURUM"
+        .TextFrame2.TextRange.Text = "Arama, her ilin yukarıdaki tarihli stoklarını kullanır."
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 9
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(85, 103, 123)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .Fill.Visible = msoFalse: .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+    End With
+End Sub
+Private Sub AK11_DURUM(ByVal metin As String)
+    Dim ws As Worksheet
+    If AKSORA_MUSTERI_TOPLU_AKTIF Then
+        AKSORA_MUSTERI_TOPLU_DURUM metin
+        Exit Sub
+    End If
+    Set ws = ThisWorkbook.Worksheets("MALZEME_ARA")
+    mTopluDurumMetni = metin
+    AKSORA_ADMIN_DURUM metin
+    If AKSORA_PANEL_CANLI Then AKSORA_PANEL_SERIT "Güncelleniyor  •  Bütün iller  •  " & metin
+    If mTopluSaatAktif Then
+        AKSORA_TOPLU_SURE_TIK True
+    Else
+        ws.Shapes("AKSORA_TOPLU_DURUM").TextFrame2.TextRange.Text = metin
+    End If
+    application.StatusBar = "AKSORA | " & metin
+    DoEvents
+End Sub
+
+Private Function AK11_SON(ByVal ws As Worksheet, ByVal kolon As Long) As Long
+    Dim c As Long, n As Long
+    For c = 1 To kolon
+        n = AKSORA_SON_SATIR(ws, c)
+        If n > AK11_SON Then AK11_SON = n
+    Next c
+    If AK11_SON < 1 Then AK11_SON = 1
+End Function
+
+Private Function AK11_IL_GUNCELLE(ByVal il As String, ByRef aciklama As String) As Boolean
+    Dim ham(1 To 6) As Variant, veri(1 To 5) As Variant
+    Dim ar(1 To 8) As Worksheet, eski(1 To 8) As Variant, son(1 To 8) As Long
+    Dim tarihler(1 To 6) As Date, tip As Variant, i As Long, j As Long, n As Long
+    Dim toplam As Variant, yaziliyor As Boolean, geri As String, Hata As String
+    Dim ilBas As Double, sapBas As Double, sapSure As Double, excelSure As Double
+    ilBas = Timer
+    On Error GoTo Hata
+    tip = Array("CDP", "EPP", "TUM", "ILC", "YUK")
+    For i = 1 To 5
+        Set ar(i) = ThisWorkbook.Worksheets("_AKLIVE_" & il & "_" & tip(i - 1))
+        If ar(i).ProtectContents Then Err.Raise vbObjectError + 1102, , "Arşiv korumalı: " & ar(i).Name
+        If CStr(ar(i).Range("A1").Value2) <> "AKSORA_CANLI_ARSIV_V1" Or _
+           CStr(ar(i).Range("B1").Value2) <> il Or _
+           CStr(ar(i).Range("C1").Value2) <> tip(i - 1) Then
+            Err.Raise vbObjectError + 1103, , "Arşiv kimliği uyuşmuyor: " & ar(i).Name
+        End If
+        son(i) = AK11_SON(ar(i), 12)
+        eski(i) = ar(i).Range("A1").Resize(son(i), 12).Value2
+    Next i
+    tip = Array("INDEX", "DELTA", "CURRENT")
+    For i = 6 To 8
+        Set ar(i) = ThisWorkbook.Worksheets(AKFIX_HAFIZA_ADI(il, CStr(tip(i - 6))))
+        If ar(i).ProtectContents Then Err.Raise vbObjectError + 1104, , "Geçmiş korumalı: " & ar(i).Name
+        son(i) = AK11_SON(ar(i), 15)
+        eski(i) = ar(i).Range("A1").Resize(son(i), 15).Value2
+    Next i
+    For i = 1 To 6
+        AK11_DURUM il & " | SAP " & i & "/6"
+        sapBas = Timer
+        ham(i) = AKIL_SAP_VERI_AL(i, il)
+        tarihler(i) = Now
+        sapSure = sapSure + AK14_GECEN_SURE(sapBas)
+    Next i
+    veri(1) = ham(1): veri(2) = ham(2)
+    veri(3) = AKIL_VERI_BIRLESTIR(ham(1), ham(2))
+    veri(4) = AKIL_VERI_BIRLESTIR(ham(3), ham(4))
+    veri(5) = AKIL_VERI_BIRLESTIR(ham(5), ham(6))
+    application.ScreenUpdating = False
+    yaziliyor = True
+    For i = 1 To 5
+        n = UBound(veri(i), 1)
+        toplam = CDec(0)
+        For j = 1 To n: toplam = toplam + CDec(veri(i)(j, 11)): Next j
+        ar(i).Range("A7:L" & application.Max(7, son(i), n + 6)).ClearContents
+        For j = 1 To n
+            If CDbl(veri(i)(j, 9)) <> 0 Then
+                veri(i)(j, 12) = CDbl(veri(i)(j, 11)) / CDbl(veri(i)(j, 9))
+            Else
+                veri(i)(j, 12) = 0
+            End If
+        Next j
+        ar(i).Range("A7").Resize(n, 12).Value2 = veri(i)
+        Select Case i
+            Case 1: ar(i).Range("A3").Value = tarihler(1)
+            Case 2, 3: ar(i).Range("A3").Value = tarihler(2)
+            Case 4: ar(i).Range("A3").Value = tarihler(4)
+            Case 5: ar(i).Range("A3").Value = tarihler(6)
+        End Select
+        ar(i).Range("A4").Value2 = n
+        ar(i).Range("A5").Value2 = CDbl(toplam)
+        ar(i).Range("D1").Value = Now
+        ar(i).Visible = xlSheetVeryHidden
+    Next i
+    STOK_HAFIZA_KAYDET il
+    STOK_KH_KAYDET il, ar(4), ar(5)
+    yaziliyor = False
+    application.ScreenUpdating = True
+    AK11_IL_GUNCELLE = True
+    aciklama = AK_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(ilBas), "0.0") & " sn)"
+    excelSure = AK14_GECEN_SURE(ilBas) - sapSure
+    AK14_SURE_KAYDET il, sapSure, excelSure, True
+    Exit Function
+Hata:
+    Hata = Err.Description
+    If yaziliyor Then
+        On Error Resume Next
+        For i = 1 To 8
+            Err.Clear
+            If i <= 5 Then n = 12 Else n = 15
+            ar(i).Range("A1").Resize(application.Max(son(i), AK11_SON(ar(i), n)), n).ClearContents
+            ar(i).Range("A1").Resize(son(i), n).Value2 = eski(i)
+            If Err.Number <> 0 Then geri = geri & " Geri alma başarısız: " & ar(i).Name
+        Next i
+        On Error GoTo 0
+    End If
+    application.ScreenUpdating = True
+    aciklama = AK_IL_ADI(il) & ": güncellenemedi; " & Hata & geri
+    excelSure = AK14_GECEN_SURE(ilBas) - sapSure
+    AK14_SURE_KAYDET il, sapSure, excelSure, False
+    ' A rollback error must stop the batch, never be presented as preserved data.
+    If Len(geri) > 0 Then Err.Raise vbObjectError + 1105, , aciklama
+End Function
+
+Public Sub AKSORA_BUTUN_ILLERI_GUNCELLE()
+    Dim il As Variant, canli As String, secim As String, sonuc As String, bilgi As String
+    Dim ev As Boolean, sc As Boolean, hesap As XlCalculation, sessiz As Boolean
+    Dim basarili As Boolean, canliGuncel As Boolean, Hata As String, sayfa As Worksheet
+    Dim adres As String, satir As Long, sutun As Long, basladi As Boolean
+    Dim toplamBas As Double, arayuzBas As Double
+    If AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    If Not AKSORA_ADMIN_TOPLU Then
+        If MsgBox("Beş ilin stokları SAP'den sırayla alınacak." & vbCrLf & _
+                  "Başarısız ilin önceki kayıtları korunur. Devam edilsin mi?", _
+                  vbYesNo + vbQuestion, "AKSORA | Bütün İller") <> vbYes Then Exit Sub
+    End If
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    hesap = application.Calculation: sessiz = ANA_SESSIZ_MOD
+    On Error GoTo Hata
+    toplamBas = Timer
+    mTopluSaatBas = toplamBas
+    mTopluSonSaniye = -1
+    mTopluSaatAktif = True
+    mTopluDurumMetni = "Güncelleme hazırlanıyor..."
+    Set mAK14Sureler = Nothing
+    mAK14Toplam = 0: mAK14Arayuz = 0
+    canli = AKSORA_CANLI_STOK_IL(): secim = AKSORA_AKTIF_IL()
+    Set sayfa = ActiveSheet: adres = ActiveCell.Address
+    satir = ActiveWindow.ScrollRow: sutun = ActiveWindow.ScrollColumn
+    AKSORA_V11_MESGUL = True: ANA_SESSIZ_MOD = True
+    application.EnableEvents = False
+    application.Calculation = xlCalculationManual
+    application.ScreenUpdating = False
+    AKSORA_V11_ARAMA_DUGME
+    ThisWorkbook.Worksheets("MALZEME_ARA").Visible = xlSheetVisible
+    ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_GUNCELLE").Fill.ForeColor.RGB = RGB(125, 140, 135)
+    ' Bütün iller guncellemesi ana panelden izlenir (serit + kartlar, musteri paneli temasi).
+    ' Yonetim merkezinden calisirken ana panele gecilmez.
+    If Not AKSORA_ADMIN_TOPLU Then
+        With ThisWorkbook.Worksheets("ANA PANEL")
+            .Visible = xlSheetVisible
+            .Activate
+        End With
+        AKSORA_V13_GORUNUM ThisWorkbook.Worksheets("ANA PANEL")
+    End If
+    AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
+    application.ScreenUpdating = True
+    basladi = True
+    sonuc = AKHZ_ON_YUKLE() & vbCrLf
+    If Not AKHZ_TAMAM() Then
+        ' Hizli okuma olmadiysa kullanici uzun sureyi bilerek secer.
+        application.ScreenUpdating = True
+        If MsgBox("Hızlı okuma yapılamadı:" & vbCrLf & vbCrLf & sonuc & _
+                  "Eski yöntemle il il okuma yaklaşık 4-5 dakika sürer." & vbCrLf & _
+                  "Devam edilsin mi?", vbYesNo + vbExclamation, "AKSORA | Bütün İller") <> vbYes Then
+            sonuc = "Güncelleme iptal edildi. Stoklar değiştirilmedi." & vbCrLf & vbCrLf & _
+                "Teşhis dosyası: " & AKSORA_KAYIT_KLASORU() & "\AKSORA_SAP_TESHIS.txt"
+            ' Yonetim merkezinden calisirken "Hayir" tum birimleri durdurur.
+            If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_IPTAL = True
+            GoTo Temizle
+        End If
+    End If
+    For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandı." & vbCrLf: Exit For
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = CStr(il)
+        bilgi = ""
+        basarili = AK11_IL_GUNCELLE(CStr(il), bilgi)
+        If basarili And CStr(il) = canli Then canliGuncel = True
+        sonuc = sonuc & bilgi & vbCrLf
+        AK11_DURUM bilgi
+    Next il
+Bitir:
+    On Error GoTo SonHata
+    application.ScreenUpdating = False
+    ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
+    arayuzBas = Timer
+    If canliGuncel Then
+        ' Raporlar AKSORA_AKTIF_IL()'e gore kurulur: yenileme canli il ile yapilir, secim sonra geri yazilir.
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = canli
+        AKSORA_V11_CANLI_YENILE canli
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
+    Else
+        AKSORA_V11_BICIMLER
+    End If
+    AKSORA_V11_ARAMA_TARIH
+    AKSORA_V10_TARIH_GOSTER
+    If Len(Trim$(CStr(ThisWorkbook.Worksheets("MALZEME_ARA").Range("B6").Value2))) >= 2 Then
+        AKSORA_IL_ARAMA_YAP
+    Else
+        AKSORA_ARAMA_SONUCLARI_TEMIZLE
+    End If
+    If Len(Hata) = 0 Then AK11_DURUM "İşlem tamamlandı. Başarılı illerin tarihleri güncellendi."
+    mAK14Arayuz = AK14_GECEN_SURE(arayuzBas)
+Temizle:
+    On Error Resume Next
+    AKHZ_TEMIZLE
+    If basladi Then
+        ThisWorkbook.Worksheets("KAPAK").Range("AZ1").Value2 = secim
+        AKSORA_V12_BUTON_RENK
+        ' Islem bitince dugmeye basilan ilin ana paneli acilir.
+        If Not AKSORA_ADMIN_TOPLU Then
+            Set sayfa = ThisWorkbook.Worksheets("ANA PANEL")
+            sayfa.Visible = xlSheetVisible
+            sayfa.Select Replace:=True
+            AKSORA_V13_GORUNUM sayfa
+        End If
+    End If
+    application.Calculation = hesap
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    application.StatusBar = False: application.DisplayStatusBar = True
+    ANA_SESSIZ_MOD = sessiz: AKSORA_V11_MESGUL = False
+    If basladi Then mAK14Toplam = AK14_GECEN_SURE(toplamBas)
+    If basladi And Len(Hata) = 0 Then
+        ' Bütün iller suresi il suresinden ayri saklanir (panel seridinde ikisi de gorunur).
+        On Error Resume Next
+        ThisWorkbook.names.Add Name:="_AKSORA_MALZEME_TOPLU_SURE", RefersTo:="=" & Trim$(Str$(Round(AK14_GECEN_SURE(toplamBas), 2))), Visible:=False
+        On Error GoTo 0
+    End If
+    If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
+    mTopluSaatAktif = False
+    ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
+    AKSORA_PANEL_CANLI = False
+    If basladi Then AKSORA_ANA_PANEL_GOSTER
+    On Error GoTo 0
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _
+        "   (il başına ortalama " & AKSORA_SAYI_METNI(AK14_GECEN_SURE(toplamBas) / 5, "0.0") & " sn)"
+    ' Atil stok kaydi yeni stoklarla karsilastirilir (dusum: muhtemel sarf). Kayit yoksa islem yapilmaz.
+    If basladi And Len(Hata) = 0 Then AKSORA_ATIL_STOK_KONTROL
+    If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "MALZEME:" & vbCrLf & sonuc & IIf(Len(Hata) > 0, vbCrLf & Hata, "") & vbCrLf: Exit Sub
+    ' Hata yoksa Yatirim ve Ilce de ayni veriyle tamamlanir; veri yoksa / hata varsa ortak veri birakilir.
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & AK_ORTAK_ZINCIR()
+    AKSORA_ORTAK_BIRAK
+    If basladi And Len(Hata) = 0 Then sonuc = sonuc & AKSORA_YAYINLA_SESSIZ()
+    If Len(Hata) > 0 Then
+        MsgBox sonuc & vbCrLf & Hata, vbExclamation, "AKSORA | Güncelleme Sonucu"
+    Else
+        MsgBox sonuc, vbInformation, "AKSORA | Güncelleme Sonucu"
+    End If
+    Exit Sub
+Hata:
+    Hata = "İşlem durduruldu: " & Err.Description
+    If basladi Then Resume Bitir
+    GoTo Temizle
+SonHata:
+    Hata = Hata & vbCrLf & "Görünüm yenilenemedi: " & Err.Description
+    Resume Temizle
+End Sub
+
+Public Sub AKSORA_V11_KUR()
+    Dim ev As Boolean, sc As Boolean, ws As Worksheet, Hata As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    Set ws = ActiveSheet
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    AKSORA_V11_ESKI_KONTROL_SIL
+    AKSORA_V11_BICIMLER
+    AKSORA_ARAMA_MIKTAR_BICIMI
+    AKSORA_V11_ARAMA_DUGME
+    AKSORA_V11_ARAMA_TARIH
+    AKSORA_V10_TARIH_GOSTER
+Cikis:
+    On Error Resume Next
+    ws.Activate
+    application.EnableEvents = True: application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(Hata) > 0 Then
+        MsgBox Hata, vbExclamation, "AKSORA | Kurulum"
+    Else
+        MsgBox "Düzenlemeler uygulandı. Stoklar ve geçmiş kayıtları korunmuştur.", vbInformation, "AKSORA"
+    End If
+    Exit Sub
+Hata:
+    Hata = "Kurulum tamamlanamadı: " & Err.Description
+    Resume Cikis
+End Sub
+
+Public Sub AKSORA_V11_KARS_UYARI(ByVal ws As Worksheet)
+    Dim s As Shape, eski As Shape
+    Dim buton As Shape, alt As Shape
+    Dim x As Double, y As Double, genislik As Double
+    Dim metin As String, adim As String
+    Dim renk As Long
+    Dim icerik As Boolean, senaryo As Boolean
+    Dim hataNo As Long, hataMetni As String
+
+    icerik = ws.ProtectContents
+    senaryo = ws.ProtectScenarios
+
+    On Error GoTo Hata
+    adim = "Sayfa korumasını geçici kaldırma"
+    ws.Unprotect Password:=""
+
+    On Error Resume Next
+    Set eski = ws.Shapes("AKSORA_GECMIS_KAYIT_NOTU")
+    Set buton = ws.Shapes("AKSKV1_ARTVIN")
+    Set alt = ws.Shapes("AKSORA_KARS_SABIT_ACIKLAMA")
+    On Error GoTo Hata
+
+    adim = "Konum belirleme"
+    x = ws.Columns("O").Left
+    genislik = ws.Range("O1:P1").Width
+    y = 480
+
+    If Not buton Is Nothing Then
+        x = buton.Left
+        y = buton.top + buton.Height + 35
+    End If
+
+    If Not alt Is Nothing Then
+        y = alt.top + alt.Height + 8
+    End If
+
+    If genislik < 100 Then genislik = 240
+    If x < 0 Then x = 0
+    If y < 0 Then y = 480
+
+    adim = "Eski açıklama kutusunu kaldırma"
+    If Not eski Is Nothing Then Set s = eski
+
+    If AKFIX_KARS_GECMIS_FARK >= 0.005 Then
+        metin = "Eski değer geçmişinde " & _
+                AKSORA_SAYI_METNI(AKFIX_KARS_GECMIS_FARK, "#,##0.00") & _
+                " TL kayıt farkı var. Küçük TL değişiklikleri " & _
+                "bu tarihler için kesin değildir."
+        renk = RGB(160, 90, 25)
+    Else
+        metin = "Karşılaştırma, seçili ilin kayıtlı stok geçmişini kullanır. " & _
+                "NEREDEN / NEREYE: aynı malzemenin aynı aralıktaki azalış ve artışları (5 il) eşleştirilir."
+        renk = RGB(85, 103, 123)
+    End If
+
+    adim = "Yeni açıklama kutusunu oluşturma"
+    If s Is Nothing Then Set s = ws.Shapes.AddTextbox( _
+        msoTextOrientationHorizontal, x, y, genislik, 64)
+
+    With s
+        .Name = "AKSORA_GECMIS_KAYIT_NOTU"
+        .Left = x: .top = y: .Width = genislik: .Height = 64
+        .Placement = xlFreeFloating
+        .Locked = True
+        .Fill.Visible = msoFalse
+        .line.Visible = msoFalse
+    End With
+
+    adim = "Açıklama yazısını biçimlendirme"
+    With s.TextFrame
+        .AutoSize = False
+        .MarginLeft = 4
+        .MarginRight = 4
+        .MarginTop = 2
+        .MarginBottom = 2
+        .HorizontalAlignment = xlHAlignCenter
+        .VerticalAlignment = xlVAlignCenter
+        .Characters.Text = metin
+        .Characters.Font.Name = "Aptos"
+        .Characters.Font.Size = 9
+        .Characters.Font.Color = renk
+    End With
+
+    adim = "Bütün illeri güncelle düğmesi"
+    AKSORA_KARS_TOPLU_DUGME ws
+
+Bitir:
+    On Error GoTo KorumaHatasi
+    ws.Protect Password:="", DrawingObjects:=True, _
+        Contents:=icerik, Scenarios:=senaryo, _
+        UserInterfaceOnly:=True, _
+        AllowFiltering:=True, AllowSorting:=True
+
+    On Error GoTo 0
+    If hataNo <> 0 Then
+        Err.Raise hataNo, "AKSORA", hataMetni
+    End If
+    Exit Sub
+
+Hata:
+    hataNo = Err.Number
+    hataMetni = adim & vbCrLf & Err.Description
+    Resume Bitir
+
+KorumaHatasi:
+    hataMetni = hataMetni & vbCrLf & _
+                "Sayfa koruması geri açılamadı: " & Err.Description
+    On Error GoTo 0
+    Err.Raise vbObjectError + 1210, "AKSORA", hataMetni
+End Sub
+Public Sub AKSORA_V12_GIT(ByVal sayfaAdi As String)
+    AKSORA_V13_GIT sayfaAdi
+End Sub
+
+Public Sub AKSORA_V12_YUK_ALT_SABITLE()
+    Dim ws As Worksheet, r As Long, c As Long, son As Long
+    Dim v As Variant
+    Set ws = ThisWorkbook.Worksheets("YÜKLENİCİ_RAPOR")
+    son = AKSORA_SON_SATIR(ws, "A")
+    ' Some older versions used cell text. Remove only matching footer text.
+    For r = 9 To son
+        For c = 1 To 5
+            v = ws.Cells(r, c).Value2
+            If VarType(v) = vbString Then
+                If InStr(1, CStr(v), "Veriler SAP", vbTextCompare) > 0 Then ws.Cells(r, c).ClearContents
+            End If
+        Next c
+    Next r
+    AKSORA_RAPOR_TABLO_BITISI ws.Name
+    AKSORA_RAPOR_ALT_YAZI_YERLESTIR ws.Name
+End Sub
+
+Public Sub AKSORA_V12_BUTON_RENK()
+    With ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_GUNCELLE").Fill
+        .ForeColor.RGB = RGB(9, 45, 62)
+        .BackColor.RGB = RGB(0, 112, 84)
+        .TwoColorGradient msoGradientHorizontal, 1
+    End With
+End Sub
+
+Private Function AK12_ESKI_SEKIL(ByVal s As Shape) As Boolean
+    Dim ad As String, makro As String
+    ad = UCase$(s.Name)
+    On Error Resume Next
+    makro = UCase$(s.OnAction)
+    On Error GoTo 0
+    AK12_ESKI_SEKIL = (Left$(ad, 13) = "AKSORA_SECIM_" Or _
+        Left$(ad, 12) = "AKSORA_ZOOM_" Or _
+        InStr(makro, "AKSORA_ZOOM_ARTIR") > 0 Or _
+        InStr(makro, "AKSORA_ZOOM_AZALT") > 0 Or _
+        InStr(makro, "AKSORA_ZOOM_SIFIRLA") > 0)
+End Function
+
+Private Sub AK12_KONTROL_SIL(ByVal ws As Worksheet)
+    Dim i As Long, Bulundu As Boolean, acildi As Boolean
+    Dim cizim As Boolean, icerik As Boolean, senaryo As Boolean, secim As Long
+    Dim izin(1 To 11) As Boolean, no As Long, metin As String
+    For i = 1 To ws.Shapes.Count
+        If AK12_ESKI_SEKIL(ws.Shapes(i)) Then Bulundu = True: Exit For
+    Next i
+    If Not Bulundu Then Exit Sub
+    On Error GoTo Hata
+    cizim = ws.ProtectDrawingObjects: icerik = ws.ProtectContents
+    senaryo = ws.ProtectScenarios: secim = ws.EnableSelection
+    If cizim And Not ws.ProtectionMode Then
+        With ws.Protection
+            izin(1) = .AllowFiltering: izin(2) = .AllowSorting
+            izin(3) = .AllowFormattingCells: izin(4) = .AllowFormattingColumns
+            izin(5) = .AllowFormattingRows: izin(6) = .AllowInsertingColumns
+            izin(7) = .AllowInsertingRows: izin(8) = .AllowInsertingHyperlinks
+            izin(9) = .AllowDeletingColumns: izin(10) = .AllowDeletingRows
+            izin(11) = .AllowUsingPivotTables
+        End With
+        ws.Unprotect Password:=""
+        acildi = True
+    End If
+    For i = ws.Shapes.Count To 1 Step -1
+        If AK12_ESKI_SEKIL(ws.Shapes(i)) Then ws.Shapes(i).Delete
+    Next i
+Cikis:
+    If acildi Then
+        ws.Protect Password:="", DrawingObjects:=cizim, Contents:=icerik, _
+            Scenarios:=senaryo, UserInterfaceOnly:=True, _
+            AllowFiltering:=izin(1), AllowSorting:=izin(2), _
+            AllowFormattingCells:=izin(3), AllowFormattingColumns:=izin(4), _
+            AllowFormattingRows:=izin(5), AllowInsertingColumns:=izin(6), _
+            AllowInsertingRows:=izin(7), AllowInsertingHyperlinks:=izin(8), _
+            AllowDeletingColumns:=izin(9), AllowDeletingRows:=izin(10), _
+            AllowUsingPivotTables:=izin(11)
+        ws.EnableSelection = secim
+    End If
+    If no <> 0 Then Err.Raise no, "AK12_KONTROL_SIL", ws.Name & ": " & metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    ' The restore path must still run, but a restore failure must not loop.
+    On Error GoTo 0
+    GoTo Cikis
+End Sub
+
+Public Sub AKSORA_V12_GORSEL_ONAR()
+    Dim adim As String
+    On Error GoTo Hata
+
+    adim = "1 - Eski zoom kutularını kaldırma"
+    AKSORA_V11_ESKI_KONTROL_SIL
+
+    adim = "2 - Bütün illeri güncelle butonu"
+    AKSORA_V11_ARAMA_DUGME
+
+    adim = "3 - İl tarihlerini gösterme"
+    AKSORA_V11_ARAMA_TARIH
+
+    adim = "4 - Karşılaştırma açıklaması"
+    AKSORA_V11_KARS_UYARI _
+        ThisWorkbook.Worksheets("STOK_KARŞILAŞTIRMA")
+
+    adim = "5 - Yüklenici raporu alt yazısı"
+    AKSORA_V12_YUK_ALT_SABITLE
+
+    adim = "6 - Kapak tarihi"
+    AKSORA_V10_TARIH_GOSTER
+    Exit Sub
+
+Hata:
+    Err.Raise Err.Number, "AKSORA", _
+              adim & vbCrLf & Err.Description
+End Sub
+
+Public Sub AKSORA_V12_KUR()
+    Dim sc As Boolean, ev As Boolean, ws As Worksheet, adres As String
+    Dim r As Long, c As Long, Hata As String
+    sc = application.ScreenUpdating: ev = application.EnableEvents
+    On Error GoTo Hata
+    Set ws = ActiveSheet: adres = ActiveCell.Address
+    r = ActiveWindow.ScrollRow: c = ActiveWindow.ScrollColumn
+    application.ScreenUpdating = False: application.EnableEvents = False
+    AKSORA_V12_GORSEL_ONAR
+Cikis:
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Activate
+        If ws.EnableSelection <> xlNoSelection Then ws.Range(adres).Select
+        ActiveWindow.ScrollRow = r: ActiveWindow.ScrollColumn = c
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    On Error GoTo 0
+    If Len(Hata) > 0 Then
+        MsgBox "Görsel düzenleme tamamlanamadı: " & Hata, vbExclamation, "AKSORA"
+    Else
+        MsgBox "Altı düzenleme uygulandı. Stoklar ve geçmiş kayıtları değiştirilmedi.", vbInformation, "AKSORA"
+    End If
+    Exit Sub
+Hata:
+    Hata = Err.Description
+    Resume Cikis
+End Sub
+
+
+Private Function AK14_GECEN_SURE(ByVal bas As Double) As Double
+    Dim sure As Double
+    sure = Timer - bas
+    If sure < 0 Then sure = sure + 86400#
+    AK14_GECEN_SURE = sure
+End Function
+
+Private Sub AK14_SURE_KAYDET(ByVal il As String, ByVal sap As Double, _
+                           ByVal excel As Double, ByVal basarili As Boolean)
+    ' Diagnostics must never interrupt the stock transaction or its rollback.
+    On Error Resume Next
+    If mAK14Sureler Is Nothing Then Set mAK14Sureler = CreateObject("Scripting.Dictionary")
+    If excel < 0 Then excel = 0
+    mAK14Sureler(il) = Array(sap, excel, basarili)
+    Debug.Print "AKSORA | " & il & " | SAP: " & AKSORA_SAYI_METNI(sap, "0.0") & _
+                " sn | Excel: " & AKSORA_SAYI_METNI(excel, "0.0") & " sn | Başarılı: " & basarili
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_GUNCELLEME_SURELERI()
+    Dim metin As String, il As Variant, veri As Variant
+    If AKSORA_V11_MESGUL Then Exit Sub
+    If mAK14Sureler Is Nothing Then
+        MsgBox "Bu açılışta henüz bütün iller güncellenmedi.", vbInformation, "AKSORA | Süreler"
+        Exit Sub
+    End If
+    metin = "Son toplu güncelleme: " & AKSORA_SAYI_METNI(mAK14Toplam, "0.0") & " sn" & vbCrLf
+    For Each il In Array("ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN")
+        If mAK14Sureler.Exists(CStr(il)) Then
+            veri = mAK14Sureler(CStr(il))
+            metin = metin & vbCrLf & CStr(il) & ": SAP " & AKSORA_SAYI_METNI(veri(0), "0.0") & _
+                    " sn / Excel " & AKSORA_SAYI_METNI(veri(1), "0.0") & " sn"
+            If Not CBool(veri(2)) Then metin = metin & " (tamamlanmadı)"
+        End If
+    Next il
+    metin = metin & vbCrLf & vbCrLf & "Son arayüz yenileme: " & AKSORA_SAYI_METNI(mAK14Arayuz, "0.0") & " sn" & _
+            vbCrLf & "Hata olan ilde süreler kısmi olabilir."
+    MsgBox metin, vbInformation, "AKSORA | Güncelleme Süreleri"
+End Sub
+
+Public Sub AKSORA_TOPLU_SURE_TIK(Optional ByVal zorla As Boolean = False)
+    AKSORA_ADMIN_DURUM vbNullString
+    Dim saniye As Long, gecen As Double, s As Shape
+    If AKSORA_MUSTERI_TOPLU_AKTIF Then
+        AKSORA_MUSTERI_TOPLU_TIK zorla
+        Exit Sub
+    End If
+    If Not mTopluSaatAktif Then Exit Sub
+    gecen = Timer - mTopluSaatBas
+    If gecen < 0 Then gecen = gecen + 86400#
+    saniye = CLng(Fix(gecen))
+    If Not zorla And saniye = mTopluSonSaniye Then Exit Sub
+    ' UI-only update: no event, calculation, stock or SAP state changes.
+    On Error Resume Next
+    If AKSORA_PANEL_CANLI Then AKSORA_PANEL_SERIT "Güncelleniyor  •  Bütün iller  •  " & mTopluDurumMetni & _
+        "  •  Geçen süre " & Format$(saniye \ 60, "00") & ":" & Format$(saniye Mod 60, "00")
+    Set s = ThisWorkbook.Worksheets("MALZEME_ARA").Shapes("AKSORA_TOPLU_DURUM")
+    If s Is Nothing Then Exit Sub
+    s.TextFrame2.TextRange.Text = mTopluDurumMetni & vbLf & _
+        "Geçen süre: " & Format$(saniye \ 60, "00") & ":" & Format$(saniye Mod 60, "00")
+    mTopluSonSaniye = saniye
+    On Error GoTo 0
+End Sub
+
+
+Public Function AKSORA_MUSTERI_IL_VERI_GUNCELLE(ByVal il As String, ByRef bilgi As String) As Boolean
+    AKSORA_MUSTERI_IL_VERI_GUNCELLE = AK11_IL_GUNCELLE(il, bilgi)
+End Function
+
+'==========================================================
+' HIZLI TOPLU OKUMA
+' CDP ve EPP'de birer MB52 (bes il birden, tum depolar) calisir; liste arka
+' planda metin dosyasi olarak alinir (Excel acilmaz). Il / normal / ilce /
+' yuklenici ayrimi bellekte depo koduna gore yapilir. Herhangi bir adim
+' basarisizsa o sistem icin eski il il okuma yontemi kullanilir.
+'==========================================================
+' MB52/MB51 secim ekrani: SAP hafizasindan (MAT parametresi) gelen malzeme filtresi temizlenir.
+' Atil okumasinda yapistirilan malzeme listesi sonraki stok sorgularini tek malzemeye daraltmasin.
+Public Sub AKSORA_SAP_MALZEME_TEMIZLE(ByVal ses As Object)
+    On Error Resume Next
+    ses.FindById("wnd[0]/usr/ctxtMATNR-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtMATNR-HIGH").Text = vbNullString
+    Err.Clear
+End Sub
+
+Public Function AKHZ_TAMAM() As Boolean
+    AKHZ_TAMAM = mHzHazir(1) And mHzHazir(2)
+End Function
+
+Public Sub AKHZ_TEMIZLE()
+    mHzVeri(1) = Empty: mHzVeri(2) = Empty
+    mHzHazir(1) = False: mHzHazir(2) = False
+    mHzIl(1) = vbNullString: mHzIl(2) = vbNullString
+End Sub
+
+' Tek il guncellemesi (panel ve stok sayfasi dugmeleri): sistem basina ilin MB52 listesi
+' bir kez metin olarak alinir, CDP/EPP normal-ilce-yuklenici adimlari bellekten dilimlenir.
+' False donerse cagiran fonksiyon eski yontemle devam eder.
+Public Function AKHZ_TEK_AL(ByVal adim As Long, ByRef veri As Variant, ByRef satir As Long, _
+    ByRef sutun As Long, ByRef hataMetni As String) As Boolean
+    Dim il As String, i As Long, sistem As String, v As Variant, mesaj As String, gecen As Double
+    On Error GoTo Hata
+    il = AKSORA_AKTIF_IL()
+    i = IIf(adim Mod 2 = 1, 1, 2)
+    sistem = IIf(i = 1, "CDP", "EPP")
+    If mHzHazir(i) And mHzIl(i) = "*" Then
+        AKHZ_TEK_AL = (AKHZ_VERI(adim, il, veri, satir, sutun, hataMetni) = 1)
+        Exit Function
+    End If
+    gecen = Timer - mHzZaman(i)
+    If gecen < 0 Then gecen = gecen + 86400#
+    ' Ayni il icin az once basarisiz olduysa tekrar denenmez (eski yontem).
+    If mHzIl(i) = "X:" & il And gecen < 180 Then Exit Function
+    If Not (mHzHazir(i) And mHzIl(i) = il And gecen < 180) Then
+        mHzHazir(i) = False
+        CORE_DURUM sistem & " | " & il & " stokları SAP'den tek sorguda alınıyor..."
+        v = AKHZ_SISTEM_OKU(sistem, mesaj, AKSORA_IL_TESIS(il, sistem))
+        mHzZaman(i) = Timer
+        If Not IsArray(v) Then
+            mHzIl(i) = "X:" & il
+            AKSORA_SAP_TESHIS_YAZ "Tek il hızlı okuma | " & il & " " & sistem & " | olmadı: " & mesaj
+            Exit Function
+        End If
+        mHzVeri(i) = v: mHzHazir(i) = True: mHzIl(i) = il
+        AKSORA_SAP_TESHIS_YAZ "Tek il hızlı okuma | " & il & " " & sistem & " | tamam (" & UBound(v, 1) & " satır)"
+    End If
+    AKHZ_TEK_AL = (AKHZ_VERI(adim, il, veri, satir, sutun, hataMetni) = 1)
+    Exit Function
+Hata:
+    AKHZ_TEK_AL = False
+End Function
+
+Public Function AKHZ_ON_YUKLE() As String
+    Dim i As Long, sistem As String, v As Variant, mesaj As String, sonuc As String, bas As Double
+    AKHZ_TEMIZLE
+    mOrtakVeri(1) = Empty: mOrtakVeri(2) = Empty
+    For i = 1 To 2
+        sistem = IIf(i = 1, "CDP", "EPP")
+        mesaj = vbNullString: bas = Timer
+        AK11_DURUM sistem & " | Beş ilin stokları tek seferde alınıyor..."
+        v = AKHZ_SISTEM_OKU(sistem, mesaj)
+        If IsArray(v) Then
+            mHzVeri(i) = v: mHzHazir(i) = True: mHzIl(i) = "*"
+            mOrtakVeri(i) = v: mOrtakZaman(i) = Now
+            sonuc = sonuc & sistem & ": 5 il tek sorguda alındı (" & AKSORA_SAYI_METNI(AK14_GECEN_SURE(bas), "0.0") & " sn)" & vbCrLf
+        Else
+            sonuc = sonuc & sistem & ": hızlı okuma yapılamadı, il il okundu (" & mesaj & ")" & vbCrLf
+        End If
+        AKSORA_SAP_TESHIS_YAZ "Toplu hızlı okuma | " & sistem & " | " & IIf(mHzHazir(i), "tamam", "olmadı: " & mesaj)
+    Next i
+    AKHZ_ON_YUKLE = sonuc
+End Function
+
+Private Sub AKHZ_BEKLE(ByVal saniye As Double)
+    Dim bas As Double
+    bas = Timer
+    Do While AK14_GECEN_SURE(bas) < saniye
+        DoEvents
+        AKSORA_TOPLU_SURE_TIK
+    Loop
+End Sub
+
+Private Function AKHZ_GRID(ByVal ses As Object, ByVal saniye As Double) As Object
+    Dim bas As Double, g As Object
+    bas = Timer
+    Do
+        Set g = Nothing
+        On Error Resume Next
+        If Not ses.Busy Then Set g = ses.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False)
+        On Error GoTo 0
+        If Not g Is Nothing Then Set AKHZ_GRID = g: Exit Function
+        If AK14_GECEN_SURE(bas) > saniye Then Exit Function
+        AKHZ_BEKLE 0.2
+    Loop
+End Function
+
+Private Function AKHZ_PANEL(ByVal ses As Object) As Boolean
+    Dim duzen As Object, i As Long, ad As String, tanim As String, bulunan As Long, bas As Double
+    On Error GoTo Hata
+    ses.FindById("wnd[0]/tbar[1]/btn[33]").Press
+    bas = Timer
+    Do While ses.FindById("wnd[1]", False) Is Nothing
+        If AK14_GECEN_SURE(bas) > 15 Then Exit Function
+        AKHZ_BEKLE 0.1
+    Loop
+    Set duzen = ses.FindById("wnd[1]/usr/subSUB_CONFIGURATION:SAPLSALV_CUL_LAYOUT_CHOOSE:0500/cntlD500_CONTAINER/shellcont/shell")
+    bulunan = -1
+    For i = 0 To CLng(duzen.RowCount) - 1
+        ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
+        tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
+        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
+            bulunan = i: Exit For
+        End If
+    Next i
+    If bulunan < 0 Then ses.FindById("wnd[1]").SendVKey 12: Exit Function
+    duzen.SetCurrentCell bulunan, "TEXT"
+    duzen.SelectedRows = CStr(bulunan)
+    duzen.ClickCurrentCell
+    AKHZ_BEKLE 0.3
+    AKHZ_PANEL = True
+    Exit Function
+Hata:
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+End Function
+
+' Hizli okuma: ilk deneme SAP ekran durumundan (ornek: atil okumasindan hemen sonra) dusebilir;
+' bir kez daha denenir. Dusulen adim teshise yazilir.
+Private Function AKHZ_SISTEM_OKU(ByVal sistem As String, ByRef mesaj As String, _
+    Optional ByVal tekTesis As String = "") As Variant
+    Dim v As Variant
+    v = AKHZ_SISTEM_OKU_1(sistem, mesaj, tekTesis)
+    If Not IsArray(v) And InStr(mesaj, "619") > 0 Then
+        AKSORA_SAP_TESHIS_YAZ "Hızlı okuma | " & sistem & " | ilk deneme: " & mesaj & " | yeniden deneniyor"
+        mesaj = vbNullString
+        AKHZ_BEKLE 1
+        v = AKHZ_SISTEM_OKU_1(sistem, mesaj, tekTesis)
+    End If
+    AKHZ_SISTEM_OKU = v
+End Function
+
+Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String, _
+    Optional ByVal tekTesis As String = "") As Variant
+    Dim ses As Object, alv As Object, h As String, v As Variant, r As Long, c As Long, adim As String
+    Dim baslik As Long, dolu As Long, satirSayisi As Long, veriSatiri As Long, kayma As Long, adet As Long, t As String
+    On Error GoTo Hata
+    Set ses = SAP_SESSION_AL(sistem, h)
+    If ses Is Nothing Then mesaj = "SAP oturumu bulunamadı " & h: Exit Function
+    adim = "MB52 açılışı"
+    ' Onceki islemden kalan acik pencere (wnd[1]) secim ekranini kilitler: kapatilir.
+    On Error Resume Next
+    If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+    On Error GoTo Hata
+    ses.StartTransaction "MB52"
+    AKSORA_SAP_MALZEME_TEMIZLE ses
+    AKHZ_BEKLE 0.3
+    adim = "MB52 üretim yeri"
+    If Len(tekTesis) > 0 Then
+        ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = tekTesis
+        ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = vbNullString
+    Else
+        ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = AKSORA_IL_TESIS("RIZE", sistem)
+        ses.FindById("wnd[0]/usr/ctxtWERKS-HIGH").Text = AKSORA_IL_TESIS("ARTVIN", sistem)
+    End If
+    adim = "MB52 depo alanı"
+    ses.FindById("wnd[0]/usr/ctxtLGORT-LOW").Text = vbNullString
+    ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
+    ses.FindById("wnd[0]").SendVKey 0
+    AKHZ_BEKLE 0.3
+    adim = "MB52 çalıştırma"
+    ses.FindById("wnd[0]").SendVKey 8
+    Set alv = AKHZ_GRID(ses, 900)
+    If alv Is Nothing Then mesaj = "MB52 listesi açılmadı": Exit Function
+    If Not AKHZ_PANEL(ses) Then mesaj = "PANEL düzeni seçilemedi": Exit Function
+    Set alv = AKHZ_GRID(ses, 120)
+    If alv Is Nothing Then mesaj = "PANEL listesi açılmadı": Exit Function
+    On Error Resume Next
+    alv.PressToolbarButton "&DELETE_FILTER"
+    Err.Clear
+    On Error GoTo Hata
+    Set alv = AKHZ_GRID(ses, 60)
+    If alv Is Nothing Then mesaj = "Liste hazır olmadı": Exit Function
+    If CLng(alv.ColumnOrder.Count) < 12 Then mesaj = "PANEL düzeninde 12 sütun yok": Exit Function
+    adim = "liste dışa aktarma"
+    satirSayisi = CLng(alv.RowCount)
+    v = AKSORA_ALV_METIN_AL(ses, alv, "TOPLU_" & sistem)
+    If Not IsArray(v) Then mesaj = "Liste metin dosyası olarak alınamadı": Exit Function
+    If UBound(v, 2) < 12 Then mesaj = "Metin dosyasında 12 sütun yok": Exit Function
+    ' Baslik satiri: ilk satirlarda en az 4 dolu hucre.
+    For r = 1 To application.Min(15, UBound(v, 1))
+        dolu = 0
+        For c = 1 To 12
+            If Len(Trim$(CStr(v(r, c)))) > 0 Then dolu = dolu + 1
+        Next c
+        If dolu >= 4 Then baslik = r: Exit For
+    Next r
+    If baslik = 0 Then mesaj = "Metin dosyasında başlık bulunamadı": Exit Function
+    ' Uretim yeri sutunu bulunur; basta fazladan sutun varsa tum satir kaydirilir.
+    kayma = -1
+    For c = 1 To application.Min(6, UBound(v, 2))
+        adet = 0
+        For r = baslik + 1 To application.Min(UBound(v, 1), baslik + 300)
+            If AKHZ_TESIS_MI(AKHZ_TEMIZ(v(r, c)), sistem) Then adet = adet + 1
+        Next r
+        If adet > 0 Then kayma = c - 1: Exit For
+    Next c
+    t = vbNullString
+    For c = 1 To application.Min(14, UBound(v, 2)): t = t & " | " & AKHZ_TEMIZ(v(baslik, c)): Next c
+    AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " başlık:" & t
+    t = vbNullString
+    If UBound(v, 1) > baslik Then
+        For c = 1 To application.Min(14, UBound(v, 2)): t = t & " | " & AKHZ_TEMIZ(v(baslik + 1, c)): Next c
+    End If
+    AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " ilk satır:" & t & " | kayma " & kayma
+    If kayma < 0 Then mesaj = "Üretim yeri sütunu bulunamadı": Exit Function
+    If UBound(v, 2) - kayma < 12 Then mesaj = "Metin dosyasında 12 sütun yok": Exit Function
+    veriSatiri = UBound(v, 1) - baslik
+    ' Eksik satir kabul edilmez: dosya ALV ile birebir ayni olmali.
+    If veriSatiri <> satirSayisi Then
+        mesaj = "Satır sayısı tutmadı (SAP " & satirSayisi & " / dosya " & veriSatiri & ")"
+        Exit Function
+    End If
+    v = AKHZ_KIRP(v, baslik + 1, kayma)
+    ' Dogrulama: uretim yeri + D depo + malzeme dolu en az bir stok satiri olmali.
+    adet = 0
+    For r = 1 To UBound(v, 1)
+        If AKHZ_TESIS_MI(CStr(v(r, 1)), sistem) And Len(CStr(v(r, 7))) > 0 Then
+            If AKSORA_IL_DEPO_GECERLI(UCase$(CStr(v(r, 2))), "NORMAL", "ARTVIN") Then adet = adet + 1
+        End If
+    Next r
+    If adet = 0 Then mesaj = "Depo / malzeme sütunları doğrulanamadı": Exit Function
+    AKHZ_SISTEM_OKU_1 = v
+    Exit Function
+Hata:
+    mesaj = "Hata " & Err.Number & ": " & Err.Description & " [" & adim & "]"
+    On Error Resume Next
+    If Not ses Is Nothing Then
+        If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 12
+    End If
+End Function
+
+' Yatirim birimi: ilin CDP/EPP MB52 listesi (PANEL duzeni, 12 sutun, tum depolar).
+Public Function AKSORA_YATIRIM_MB52(ByVal sistem As String, ByVal il As String, ByRef mesaj As String) As Variant
+    Dim i As Long
+    ' Zincirde (Malzeme tum iller okumasindan hemen sonra) ayni ham veri kullanilir; Y_DONUSTUR tesise gore suzer.
+    If AKSORA_ORTAK_AKTIF Then
+        i = IIf(UCase$(sistem) = "CDP", 1, 2)
+        If IsArray(mOrtakVeri(i)) Then
+            If Abs(Now - mOrtakZaman(i)) < TimeSerial(0, 30, 0) Then AKSORA_YATIRIM_MB52 = mOrtakVeri(i): Exit Function
+        End If
+    End If
+    AKSORA_YATIRIM_MB52 = AKHZ_SISTEM_OKU(sistem, mesaj, AKSORA_IL_TESIS(il, sistem))
+End Function
+
+' Iki sistemin (CDP + EPP) ortak verisi hazir ve taze mi.
+Public Function AKSORA_ORTAK_HAZIR() As Boolean
+    Dim i As Long
+    For i = 1 To 2
+        If Not IsArray(mOrtakVeri(i)) Then Exit Function
+        If Abs(Now - mOrtakZaman(i)) >= TimeSerial(0, 30, 0) Then Exit Function
+    Next i
+    AKSORA_ORTAK_HAZIR = True
+End Function
+
+Public Sub AKSORA_ORTAK_BIRAK()
+    mOrtakVeri(1) = Empty: mOrtakVeri(2) = Empty
+    AKSORA_ORTAK_AKTIF = False
+End Sub
+
+' Malzeme tum iller guncellemesinden sonra: Yatirim ve Ilce birimleri ayni SAP verisinden tamamlanir.
+Private Function AK_ORTAK_ZINCIR() As String
+    Dim eski As String, ac As Boolean
+    On Error Resume Next
+    If Not AKSORA_ORTAK_HAZIR() Then Exit Function
+    eski = AKSORA_ADMIN_SONUC: AKSORA_ADMIN_SONUC = vbNullString
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM + İLÇE", "Aynı SAP verisinden Yatırım birimi güncelleniyor...", 0.1)
+    AKSORA_ADMIN_TOPLU = True: AKSORA_ORTAK_AKTIF = True
+    AKSORA_YATIRIM_BUTUN_ILLER
+    AKSORA_BEKLE_ILERLE 0.55, "Aynı SAP verisinden İlçe birimi güncelleniyor..."
+    AKSORA_ILCE_BUTUN_ILLER
+    AKSORA_ADMIN_TOPLU = False
+    AKSORA_ORTAK_BIRAK
+    If ac Then AKSORA_BEKLE_KAPAT
+    AK_ORTAK_ZINCIR = vbCrLf & "Aynı SAP verisiyle (ek sorgu yapılmadan):" & vbCrLf & AKSORA_ADMIN_SONUC
+    AKSORA_ADMIN_SONUC = eski
+    application.ScreenUpdating = True
+    On Error GoTo 0
+End Function
+
+Public Function AKSORA_YATIRIM_SAYI(ByVal v As Variant) As Double
+    AKSORA_YATIRIM_SAYI = AKHZ_SAYI(v)
+End Function
+
+Private Function AKHZ_KIRP(ByRef v As Variant, ByVal ilk As Long, ByVal kayma As Long) As Variant
+    Dim s() As Variant, r As Long, c As Long
+    ReDim s(1 To UBound(v, 1) - ilk + 1, 1 To 12)
+    For r = ilk To UBound(v, 1)
+        For c = 1 To 12: s(r - ilk + 1, c) = AKHZ_TEMIZ(v(r, c + kayma)): Next c
+    Next r
+    AKHZ_KIRP = s
+End Function
+
+Private Function AKHZ_TEMIZ(ByVal v As Variant) As String
+    Dim t As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    t = Replace(CStr(v), ChrW(160), " ")
+    t = Trim$(t)
+    If Len(t) >= 2 And Left$(t, 1) = Chr$(34) And Right$(t, 1) = Chr$(34) Then t = Trim$(Mid$(t, 2, Len(t) - 2))
+    AKHZ_TEMIZ = t
+End Function
+
+Private Function AKHZ_TESIS_MI(ByVal t As String, ByVal sistem As String) As Boolean
+    Dim il As Variant
+    For Each il In Array("RIZE", "TRABZON", "GUMUSHANE", "GIRESUN", "ARTVIN")
+        If t = AKSORA_IL_TESIS(CStr(il), sistem) Then AKHZ_TESIS_MI = True: Exit Function
+    Next il
+End Function
+
+Private Function AKHZ_SAYI(ByVal v As Variant) As Double
+    Dim t As String, eksi As Boolean
+    If VarType(v) = vbDouble Or VarType(v) = vbLong Or VarType(v) = vbInteger Or VarType(v) = vbCurrency Then
+        AKHZ_SAYI = CDbl(v): Exit Function
+    End If
+    t = Replace(Replace(Trim$(CStr(v)), ChrW(160), ""), " ", "")
+    If Len(t) = 0 Then Exit Function
+    If Right$(t, 1) = "-" Then eksi = True: t = Left$(t, Len(t) - 1)
+    If Left$(t, 1) = "-" Then eksi = True: t = Mid$(t, 2)
+    If InStr(t, ",") > 0 Then
+        If InStrRev(t, ".") > InStrRev(t, ",") Then
+            t = Replace(t, ",", "")
+        Else
+            t = Replace(Replace(t, ".", ""), ",", ".")
+        End If
+    ElseIf t Like "*#.###" And Not t Like "*.*.*" Then
+        ' Yalniz binlik ayirac (1.234) Turkce gosterimde tam sayidir.
+        t = Replace(t, ".", "")
+    ElseIf t Like "*.*.*" Then
+        ' Birden cok nokta: binlik ayiraclari (1.234.567).
+        t = Replace(t, ".", "")
+    End If
+    ' Tek nokta ve ardinda 3 hane degilse (1234.56) ondalik noktasidir: Val dogru okur (eskiden 123456 olurdu).
+    If Not IsNumeric(Replace(t, ".", "")) Then Err.Raise vbObjectError + 1990, , "Sayı okunamadı: " & CStr(v)
+    AKHZ_SAYI = Val(t)
+    If eksi Then AKHZ_SAYI = -AKHZ_SAYI
+End Function
+
+' 0 = hizli veri yok (eski yontem), 1 = veri hazir, 2 = gecerli satir yok.
+Public Function AKHZ_VERI(ByVal adim As Long, ByVal il As String, ByRef veri As Variant, _
+    ByRef satir As Long, ByRef sutun As Long, ByRef hataMetni As String) As Long
+    Dim i As Long, v As Variant, tesis As String, tur As String, sistem As String
+    Dim r As Long, c As Long, n As Long, sonuc() As Variant, idx() As Long, depo As String
+    On Error GoTo Hata
+    If adim < 1 Or adim > 6 Then Exit Function
+    i = IIf(adim Mod 2 = 1, 1, 2)
+    If Not mHzHazir(i) Then Exit Function
+    sistem = IIf(i = 1, "CDP", "EPP")
+    tur = Choose((adim + 1) \ 2, "NORMAL", "ILCE", "YUKLENICI")
+    tesis = AKSORA_IL_TESIS(il, sistem)
+    v = mHzVeri(i)
+    ReDim idx(1 To UBound(v, 1))
+    For r = 1 To UBound(v, 1)
+        If Trim$(CStr(v(r, 1))) = tesis Then
+            If Len(Trim$(CStr(v(r, 7)))) > 0 Then
+                depo = UCase$(Trim$(CStr(v(r, 2))))
+                If AKSORA_IL_DEPO_GECERLI(depo, tur, il) Then n = n + 1: idx(n) = r
+            End If
+        End If
+    Next r
+    If n = 0 Then
+        ' Bellekte satir yoksa bu adim eski yontemle SAP'den ayrica sorgulanir.
+        AKSORA_SAP_TESHIS_YAZ "Toplu hızlı veri " & il & " " & sistem & " " & tur & ": bellekte satır yok, il il sorgulanıyor"
+        Exit Function
+    End If
+    ReDim sonuc(1 To n, 1 To 12)
+    For r = 1 To n
+        For c = 1 To 12: sonuc(r, c) = Trim$(CStr(v(idx(r), c))): Next c
+        sonuc(r, 2) = UCase$(CStr(sonuc(r, 2)))
+        sonuc(r, 9) = AKHZ_SAYI(sonuc(r, 9))
+        sonuc(r, 11) = AKHZ_SAYI(sonuc(r, 11))
+        If CDbl(sonuc(r, 9)) <> 0 Then sonuc(r, 12) = CDbl(sonuc(r, 11)) / CDbl(sonuc(r, 9)) Else sonuc(r, 12) = 0#
+    Next r
+    veri = sonuc: satir = n: sutun = 12
+    AKHZ_VERI = 1
+    Exit Function
+Hata:
+    ' Okunamayan veri sessizce yazilmaz; bu adim eski yontemle SAP'den tekrar alinir.
+    AKSORA_SAP_TESHIS_YAZ "Toplu hızlı veri " & il & " adım " & adim & ": " & Err.Description
+    AKHZ_VERI = 0
+End Function
+
+' Stok karsilastirma sag paneli: BUTUN ILLERI GUNCELLE (malzeme aramadaki dugmenin aynisi). Iller arasi
+' NEREDEN / NEREYE icin bes il ayni anda guncellenmeli. Bitince karsilastirma sayfasina donulur ve karsilastirilir.
+Public Sub AKSORA_KARS_TOPLU_DUGME(ByVal ws As Worksheet)
+    Dim ref As Shape, nT As Shape, s As Shape, ana As Shape, x As Double, y As Double, w As Double, h As Double
+    On Error Resume Next
+    ws.Shapes("AKSORA_KARS_TOPLU").Delete
+    ws.Shapes("AKSORA_KARS_TOPLU_VURGU").Delete
+    ws.Shapes("AKSORA_KARS_TOPLU_NOT").Delete
+    Set ref = ws.Shapes("AKSKV1_ARTVIN")
+    Set nT = ws.Shapes("AKSORA_GECMIS_KAYIT_NOTU")
+    On Error GoTo 0
+    If ref Is Nothing Then Exit Sub
+    x = ref.Left: w = ref.Width: h = 58
+    If nT Is Nothing Then y = ref.top + ref.Height + 110 Else y = nT.top + nT.Height + 14
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    With s
+        .Name = "AKSORA_KARS_TOPLU"
+        .Adjustments.Item(1) = 0.12
+        .TextFrame2.TextRange.Text = "BÜTÜN İLLERİ GÜNCELLE" & vbLf & "CDP + EPP  |  5 İL"
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 10
+        .TextFrame2.TextRange.Font.bold = msoTrue
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(225, 255, 246)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle
+        .TextFrame2.MarginLeft = 14: .TextFrame2.MarginRight = 10
+        ' Gecis once kurulur, renkler sonra verilir (aksi halde bazi Excel surumlerinde ikinci renk beyaz kalir).
+        .Fill.Visible = msoTrue: .Fill.Solid
+        .Fill.TwoColorGradient msoGradientHorizontal, 1
+        .Fill.ForeColor.RGB = RGB(9, 45, 62)
+        .Fill.BackColor.RGB = RGB(0, 112, 84)
+        ' Sekil stilinden kalan ara (beyaz) gecis noktalari silinir: yalniz iki renk kalir.
+        Do While .Fill.GradientStops.Count > 2
+            .Fill.GradientStops.Delete 2
+        Loop
+        .Fill.GradientStops(1).Color.RGB = RGB(9, 45, 62)
+        .Fill.GradientStops(.Fill.GradientStops.Count).Color.RGB = RGB(0, 112, 84)
+        .line.Visible = msoTrue
+        .line.ForeColor.RGB = RGB(28, 211, 163): .line.Weight = 1.25
+        .Shadow.Visible = msoTrue
+        .Shadow.ForeColor.RGB = RGB(10, 39, 50)
+        .Shadow.Transparency = 0.8
+        .Shadow.OffsetX = 1: .Shadow.OffsetY = 2
+        .Placement = xlFreeFloating
+        .Locked = True
+        .OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_KARS_BUTUN_ILLER"
+    End With
+    Set ana = s
+    Set s = ws.Shapes.AddShape(msoShapeRectangle, x + 8, y + 12, 3, h - 24)
+    With s
+        .Name = "AKSORA_KARS_TOPLU_VURGU"
+        .Fill.ForeColor.RGB = RGB(48, 231, 179): .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+        .OnAction = ana.OnAction
+    End With
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y + h + 4, w, 44)
+    With s
+        .Name = "AKSORA_KARS_TOPLU_NOT"
+        .TextFrame2.TextRange.Text = "İller arası nakillerin (NEREDEN / NEREYE) görünmesi için beş il aynı anda güncellenmelidir."
+        .TextFrame2.TextRange.Font.Name = "Aptos"
+        .TextFrame2.TextRange.Font.Size = 9
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(85, 103, 123)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextFrame2.WordWrap = msoTrue
+        .Fill.Visible = msoFalse: .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+    End With
+End Sub
+
+' Karsilastirma sayfasindan: bes il guncellenir, sonra karsilastirma sayfasi acilir, tarihler yenilenir ve
+' en son kayit ile onceki gunun kaydi karsilastirilir.
+Public Sub AKSORA_KARS_BUTUN_ILLER()
+    Dim ws As Worksheet
+    AKSORA_BUTUN_ILLERI_GUNCELLE
+    If AKSORA_V11_MESGUL Then Exit Sub
+    On Error GoTo Hata
+    STOK_KARS_PANEL_AC
+    Set ws = ThisWorkbook.Worksheets("STOK_KARŞILAŞTIRMA")
+    If ActiveSheet Is ws Then
+        AKSORA_KARS_IL_GECIS_YENILE
+        If Len(CStr(ws.Range("B6").Value2)) > 0 And Len(CStr(ws.Range("I6").Value2)) > 0 Then STOK_KARSILASTIR
+    End If
+    Exit Sub
+Hata:
+    MsgBox "Güncelleme tamamlandı; karşılaştırma açılamadı: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+'---------- YAYIN: ortak klasore izleme kopyasi ----------
+' Admin (SAP'ye bagli) AKSORA her guncellemeden sonra ortak klasore "AKSORA_YAYIN.xlsm" kaydeder.
+' Bu kopya izleme modundadir (dosya adinda YAYIN): butun sayfalar, filtreler, Excel'e aktar ve cikti calisir;
+' SAP'ye baglanilmaz. Birim sifreleri aynen gecerlidir. Klasor bir kez secilir (_AKSORA_YAYIN_KLASOR).
+
+Public Function AKSORA_YAYIN_MODU() As Boolean
+    AKSORA_YAYIN_MODU = (InStr(1, ThisWorkbook.Name, "AKSORA_YAYIN", vbTextCompare) > 0)
+End Function
+
+Public Sub AKSORA_YAYIN_UYARI()
+    MsgBox "Bu dosya AKSORA YAYIN kopyasıdır (izleme modu)." & vbCrLf & vbCrLf & _
+        "SAP güncellemesi bu kopyada kapalıdır; veriler AKSORA yöneticisi tarafından güncellenip ortak klasöre yayınlanır." & vbCrLf & _
+        "Bütün sayfalar, filtreler, Excel'e aktar ve çıktı kullanılabilir." & vbCrLf & vbCrLf & _
+        "En güncel veri için dosyayı kapatıp ortak klasörden yeniden açın.", vbInformation, "AKSORA | YAYIN"
+End Sub
+
+Private Function AK_YAYIN_KLASOR() As String
+    Dim p As String
+    On Error Resume Next
+    p = ThisWorkbook.names("_AKSORA_YAYIN_KLASOR").RefersTo
+    On Error GoTo 0
+    If Len(p) >= 3 Then p = Mid$(p, 3, Len(p) - 3): p = Replace(p, """""", """")
+    AK_YAYIN_KLASOR = p
+End Function
+
+Private Sub AK_YAYIN_KLASOR_YAZ(ByVal p As String)
+    ThisWorkbook.names.Add Name:="_AKSORA_YAYIN_KLASOR", RefersTo:="=""" & Replace(p, """", """""") & """", Visible:=False
+End Sub
+
+' Yayin klasorunu sec / degistir / kapat (Alt+F8: AKSORA_YAYIN_AYAR).
+Public Sub AKSORA_YAYIN_AYAR()
+    Dim p As String, fd As Object, cvp As VbMsgBoxResult
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    p = AK_YAYIN_KLASOR()
+    cvp = MsgBox("Ortak klasöre yayın: " & IIf(Len(p) = 0 Or p = "YOK", "KAPALI", p) & vbCrLf & vbCrLf & _
+        "EVET: klasör seç (yayın açılır)" & vbCrLf & "HAYIR: yayını kapat" & vbCrLf & "İPTAL: değiştirme", _
+        vbQuestion + vbYesNoCancel, "AKSORA | YAYIN AYARI")
+    If cvp = vbCancel Then Exit Sub
+    If cvp = vbNo Then AK_YAYIN_KLASOR_YAZ "YOK": MsgBox "Yayın kapatıldı.", vbInformation, "AKSORA": Exit Sub
+    Set fd = application.FileDialog(4)
+    fd.Title = "AKSORA yayın klasörü (ortak alan)"
+    fd.AllowMultiSelect = False
+    If Len(p) > 0 And p <> "YOK" Then fd.InitialFileName = p & application.PathSeparator
+    If fd.Show <> -1 Then Exit Sub
+    p = fd.SelectedItems(1)
+    AK_YAYIN_KLASOR_YAZ p
+    If MsgBox("Yayın klasörü: " & p & vbCrLf & vbCrLf & "Şimdi yayınlansın mı?", vbQuestion + vbYesNo, "AKSORA | YAYIN") = vbYes Then AKSORA_YAYINLA
+End Sub
+
+' Elle yayin (Alt+F8: AKSORA_YAYINLA).
+Public Sub AKSORA_YAYINLA()
+    Dim m As String
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    If Len(AK_YAYIN_KLASOR()) = 0 Or AK_YAYIN_KLASOR() = "YOK" Then AKSORA_YAYIN_AYAR: Exit Sub
+    m = AKSORA_YAYINLA_SESSIZ()
+    MsgBox Mid$(m, 3), IIf(InStr(m, "yapılamadı") > 0, vbExclamation, vbInformation), "AKSORA | YAYIN"
+End Sub
+
+' Guncelleme sonunda cagrilir; sonuc metnine eklenecek satir doner. Klasor hic secilmediyse bir kez sorulur.
+Public Function AKSORA_YAYINLA_SESSIZ() As String
+    Dim p As String, hedef As String, alt As String, kok As String, f As Integer, kim As String, no As Long
+    On Error GoTo Hata
+    If AKSORA_YAYIN_MODU() Then Exit Function
+    p = AK_YAYIN_KLASOR()
+    If p = "YOK" Then Exit Function
+    If Len(p) = 0 Then
+        If MsgBox("AKSORA'yı ortak klasörde yayınlamak ister misiniz?" & vbCrLf & vbCrLf & _
+            "Her güncellemeden sonra ortak alana AKSORA_YAYIN.xlsm (SAP'siz izleme kopyası) kaydedilir; " & _
+            "yetkili herkes birim şifresiyle açıp kullanır." & vbCrLf & vbCrLf & _
+            "EVET: klasör seç  •  HAYIR: bir daha sorma (Alt+F8: AKSORA_YAYIN_AYAR)", vbQuestion + vbYesNo, "AKSORA | YAYIN") <> vbYes Then
+            AK_YAYIN_KLASOR_YAZ "YOK": Exit Function
+        End If
+        AKSORA_YAYIN_AYAR_SESSIZ
+        p = AK_YAYIN_KLASOR()
+        If Len(p) = 0 Or p = "YOK" Then Exit Function
+    End If
+    If Not AKSORA_KLASOR_HAZIRLA(p) Then Err.Raise vbObjectError + 1501, , "Klasöre ulaşılamadı: " & p
+    kok = p & application.PathSeparator
+    hedef = kok & "AKSORA_YAYIN.xlsm"
+    application.StatusBar = "AKSORA | Ortak klasöre yayınlanıyor..."
+    On Error Resume Next
+    SetAttr hedef, vbNormal
+    Err.Clear
+    ThisWorkbook.SaveCopyAs hedef
+    no = Err.Number
+    On Error GoTo Hata
+    If no <> 0 Then
+        ' Dosya baskasinda aciksa ustune yazilamaz: tarihli ad ile kaydedilir.
+        alt = kok & "AKSORA_YAYIN_" & Format$(Now, "yyyymmdd_hhnn") & ".xlsm"
+        ThisWorkbook.SaveCopyAs alt
+        hedef = alt
+    End If
+    On Error Resume Next
+    SetAttr hedef, vbReadOnly
+    kim = Environ$("USERNAME")
+    f = FreeFile
+    Open kok & "AKSORA_YAYIN_BILGI.txt" For Output As #f
+    Print #f, "AKSORA yayini: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  Yayinlayan: " & kim
+    Print #f, "Dosya: " & Mid$(hedef, Len(kok) + 1)
+    Print #f, "Izleme kopyasidir; SAP guncellemesi kapalidir. Birim sifreleriyle acilir."
+    Close #f
+    On Error GoTo Hata
+    application.StatusBar = False
+    AKSORA_YAYINLA_SESSIZ = vbCrLf & vbCrLf & "Ortak klasöre yayınlandı: " & hedef & _
+        IIf(no <> 0, vbCrLf & "(AKSORA_YAYIN.xlsm başka bir kullanıcıda açık olduğu için tarihli adla kaydedildi.)", "")
+    Exit Function
+Hata:
+    On Error Resume Next
+    application.StatusBar = False
+    AKSORA_YAYINLA_SESSIZ = vbCrLf & vbCrLf & "Ortak klasöre yayın yapılamadı: " & Err.Description
+End Function
+
+Private Sub AKSORA_YAYIN_AYAR_SESSIZ()
+    Dim fd As Object
+    On Error Resume Next
+    Set fd = application.FileDialog(4)
+    fd.Title = "AKSORA yayın klasörü (ortak alan)"
+    fd.AllowMultiSelect = False
+    If fd.Show = -1 Then AK_YAYIN_KLASOR_YAZ fd.SelectedItems(1) Else AK_YAYIN_KLASOR_YAZ "YOK"
+End Sub

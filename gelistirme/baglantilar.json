@@ -1,0 +1,66 @@
+[
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Yönetim Merkezi: karne tablosu için satır ayırır",
+    "capa": "r = ADM_YAPILACAK_CIZ(ws, r, uy, ilMetin)",
+    "eslesme": "tam",
+    "konum": "sonra",
+    "satir": "    r = AKSORA_KPI_YER_AYIR(ws, r)"
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Yönetim Merkezi: göstergeleri kaydeder, karneyi ve düğmeleri çizer",
+    "capa": "ws.Range(\"BX2\").Value2 = r",
+    "eslesme": "tam",
+    "konum": "once",
+    "satir": "    AKSORA_KPI_TAMAMLA ws, secIl, ilMetin, tekilToplam, ilTekil, deger, skor, krit, uyari, demToplamTl, isgZ, uy"
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Atıl stok özeti: il bazlı sayılar karneye aktarılır",
+    "capa": "Set islem = ATIL_ISLEM_IL_OZET(c)",
+    "eslesme": "tam",
+    "konum": "once",
+    "satir": "    AKSORA_KPI_ATIL v, kapsam"
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Yönetici girişleri (başarılı / hatalı) işlem günlüğüne yazılır",
+    "capa": "eski = ADM_AD_OKU(\"_AKSORA_ADMIN_LOG\")",
+    "eslesme": "tam",
+    "konum": "once",
+    "satir": "    AKSORA_GUNLUK_YAZ \"YÖNETİCİ\", \"Yönetim merkezi: \" & sonuc"
+  },
+  {
+    "modul": "modAKSORA_BIRIM",
+    "aciklama": "Tek tuş güncelleme süresi işlem günlüğüne yazılır",
+    "capa": "ThisWorkbook.Names.Add Name:=\"_AKSORA_ADMIN_SON_TOPLU\"",
+    "eslesme": "onek",
+    "konum": "sonra",
+    "satir": "    AKSORA_GUNLUK_YAZ \"GÜNCELLEME\", \"Tüm birimler (tek tuş)\", sure"
+  },
+  {
+    "modul": "modAKSORA_ANALIZ",
+    "aciklama": "Kritik stok / transfer / iptal / fazla teslim sayıları karneye aktarılır",
+    "capa": "If nT > 0 Then ADM_UYAR uy, 3,",
+    "eslesme": "onek",
+    "konum": "sonra",
+    "satir": "    AKSORA_KPI_ANALIZ nK, tK, nT, tt, nIp, tip, nF, tF"
+  },
+  {
+    "modul": "modAKSORA_CEKIRDEK",
+    "aciklama": "Her SAP güncellemesi (CDP, EPP, ilçe, yüklenici) süresiyle günlüğe yazılır",
+    "capa": "GecenSure = CORE_GECEN_SURE()",
+    "eslesme": "tam",
+    "konum": "sonra",
+    "satir": "AKSORA_GUNLUK_YAZ \"GÜNCELLEME\", mAktifIslem, GecenSure"
+  },
+  {
+    "modul": "modAKSORA_EKRAN",
+    "aciklama": "Kullanıcıya gösterilen her hata günlüğe yazılır",
+    "capa": "If Len(metin) = 0 Then metin = \"Beklenmeyen hata (\" & no & \").\"",
+    "eslesme": "tam",
+    "konum": "sonra",
+    "satir": "    AKSORA_GUNLUK_YAZ \"HATA\", islem & \": \" & metin & \" (\" & no & \")\""
+  }
+]

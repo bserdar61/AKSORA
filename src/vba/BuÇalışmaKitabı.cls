@@ -1,0 +1,414 @@
+Attribute VB_Name = "BuÇalışmaKitabı"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Option Explicit
+
+' Excel'e aktarilan kitap acikken pencere gecislerini izler: AKSORA'ya donulunce uygulama modu, digerinde Excel gorunumu.
+Private WithEvents mUygApp As application
+Attribute mUygApp.VB_VarHelpID = -1
+
+Public Sub AKSORA_UYG_IZLE()
+    Set mUygApp = application
+End Sub
+
+Private Sub mUygApp_WindowActivate(ByVal wb As Workbook, ByVal wn As Window)
+    On Error Resume Next
+    If wb Is ThisWorkbook Then
+        If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Then Exit Sub
+        If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+        UYGULAMA_MODU_AC
+        AKSORA_DONUS_UYGULA
+        ' Uygulama olayi kitap olayindan sonra gelir: secim ekranlarinin gorunumu yeniden uygulanir.
+        If Not AKSORA_BIRIM_AKTIF_GORUNUM() Then
+            If Not AKSORA_GIRIS_ACIK Then AKSORA_V8_KAPAK_GORUNUM
+        End If
+    Else
+        AKSORA_EXCEL_GORUNUM
+    End If
+End Sub
+
+Private Sub Workbook_Open()
+
+    Dim adim As String
+    Dim bas As Double
+    Dim Hata As String
+
+    bas = Timer
+    ' Onceki oturum yarida kaldiysa Excel girisi acik gelir.
+    application.Interactive = True
+
+    On Error GoTo Hata
+
+    ' Yukleme ekrani ilk is olarak gelir.
+    AKSORA_V13_ACILIS = True
+    application.EnableEvents = False
+    application.ScreenUpdating = False
+
+    adim = "Yükleme ekranı"
+
+    SPLASH_GOSTER
+
+    AKSORA_SAYI_AYIRACLARI
+    SPLASH_DURUM 0.12, "Başlangıç ayarları hazırlanıyor..."
+
+    adim = "Makro korumaları"
+
+    ' Yardimci adimlar tek tek korunur: biri basarisiz olursa acilis durmaz (birim secimi her zaman gelir).
+    On Error Resume Next
+    AKSORA_HAFIF_KORUMALARI_YENILE
+    Err.Clear
+    On Error GoTo Hata
+    AKSORA_IMZA_DOGRULA
+    On Error Resume Next
+    AKSORA_SAYI_BICIMLERINI_YENILE
+    AKSORA_MUSTERI_ARAMA_KPI_YENILE
+    Err.Clear
+    On Error GoTo Hata
+
+    adim = "İl butonları"
+
+    On Error Resume Next
+    AKSORA_V13_BUTONLARI_BAGLA
+    Err.Clear
+    On Error GoTo Hata
+
+    SPLASH_DURUM 0.4, "İl seçimi hazırlanıyor..."
+
+    adim = "Kapak"
+
+    AKSORA_KAPAK_KILITLE
+
+    ThisWorkbook.Worksheets("KAPAK").Activate
+
+  AKSORA_KAPAK_KORU
+    AKSORA_V8_KAPAK_GORUNUM
+
+    SPLASH_DURUM 0.7, _
+        "Güncelleme tarihleri kontrol ediliyor..."
+
+    adim = "Kapak tarihi"
+
+    ' Tarih gosterilemese de acilis surer (birim menusu her zaman gelir).
+    On Error Resume Next
+    AKSORA_V10_TARIH_GOSTER
+    Err.Clear
+    On Error GoTo Hata
+
+    adim = "Uygulama görünümü"
+
+    UYGULAMA_MODU_AC
+
+    AKSORA_V8_KAPAK_GORUNUM
+
+    adim = "Fiyat listesi"
+    On Error Resume Next
+    AKSORA_MUSTERI_FIYAT_KONTROL
+    Err.Clear
+    On Error GoTo Hata
+
+    adim = "Kayıt bakımı"
+    SPLASH_DURUM 0.85, "Kayıtlar kontrol ediliyor..."
+    On Error Resume Next
+    AKSORA_ARSIV_BAKIM
+    Err.Clear
+    On Error GoTo Hata
+
+    ' AKSORA_BIRIM_HOOK_OPEN
+    AKSORA_BIRIM_ACILIS
+    SPLASH_DURUM 1, "AKSORA hazır"
+
+
+Cikis:
+
+    On Error Resume Next
+
+    ' Acilis yarida kaldiysa da yalniz birim secim ekrani gorunur kalir (baska birimin sayfalari acik kalmaz).
+    If Len(Hata) > 0 Then AKSORA_BIRIM_ACILIS
+
+    AKSORA_V13_ACILIS = False
+
+    application.EnableEvents = True
+    application.ScreenUpdating = True
+
+    SPLASH_KAPAT
+
+    AKSORA_V13_SURE_KAYDET _
+        "Açılış", _
+        bas
+
+    On Error GoTo 0
+
+
+    If Len(Hata) > 0 Then
+
+        MsgBox _
+            Hata, _
+            vbExclamation, _
+            "AKSORA"
+
+    End If
+
+    Exit Sub
+
+
+Hata:
+
+    Hata = _
+        "Açılış tamamlanamadı: " & _
+        adim & _
+        vbCrLf & _
+        Err.Description
+
+    Resume Cikis
+
+End Sub
+
+
+Private Sub Workbook_Activate()
+
+    If AKSORA_V13_ACILIS _
+       Or AKSORA_V13_GECIS Then
+
+        Exit Sub
+
+    End If
+
+
+    On Error Resume Next
+
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+
+
+    UYGULAMA_MODU_AC
+    AKSORA_DONUS_UYGULA
+    ' AKSORA_BIRIM_HOOK_ACTIVATE
+    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
+
+
+    If Not AKSORA_GIRIS_ACIK Then
+
+        AKSORA_KAPAK_KORU
+
+        AKSORA_V8_KAPAK_GORUNUM
+
+    End If
+
+End Sub
+
+
+Private Sub Workbook_Deactivate()
+
+    On Error Resume Next
+
+    Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
+
+    UYGULAMA_MODU_KAPAT
+
+End Sub
+
+
+'Yatirim teminat / hakedis girisleri aninda kaydedilir.
+Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
+    If AKSORA_V13_ACILIS Then Exit Sub
+    If sh.Name = "ADMIN PANEL" Then AKSORA_ADMIN_DEGISIM Target: Exit Sub
+    If Left$(sh.Name, 2) <> "Y_" And Left$(sh.Name, 2) <> "I_" Then Exit Sub
+    On Error Resume Next
+    If Left$(sh.Name, 2) = "I_" Then AKSORA_ILCE_DEGISIM sh, Target Else AKSORA_YATIRIM_DEGISIM sh, Target
+End Sub
+
+' Teminat takibi: Konum hucresi secilince uzerinde secim listesi (Depoda / Sahada / Kismi) acilir.
+Private Sub Workbook_SheetSelectionChange(ByVal sh As Object, ByVal Target As Range)
+    If AKSORA_V13_ACILIS Then Exit Sub
+    If sh.Name <> "Y_TEMİNAT" Then Exit Sub
+    On Error Resume Next
+    AKSORA_YATIRIM_KONUM_SECIM sh, Target
+End Sub
+
+' Dosya her acilista normal gorunumde gelir (sayfa duzeni / %10 yakinlastirma kalmaz).
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    Dim wn As Window
+    On Error Resume Next
+    For Each wn In ThisWorkbook.Windows
+        If wn.View <> xlNormalView Then wn.View = xlNormalView
+        If wn.Zoom < 40 Then wn.Zoom = 100
+    Next wn
+End Sub
+
+Private Sub Workbook_BeforeClose( _
+    Cancel As Boolean)
+
+    On Error Resume Next
+
+    ' Kaydetme sorusu burada sorulur: Iptal secilirse uygulama modu kapatilmadan AKSORA acik kalir
+    ' (Excel'in kendi sorusu uygulama modu kapandiktan sonra geldiginden Iptal'de serit/basliklar acik kaliyordu).
+    If Not ThisWorkbook.Saved Then
+        Select Case MsgBox("AKSORA'daki değişiklikler kaydedilsin mi?", vbYesNoCancel + vbQuestion, "AKSORA")
+            Case vbCancel
+                Cancel = True
+                Exit Sub
+            Case vbYes
+                Err.Clear
+                ThisWorkbook.Save
+                If Err.Number <> 0 Or Not ThisWorkbook.Saved Then
+                    MsgBox "Dosya kaydedilemedi; kapatma iptal edildi." & vbCrLf & Err.Description, vbExclamation, "AKSORA"
+                    Cancel = True
+                    Exit Sub
+                End If
+            Case Else
+                ThisWorkbook.Saved = True
+        End Select
+    End If
+
+    Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
+
+    UYGULAMA_MODU_KAPAT
+
+    ' Soru yukarida soruldu (kaydedildi ya da kaydetmeden cikildi). Uygulama modunun kapatilmasi
+    ' gorunum ayarlarini degistirdigi icin Excel ikinci kez "kaydedilsin mi" sormasin.
+    ThisWorkbook.Saved = True
+
+End Sub
+
+
+Private Sub Workbook_SheetActivate( _
+    ByVal sh As Object)
+
+    Dim ev As Boolean
+    Dim sc As Boolean
+    Dim Hata As String
+    Dim birimOlay As Boolean
+
+
+    ' AKSORA_BIRIM_HOOK_SHEET
+    ' Birim gorunumundeki bir hata calisma zamani penceresi acip tum durumu sifirlamasin.
+    On Error Resume Next
+    birimOlay = AKSORA_BIRIM_OLAY(sh)
+    If Err.Number <> 0 Then birimOlay = True: Err.Clear
+    On Error GoTo 0
+    If birimOlay Then Exit Sub
+    If AKSORA_V13_ACILIS _
+       Or AKSORA_V13_GECIS Then
+
+        Exit Sub
+
+    End If
+
+
+    If AKSORA_V11_MESGUL Then
+        Exit Sub
+    End If
+
+
+    If Not TypeOf sh Is Worksheet Then
+        Exit Sub
+    End If
+
+
+    ev = application.EnableEvents
+    sc = application.ScreenUpdating
+
+
+    On Error GoTo Hata
+
+
+    application.EnableEvents = False
+
+
+    If AKSORA_GIRIS_ACIK Then
+
+        AKSORA_V13_GORUNUM sh
+
+    ElseIf ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVisible Then
+
+        ThisWorkbook.Worksheets("KAPAK").Activate
+
+        AKSORA_KAPAK_KORU
+
+        AKSORA_V8_KAPAK_GORUNUM
+
+    Else
+
+        ' Birim baglaminda KAPAK cok gizli: taninmayan sayfadan birim secimine donulur.
+        application.EnableEvents = ev
+        AKSORA_BIRIM_ANA_MENU
+        Exit Sub
+
+    End If
+
+
+Cikis:
+    On Error Resume Next
+
+    application.EnableEvents = ev
+
+    application.ScreenUpdating = sc
+
+
+    If Len(Hata) > 0 Then
+
+        MsgBox _
+            Hata, _
+            vbExclamation, _
+            "AKSORA"
+
+    End If
+
+    Exit Sub
+
+
+Hata:
+
+    Hata = _
+        "Sayfa görünümü: " & _
+        Err.Description
+
+    Resume Cikis
+
+End Sub
+
+
+Private Sub Workbook_WindowResize(ByVal wn As Window)
+    If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Or AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
+    ' AKSORA_BIRIM_HOOK_RESIZE
+    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
+    If Not AKSORA_GIRIS_ACIK And ActiveSheet.Name <> "KAPAK" Then Exit Sub
+    AKSORA_EKRAN_SIGDIR ActiveSheet
+End Sub
+
+Private Sub Workbook_WindowActivate(ByVal wn As Window)
+    If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Or AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(wn) Then Exit Sub
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
+    ' AKSORA_BIRIM_HOOK_WINDOW
+    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
+    If Not AKSORA_GIRIS_ACIK And ActiveSheet.Name <> "KAPAK" Then Exit Sub
+    AKSORA_EKRAN_SIGDIR ActiveSheet
+End Sub
+
+
+
+
+
+
+Private Sub Workbook_SheetCalculate(ByVal sh As Object)
+    If Not TypeOf sh Is Worksheet Then Exit Sub
+    If sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" And sh.Name <> "I_MALZEME_ARA" Then Exit Sub
+    If Not application.EnableEvents Then Exit Sub
+    On Error GoTo Hata
+    AKSORA_MUSTERI_ARAMA_KPI_HESAPLA sh
+    Exit Sub
+Hata:
+    MsgBox "Arama özeti güncellenemedi: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
+

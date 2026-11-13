@@ -1,0 +1,11283 @@
+Attribute VB_Name = "modAKSORA_BIRIM"
+Option Explicit
+
+Private Const HUB As String = "BIRIM SECIM"
+Private mKonumSatir As Long
+Private mPK As Object
+Private mPAd As Object
+Private mPT As Object
+Private mPS As Object
+Private mPH As Object
+Private mPHN As Object
+Private mPA As Object
+Private mPP As Object
+Private mPPD As Object
+Private mPDc As Object
+Private mDS As Object
+Private mPF As Object
+Private mPDS As Object
+Private mPM As Object
+Private mDA As Object
+Private mPDp As Object
+Private mPL As Collection
+Private mPrjBilgi As String
+Private mKesBilgi As String
+Private mSD As Object
+Private mSDt As Object
+Private mSDb As Object
+Private mSH As Object
+Private mPrjIl As String
+Private mSO As Object
+Private mSOd As Object
+Private mSN As Object
+Private mSasBilgi As String
+' Manuel sarf malzemesinde birim fiyat (stok degeri / miktar) bu tutar ve uzerindeyse sarfi bolge mudurlugu yapar:
+' ilceden beklenmez, "BÖLGE SARF EDECEK" gosterilir, ilce durumuna ve yonetim uyarilarina girmez.
+Private Const I_ISG_BOLGE_TL As Double = 12000#
+Private Const yat As String = "YATIRIM PANEL"
+Private Const MUS As String = "MUSTERI PANEL"
+Private Const MUK As String = "MUSTERI IL SECIM"
+Private Const YAK As String = "YATIRIM IL SECIM"
+Private Const ILCE_KAPAK As String = "ILCE IL SECIM"
+Private Const tag As String = "AKSORA_BIRIM_V1"
+Private Const pw As String = ""
+Private Const cw As Double = 1080
+Private Const ch As Double = 660
+Private Const ADM As String = "ADMIN PANEL"
+Private Const ADM_SIFRE As String = "***"
+Private Const ADM_ARA_SATIR As Long = 8
+Private Const ADM_ARA_HUCRE As String = "C7"
+Private Const ADM_IL_HUCRE As String = "C4"
+Private mAdmOnbellek As Object
+Private mAdmOturum As Boolean
+Private Const ADM_KUTU_BASLIK As String = "AKSORA - YONETICI GIRISI"
+Private Const BIRIM_KUTU_BASLIK As String = "AKSORA - BIRIM GIRISI"
+' Birim sifreleri: her birim yalniz kendi sifresiyle (ya da yonetici sifresiyle) acilir.
+' Birim sifreleri simdilik kapali: True yapildiginda her birim girisinde sifre sorulur.
+Private Const BIRIM_SIFRE_AKTIF As Boolean = False
+Private Const SIFRE_MALZEME As String = "***"
+Private Const SIFRE_YATIRIM As String = "***"
+Private Const SIFRE_MUSTERI As String = "***"
+Private Const SIFRE_ILCE As String = "***"
+Private Type ADMW_RECT
+    Left As Long
+    top As Long
+    Right As Long
+    Bottom As Long
+End Type
+Private Declare PtrSafe Function ADMW_CoRegisterMessageFilter Lib "ole32" Alias "CoRegisterMessageFilter" (ByVal lFilterIn As LongPtr, ByRef lPreviousFilter As LongPtr) As Long
+Private Declare PtrSafe Function ADMW_SetTimer Lib "user32" Alias "SetTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr, ByVal uElapse As Long, ByVal lpTimerFunc As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_KillTimer Lib "user32" Alias "KillTimer" (ByVal hWnd As LongPtr, ByVal nIDEvent As LongPtr) As Long
+Private Declare PtrSafe Function ADMW_FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As LongPtr
+Private Declare PtrSafe Function ADMW_FindWindowEx Lib "user32" Alias "FindWindowExA" (ByVal hWnd1 As LongPtr, ByVal hWnd2 As LongPtr, ByVal lpsz1 As String, ByVal lpsz2 As String) As LongPtr
+Private Declare PtrSafe Function ADMW_SendMessage Lib "user32" Alias "SendMessageA" (ByVal hWnd As LongPtr, ByVal wMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_CreateWindowEx Lib "user32" Alias "CreateWindowExW" (ByVal dwExStyle As Long, ByVal lpClassName As LongPtr, ByVal lpWindowName As LongPtr, ByVal dwStyle As Long, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hWndParent As LongPtr, ByVal hMenu As LongPtr, ByVal hInstance As LongPtr, ByVal lpParam As LongPtr) As LongPtr
+Private Declare PtrSafe Function ADMW_GetWindowRect Lib "user32" Alias "GetWindowRect" (ByVal hWnd As LongPtr, lpRect As ADMW_RECT) As Long
+Private Declare PtrSafe Function ADMW_MapWindowPoints Lib "user32" Alias "MapWindowPoints" (ByVal hWndFrom As LongPtr, ByVal hWndTo As LongPtr, lpPoints As ADMW_RECT, ByVal cPoints As Long) As Long
+Private Declare PtrSafe Function ADMW_SetWindowPos Lib "user32" Alias "SetWindowPos" (ByVal hWnd As LongPtr, ByVal hWndInsertAfter As LongPtr, ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
+Private Declare PtrSafe Function ADMW_InvalidateRect Lib "user32" Alias "InvalidateRect" (ByVal hWnd As LongPtr, ByVal lpRect As LongPtr, ByVal bErase As Long) As Long
+Private Declare PtrSafe Function ADMW_SetFocus Lib "user32" Alias "SetFocus" (ByVal hWnd As LongPtr) As LongPtr
+#If Win64 Then
+Private Declare PtrSafe Function ADMW_GetWindowLong Lib "user32" Alias "GetWindowLongPtrA" (ByVal hWnd As LongPtr, ByVal nIndex As Long) As LongPtr
+Private Declare PtrSafe Function ADMW_SetWindowLong Lib "user32" Alias "SetWindowLongPtrA" (ByVal hWnd As LongPtr, ByVal nIndex As Long, ByVal dwNewLong As LongPtr) As LongPtr
+#Else
+Private Declare PtrSafe Function ADMW_GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As LongPtr, ByVal nIndex As Long) As LongPtr
+Private Declare PtrSafe Function ADMW_SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As LongPtr, ByVal nIndex As Long, ByVal dwNewLong As LongPtr) As LongPtr
+#End If
+Private Declare PtrSafe Function ADMW_LockWindowUpdate Lib "user32" Alias "LockWindowUpdate" (ByVal hWnd As LongPtr) As Long
+Private Declare PtrSafe Function ADMW_RedrawWindow Lib "user32" Alias "RedrawWindow" (ByVal hWnd As LongPtr, ByVal lprcUpdate As LongPtr, ByVal hrgnUpdate As LongPtr, ByVal fuRedraw As Long) As Long
+Private mAdmZaman As LongPtr
+Private mAdmKutu As LongPtr
+Private mAdmGoster As Boolean
+Private mAdmYukleme As Boolean
+Private mAdmMesgul As Boolean
+Private mAdmYukWs As Worksheet
+Private mAdmYukBar As Double
+Private mAdmYukSon As Double
+Public AKSORA_BEKLE_KIPI As Boolean
+Public AKSORA_ADMIN_IPTAL As Boolean
+Private mAdmTopluKart As Boolean
+Private mAdmTopluBas As Double
+Private mAdmTopluSon As Double
+Private mAdmTopluSira As Long
+Private mAdmTopluAd As String
+Private mAdmTopluMetin As String
+Private mAdmTopluIl As Object
+Private mAdmKilit As Boolean
+Private Const ADM_ARA_N As Long = 400
+Public AKSORA_ADMIN_TOPLU As Boolean
+Public AKSORA_ADMIN_SONUC As String
+Public mYonlendirme As Boolean
+Private mGorunum As Boolean
+Private Const Y_ETIKET As String = "AKSORA_YATIRIM_V2"
+Private Const I_ETIKET As String = "AKSORA_ILCE_V1"
+Private Const I_GECMIS_GUN As Long = 20
+Private Const I_TF As String = "dd.mm.yyyy hh:nn:ss"
+' Satinalma kontrolu (ME5A / ME2N) kaydi ve Malzeme Stok birimi sayfasi.
+Private Const SA_KAYIT As String = "_SATINALMA"
+Private Const SA_SAYFA As String = "SATINALMA_KONTROL"
+Private Const SA_ETIKET As String = "AKSORA_SATINALMA_V1"
+' Kritik stok (sarf hizina gore kapsam) sayfasi.
+Private Const KS_SAYFA As String = "KRITIK_STOK"
+Private Const KS_ETIKET As String = "AKSORA_KRITIK_V1"
+Private Const I_DEFTER_SURE As Long = 400
+Private mIMal As Object
+Private mIMalKirli As Boolean
+Private mIDefter As Object
+Private mYCalisiyor As Boolean
+Private mYToplu As Boolean
+Private mYOdak As String
+Private mYSira As String
+Private Const YT_ILK As Long = 10
+Private Const YH_KALEM_ILK As Long = 23
+Private Const YH_KALEM_ADET As Long = 30
+Private Const YH_GECMIS_ILK As Long = 58
+' ATIL STOK: kayit, sayfa ve SAP okuma (pano) tanimlari
+Private Const ATIL_SAYFA As String = "ATIL_STOK"
+Private Const ATIL_KAYIT As String = "_ATIL"
+Private Const ATIL_ETIKET As String = "AKSORA_ATIL_V1"
+Public AKSORA_ATIL_CALISIYOR As Boolean
+Private mSifreBaslik As String
+Private mBirimAcik As String
+' Uzun guncellemede kartin "ARKA PLANA AL" dugmesi: Excel diger pencerelerin arkasina gonderilir
+' (kucultulmez: pencere durumu degisince sayfa denetimleri hata veriyordu). Is bitince gorev cubugu yanip soner.
+Public AKSORA_ARKA_PLAN As Boolean
+Private Type ADMW_FLASH
+    cbSize As Long
+    hWnd As LongPtr
+    dwFlags As Long
+    uCount As Long
+    dwTimeout As Long
+End Type
+Private Declare PtrSafe Function ADMW_FlashWindowEx Lib "user32" Alias "FlashWindowEx" (pfwi As ADMW_FLASH) As Long
+
+' Yalniz yeni sayfalari ve ThisWorkbook acilis yonlendirmesini kurar.
+Public Sub AKSORA_BIRIM_KUR()
+    Dim cM As Object, eskiKod As String, yeniKod As String
+    Dim ev As Boolean, sc As Boolean, degisti As Boolean
+    Dim yedek As String, Hata As String, geri As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then
+        Err.Raise vbObjectError + 1600, , "Devam eden islemin bitmesini bekleyin."
+    End If
+    If Len(ThisWorkbook.Path) = 0 Then Err.Raise vbObjectError + 1601, , "Once dosyayi kaydedin."
+    Set cM = ThisWorkbook.VBProject.VBComponents(ThisWorkbook.CodeName).CodeModule
+    eskiKod = cM.Lines(1, cM.CountOfLines)
+    yeniKod = BIRIM_ENTEGRE_KOD(eskiKod)
+    BIRIM_SAYFA_KONTROL HUB
+    BIRIM_SAYFA_KONTROL yat
+    BIRIM_SAYFA_KONTROL MUS
+    BIRIM_SAYFA_KONTROL MUK
+    BIRIM_SAYFA_KONTROL YAK
+    yedek = AKSORA_KAYIT_KLASORU() & application.PathSeparator & _
+        "AKSORA_BIRIM_ONCESI_" & Format$(Now, "yyyymmdd_hhnnss") & ".xlsm"
+    If Len(Dir$(yedek)) > 0 Then Err.Raise vbObjectError + 1602, , "Yedek dosya zaten var. Tekrar deneyin."
+    ThisWorkbook.SaveCopyAs yedek
+    application.EnableEvents = False: application.ScreenUpdating = False
+    BIRIM_HAZIRLA
+    AKSORA_BIRIM_KAPAK_GERI
+    If yeniKod <> eskiKod Then
+        degisti = True
+        cM.DeleteLines 1, cM.CountOfLines
+        cM.AddFromString yeniKod
+    End If
+    AKSORA_BIRIM_ACILIS
+    ThisWorkbook.Save
+Cikis:
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    If Len(Hata) > 0 Then
+        MsgBox "Kurulum tamamlanamadi: " & Hata & geri & vbCrLf & _
+            "Olusturulan yedek: " & yedek, vbExclamation, "AKSORA"
+    Else
+        MsgBox "Birim acilis ekrani hazir. Dosyayi kapatip yeniden acin.", vbInformation, "AKSORA"
+    End If
+    Exit Sub
+Hata:
+    Hata = Err.Description
+    On Error Resume Next
+    If degisti Then
+        Err.Clear
+        cM.DeleteLines 1, cM.CountOfLines
+        cM.AddFromString eskiKod
+        If Err.Number <> 0 Then geri = vbCrLf & "Acilis kodu geri alinamadi; yedegi kullanin."
+    End If
+    mYonlendirme = False
+    On Error GoTo 0
+    GoTo Cikis
+End Sub
+
+Private Function BIRIM_ENTEGRE_KOD(ByVal kod As String) As String
+    If InStr(1, kod, "' AKSORA_BIRIM_HOOK_OPEN", vbBinaryCompare) > 0 Then
+        If InStr(kod, "' AKSORA_BIRIM_HOOK_ACTIVATE") = 0 Or _
+           InStr(kod, "' AKSORA_BIRIM_HOOK_SHEET") = 0 Or _
+           InStr(kod, "' AKSORA_BIRIM_HOOK_RESIZE") = 0 Or _
+           InStr(kod, "' AKSORA_BIRIM_HOOK_WINDOW") = 0 Then
+            Err.Raise vbObjectError + 1603, , "Birim entegrasyonu eksik. Yedekten geri donun."
+        End If
+        BIRIM_ENTEGRE_KOD = kod
+        Exit Function
+    End If
+    kod = BIRIM_KOD_EKLE(kod, "Workbook_Open", _
+        "    SPLASH_DURUM 1, ""AKSORA hazır""", _
+        "    ' AKSORA_BIRIM_HOOK_OPEN" & vbCrLf & "    AKSORA_BIRIM_ACILIS", True)
+    kod = BIRIM_KOD_EKLE(kod, "Workbook_Activate", _
+        "    UYGULAMA_MODU_AC", _
+        "    ' AKSORA_BIRIM_HOOK_ACTIVATE" & vbCrLf & _
+        "    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub", False)
+    kod = BIRIM_KOD_EKLE(kod, "Workbook_SheetActivate", _
+        "    If AKSORA_V13_ACILIS _", _
+        "    ' AKSORA_BIRIM_HOOK_SHEET" & vbCrLf & _
+        "    If AKSORA_BIRIM_OLAY(Sh) Then Exit Sub", True)
+    kod = BIRIM_KOD_EKLE(kod, "Workbook_WindowResize", _
+        "    If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub", _
+        "    ' AKSORA_BIRIM_HOOK_RESIZE" & vbCrLf & _
+        "    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub", False)
+    kod = BIRIM_KOD_EKLE(kod, "Workbook_WindowActivate", _
+        "    If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub", _
+        "    ' AKSORA_BIRIM_HOOK_WINDOW" & vbCrLf & _
+        "    If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub", False)
+    BIRIM_ENTEGRE_KOD = kod
+End Function
+
+Private Function BIRIM_KOD_EKLE(ByVal kod As String, ByVal olay As String, _
+    ByVal hedef As String, ByVal ek As String, ByVal once As Boolean) As String
+    Dim bas As Long, son As Long, parca As String, yer As Long
+    bas = InStr(1, kod, "Private Sub " & olay & "(", vbBinaryCompare)
+    If bas = 0 Then Err.Raise vbObjectError + 1604, , "Olay bulunamadi: " & olay
+    son = InStr(bas, kod, "End Sub", vbBinaryCompare)
+    If son = 0 Then Err.Raise vbObjectError + 1605, , "Olay sonu bulunamadi: " & olay
+    parca = Mid$(kod, bas, son + Len("End Sub") - bas)
+    yer = InStr(1, parca, hedef, vbBinaryCompare)
+    If yer = 0 Or InStr(yer + Len(hedef), parca, hedef, vbBinaryCompare) > 0 Then
+        Err.Raise vbObjectError + 1606, , "Acilis kodu beklenen surumle uyusmuyor: " & olay
+    End If
+    If once Then
+        parca = Replace(parca, hedef, ek & vbCrLf & hedef, 1, 1, vbBinaryCompare)
+    Else
+        parca = Replace(parca, hedef, hedef & vbCrLf & ek, 1, 1, vbBinaryCompare)
+    End If
+    BIRIM_KOD_EKLE = Left$(kod, bas - 1) & parca & Mid$(kod, son + Len("End Sub"))
+End Function
+
+Private Sub BIRIM_SAYFA_KONTROL(ByVal ad As String)
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If Not ws Is Nothing Then
+        If CStr(ws.Range("BX1").Value2) <> tag Then
+            Err.Raise vbObjectError + 1607, , "Ayni isimde baska bir sayfa var: " & ad
+        End If
+    End If
+End Sub
+
+Private Function BIRIM_SAYFA(ByVal ad As String) As Worksheet
+    Dim ws As Worksheet
+    BIRIM_SAYFA_KONTROL ad
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Range("BX1").Value2 = tag
+    End If
+    Set BIRIM_SAYFA = ws
+End Function
+
+Private Sub BIRIM_HAZIRLA()
+    Dim ws As Worksheet, ad As Variant
+    Set ws = BIRIM_SAYFA(HUB)
+    BIRIM_CIZ ws, ""
+    For Each ad In Array(yat, MUS)
+        Set ws = BIRIM_SAYFA(CStr(ad))
+        If CStr(ad) = yat Then BIRIM_CIZ ws, "Yatırım Birimi" Else BIRIM_CIZ ws, "Müşteri Birimi"
+        ws.Visible = xlSheetVeryHidden
+    Next ad
+End Sub
+
+Public Sub AKSORA_BIRIM_ACILIS()
+    Dim ws As Worksheet, diger As Worksheet, ev As Boolean, sc As Boolean
+    Dim no As Long, metin As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    Sayfa12.STOK_KARS_FILTRE_TAKIP_DURDUR
+    If AKSORA_GIRIS_ACIK Then AKSORA_KAPAK_KILITLE
+    Set ws = BIRIM_SAYFA(HUB)
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 14 Then BIRIM_CIZ ws, ""
+    ws.Visible = xlSheetVisible
+    ws.Move Before:=ThisWorkbook.Worksheets(1)
+    ws.Select Replace:=True
+    ' Birim secilmeden yalniz ana secim sayfasi gorunur.
+    For Each diger In ThisWorkbook.Worksheets
+        If diger.Name <> HUB And diger.Visible = xlSheetVisible Then diger.Visible = xlSheetVeryHidden
+    Next diger
+    BIRIM_GORUNUM ws
+Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    On Error GoTo 0
+    If no <> 0 Then Err.Raise no, "AKSORA_BIRIM_ACILIS", metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
+    If mYonlendirme Then AKSORA_BIRIM_OLAY = True: Exit Function
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If AKSORA_MUSTERI_GECIS_KORU(sh) Then AKSORA_BIRIM_OLAY = True: Exit Function
+    If sh.Name = "Y_TEMİNAT" Then Y_TEMINAT_LISTE_ONAR sh
+    If sh.Name = ADM Then
+        ' Sifre girilmeden (sekme / Ctrl+PgDn ile) yonetim merkezine gecilemez.
+        If Not mAdmOturum Then
+            AKSORA_BIRIM_OLAY = True
+            AKSORA_BIRIM_ANA_MENU
+            Exit Function
+        End If
+        ADM_GORUNUM sh: AKSORA_BIRIM_OLAY = True: Exit Function
+    End If
+    On Error Resume Next
+    application.MoveAfterReturn = (sh.Name <> "M_MALZEME_ARA" And sh.Name <> "Y_MALZEME_ARA" And sh.Name <> "I_MALZEME_ARA")
+    On Error GoTo 0
+    If AKSORA_MUSTERI_TEMA_SAYFA(sh) Then
+        AKSORA_CIKTI_DUGME sh
+        AKSORA_MUSTERI_TEMA_GORUNUM sh
+        AKSORA_MUSTERI_SECIM_BASA sh
+        AKSORA_BIRIM_OLAY = True
+        Exit Function
+    End If
+    If AKSORA_YATIRIM_SAYFA(sh) Or AKSORA_ILCE_SAYFA(sh) Then
+        AKSORA_CIKTI_DUGME sh
+        AKSORA_YATIRIM_GORUNUM sh
+        AKSORA_BIRIM_OLAY = True
+        Exit Function
+    End If
+    If AKSORA_ATIL_SAYFA(sh) Or AKSORA_SATINALMA_SAYFA(sh) Or AKSORA_KRITIK_SAYFA(sh) Or AKSORA_TRANSFER_SAYFA(sh) Then
+        AKSORA_YATIRIM_GORUNUM sh
+        AKSORA_BIRIM_OLAY = True
+        Exit Function
+    End If
+    If Not BIRIM_YENI_SAYFA(CStr(sh.Name)) Then Exit Function
+    If sh.Name = MUK Or sh.Name = YAK Or sh.Name = ILCE_KAPAK Then MUSTERI_KAPAK_GORUNUM sh Else BIRIM_GORUNUM sh
+    AKSORA_BIRIM_OLAY = True
+End Function
+
+Public Function AKSORA_BIRIM_AKTIF_GORUNUM() As Boolean
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
+    If Not TypeOf ActiveSheet Is Worksheet Then Exit Function
+    If AKSORA_MUSTERI_TEMA_SAYFA(ActiveSheet) Then
+        AKSORA_MUSTERI_TEMA_GORUNUM ActiveSheet
+        AKSORA_BIRIM_AKTIF_GORUNUM = True
+        Exit Function
+    End If
+    If AKSORA_YATIRIM_SAYFA(ActiveSheet) Or AKSORA_ILCE_SAYFA(ActiveSheet) Or AKSORA_ATIL_SAYFA(ActiveSheet) Or _
+        AKSORA_SATINALMA_SAYFA(ActiveSheet) Or AKSORA_KRITIK_SAYFA(ActiveSheet) Or AKSORA_TRANSFER_SAYFA(ActiveSheet) Then
+        AKSORA_YATIRIM_GORUNUM ActiveSheet
+        AKSORA_BIRIM_AKTIF_GORUNUM = True
+        Exit Function
+    End If
+    If Not BIRIM_YENI_SAYFA(CStr(ActiveSheet.Name)) Then Exit Function
+    If ActiveSheet.Name = MUK Or ActiveSheet.Name = YAK Or ActiveSheet.Name = ILCE_KAPAK Then MUSTERI_KAPAK_GORUNUM ActiveSheet Else BIRIM_GORUNUM ActiveSheet
+    AKSORA_BIRIM_AKTIF_GORUNUM = True
+End Function
+
+Private Function BIRIM_YENI_SAYFA(ByVal ad As String) As Boolean
+    BIRIM_YENI_SAYFA = (ad = HUB Or ad = yat Or ad = MUS Or ad = MUK Or ad = YAK Or ad = ILCE_KAPAK)
+End Function
+
+Public Sub AKSORA_BIRIM_MALZEME()
+    Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("MALZEME", "MALZEME STOK BİRİMİ") Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME STOK BİRİMİ", "Birim açılıyor...")
+    On Error GoTo son
+    BIRIM_MALZEME_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_MALZEME_ASIL()
+    Dim ev As Boolean, sc As Boolean, no As Long, metin As String
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    With ThisWorkbook.Worksheets("KAPAK")
+        .Visible = xlSheetVisible
+        .Select Replace:=True
+    End With
+    AKSORA_KAPAK_KORU
+    AKSORA_V8_KAPAK_GORUNUM
+    AKSORA_BIRIM_KAPAK_GERI
+    BIRIM_DIGERLERINI_GIZLE "KAPAK"
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+Public Sub AKSORA_BIRIM_YATIRIM()
+    Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("YATIRIM", "YATIRIM BİRİMİ") Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM BİRİMİ", "Birim açılıyor...")
+    On Error GoTo son
+    BIRIM_YATIRIM_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_YATIRIM_ASIL()
+    On Error GoTo Hata
+    YATIRIM_KAPAK_AC
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Yatırım birimi", Err.Number, Err.Description
+End Sub
+Public Sub AKSORA_BIRIM_MUSTERI()
+    Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("MUSTERI", "MÜŞTERİ BİRİMİ") Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MÜŞTERİ BİRİMİ", "Birim açılıyor...")
+    On Error GoTo son
+    BIRIM_MUSTERI_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_MUSTERI_ASIL()
+    On Error GoTo Hata
+    MUSTERI_KAPAK_AC
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "Müşteri birimi", Err.Number, Err.Description
+End Sub
+Private Sub MUSTERI_KAPAK_AC()
+    Dim yeniKopya As Boolean
+    Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape
+    Dim yol As String, ev As Boolean, sc As Boolean, no As Long, metin As String
+    Dim i As Long, h As Double, kaynakGorunum As XlSheetVisibility
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    yol = AKSORA_GORSEL("AKSORA_MUSTERI_BANT.png")
+    If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1610, , _
+        "AKSORA_MUSTERI_BANT.png AKSORA klasöründe (GORSELLER) bulunmalıdır."
+    BIRIM_SAYFA_KONTROL MUK
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(MUK)
+    On Error GoTo Hata
+    If ws Is Nothing Then
+        Set kaynak = ThisWorkbook.Worksheets("KAPAK")
+        kaynakGorunum = kaynak.Visible
+        kaynak.Visible = xlSheetVisible
+        kaynak.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+        Set ws = ActiveSheet
+        ws.Name = MUK
+        yeniKopya = True
+        kaynak.Visible = kaynakGorunum
+        ws.Unprotect pw
+        ws.Range("BX1").Value2 = tag
+        ws.Range("AZ1").ClearContents
+        ' Kopyadaki eski stok yonlendirmeleri kesinlikle kullanilmaz.
+        For Each s In ws.Shapes
+            s.OnAction = ""
+        Next s
+        For i = 1 To 5
+            With ws.Shapes("AKSORA_V4_IL_" & i)
+                .AlternativeText = CStr(i)
+                .OnAction = BIRIM_MAKRO("AKSORA_MUSTERI_IL_SEC")
+            End With
+        Next i
+        ws.Shapes("AKSORA_V4_ENTER").OnAction = BIRIM_MAKRO("AKSORA_MUSTERI_GIRIS")
+        AKSORA_BIRIM_KAPAK_GERI MUK
+        ws.Range("BX2").Value2 = 0
+        yeniKopya = False
+    End If
+    ws.Unprotect pw
+    If Val(CStr(ws.Range("BX2").Value2)) < 7 Then
+        On Error Resume Next
+        ws.Shapes("BIRIM_MUSTERI_BANT").Delete
+        On Error GoTo Hata
+        Set foto = ws.Shapes("AKSORA_KAPAK_YENI_V6")
+        ' Ust fotograf korunur; sadece iki alt bilgi seridi kaplanir.
+        Set bant = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
+        h = bant.Height
+        bant.PictureFormat.CropTop = h * 0.7
+        bant.LockAspectRatio = msoFalse
+        bant.Left = foto.Left: bant.top = foto.top + foto.Height * 0.7
+        bant.Width = foto.Width: bant.Height = foto.Height * 0.3
+        bant.Name = "BIRIM_MUSTERI_BANT"
+        bant.Placement = xlFreeFloating: bant.Locked = True
+        ws.Range("BX2").Value2 = 7
+    End If
+    MUSTERI_SECIM_CIZ ws
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+    ws.Visible = xlSheetVisible: ws.Select Replace:=True
+    BIRIM_DIGERLERINI_GIZLE MUK
+    ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVeryHidden
+    ' Il secim ekrani tek gorunur sayfa: arkada acik kalan musteri sayfalarina kayma olmaz.
+    Dim k As Worksheet
+    For Each k In ThisWorkbook.Worksheets
+        If k.Name <> MUK And k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden
+    Next k
+    MUSTERI_KAPAK_GORUNUM ws
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
+    If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
+    ' Yarim kalan kopya silinir (dugmeleri baglanmamis sayfa kalici olarak olu kalmasin); sonraki giriste yeniden kurulur.
+    If yeniKopya And Not ws Is Nothing Then
+        application.DisplayAlerts = False
+        ws.Visible = xlSheetVisible
+        ws.Delete
+        application.DisplayAlerts = True
+        Set ws = Nothing
+    End If
+    On Error GoTo 0
+    Resume Cikis
+End Sub
+
+Private Sub MUSTERI_KAPAK_GORUNUM(ByVal ws As Worksheet)
+    Dim panel As Shape, z As Double
+    Set panel = ws.Shapes("AKSORA_V4_PANEL")
+    With ThisWorkbook.Windows(1)
+        .DisplayGridlines = False: .DisplayHeadings = False
+        .DisplayWorkbookTabs = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = False
+        .ScrollRow = 1: .ScrollColumn = 1
+        z = application.Min((.UsableWidth - 4) / (panel.Left + panel.Width), _
+            (.UsableHeight - 4) / (panel.top + panel.Height)) * 100
+        .Zoom = application.Max(10, application.Min(200, Fix(z)))
+    End With
+End Sub
+
+Public Sub AKSORA_MUSTERI_IL_SEC()
+    Dim ws As Worksheet, ix As Long, keys As Variant, ev As Boolean, sc As Boolean, metin As String
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If ActiveSheet.Name <> MUK Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(MUK)
+    ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
+    If ix < 1 Or ix > 5 Then Exit Sub
+    keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    ' Musteri depo tanimi olmayan il secilemez (aktif degil).
+    If Not AKSORA_MUSTERI_IL_DESTEK(CStr(keys(ix - 1))) Then
+        MsgBox Choose(ix, "GİRESUN", "TRABZON", "RİZE", "GÜMÜŞHANE", "ARTVİN") & _
+            " müşteri birimi şu an aktif değil.", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    ' Secim tek seferde cizilir; hesaplama olaylari baska sayfaya gecis yaptirmaz.
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect pw
+    ws.Range("AZ1").Value2 = keys(ix - 1)
+    MUSTERI_SECIM_CIZ ws
+Cikis:
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Protect Password:=pw, UserInterfaceOnly:=True
+        If Not (ActiveSheet Is ws) Then ws.Activate
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(metin) > 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    metin = Err.Description
+    Resume Cikis
+End Sub
+
+Private Sub MUSTERI_SECIM_CIZ(ByVal ws As Worksheet)
+    Dim keys As Variant, names As Variant, i As Long, key As String
+    Dim t As Date, yazi As String
+    keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    names = Array("GİRESUN", "TRABZON", "RİZE", "GÜMÜŞHANE", "ARTVİN")
+    key = CStr(ws.Range("AZ1").Value2)
+    ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇİLİ İL: -"
+    ' Secili ilin musteri stoklarinin son guncelleme tarihi.
+    On Error Resume Next
+    If ws.Name = MUK Then
+        If Len(key) = 0 Then
+            yazi = "Son stok güncellemesi: -"
+        ElseIf Not AKSORA_MUSTERI_IL_DESTEK(key) Then
+            yazi = "Bu il için müşteri birimi şu an aktif değil"
+        Else
+            t = AKSORA_MUSTERI_IL_SON_TARIH(key)
+            If t > 0 Then yazi = "Son stok güncellemesi: " & Format$(t, "dd.mm.yyyy hh:nn") Else yazi = "Son stok güncellemesi: Henüz güncellenmedi"
+        End If
+        ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = yazi
+    End If
+    On Error GoTo 0
+    For i = 1 To 5
+        With ws.Shapes("AKSORA_V4_IL_" & i)
+            If keys(i - 1) = key Then
+                .Fill.ForeColor.RGB = RGB(32, 78, 76)
+                .line.ForeColor.RGB = RGB(115, 223, 157): .line.Weight = 2.5
+                ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇİLİ İL: " & names(i - 1)
+            Else
+                .Fill.ForeColor.RGB = RGB(40, 79, 111)
+                .line.ForeColor.RGB = RGB(83, 133, 168): .line.Weight = 1
+            End If
+        End With
+    Next i
+End Sub
+
+Public Sub AKSORA_MUSTERI_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  MÜŞTERİ BİRİMİ", "İl stokları ve ekranlar hazırlanıyor...")
+    On Error GoTo son
+    MUSTERI_GIRIS_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub MUSTERI_GIRIS_ASIL()
+    Dim ws As Worksheet, kilit As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(MUK)
+    If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
+        MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
+    ElseIf Not AKSORA_MUSTERI_IL_DESTEK(CStr(ws.Range("AZ1").Value2)) Then
+        MsgBox "Seçilen ilin müşteri birimi şu an aktif değil. Aktif iller: Artvin, Trabzon, Gümüşhane, Giresun, Rize.", vbInformation, "AKSORA"
+    Else
+        ' Secilen ilin stoklari ekrana yuklenir (onceki ilin verisi kendi kaydina saklanir).
+        ' Gecis boyunca ekran ve pencere kilitli: ara sayfalar gorunmez, tek seferde panel gelir.
+        application.ScreenUpdating = False
+        kilit = AKSORA_PENCERE_KILIT(True)
+        AKSORA_MUSTERI_IL_DEGIS CStr(ws.Range("AZ1").Value2)
+        application.ScreenUpdating = False
+        AKSORA_MUSTERI_TEMA_AC
+        If kilit Then AKSORA_PENCERE_KILIT False
+        application.ScreenUpdating = True
+    End If
+    Exit Sub
+Hata:
+    If kilit Then AKSORA_PENCERE_KILIT False
+    application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Il secim ekrani: yatirim (YAK) ve ilce yonetim (ILCE_KAPAK) ayni KAPAK kopyasini kullanir.
+Private Sub YATIRIM_KAPAK_AC(Optional ByVal ilce As Boolean)
+    Dim yeniKopya As Boolean
+    Dim ws As Worksheet, kaynak As Worksheet, s As Shape, foto As Shape, bant As Shape
+    Dim yol As String, ev As Boolean, sc As Boolean, no As Long, metin As String
+    Dim i As Long, h As Double, kaynakGorunum As XlSheetVisibility, ad As String, bantVar As Boolean
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    ad = IIf(ilce, ILCE_KAPAK, YAK)
+    If ilce Then
+        yol = AKSORA_GORSEL("AKSORA_ILCE_BANT.png")
+        bantVar = (Len(Dir$(yol)) > 0)
+    Else
+        yol = AKSORA_GORSEL("AKSORA_YATIRIM_BANT.png")
+        If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1610, , _
+            "AKSORA_YATIRIM_BANT.png AKSORA klasöründe (GORSELLER) bulunmalıdır."
+        bantVar = True
+    End If
+    BIRIM_SAYFA_KONTROL ad
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo Hata
+    If ws Is Nothing Then
+        Set kaynak = ThisWorkbook.Worksheets("KAPAK")
+        kaynakGorunum = kaynak.Visible
+        kaynak.Visible = xlSheetVisible
+        kaynak.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+        Set ws = ActiveSheet
+        ws.Name = ad
+        yeniKopya = True
+        kaynak.Visible = kaynakGorunum
+        ws.Unprotect pw
+        ws.Range("BX1").Value2 = tag
+        ws.Range("AZ1").ClearContents
+        ' Kopyadaki eski stok yonlendirmeleri kesinlikle kullanilmaz.
+        For Each s In ws.Shapes
+            s.OnAction = ""
+        Next s
+        For i = 1 To 5
+            With ws.Shapes("AKSORA_V4_IL_" & i)
+                .AlternativeText = CStr(i)
+                .OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_IL_SEC")
+            End With
+        Next i
+        ws.Shapes("AKSORA_V4_ENTER").OnAction = BIRIM_MAKRO(IIf(ilce, "AKSORA_ILCE_GIRIS", "AKSORA_YATIRIM_GIRIS"))
+        AKSORA_BIRIM_KAPAK_GERI ad
+        ws.Range("BX2").Value2 = 0
+        yeniKopya = False
+    End If
+    ws.Unprotect pw
+    If Val(CStr(ws.Range("BX2").Value2)) < 7 And bantVar Then
+        On Error Resume Next
+        ws.Shapes("BIRIM_YATIRIM_BANT").Delete
+        On Error GoTo Hata
+        Set foto = ws.Shapes("AKSORA_KAPAK_YENI_V6")
+        ' Ust fotograf korunur; sadece iki alt bilgi seridi kaplanir.
+        Set bant = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
+        h = bant.Height
+        bant.PictureFormat.CropTop = h * 0.7
+        bant.LockAspectRatio = msoFalse
+        bant.Left = foto.Left: bant.top = foto.top + foto.Height * 0.7
+        bant.Width = foto.Width: bant.Height = foto.Height * 0.3
+        bant.Name = "BIRIM_YATIRIM_BANT"
+        bant.Placement = xlFreeFloating: bant.Locked = True
+        ws.Range("BX2").Value2 = 7
+    End If
+    YATIRIM_SECIM_CIZ ws, ilce
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+    ws.Visible = xlSheetVisible: ws.Select Replace:=True
+    BIRIM_DIGERLERINI_GIZLE ad
+    ThisWorkbook.Worksheets("KAPAK").Visible = xlSheetVeryHidden
+    ' Il secim ekrani tek gorunur sayfa: arkada acik kalan sayfalara kayma olmaz.
+    Dim yk As Worksheet
+    For Each yk In ThisWorkbook.Worksheets
+        If yk.Name <> ad And yk.Visible = xlSheetVisible Then yk.Visible = xlSheetVeryHidden
+    Next yk
+    YATIRIM_KAPAK_GORUNUM ws
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then ws.Protect Password:=pw, UserInterfaceOnly:=True
+    If Not kaynak Is Nothing Then kaynak.Visible = kaynakGorunum
+    ' Yarim kalan kopya silinir (dugmeleri baglanmamis sayfa kalici olarak olu kalmasin); sonraki giriste yeniden kurulur.
+    If yeniKopya And Not ws Is Nothing Then
+        application.DisplayAlerts = False
+        ws.Visible = xlSheetVisible
+        ws.Delete
+        application.DisplayAlerts = True
+        Set ws = Nothing
+    End If
+    On Error GoTo 0
+    Resume Cikis
+End Sub
+
+Private Sub YATIRIM_KAPAK_GORUNUM(ByVal ws As Worksheet)
+    Dim panel As Shape, z As Double
+    Set panel = ws.Shapes("AKSORA_V4_PANEL")
+    With ThisWorkbook.Windows(1)
+        .DisplayGridlines = False: .DisplayHeadings = False
+        .DisplayWorkbookTabs = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = False
+        .ScrollRow = 1: .ScrollColumn = 1
+        z = application.Min((.UsableWidth - 4) / (panel.Left + panel.Width), _
+            (.UsableHeight - 4) / (panel.top + panel.Height)) * 100
+        .Zoom = application.Max(10, application.Min(200, Fix(z)))
+    End With
+End Sub
+
+Public Sub AKSORA_YATIRIM_IL_SEC()
+    Dim ws As Worksheet, ix As Long, keys As Variant, ev As Boolean, metin As String
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If ActiveSheet.Name <> YAK And ActiveSheet.Name <> ILCE_KAPAK Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(ActiveSheet.Name)
+    ix = CLng(ws.Shapes(CStr(application.Caller)).AlternativeText)
+    If ix < 1 Or ix > 5 Then Exit Sub
+    keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    ' Secim tek seferde cizilir; olaylar baska sayfaya gecis yaptirmaz.
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect pw
+    ws.Range("AZ1").Value2 = keys(ix - 1)
+    YATIRIM_SECIM_CIZ ws, (ws.Name = ILCE_KAPAK)
+Cikis:
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Protect Password:=pw, UserInterfaceOnly:=True
+        If Not (ActiveSheet Is ws) Then ws.Activate
+    End If
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If Len(metin) > 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    metin = Err.Description
+    Resume Cikis
+End Sub
+
+Private Sub YATIRIM_SECIM_CIZ(ByVal ws As Worksheet, Optional ByVal ilce As Boolean)
+    Dim keys As Variant, names As Variant, i As Long, key As String, son As Date
+    keys = Array("GIRESUN", "TRABZON", "RIZE", "GUMUSHANE", "ARTVIN")
+    names = Array("GİRESUN", "TRABZON", "RİZE", "GÜMÜŞHANE", "ARTVİN")
+    key = CStr(ws.Range("AZ1").Value2)
+    ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇİLİ İL: -"
+    On Error Resume Next
+    If Len(key) > 0 Then
+        If ilce Then son = AKSORA_ILCE_IL_SON_TARIH(key) Else son = AKSORA_YATIRIM_IL_SON_TARIH(key)
+        If son > 0 Then
+            ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = "Son güncelleme: " & Format$(son, "dd.mm.yyyy hh:nn")
+        Else
+            ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = "Son güncelleme: henüz yapılmadı"
+        End If
+    Else
+        ws.Shapes("AKSORA_V8_TARIH").TextFrame2.TextRange.Text = IIf(ilce, "İlçe Yönetim birimi", "Yatırım birimi")
+    End If
+    On Error GoTo 0
+    For i = 1 To 5
+        With ws.Shapes("AKSORA_V4_IL_" & i)
+            If keys(i - 1) = key Then
+                .Fill.ForeColor.RGB = RGB(32, 78, 76)
+                .line.ForeColor.RGB = RGB(115, 223, 157): .line.Weight = 2.5
+                ws.Shapes("AKSORA_V4_STATUS").TextFrame2.TextRange.Text = "SEÇİLİ İL: " & names(i - 1)
+            Else
+                .Fill.ForeColor.RGB = RGB(40, 79, 111)
+                .line.ForeColor.RGB = RGB(83, 133, 168): .line.Weight = 1
+            End If
+        End With
+    Next i
+End Sub
+
+Public Sub AKSORA_YATIRIM_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    If Len(CStr(ThisWorkbook.Worksheets(YAK).Range("AZ1").Value2)) = 0 Then MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA": Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM BİRİMİ", "İl stokları ve ekranlar hazırlanıyor...")
+    On Error GoTo son
+    YATIRIM_GIRIS_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub YATIRIM_GIRIS_ASIL()
+    Dim ws As Worksheet
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(YAK)
+    If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
+        MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
+    Else
+        Y_GIRIS CStr(ws.Range("AZ1").Value2)
+    End If
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_BIRIM_ANA_MENU()
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    On Error GoTo Hata
+    AKSORA_BIRIM_ACILIS
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_PANEL_AC(ByVal ad As String, ByVal baslik As String)
+    Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    Set ws = BIRIM_SAYFA(ad)
+    If ws.Shapes.Count = 0 Or Val(CStr(ws.Range("BX2").Value2)) < 14 Then BIRIM_CIZ ws, baslik
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    BIRIM_DIGERLERINI_GIZLE ad
+    BIRIM_GORUNUM ws
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+Private Sub BIRIM_DIGERLERINI_GIZLE(ByVal secilen As String)
+    Dim ad As Variant, ws As Worksheet
+    For Each ad In Array(HUB, yat, MUS, MUK, YAK, ILCE_KAPAK, ADM)
+        If CStr(ad) <> secilen Then
+            Set ws = Nothing
+            On Error Resume Next
+            Set ws = ThisWorkbook.Worksheets(CStr(ad))
+            On Error GoTo 0
+            If Not ws Is Nothing Then ws.Visible = xlSheetVeryHidden
+        End If
+    Next ad
+End Sub
+
+Public Sub AKSORA_BIRIM_KAPAK_GERI(Optional ByVal hedef As String = "KAPAK")
+    Dim ws As Worksheet, panel As Shape, btn As Shape
+    Dim cizim As Boolean, icerik As Boolean, senaryo As Boolean, secim As Long
+    Dim no As Long, metin As String
+    Set ws = ThisWorkbook.Worksheets(hedef)
+    cizim = ws.ProtectDrawingObjects: icerik = ws.ProtectContents
+    senaryo = ws.ProtectScenarios: secim = ws.EnableSelection
+    On Error GoTo Hata
+    Set panel = ws.Shapes("AKSORA_V4_PANEL")
+    ws.Unprotect Password:=""
+    On Error Resume Next
+    Set btn = ws.Shapes("BIRIM_KAPAK_GERI")
+    On Error GoTo Hata
+    If btn Is Nothing Then
+        Set btn = ws.Shapes.AddShape(msoShapeRoundedRectangle, 0, 0, 170, 29)
+        btn.Name = "BIRIM_KAPAK_GERI"
+    End If
+    With btn
+        .Left = panel.Left + 18
+        .top = panel.top + panel.Height - 43
+        .Width = 192: .Height = 29
+        .Adjustments.Item(1) = 0.12
+        .Fill.ForeColor.RGB = RGB(24, 76, 104)
+        .line.ForeColor.RGB = RGB(74, 186, 201)
+        .line.Weight = 0.8
+        .Placement = xlFreeFloating: .Locked = True
+        .OnAction = BIRIM_MAKRO("AKSORA_BIRIM_ANA_MENU")
+        .Visible = msoTrue: .ZOrder msoBringToFront
+        With .TextFrame2
+            .MarginLeft = 12: .MarginRight = 8: .MarginTop = 0: .MarginBottom = 0
+            .VerticalAnchor = msoAnchorMiddle
+            .TextRange.Text = ChrW(8592) & "  Birim seçimine dön"
+            .TextRange.Font.Name = "Aptos"
+            .TextRange.Font.Size = 10
+            .TextRange.Font.bold = msoTrue
+            .TextRange.Font.Fill.ForeColor.RGB = RGB(235, 250, 255)
+        End With
+    End With
+Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
+    If cizim Or icerik Or senaryo Then
+        ws.Protect Password:="", DrawingObjects:=cizim, Contents:=icerik, _
+            Scenarios:=senaryo, UserInterfaceOnly:=True
+    End If
+    ws.EnableSelection = secim
+    On Error GoTo 0
+    If no <> 0 Then Err.Raise no, "AKSORA_BIRIM_KAPAK_GERI", metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+Private Sub BIRIM_GORUNUM(ByVal ws As Worksheet)
+    Dim z As Double, oran As Double, genislik As Double, parca As Variant, s As Shape
+    Dim no As Long, metin As String
+    If mGorunum Or Not (ActiveSheet Is ws) Then Exit Sub
+    mGorunum = True
+    On Error GoTo Hata
+    With ThisWorkbook.Windows(1)
+        .DisplayGridlines = False: .DisplayHeadings = False
+        .DisplayWorkbookTabs = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = False
+        .ScrollRow = 1: .ScrollColumn = 1
+        z = .UsableHeight / ch * 100
+        .Zoom = application.Max(10, application.Min(200, Fix(z)))
+        genislik = (.UsableWidth - 4) * 100 / CDbl(.Zoom)
+    End With
+    oran = genislik / cw
+    ws.Unprotect Password:=pw
+    For Each s In ws.Shapes
+        If Left$(s.AlternativeText, 17) = "AKSORA_LAYOUT_V2|" Then
+            parca = Split(s.AlternativeText, "|")
+            s.LockAspectRatio = msoFalse
+            s.Left = Val(parca(1)) * oran
+            s.top = Val(parca(2))
+            s.Width = Val(parca(3)) * oran
+            s.Height = Val(parca(4))
+            If s.Name = "BIRIM_LOGO" Then
+                s.Width = 98
+                s.Left = 30 * oran
+            End If
+        End If
+    Next s
+Cikis:
+    On Error Resume Next
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+    mGorunum = False
+    On Error GoTo 0
+    If no <> 0 Then Err.Raise no, "BIRIM_GORUNUM", metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+Private Sub BIRIM_CIZ(ByVal ws As Worksheet, ByVal panel As String)
+    Dim i As Long, s As Shape, yol As String, resimYukseklik As Double, kw As Double
+    yol = AKSORA_GORSEL("AKSORA_BIRIM_BANNER_03.png")
+    If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
+        "AKSORA_BIRIM_BANNER_03.png AKSORA klasöründe (GORSELLER) bulunmalıdır."
+    ws.Unprotect pw
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 6) = "BIRIM_" Then ws.Shapes(i).Delete
+    Next i
+    ws.Range("A1:BH44").Interior.Color = RGB(236, 248, 254)
+    ws.Range("A1:BH44").ClearContents
+    ws.Columns("A:BH").ColumnWidth = 2.5
+    Do While ws.Range("A1:BH1").Width < cw
+        ws.Columns("A:BH").ColumnWidth = ws.Columns("A").ColumnWidth + 0.25
+    Loop
+    ws.Rows("1:44").RowHeight = 15
+    ws.Range("BX1").Value2 = tag
+    ws.Range("BX2").Value2 = 14
+    ws.Columns("BX").Hidden = True
+    ws.ScrollArea = "A1:BH44"
+    ws.Tab.Color = RGB(12, 45, 79)
+    BIRIM_RECT ws, "ZEMIN", 0, 0, cw, ch, RGB(236, 248, 254), -1, 1
+    yol = AKSORA_GORSEL("AKSORA_PANEL_TEK_PARCA_V7.png")
+    If Len(Dir$(yol)) > 0 Then
+        Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 126, cw, 483)
+        s.Name = "BIRIM_FOTOGRAF": s.Placement = xlFreeFloating: s.Locked = True
+    End If
+    Set s = BIRIM_RECT(ws, "FOTO_SIS", 0, 126, cw, 483, RGB(235, 248, 255), -1, 1)
+    s.Fill.Transparency = 0.45
+    yol = AKSORA_GORSEL("AKSORA_BIRIM_BANNER_03.png")
+    If Len(Dir$(yol)) = 0 Then Err.Raise vbObjectError + 1608, , _
+        "AKSORA_BIRIM_BANNER_03.png AKSORA klasöründe (GORSELLER) bulunmalıdır."
+    Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
+    s.Name = "BIRIM_BANNER_03"
+    resimYukseklik = s.Height
+    With s.PictureFormat
+        .CropTop = resimYukseklik * 195 / 683
+        .CropBottom = resimYukseklik * 231 / 683
+    End With
+    With s
+        .LockAspectRatio = msoFalse
+        .Left = 0: .top = 0: .Width = cw: .Height = 126
+        .Placement = xlFreeFloating: .Locked = True
+    End With
+    BIRIM_RECT ws, "UST_CIZGI", 0, 124, cw, 3, RGB(34, 185, 191), -1, 1
+    BIRIM_RECT ws, "ALT", 0, 609, cw, 51, RGB(12, 45, 79), -1, 1
+    BIRIM_TEXT ws, "ALT_SOL", "AKSORA  /  Birlikte daha güçlü.", 34, 622, 550, 24, 10, RGB(224, 241, 250), False
+    BIRIM_TEXT ws, "ALT_SAG", "BİRİM ODAKLI  ·  TEK MERKEZ", 797, 622, 253, 24, 9, RGB(137, 210, 229), True
+    If Len(panel) = 0 Then
+        BIRIM_TEXT ws, "EYEBROW", "HOŞ GELDİNİZ", 34, 151, 850, 22, 10, RGB(0, 126, 113), True
+        BIRIM_TEXT ws, "BASLIK", "Hangi birim için işlem yapacaksınız?", 34, 183, 1010, 45, 27, RGB(12, 45, 79), True
+        BIRIM_TEXT ws, "ALT_BASLIK", "Devam etmek için biriminizi seçin.", 35, 236, 1000, 26, 12, RGB(76, 111, 134), False
+        kw = (cw - 68 - 3 * 18) / 4
+        BIRIM_KART ws, "STOK", 34, "01", "Malzeme Stok Birimi", _
+            "", "Stok takibi" & vbLf & "İller arası malzeme arama" & vbLf & _
+            "Gün bazlı stok karşılaştırma" & vbLf & "İl depoları raporları", _
+            "İşlemlere geç", "AKSORA_BIRIM_MALZEME", RGB(0, 125, 110), True, kw
+        BIRIM_KART ws, "YAT", 34 + (kw + 18), "02", "Yatırım Birimi", _
+            "", "Hakediş" & vbLf & "Teminat takibi" & vbLf & _
+            "Yüklenici stok takibi" & vbLf & "Yatırım depo takibi", _
+            "İşlemlere geç", "AKSORA_BIRIM_YATIRIM", RGB(20, 103, 173), True, kw
+        BIRIM_KART ws, "MUS", 34 + 2 * (kw + 18), "03", "Müşteri Birimi", _
+            "", "Seri numaralı malzeme takibi" & vbLf & "İlçe stok kontrolleri" & vbLf & _
+            "Yüklenici stok kontrolleri" & vbLf & "Müşteri depo takibi", _
+            "İşlemlere geç", "AKSORA_BIRIM_MUSTERI", RGB(32, 133, 158), True, kw
+        BIRIM_KART ws, "ILC", 34 + 3 * (kw + 18), "04", "İlçe Yönetim Birimi", _
+            "", "İlçe depo stokları" & vbLf & "İlçeler arası malzeme arama" & vbLf & _
+            "Demontaj malzeme kontrolü" & vbLf & "İSG zimmet kontrolü", _
+            "İşlemlere geç", "AKSORA_BIRIM_ILCE", RGB(79, 70, 160), True, kw
+        BIRIM_TEXT ws, "SECIM_NOT", "İhtiyacınız olan işlem alanına tek seçimle ulaşın.", 35, 565, 700, 24, 10, RGB(87, 121, 142), False
+        ' Yonetici girisi (sifreli yonetim merkezi)
+        BIRIM_BUTON ws, "ADMIN", "ADMİN GİRİŞİ  " & ChrW(8250), cw - 34 - 210, 557, 210, 38, RGB(12, 45, 79), "AKSORA_ADMIN_GIRIS"
+    Else
+        BIRIM_TEXT ws, "PANEL_EYEBROW", "BİRİM ÇALIŞMA ALANI", 35, 157, 900, 24, 11, RGB(0, 126, 113), True
+        BIRIM_TEXT ws, "PANEL_BASLIK", panel, 35, 196, 1000, 52, 32, RGB(12, 45, 79), True
+        BIRIM_RECT ws, "PANEL_KART", 35, 282, 1010, 213, RGB(255, 255, 255), RGB(201, 226, 238), msoShapeRoundedRectangle
+        BIRIM_TEXT ws, "PANEL_DURUM", "İşlem ekranları hazırlanıyor", 65, 328, 915, 39, 22, RGB(12, 45, 79), True
+        BIRIM_TEXT ws, "PANEL_NOT", "Bu birime ait işlemler sonraki adımda burada yer alacak.", 66, 386, 920, 32, 13, RGB(77, 112, 137), False
+        BIRIM_BUTON ws, "GERI", "Birim seçimine dön", 35, 523, 260, 48, RGB(12, 45, 79), "AKSORA_BIRIM_ANA_MENU"
+    End If
+    For Each s In ws.Shapes
+        If Left$(s.Name, 6) = "BIRIM_" Then
+            s.AlternativeText = "AKSORA_LAYOUT_V2|" & Trim$(Str$(s.Left)) & "|" & _
+                Trim$(Str$(s.top)) & "|" & Trim$(Str$(s.Width)) & "|" & Trim$(Str$(s.Height))
+        End If
+    Next s
+    ws.Protect Password:=pw, DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+    ws.EnableSelection = xlNoSelection
+End Sub
+
+Private Sub BIRIM_KART(ByVal ws As Worksheet, ByVal ad As String, ByVal x As Double, _
+    ByVal numara As String, ByVal baslik As String, ByVal aciklama As String, _
+    ByVal detay As String, ByVal buton As String, ByVal makro As String, _
+    ByVal renk As Long, ByVal aktif As Boolean, Optional ByVal kw As Double = 324)
+    Dim s As Shape
+    BIRIM_RECT ws, ad & "_GOLGE", x + 2, 299, kw, 244, RGB(221, 237, 246), -1, msoShapeRoundedRectangle
+    Set s = BIRIM_RECT(ws, ad & "_KART", x, 295, kw, 244, RGB(255, 255, 255), RGB(193, 224, 235), msoShapeRoundedRectangle)
+    s.OnAction = BIRIM_MAKRO(makro)
+    BIRIM_RECT ws, ad & "_VURGU", x + 18, 315, 4, 33, renk, -1, 1
+    BIRIM_TEXT ws, ad & "_NO", numara, x + 35, 315, 60, 31, 19, renk, True
+    BIRIM_TEXT ws, ad & "_BASLIK", baslik, x + 21, 367, kw - 38, 31, IIf(kw < 300, 16, 18), RGB(12, 45, 79), True
+    BIRIM_TEXT ws, ad & "_DETAY", detay, x + 21, 407, kw - 38, 66, 10, RGB(55, 99, 125), False
+    With ws.Shapes("BIRIM_" & ad & "_DETAY").TextFrame2
+        .VerticalAnchor = msoAnchorTop
+        .TextRange.ParagraphFormat.SpaceAfter = 3
+    End With
+    BIRIM_BUTON ws, ad & "_GIT", buton & "  " & ChrW(8594), x + 21, 484, kw - 42, 36, renk, makro
+    If aktif Then
+        BIRIM_RECT ws, ad & "_ROZET", x + kw - 100, 318, 78, 25, RGB(222, 248, 235), -1, msoShapeRoundedRectangle
+        BIRIM_TEXT ws, ad & "_ROZET_YAZI", "AKTİF", x + kw - 87, 321, 54, 19, 8, RGB(0, 111, 80), True
+    Else
+        BIRIM_RECT ws, ad & "_ROZET", x + kw - 159, 318, 137, 25, RGB(184, 45, 55), -1, msoShapeRoundedRectangle
+        BIRIM_TEXT ws, ad & "_ROZET_YAZI", "Yapım Aşamasında", x + kw - 148, 321, 117, 19, 8, RGB(255, 255, 255), True
+    End If
+    ' Metinler de ayni hedefe gider; kartin her noktasi secilebilir.
+    For Each s In ws.Shapes
+        If Left$(s.Name, Len("BIRIM_" & ad & "_")) = "BIRIM_" & ad & "_" Then s.OnAction = BIRIM_MAKRO(makro)
+    Next s
+End Sub
+
+Private Function BIRIM_RECT(ByVal ws As Worksheet, ByVal ad As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, _
+    ByVal dolgu As Long, ByVal kenar As Long, ByVal tip As Long) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddShape(tip, x, y, w, h)
+    With s
+        .Name = "BIRIM_" & ad
+        .Fill.ForeColor.RGB = dolgu
+        If kenar < 0 Then .line.Visible = msoFalse Else .line.ForeColor.RGB = kenar: .line.Weight = 0.8
+        .Placement = xlFreeFloating: .Locked = True
+        If tip = msoShapeRoundedRectangle Then .Adjustments.Item(1) = 0.09
+    End With
+    Set BIRIM_RECT = s
+End Function
+
+Private Sub BIRIM_TEXT(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, _
+    ByVal boy As Single, ByVal renk As Long, ByVal kalin As Boolean)
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    With s
+        .Name = "BIRIM_" & ad
+        .Fill.Visible = msoFalse: .line.Visible = msoFalse
+        .Placement = xlFreeFloating: .Locked = True
+        With .TextFrame2
+            .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+            .WordWrap = msoTrue: .VerticalAnchor = msoAnchorMiddle
+            .TextRange.Text = metin
+            .TextRange.Font.Name = "Aptos"
+            .TextRange.Font.Size = boy
+            .TextRange.Font.Fill.ForeColor.RGB = renk
+            .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        End With
+    End With
+End Sub
+
+Private Sub BIRIM_BUTON(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, _
+    ByVal renk As Long, ByVal makro As String)
+    Dim s As Shape
+    Set s = BIRIM_RECT(ws, ad, x, y, w, h, renk, -1, msoShapeRoundedRectangle)
+    With s.TextFrame2
+        .MarginLeft = 15: .MarginRight = 15: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos"
+        .TextRange.Font.Size = 11
+        .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+    End With
+    s.OnAction = BIRIM_MAKRO(makro)
+End Sub
+
+Public Function BIRIM_MAKRO(ByVal ad As String) As String
+    BIRIM_MAKRO = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & ad
+End Function
+
+'==========================================================
+' YATIRIM BIRIMI (Y_ sayfalari)
+' Ana panel, stok ve rapor sayfalari musteri biriminin kilitli tasarimindan
+' kopyalanir; Hakedis ve Teminat sayfalari ayni basliklarla hazirlanir.
+'==========================================================
+
+Private Function Y_ADLAR() As Variant
+    Y_ADLAR = Array("Y_ANA PANEL", "Y_TEMİNAT", "Y_HAKEDİŞ", "Y_MALZEME_ARA", _
+        "Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR", "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR", _
+        "Y_CDP_YÜKLENİCİ_STOK", "Y_CDP_YÜKLENİCİ_RAPOR", "Y_EPP_YÜKLENİCİ_STOK", "Y_EPP_YÜKLENİCİ_RAPOR")
+End Function
+
+Private Function Y_BASLIK(ByVal ad As String) As String
+    Select Case ad
+        Case "Y_ANA PANEL": Y_BASLIK = "ANA PANEL"
+        Case "Y_MALZEME_ARA": Y_BASLIK = "MALZEME ARAMA"
+        Case "Y_HAKEDİŞ": Y_BASLIK = "PROJE MALZEME TAKİBİ"
+        Case "Y_TEMİNAT": Y_BASLIK = "TEMİNAT TAKİBİ"
+        Case "I_BİRLEŞİK_STOK": Y_BASLIK = "CDP + EPP İLÇELER BİRLEŞİK STOK"
+        Case "I_BİRLEŞİK_RAPOR": Y_BASLIK = "CDP + EPP İLÇELER BİRLEŞİK RAPORU"
+        Case Else: Y_BASLIK = Replace(Replace(Mid$(ad, 3), "_", " "), "RAPOR", "RAPORU")
+    End Select
+End Function
+
+Private Function Y_TUR(ByVal ad As String) As String
+    If ad = "Y_ANA PANEL" Then
+        Y_TUR = "PANEL"
+    ElseIf ad = "Y_MALZEME_ARA" Then
+        Y_TUR = "ARAMA"
+    ElseIf ad = "Y_HAKEDİŞ" Or ad = "Y_TEMİNAT" Then
+        Y_TUR = "BOS"
+    ElseIf Right$(ad, 5) = "_STOK" Then
+        Y_TUR = "STOK"
+    Else
+        Y_TUR = "RAPOR"
+    End If
+End Function
+
+Public Function AKSORA_YATIRIM_SAYFA(ByVal sh As Object) As Boolean
+    Dim ad As Variant
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If Left$(sh.Name, 2) <> "Y_" Then Exit Function
+    For Each ad In Y_ADLAR()
+        If sh.Name = CStr(ad) Then AKSORA_YATIRIM_SAYFA = (CStr(sh.Range("BX1").Value2) = Y_ETIKET): Exit Function
+    Next ad
+End Function
+
+Public Function Y_IL_ADI(ByVal kod As String) As String
+    Select Case UCase$(Trim$(kod))
+        Case "GIRESUN": Y_IL_ADI = "Giresun"
+        Case "TRABZON": Y_IL_ADI = "Trabzon"
+        Case "RIZE": Y_IL_ADI = "Rize"
+        Case "GUMUSHANE": Y_IL_ADI = "Gümüşhane"
+        Case Else: Y_IL_ADI = "Artvin"
+    End Select
+End Function
+
+Public Function Y_SEKIL(ByVal ws As Worksheet, ByVal ad As String) As Shape
+    On Error Resume Next
+    Set Y_SEKIL = ws.Shapes(ad)
+    On Error GoTo 0
+End Function
+
+Public Sub Y_YAZ(ByVal s As Shape, ByVal metin As String)
+    If s Is Nothing Then Exit Sub
+    On Error Resume Next
+    s.TextFrame2.TextRange.Text = metin
+    On Error GoTo 0
+End Sub
+
+Private Function Y_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, _
+    ByVal x As Double, ByVal y As Double, ByVal w As Double, ByVal h As Double, ByVal punto As Single, _
+    ByVal renk As Long, ByVal kalin As Boolean, ByVal hiz As MsoParagraphAlignment) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    s.Name = ad: s.Fill.Visible = msoFalse: s.line.Visible = msoFalse: s.Placement = xlFreeFloating
+    With s.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoTrue
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = punto
+        .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        .TextRange.Font.Fill.ForeColor.RGB = renk
+        .TextRange.ParagraphFormat.Alignment = hiz
+    End With
+    Set Y_METIN = s
+End Function
+
+Private Function Y_KUTU(ByVal ws As Worksheet, ByVal ad As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal dolgu As Long, ByVal kenar As Long) As Shape
+    Dim s As Shape
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    s.Name = ad: s.Adjustments.Item(1) = 0.08: s.Placement = xlFreeFloating
+    s.Fill.ForeColor.RGB = dolgu: s.Shadow.Visible = msoFalse
+    If kenar < 0 Then s.line.Visible = msoFalse Else s.line.ForeColor.RGB = kenar: s.line.Weight = 1
+    Set Y_KUTU = s
+End Function
+
+Private Sub Y_BAGLA(ByVal s As Shape, ByVal hedef As String)
+    If s Is Nothing Then Exit Sub
+    If Len(hedef) > 0 Then
+        s.AlternativeText = hedef
+        s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_SAYFA_AC")
+    Else
+        s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_GUNCELLE")
+    End If
+End Sub
+
+' Eksik Y_ sayfalari musteri sayfalarindan kopyalanarak kurulur (veri tasinmaz).
+Private Sub Y_KUR(Optional ByVal ilce As Boolean)
+    Dim adlar As Variant, i As Long, ws As Worksheet, kaynak As Worksheet, gor As XlSheetVisibility, etk As String, tur As String
+    Dim da As Boolean, kad As String, adim As String, no As Long, metin As String, yeniAd As String
+    Dim onceki As Collection, sh As Object, varmi As Boolean
+    Dim duzen As Variant
+    If ilce Then adlar = I_ADLAR(): etk = I_ETIKET Else adlar = Y_ADLAR(): etk = Y_ETIKET
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    On Error GoTo Hata
+    For i = 0 To UBound(adlar)
+        adim = CStr(adlar(i)) & " / kontrol"
+        Set ws = Nothing
+        On Error Resume Next
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        On Error GoTo Hata
+        ' Yarim kalmis (etiketsiz) sayfa silinip yeniden kurulur.
+        If Not ws Is Nothing Then
+            If CStr(ws.Range("BX1").Value2) <> etk Then
+                adim = CStr(adlar(i)) & " / yarım sayfayı silme"
+                ws.Visible = xlSheetVisible
+                ws.Delete
+                Set ws = Nothing
+            End If
+        End If
+        If ws Is Nothing Then
+            If ilce Then tur = I_TUR(CStr(adlar(i))) Else tur = Y_TUR(CStr(adlar(i)))
+            If tur = "BOS" Then tur = "RAPOR"
+            Select Case tur
+                Case "PANEL": kad = "M_ANA PANEL"
+                Case "ARAMA": kad = "M_MALZEME_ARA"
+                Case "STOK": kad = "M_CDP_STOK"
+                Case "KARS": kad = "STOK_KARŞILAŞTIRMA"
+                Case Else: kad = "M_CDP_RAPOR"
+            End Select
+            adim = CStr(adlar(i)) & " / kaynak " & kad
+            Set kaynak = ThisWorkbook.Worksheets(kad)
+            gor = kaynak.Visible
+            kaynak.Visible = xlSheetVisible
+            ' Kopya kaynagin hemen yanina alinir (sondaki gizli sayfalar etkilemez).
+            adim = CStr(adlar(i)) & " / kopyalama"
+            Set onceki = New Collection
+            For Each sh In ThisWorkbook.Sheets
+                onceki.Add sh.Name, sh.Name
+            Next sh
+            kaynak.Copy After:=kaynak
+            ' Yeni sayfa konumdan degil, onceki listede olmamasindan bulunur (gizli sayfa kaymasi).
+            Set ws = Nothing
+            For Each sh In ThisWorkbook.Sheets
+                varmi = False
+                On Error Resume Next
+                varmi = (Len(onceki(sh.Name)) > 0)
+                On Error GoTo Hata
+                If Not varmi Then Set ws = sh: Exit For
+            Next sh
+            If ws Is Nothing Then Err.Raise 9, , "kopya sayfa bulunamadı"
+            kaynak.Visible = gor
+            Set kaynak = Nothing
+            adim = CStr(adlar(i)) & " / ad verme (" & ws.Name & ")"
+            ws.Name = CStr(adlar(i))
+            ws.Unprotect ""
+            duzen = ws.Range("BX8").Value2
+            ws.Range("BX1:BX40").ClearContents
+            ws.Range("BX8").Value2 = duzen
+            adim = CStr(adlar(i)) & " / içerik"
+            If ilce Then
+                I_TEMIZLE ws
+            Else
+                Select Case Y_TUR(ws.Name)
+                    Case "PANEL": Y_PANEL_TEMIZLE ws
+                    Case "ARAMA": Y_ARAMA_TEMIZLE ws
+                    Case "STOK": Y_STOK_TEMIZLE ws
+                    Case "RAPOR": Y_RAPOR_TEMIZLE ws
+                    Case Else: Y_BOS_KUR ws
+                End Select
+            End If
+            ws.Range("BX1").Value2 = etk
+            ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next i
+    application.DisplayAlerts = da
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not kaynak Is Nothing Then kaynak.Visible = gor
+    application.DisplayAlerts = da
+    On Error GoTo 0
+    Err.Raise no, "Y_KUR", adim & " | " & metin
+End Sub
+
+Private Sub Y_PANEL_TEMIZLE(ByVal ws As Worksheet)
+    Dim s As Shape, ad As String, i As Long, ilk As Shape, son As Shape, x0 As Double, x1 As Double, bw As Double, g As Double
+    Dim adlar As Variant, hedefler As Variant, yeni As Shape
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Left$(ad, 20) = "AKSORA15_KART_DEGER_" Then
+            If Right$(ad, 1) = "0" Then Y_YAZ s, "Veri bekleniyor" Else Y_YAZ s, "-"
+        End If
+        If Left$(ad, 18) = "AKSORA15_KART_LED_" Then s.Fill.ForeColor.RGB = RGB(145, 162, 176)
+    Next s
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "TEMİNAT TAKİBİ": Y_BAGLA Y_SEKIL(ws, "btnBaglantiKontrol"), "Y_TEMİNAT"
+    Y_YAZ Y_SEKIL(ws, "btnMalzemeAraPanel"), "PROJE / HAKEDİŞ": Y_BAGLA Y_SEKIL(ws, "btnMalzemeAraPanel"), "Y_HAKEDİŞ"
+    Y_YAZ Y_SEKIL(ws, "btnTumStok"), "TÜM STOKLARI GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnTumStok"), ""
+    Y_YAZ Y_SEKIL(ws, "btnCDP"), "CDP YATIRIM GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnCDP"), ""
+    Y_YAZ Y_SEKIL(ws, "btnIlce"), "EPP YATIRIM GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnIlce"), ""
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "YÜKLENİCİ GÜNCELLE": Y_BAGLA Y_SEKIL(ws, "btnYuk"), ""
+    Set s = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_BIRIM_YATIRIM")
+    ' Hizli erisim: 8 sayfa ayni satirda esit aralikla.
+    Set ilk = Y_SEKIL(ws, "MUSTERI_HIZLI_0"): Set son = Y_SEKIL(ws, "MUSTERI_HIZLI_5")
+    If ilk Is Nothing Or son Is Nothing Then Exit Sub
+    x0 = ilk.Left: x1 = son.Left + son.Width: g = 6
+    For i = 6 To 8
+        Set yeni = son.Duplicate
+        yeni.Name = "MUSTERI_HIZLI_" & i
+        yeni.top = son.top
+    Next i
+    bw = (x1 - x0 - 8 * g) / 9
+    adlar = Array("MALZEME ARAMA", "CDP YATIRIM STOK", "CDP YATIRIM RAPOR", "EPP YATIRIM STOK", "EPP YATIRIM RAPOR", _
+        "CDP YÜKLENİCİ STOK", "CDP YÜKLENİCİ RAPOR", "EPP YÜKLENİCİ STOK", "EPP YÜKLENİCİ RAPOR")
+    hedefler = Array("Y_MALZEME_ARA", "Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR", "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR", _
+        "Y_CDP_YÜKLENİCİ_STOK", "Y_CDP_YÜKLENİCİ_RAPOR", "Y_EPP_YÜKLENİCİ_STOK", "Y_EPP_YÜKLENİCİ_RAPOR")
+    For i = 0 To 8
+        Set s = Y_SEKIL(ws, "MUSTERI_HIZLI_" & i)
+        If Not s Is Nothing Then
+            s.Left = x0 + i * (bw + g): s.Width = bw: s.top = ilk.top: s.Height = ilk.Height
+            Y_YAZ s, CStr(adlar(i))
+            On Error Resume Next
+            s.TextFrame2.WordWrap = msoTrue
+            s.TextFrame2.MarginLeft = 2: s.TextFrame2.MarginRight = 2
+            On Error GoTo 0
+            Y_BAGLA s, CStr(hedefler(i))
+        End If
+    Next i
+End Sub
+
+Private Sub Y_STOK_TEMIZLE(ByVal ws As Worksheet)
+    Dim son As Long, s As Shape, i As Long
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    son = application.Max(7, AKSORA_SON_SATIR(ws, 5))
+    ws.Range("A7:N" & son).Clear
+    ws.Range(ws.Cells(7, 75), ws.Cells(son, 75)).ClearContents
+    ws.Range(ws.Rows(7), ws.Rows(son)).RowHeight = ws.StandardHeight
+    ws.Range("C2").MergeArea.Cells(1, 1).Value2 = "-"
+    ws.Range("C3").MergeArea.Cells(1, 1).Value2 = 0
+    ws.Range("C4").MergeArea.Cells(1, 1).Value2 = 0
+    ws.Range("A7").Value2 = "Veri bekleniyor: yatırım depo tanımları yapılınca stoklar SAP'den alınacak."
+    ws.Range("A7").Font.Italic = True: ws.Range("A7").Font.Color = RGB(100, 116, 139)
+    For Each s In ws.Shapes
+        If InStr(s.Name, "STOK_KPI_DEGER_") > 0 Then
+            i = Val(Mid$(s.Name, InStrRev(s.Name, "_") + 1))
+            On Error Resume Next
+            If i >= 0 And i <= 2 Then s.DrawingObject.Formula = "='" & Replace(ws.Name, "'", "''") & "'!C" & CStr(i + 2)
+            On Error GoTo 0
+        End If
+        If InStr(s.Name, "STOK_KPI_ETIKET_2") > 0 Then Y_YAZ s, "Toplam Stok Değeri"
+        If InStr(s.Name, "DEPO_KART_LISTE") > 0 Then
+            On Error Resume Next
+            s.ControlFormat.RemoveAllItems: s.ControlFormat.AddItem "TÜMÜ": s.ControlFormat.Value = 1
+            s.OnAction = ""
+            On Error GoTo 0
+        End If
+    Next s
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+    Y_BAGLA Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), ""
+End Sub
+
+Private Sub Y_RAPOR_TEMIZLE(ByVal ws As Worksheet)
+    Dim son As Long, s As Shape, i As Long, ad As String, co As ChartObject
+    son = application.Max(60, AKSORA_SON_SATIR(ws, 1) + 5)
+    ws.Range("A9:E" & son).Clear
+    ws.Range(ws.Rows(9), ws.Rows(son)).RowHeight = ws.StandardHeight
+    ws.Range("A9").Value2 = "Veri bekleniyor: depo tanımları yapılınca rapor oluşacak."
+    ws.Range("A9").Font.Italic = True: ws.Range("A9").Font.Color = RGB(100, 116, 139)
+    On Error Resume Next
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 12) = "AKSORA_RP_DM" Then ws.Shapes(i).Delete
+    Next i
+    On Error GoTo 0
+    For Each co In ws.ChartObjects
+        On Error Resume Next
+        Do While co.Chart.SeriesCollection.Count > 0: co.Chart.SeriesCollection(1).Delete: Loop
+        On Error GoTo 0
+    Next co
+    For Each s In ws.Shapes
+        ad = s.Name
+        If InStr(ad, "_DEGER_A3_E6") > 0 Then Y_YAZ s, "-"
+        If InStr(ad, "_DEGER_F3_J6") > 0 Then Y_YAZ s, "0"
+        If InStr(ad, "_DEGER_K3_Q6") > 0 Then Y_YAZ s, "0,00 TL"
+        If InStr(ad, "_ETIKET_K3_Q6") > 0 Then Y_YAZ s, "TOPLAM STOK DEĞERİ"
+        If Left$(ad, 21) = "AKSORA_RP_HALKA_RENK_" Or Left$(ad, 19) = "AKSORA_RP_HALKA_AD_" Then s.Visible = msoFalse
+        If Left$(ad, 20) = "AKSORA_RP_HALKA_PAY_" And ad <> "AKSORA_RP_HALKA_PAY_BASLIK" Then s.Visible = msoFalse
+        If ad = "AKSORA_RP_HALKA_MERKEZ" Then Y_YAZ s, "TOPLAM STOK" & vbLf & "Veri bekleniyor"
+    Next s
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+End Sub
+
+' Hakedis ve Teminat: rapor basligi korunur, icerik hedef kartlariyla doldurulur.
+Private Sub Y_BOS_KUR(ByVal ws As Worksheet)
+    Dim i As Long, ad As String, w As Double, y As Double, s As Shape, x As Double, kw As Double, kutular As Variant, renk As Variant
+    Dim silinecek As Collection, sv As Variant
+    Set silinecek = New Collection
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0) Then silinecek.Add ad
+    Next s
+    On Error Resume Next
+    For Each sv In silinecek
+        ws.Shapes(CStr(sv)).Delete
+    Next sv
+    On Error GoTo 0
+    ws.Range("A3:Z300").Clear
+    ws.Range(ws.Rows(3), ws.Rows(300)).RowHeight = ws.StandardHeight
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1200 Else w = s.Width
+    y = 70
+    If ws.Name = "Y_HAKEDİŞ" Then
+        Y_KUTU ws, "Y_KART_ZEMIN", 12, y, w - 24, 300, RGB(244, 248, 252), RGB(207, 227, 242)
+        Y_METIN ws, "Y_KART_ETIKET", "YAPIM AŞAMASINDA", 32, y + 16, 300, 18, 9, RGB(0, 125, 110), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_BASLIK", "Otomatik hakediş", 32, y + 36, w - 64, 30, 20, RGB(12, 45, 79), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_METIN", "Sözleşme birim fiyatları ve metrajdan hakediş tutarı otomatik hesaplanır; önceki hakedişle kümülatif kontrol, " & _
+            "kesintiler ve fiyat farkı tek ekranda. Hedef: elle hesap hatasını sıfıra indirmek, hakediş hazırlamayı günlerden saniyelere düşürmek.", _
+            32, y + 72, w - 64, 48, 11, RGB(51, 65, 85), False, msoAlignLeft
+        kutular = Array("Metraj ve birim fiyat", "Kümülatif kontrol", "Kesinti ve fiyat farkı", "Günlerden saniyelere")
+        kw = (w - 64 - 3 * 12) / 4
+        For i = 0 To 3
+            x = 32 + i * (kw + 12)
+            Y_KUTU ws, "Y_HEDEF_" & i, x, y + 140, kw, 70, RGB(255, 255, 255), RGB(207, 227, 242)
+            Y_METIN ws, "Y_HEDEF_NO_" & i, "0" & CStr(i + 1), x + 12, y + 150, 40, 22, 14, RGB(0, 125, 110), True, msoAlignLeft
+            Y_METIN ws, "Y_HEDEF_AD_" & i, CStr(kutular(i)), x + 12, y + 174, kw - 24, 26, 11, RGB(12, 45, 79), True, msoAlignLeft
+        Next i
+        Y_METIN ws, "Y_KART_NOT", "Sayfa tasarımı netleştiğinde bu alan hakediş giriş ve hesap ekranına dönüşecek.", 32, y + 240, w - 64, 20, 9, RGB(100, 116, 139), False, msoAlignLeft
+    Else
+        Y_KUTU ws, "Y_KART_ZEMIN", 12, y, w - 24, 330, RGB(244, 248, 252), RGB(207, 227, 242)
+        Y_METIN ws, "Y_KART_ETIKET", "YAPIM AŞAMASINDA", 32, y + 16, 300, 18, 9, RGB(0, 125, 110), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_BASLIK", "Teminat ve yüklenici stok riski", 32, y + 36, w - 64, 30, 20, RGB(12, 45, 79), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_METIN", "Her yüklenici için belirlenen teminat tutarı, yüklenici deposundaki malzemeyle karşılaştırılır. SAP deposu ile fiziki depo yan yana konur; " & _
+            "sahada kullanılmış ama hakedişi bekleyen malzemeler seçilip ""hakediş bekliyor"" olarak işaretlenir. Geriye kalan açıklanamayan fark yüklenicinin gerçek riskidir.", _
+            32, y + 72, w - 64, 48, 11, RGB(51, 65, 85), False, msoAlignLeft
+        kutular = Array("SAP'deki yüklenici deposu", "Sayılan fiziki depo", "Hakediş bekleyen", "Açık risk")
+        renk = Array(RGB(18, 62, 102), RGB(234, 244, 251), RGB(255, 241, 214), RGB(254, 226, 226))
+        kw = (w - 64 - 3 * 34) / 4
+        For i = 0 To 3
+            x = 32 + i * (kw + 34)
+            Set s = Y_KUTU(ws, "Y_HEDEF_" & i, x, y + 140, kw, 56, CLng(renk(i)), -1)
+            Y_METIN ws, "Y_HEDEF_AD_" & i, CStr(kutular(i)), x + 8, y + 148, kw - 16, 40, 12, IIf(i = 0, RGB(255, 255, 255), RGB(12, 45, 79)), True, msoAlignCenter
+            If i < 3 Then Y_METIN ws, "Y_HEDEF_OP_" & i, IIf(i < 2, ChrW(8722), "="), x + kw, y + 148, 34, 40, 20, RGB(12, 45, 79), True, msoAlignCenter
+        Next i
+        Set s = Y_KUTU(ws, "Y_ORAN_ZEMIN", 32, y + 214, w - 64, 40, RGB(12, 45, 79), -1)
+        Y_METIN ws, "Y_ORAN_METIN", "Risk oranı = Açık risk ÷ Teminat tutarı   •   yüklenici bazında, otomatik", 48, y + 214, w - 96, 40, 13, RGB(255, 255, 255), True, msoAlignLeft
+        Y_METIN ws, "Y_KART_NOT", "Proje kapanışında yüklenici bazında tek sayfalık risk raporu. Yüklenici deposu verisi AKSORA'da zaten okunuyor.", 32, y + 268, w - 64, 20, 9, RGB(100, 116, 139), False, msoAlignLeft
+    End If
+    For Each s In ws.Shapes
+        If InStr(s.Name, "FILIGRAN") > 0 Then s.top = y + 350
+    Next s
+End Sub
+
+' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
+Private Sub Y_IL_UYGULA(ByVal kod As String)
+    Dim ad As Variant, ws As Worksheet, il As String, s As Shape, korumali As Boolean
+    il = Y_IL_ADI(kod)
+    For Each ad In Y_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        If CStr(ws.Range("BX20").Value2) <> kod Then
+            korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+            ws.Unprotect ""
+            Select Case Y_TUR(ws.Name)
+                Case "PANEL"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_B"), "CDP YATIRIM / " & AKSORA_IL_TESIS(kod, "CDP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_L"), "EPP YATIRIM / " & AKSORA_IL_TESIS(kod, "EPP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "YÜKLENİCİ (CDP + EPP)"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_ALT_KURUM"), "ÇORUH ELEKTRİK DAĞITIM A.Ş. | " & il & " İl Müdürlüğü"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "Yatırım Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
+                    Set s = Y_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
+                    If Not s Is Nothing Then
+                        s.Fill.ForeColor.RGB = RGB(224, 242, 254)
+                        Y_YAZ s, il & " Yatırım Birimi"
+                        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(12, 45, 79)
+                    End If
+                    Y_BANNER ws, kod
+                Case "STOK"
+                    Y_YAZ Y_SEKIL(ws, "AKT1_STOK_BASLIK"), Y_BASLIK(ws.Name) & "  |  " & il & " İl Müdürlüğü"
+                Case "ARAMA"
+                Case Else
+                    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | " & Y_BASLIK(ws.Name) & "  |  " & il
+                    Y_YAZ Y_SEKIL(ws, "AKSORA_RP_ALT"), "AKSORA  |  " & Y_BASLIK(ws.Name) & "  |  " & il & " İl Müdürlüğü"
+            End Select
+            ws.Range("BX20").Value2 = kod
+            If korumali Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next ad
+End Sub
+
+' Panel bandi: AKSORA_YATIRIM_PANEL_BANTLARI.png varsa o kullanilir (5 il, musteri bandiyla ayni duzen).
+Private Sub Y_BANNER(ByVal ws As Worksheet, ByVal kod As String, Optional ByVal dosya As String = "AKSORA_YATIRIM_PANEL_BANTLARI.png")
+    Dim yol As String, eski As Shape, s As Shape, h As Double, bolum As Long, sinirlar As Variant
+    yol = AKSORA_GORSEL(dosya)
+    If Len(Dir$(yol)) = 0 Then yol = AKSORA_GORSEL("AKSORA_MUSTERI_PANEL_BANTLARI.png")
+    If Len(Dir$(yol)) = 0 Then Exit Sub
+    Set eski = Y_SEKIL(ws, "MUSTERI_ANA_BANNER")
+    If eski Is Nothing Then Exit Sub
+    Select Case UCase$(kod)
+        Case "GIRESUN": bolum = 0
+        Case "TRABZON": bolum = 1
+        Case "RIZE": bolum = 2
+        Case "GUMUSHANE": bolum = 3
+        Case Else: bolum = 4
+    End Select
+    Set s = ws.Shapes.AddPicture(yol, msoFalse, msoTrue, 0, 0, -1, -1)
+    h = s.Height
+    sinirlar = Array(0, 149, 297, 448, 597, 742)
+    s.PictureFormat.CropTop = h * CDbl(sinirlar(bolum)) / 742
+    s.PictureFormat.CropBottom = h * (742 - CDbl(sinirlar(bolum + 1))) / 742
+    s.LockAspectRatio = msoFalse
+    s.Left = eski.Left: s.top = eski.top: s.Width = eski.Width: s.Height = eski.Height
+    s.Placement = xlFreeFloating
+    eski.Delete
+    s.Name = "MUSTERI_ANA_BANNER"
+    s.ZOrder msoBringToFront
+End Sub
+
+' Sayfa gorunumu: pencereye sigar, sekmeler acik, kaydirma basa.
+Public Sub AKSORA_YATIRIM_GORUNUM(ByVal ws As Worksheet)
+    Dim s As Shape, gen As Double, alt As Double, z As Double
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    Y_DM_KONTROL ws
+    For Each s In ws.Shapes
+        If s.Visible = msoTrue Then
+            gen = application.Max(gen, s.Left + s.Width)
+            alt = application.Max(alt, s.top + s.Height)
+        End If
+    Next s
+    If gen <= 0 Then gen = ws.Range("A1:L1").Width
+    With ThisWorkbook.Windows(1)
+        If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+        .DisplayWorkbookTabs = True: .DisplayGridlines = False: .DisplayHeadings = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = True
+        z = (.UsableWidth - 8) / gen * 100
+        If (ws.Name = "Y_ANA PANEL" Or ws.Name = "I_ANA PANEL") And alt > 0 Then z = application.Min(z, (.UsableHeight - 8) / alt * 100)
+        z = application.Max(10, application.Min(400, Fix(z)))
+        If .Zoom <> z Then .Zoom = z
+        .ScrollRow = 1: .ScrollColumn = 1
+    End With
+    On Error Resume Next
+    ws.Range("A1").Select
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_SAYFA_AC()
+    Dim hedef As Worksheet, ad As String, ev As Boolean
+    On Error GoTo Hata
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    ad = ActiveSheet.Shapes(CStr(application.Caller)).AlternativeText
+    Set hedef = ThisWorkbook.Worksheets(ad)
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    hedef.Visible = xlSheetVisible
+    hedef.Select Replace:=True
+    ' Olaylar kapali gecildiginden CIKTI AL / EXCEL'E AKTAR dugmeleri burada kurulur.
+    AKSORA_CIKTI_DUGME hedef
+    AKSORA_YATIRIM_GORUNUM hedef
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    application.EnableEvents = True: application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Dugmeye gore kapsam: 1 CDP yatirim, 2 EPP yatirim, 3 CDP yuklenici, 4 EPP yuklenici.
+Public Sub AKSORA_YATIRIM_GUNCELLE()
+    Dim kapsam As String, ad As String, cagiran As String, bilgi As String, ac As Boolean
+    If AKSORA_V11_MESGUL Or mYCalisiyor Then Exit Sub
+    On Error Resume Next
+    cagiran = CStr(application.Caller)
+    ad = ActiveSheet.Name
+    On Error GoTo 0
+    Select Case ad
+        Case "Y_CDP_YATIRIM_STOK", "Y_CDP_YATIRIM_RAPOR": kapsam = "1"
+        Case "Y_EPP_YATIRIM_STOK", "Y_EPP_YATIRIM_RAPOR": kapsam = "2"
+        Case "Y_CDP_YÜKLENİCİ_STOK", "Y_CDP_YÜKLENİCİ_RAPOR": kapsam = "3"
+        Case "Y_EPP_YÜKLENİCİ_STOK", "Y_EPP_YÜKLENİCİ_RAPOR": kapsam = "4"
+        Case Else
+            Select Case cagiran
+                Case "btnCDP": kapsam = "1"
+                Case "btnIlce": kapsam = "2"
+                Case "btnYuk": kapsam = "34"
+                Case Else: kapsam = "1234"
+            End Select
+    End Select
+    ac = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM", Y_IL_ADI(Y_AKTIF_IL()) & " stokları SAP'den alınıyor...", 0.1)
+    Y_GUNCELLE Y_AKTIF_IL(), kapsam, False, bilgi
+    If ac Then AKSORA_BEKLE_KAPAT
+End Sub
+
+' Il secim ekranindan giris: sayfalar kurulur, secili ile uyarlanir, yalniz Y_ sayfalari gorunur.
+Private Sub Y_GIRIS(ByVal kod As String)
+    Dim ev As Boolean, sc As Boolean, ad As Variant, k As Worksheet, panel As Worksheet, no As Long, metin As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    AKSORA_BEKLE_ILERLE 0.45, "Sayfalar hazırlanıyor..."
+    Y_KUR
+    Y_IL_UYGULA kod
+    AKSORA_BEKLE_ILERLE 0.55, "İl stokları yükleniyor..."
+    Y_IL_VERI kod
+    AKSORA_BEKLE_ILERLE 0.7, "Ana panel hazırlanıyor..."
+    Y_PANEL_YENILE
+    Y_ARAMA_TARIH
+    AKSORA_BEKLE_ILERLE 0.8, "Teminat ve hakediş hazırlanıyor..."
+    Y_ALT_SAYFALAR kod
+    AKSORA_BEKLE_ILERLE 0.95, "Ekran açılıyor..."
+    For Each ad In Y_ADLAR()
+        ThisWorkbook.Worksheets(CStr(ad)).Visible = xlSheetVisible
+    Next ad
+    Y_SEKME_SIRASI
+    Set panel = ThisWorkbook.Worksheets("Y_ANA PANEL")
+    panel.Select Replace:=True
+    For Each k In ThisWorkbook.Worksheets
+        If Not AKSORA_YATIRIM_SAYFA(k) Then
+            If k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden
+        End If
+    Next k
+    AKSORA_YATIRIM_GORUNUM panel
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If no <> 0 Then MsgBox "Yatırım birimi açılamadı." & vbCrLf & metin & vbCrLf & "(Hata " & no & ")", vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    application.DisplayAlerts = True
+    Resume Cikis
+End Sub
+
+'==========================================================
+' YATIRIM STOKLARI (SAP MB52 -> Y_ stok sayfalari)
+' CDP ve EPP yatirim: D002, D011. Yuklenici: malzeme stok birimindeki
+' ilin yuklenici depolari. Her il kendi kaydinda (_YA_<IL>_<n>) saklanir;
+' arama yalnizca yatirim verisini tarar.
+'==========================================================
+
+Private Function Y_STOK_ADLARI() As Variant
+    Y_STOK_ADLARI = Array("Y_CDP_YATIRIM_STOK", "Y_EPP_YATIRIM_STOK", "Y_CDP_YÜKLENİCİ_STOK", "Y_EPP_YÜKLENİCİ_STOK")
+End Function
+
+Private Function Y_AKTIF_IL() As String
+    On Error Resume Next
+    Y_AKTIF_IL = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_ANA PANEL").Range("BX20").Value2)))
+    On Error GoTo 0
+    If Len(Y_AKTIF_IL) = 0 Then Y_AKTIF_IL = "ARTVIN"
+End Function
+
+Private Function Y_DEPO_UYGUN(ByVal depo As String, ByVal i As Long, ByVal il As String) As Boolean
+    depo = UCase$(Trim$(depo))
+    ' 5 / 6: ilce yonetim birimi (CDP / EPP ilce depolari K001-K999).
+    If i >= 5 Then Y_DEPO_UYGUN = I_DEPO_UYGUN(depo): Exit Function
+    If i <= 2 Then
+        Y_DEPO_UYGUN = (depo = "D002" Or depo = "D011")
+    Else
+        ' Z ile baslayan depolar (or. Z007) yatirim / yuklenici kapsaminda degildir.
+        If Left$(depo, 1) = "Z" Then Exit Function
+        Y_DEPO_UYGUN = AKSORA_IL_DEPO_GECERLI(depo, "YUKLENICI", il)
+    End If
+End Function
+
+' MB52 PANEL duzeni (12 sutun) -> musteri stok duzeni (14 sutun), depo ve malzemeye gore sirali.
+Private Function Y_DONUSTUR(ByVal v As Variant, ByVal il As String, ByVal i As Long) As Variant
+    Dim tesis As String, r As Long, n As Long, k As Long, idx() As Long, anahtar() As String
+    Dim sonuc() As Variant, miktar As Double, deger As Double
+    tesis = AKSORA_IL_TESIS(il, IIf(i Mod 2 = 1, "CDP", "EPP"))
+    ReDim idx(1 To UBound(v, 1)): ReDim anahtar(1 To UBound(v, 1))
+    For r = 1 To UBound(v, 1)
+        If Trim$(CStr(v(r, 1))) = tesis And Len(Trim$(CStr(v(r, 7)))) > 0 Then
+            If Y_DEPO_UYGUN(CStr(v(r, 2)), i, il) Then
+                n = n + 1: idx(n) = r
+                anahtar(n) = UCase$(Trim$(CStr(v(r, 2)))) & "|" & Trim$(CStr(v(r, 7))) & "|" & Trim$(CStr(v(r, 6)))
+            End If
+        End If
+    Next r
+    If n = 0 Then Exit Function
+    Y_SIRALA anahtar, idx, 1, n
+    ReDim sonuc(1 To n, 1 To 14)
+    For k = 1 To n
+        r = idx(k)
+        miktar = AKSORA_YATIRIM_SAYI(v(r, 9)): deger = AKSORA_YATIRIM_SAYI(v(r, 11))
+        sonuc(k, 1) = Trim$(CStr(v(r, 1))): sonuc(k, 2) = UCase$(Trim$(CStr(v(r, 2))))
+        sonuc(k, 3) = Trim$(CStr(v(r, 3))): sonuc(k, 4) = Trim$(CStr(v(r, 4)))
+        sonuc(k, 5) = Trim$(CStr(v(r, 7))): sonuc(k, 6) = Trim$(CStr(v(r, 8)))
+        sonuc(k, 7) = miktar: sonuc(k, 8) = Trim$(CStr(v(r, 10)))
+        sonuc(k, 9) = Trim$(CStr(v(r, 6))): sonuc(k, 10) = vbNullString
+        sonuc(k, 11) = Round(deger, 2)
+        If miktar <> 0 Then sonuc(k, 12) = Round(deger / miktar, 2) Else sonuc(k, 12) = 0#
+        sonuc(k, 13) = "SAP"
+    Next k
+    Y_DONUSTUR = sonuc
+End Function
+
+Public Sub Y_SIRALA(ByRef k() As String, ByRef idx() As Long, ByVal ilk As Long, ByVal son As Long)
+    Dim i As Long, j As Long, p As String, ts As String, tl As Long
+    i = ilk: j = son: p = k((ilk + son) \ 2)
+    Do While i <= j
+        Do While StrComp(k(i), p, vbTextCompare) < 0: i = i + 1: Loop
+        Do While StrComp(k(j), p, vbTextCompare) > 0: j = j - 1: Loop
+        If i <= j Then
+            ts = k(i): k(i) = k(j): k(j) = ts
+            tl = idx(i): idx(i) = idx(j): idx(j) = tl
+            i = i + 1: j = j - 1
+        End If
+    Loop
+    If ilk < j Then Y_SIRALA k, idx, ilk, j
+    If i < son Then Y_SIRALA k, idx, i, son
+End Sub
+
+'---------- Il kayitlari ----------
+Private Function Y_ARSIV_SAYFA(ByVal il As String, ByVal i As Long, ByVal olustur As Boolean) As Worksheet
+    Dim ad As String, ws As Worksheet, onceki As Object, sc As Boolean, ev As Boolean
+    ad = "_YA_" & UCase$(Trim$(il)) & "_" & CStr(i)
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If ws Is Nothing And olustur Then
+        sc = application.ScreenUpdating: ev = application.EnableEvents
+        application.ScreenUpdating = False: application.EnableEvents = False
+        Set onceki = ActiveSheet
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Visible = xlSheetVeryHidden
+        If Not onceki Is Nothing Then onceki.Activate
+        application.EnableEvents = ev: application.ScreenUpdating = sc
+    End If
+    Set Y_ARSIV_SAYFA = ws
+End Function
+
+Public Function AKSORA_YATIRIM_ARSIV_SAYFA(ByVal il As String, ByVal i As Long) As Worksheet
+    Set AKSORA_YATIRIM_ARSIV_SAYFA = Y_ARSIV_SAYFA(il, i, False)
+End Function
+
+Private Sub Y_ARSIV_KAYDET(ByVal il As String, ByVal i As Long, ByVal a As Variant, ByVal tarih As Date)
+    Dim ar As Worksheet
+    Set ar = Y_ARSIV_SAYFA(il, i, True)
+    ar.Range("A1").Value = tarih
+    ar.Range("B1").Value2 = UCase$(Trim$(il))
+    AKSORA_PAKET_YAZ ar, a
+End Sub
+
+' Ilin son yatirim guncellemesi (kayit yoksa 0).
+Public Function AKSORA_YATIRIM_IL_SON_TARIH(ByVal il As String) As Date
+    Dim i As Long, ar As Worksheet, v As Variant
+    For i = 1 To 4
+        Set ar = Y_ARSIV_SAYFA(il, i, False)
+        If Not ar Is Nothing Then
+            v = ar.Range("A1").Value
+            If Not IsError(v) Then
+                If IsDate(v) Then
+                    If CDate(v) > AKSORA_YATIRIM_IL_SON_TARIH Then AKSORA_YATIRIM_IL_SON_TARIH = CDate(v)
+                End If
+            End If
+        End If
+    Next i
+End Function
+
+'---------- Stok ve rapor sayfalari ----------
+Private Sub Y_KORU(ByVal ws As Worksheet)
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+End Sub
+
+Private Sub Y_STOK_YAZ(ByVal ws As Worksheet, ByVal a As Variant, ByVal il As String, ByVal tarih As Variant)
+    Dim son As Long, n As Long
+    If IsEmpty(a) Then n = 0 Else n = UBound(a, 1)
+    ' Stok sayfalari malzeme adina gore A-Z (sonra malzeme kodu, depo, seri no).
+    If n > 1 Then a = AKSORA_STOK_DIZI_AZ(a, Array(6, 5, 2, 10))
+    son = application.Max(7, AKSORA_M_SON(ws))
+    ws.Unprotect ""
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    ws.Range("A7:N" & application.Max(son, n + 6)).ClearContents
+    ws.Range("A7").Font.Italic = False: ws.Range("A7").Font.ColorIndex = xlColorIndexAutomatic
+    If n > 0 Then
+        ws.Range("A7:F" & n + 6).NumberFormat = "@"
+        ws.Range("H7:J" & n + 6).NumberFormat = "@"
+        ws.Range("A7").Resize(n, 14).Value2 = a
+    End If
+    ws.Range("K6:N6").Value = Array("Değer (TL)", "Birim stok değeri (TL)", "Fiyat durumu", "Fiyat eksik")
+    ws.Columns("K:N").Hidden = True
+    If n > 0 Then ws.Range("K7:L" & n + 6).NumberFormat = "#,##0.00 ""TL"""
+    If IsDate(tarih) Then
+        ws.Range("C2").Value = CDate(tarih): ws.Range("C2").NumberFormat = "dd.mm.yyyy hh:mm:ss"
+    Else
+        ws.Range("C2").Value2 = "-"
+    End If
+    ws.Range("BX19").Value2 = UCase$(Trim$(il))
+    AKSORA_ARAMA_FAZLA_SATIR ws, n + 8
+    Y_STOK_YENIDEN ws, il
+    If n = 0 Then
+        ws.Unprotect ""
+        If IsDate(tarih) Then
+            ws.Range("A7").Value2 = "Bu depolarda stok bulunamadı (" & Format$(CDate(tarih), "dd.mm.yyyy hh:nn") & ")."
+        Else
+            ws.Range("A7").Value2 = "Veri bekleniyor: SAP STOKLARINI GÜNCELLE ile stoklar SAP'den alınır."
+        End If
+        ws.Range("A7").Font.Italic = True: ws.Range("A7").Font.Color = RGB(100, 116, 139)
+        Y_KORU ws
+    End If
+End Sub
+
+Private Sub Y_STOK_YENIDEN(ByVal ws As Worksheet, ByVal il As String)
+    Dim r As Worksheet
+    ws.Unprotect ""
+    ws.Range("BX9").ClearContents
+    AKSORA_MUSTERI_STOK_KUR_DIS ws
+    Y_YAZ Y_SEKIL(ws, "AKT1_STOK_BASLIK"), Y_BASLIK(ws.Name) & "  |  " & Y_IL_ADI(il) & " İl Müdürlüğü"
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+    Y_BAGLA Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), ""
+    Y_YAZ Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN"), "SAP STOKLARINI GÜNCELLE"
+    Y_FILIGRAN ws
+    Y_KORU ws
+    Set r = ThisWorkbook.Worksheets(Left$(ws.Name, Len(ws.Name) - 5) & "_RAPOR")
+    r.Unprotect ""
+    Y_YAZ Y_SEKIL(r, "AKT1_RAPOR_BASLIK"), "AKSORA | " & Y_BASLIK(r.Name) & "  |  " & Y_IL_ADI(il)
+    AKSORA_MUSTERI_RAPOR_KUR_DIS r
+    On Error Resume Next
+    AKSORA_YATIRIM_DM_DUZEN r
+    Y_FILIGRAN r
+    On Error GoTo 0
+    Y_BAGLA Y_SEKIL(r, "btnAnaPanelDon"), "Y_ANA PANEL"
+    If Left$(ws.Name, 2) = "I_" Then I_BAGLA ws: I_BAGLA r
+    Y_KORU r
+End Sub
+
+' Il degisince ekrandaki dort stok sayfasi o ilin kaydindan yuklenir (kayit yoksa bos).
+Private Sub Y_IL_VERI(ByVal kod As String)
+    Dim adlar As Variant, i As Long, ws As Worksheet, ar As Worksheet, son As Long, a As Variant, tarih As Variant
+    kod = UCase$(Trim$(kod))
+    adlar = Y_STOK_ADLARI()
+    For i = 1 To 4
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        If CStr(ws.Range("BX19").Value2) <> kod Then
+            a = Empty: tarih = Empty
+            Set ar = Y_ARSIV_SAYFA(kod, i, False)
+            If Not ar Is Nothing Then
+                tarih = ar.Range("A1").Value
+                a = AKSORA_PAKET_OKU(ar)
+            End If
+            Y_STOK_YAZ ws, a, kod, tarih
+        End If
+    Next i
+End Sub
+
+'---------- Guncelleme ----------
+Private Sub Y_DURUM(ByVal metin As String)
+    If Not AKSORA_ADMIN_TOPLU Then AKSORA_BEKLE_ILERLE 0.5, metin
+    application.StatusBar = "AKSORA | Yatırım | " & metin
+    AKSORA_ADMIN_DURUM metin
+    If mYToplu Then Y_TOPLU_DURUM metin
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1
+    DoEvents
+End Sub
+
+' Guncelleme basinda (tek il ve butun iller): ana panel ekrana gelir, kartlar mavi
+' "Güncelleniyor...", serit acik sari (musteri ana paneli temasi). Islem panelden izlenir.
+Private Sub Y_CANLI_BASLAT(ByVal sayfa As String, ByVal metin As String)
+    Dim ws As Worksheet, k As Variant
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sayfa)
+    If ws Is Nothing Then Exit Sub
+    If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws
+    ws.Unprotect ""
+    For Each k In Array("B", "L", "Q")
+        Y_KART_DURUM ws, CStr(k), "Güncelleniyor...", RGB(59, 130, 246), RGB(29, 78, 216)
+    Next k
+    Y_KORU ws
+    application.ScreenUpdating = True
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1, sayfa
+    On Error GoTo 0
+End Sub
+
+Private Function Y_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal sessiz As Boolean, ByRef bilgi As String) As Boolean
+    Dim vC As Variant, vE As Variant, mesaj As String, i As Long, a As Variant, tarih As Date
+    Dim bas As Double, sure As Double, adet(1 To 4) As Long, ev As Boolean, sc As Boolean, hesap As XlCalculation
+    Dim ekran As Boolean, ozet As String, adlar As Variant, mesgulOnce As Boolean, hMesaj As String
+    Dim aa(1 To 4) As Variant, arK As Worksheet
+    If mYCalisiyor Then Exit Function
+    mYCalisiyor = True: bas = Timer
+    mesgulOnce = AKSORA_V11_MESGUL
+    ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
+    On Error GoTo Hata
+    il = UCase$(Trim$(il))
+    ' Y_ sayfalari birime ilk giriste kurulur; yoksa ekran guncellemesi yok (arsiv yine yazilir).
+    On Error Resume Next
+    ekran = (CStr(ThisWorkbook.Worksheets("Y_CDP_YATIRIM_STOK").Range("BX19").Value2) = il)
+    On Error GoTo Hata
+    Y_CANLI_BASLAT "Y_ANA PANEL", Y_IL_ADI(il) & "  •  SAP bağlantısı hazırlanıyor..."
+    AKSORA_V11_MESGUL = True
+    If InStr(kapsam, "1") > 0 Or InStr(kapsam, "3") > 0 Then
+        Y_DURUM Y_IL_ADI(il) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " stokları SAP'den alınıyor..."
+        vC = AKSORA_YATIRIM_MB52("CDP", il, mesaj)
+        If Not IsArray(vC) Then Err.Raise vbObjectError + 2101, , "CDP " & AKSORA_IL_TESIS(il, "CDP") & ": " & mesaj
+    End If
+    If InStr(kapsam, "2") > 0 Or InStr(kapsam, "4") > 0 Then
+        Y_DURUM Y_IL_ADI(il) & " | EPP " & AKSORA_IL_TESIS(il, "EPP") & " stokları SAP'den alınıyor..."
+        mesaj = vbNullString
+        vE = AKSORA_YATIRIM_MB52("EPP", il, mesaj)
+        If Not IsArray(vE) Then Err.Raise vbObjectError + 2102, , "EPP " & AKSORA_IL_TESIS(il, "EPP") & ": " & mesaj
+    End If
+    Y_DURUM Y_IL_ADI(il) & " | Sayfalar yazılıyor..."
+    AKSORA_V11_MESGUL = mesgulOnce
+    application.EnableEvents = False: application.Calculation = xlCalculationManual
+    application.ScreenUpdating = False
+    tarih = Now
+    adlar = Y_STOK_ADLARI()
+    ' Once dort sonuc hazirlanir: kayitli stogu olan bir kisim SAP'den bos gelirse hicbiri yazilmaz (onceki kayit korunur).
+    For i = 1 To 4
+        If InStr(kapsam, CStr(i)) > 0 Then
+            If i Mod 2 = 1 Then aa(i) = Y_DONUSTUR(vC, il, i) Else aa(i) = Y_DONUSTUR(vE, il, i)
+            If IsEmpty(aa(i)) Then
+                Set arK = Y_ARSIV_SAYFA(il, i, False)
+                If Not arK Is Nothing Then
+                    If AKSORA_PAKET_ADET(arK) > 0 Then Err.Raise vbObjectError + 2103, , _
+                        Choose(i, "CDP yatırım", "EPP yatırım", "CDP yüklenici", "EPP yüklenici") & _
+                        ": SAP'den satır gelmedi; önceki kayıt korundu."
+                End If
+            End If
+        End If
+    Next i
+    For i = 1 To 4
+        If InStr(kapsam, CStr(i)) > 0 Then
+            a = aa(i)
+            If IsEmpty(a) Then adet(i) = 0 Else adet(i) = UBound(a, 1)
+            Y_ARSIV_KAYDET il, i, a, tarih
+            If ekran Then Y_STOK_YAZ ThisWorkbook.Worksheets(CStr(adlar(i - 1))), a, il, tarih
+            ozet = ozet & vbCrLf & Choose(i, "CDP yatırım", "EPP yatırım", "CDP yüklenici", "EPP yüklenici") & _
+                ": " & AKSORA_SAYI_METNI(adet(i), "#,##0") & " satır"
+        End If
+    Next i
+    sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
+    ThisWorkbook.names.Add Name:="_AKSORA_YATIRIM_SURE_" & il, RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
+    application.EnableEvents = ev
+    If ekran Then
+        Y_PANEL_YENILE
+        Y_ARAMA_TARIH
+        ' Teminat/Hakedis yuzlerce hucre yazar: hesaplama elle kalir, sonra acilir.
+        On Error Resume Next
+        Y_TEMINAT_KUR il
+        Y_HAKEDIS_KUR il
+        On Error GoTo Hata
+    End If
+    application.Calculation = hesap
+    application.ScreenUpdating = sc
+    bilgi = Y_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(sure, "0.0") & " sn)"
+    Y_GUNCELLE = True
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlandı  |  " & Y_SERIT_METNI(), 2
+    If Not mYToplu And Not sessiz Then Y_PANEL_GOSTER
+    If Not sessiz Then AKSORA_BEKLE_KAPAT
+    If Not sessiz Then MsgBox "Yatırım birimi | " & Y_IL_ADI(il) & " güncellendi." & vbCrLf & ozet & vbCrLf & vbCrLf & _
+        "CDP / EPP yatırım depoları: D002, D011" & vbCrLf & _
+        "Yüklenici depoları: " & Join(AKSORA_IL_YUKLENICI(il), ", ") & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(sure, "0.00") & " sn", vbInformation, "AKSORA | Yatırım Birimi"
+Cikis:
+    On Error Resume Next
+    AKSORA_V11_MESGUL = mesgulOnce
+    application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
+    application.StatusBar = False
+    mYCalisiyor = False
+    Exit Function
+Hata:
+    hMesaj = "Hata " & CStr(Err.Number) & ": " & Err.Description
+    bilgi = Y_IL_ADI(il) & ": güncellenemedi; " & hMesaj
+    On Error Resume Next
+    application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = True
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlanamadı  |  " & hMesaj, 3
+    If Not sessiz Then AKSORA_BEKLE_KAPAT
+    If Not sessiz Then MsgBox "Yatırım stokları güncellenemedi." & vbCrLf & hMesaj, vbExclamation, "AKSORA | Yatırım Birimi"
+    On Error GoTo 0
+    Resume Cikis
+End Function
+
+'---------- Ana panel ----------
+Private Sub Y_OZET(ByVal sh As Worksheet, ByVal d As Object, ByRef satir As Long, ByRef deger As Double, ByRef tarih As Date)
+    Dim son As Long, v As Variant, r As Long, t As Variant
+    t = sh.Range("C2").Value
+    If Not IsError(t) Then
+        If IsDate(t) Then
+            If CDate(t) > tarih Then tarih = CDate(t)
+        End If
+    End If
+    son = AKSORA_M_SON(sh)
+    If son < 7 Then Exit Sub
+    v = sh.Range("A7:N" & son).Value2
+    For r = 1 To UBound(v, 1)
+        If Not IsError(v(r, 5)) Then
+            If Len(Trim$(CStr(v(r, 5)))) > 0 Then
+                satir = satir + 1
+                If Not IsError(v(r, 2)) Then d(Trim$(CStr(v(r, 2)))) = True
+                If Not IsError(v(r, 11)) Then
+                    If VarType(v(r, 11)) <> vbString And IsNumeric(v(r, 11)) Then deger = deger + CDbl(v(r, 11))
+                End If
+            End If
+        End If
+    Next r
+End Sub
+
+' Kart durumu guncelleme gunune gore: ayni gun GUNCEL; gun degisince (23:59 sonrasi) kac gundur guncellenmedigi.
+Private Sub Y_KART_TARIH(ByVal ws As Worksheet, ByVal k As String, ByVal tarih As Date)
+    Dim gun As Long
+    gun = DateDiff("d", DateValue(tarih), Date)
+    If gun <= 0 Then
+        Y_KART_DURUM ws, k, "GÜNCEL", RGB(34, 197, 94), RGB(21, 128, 61)
+    ElseIf gun = 1 Then
+        Y_KART_DURUM ws, k, "1 gündür güncellenmedi", RGB(245, 158, 11), RGB(180, 83, 9)
+    Else
+        Y_KART_DURUM ws, k, gun & " gündür güncellenmedi", RGB(239, 68, 68), RGB(185, 28, 28)
+    End If
+End Sub
+
+Private Sub Y_KART_DURUM(ByVal ws As Worksheet, ByVal k As String, ByVal metin As String, ByVal renk As Long, ByVal koyu As Long)
+    Dim s As Shape
+    Set s = Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "0")
+    If Not s Is Nothing Then
+        Y_YAZ s, metin
+        On Error Resume Next
+        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = koyu
+        On Error GoTo 0
+    End If
+    Set s = Y_SEKIL(ws, "AKSORA15_KART_LED_" & k)
+    If Not s Is Nothing Then
+        On Error Resume Next
+        s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = renk
+        s.Glow.Color.RGB = renk: s.Glow.Radius = 4: s.Glow.Transparency = 0.5
+        On Error GoTo 0
+    End If
+End Sub
+
+Private Function Y_TL(ByVal x As Double) As String
+    Y_TL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
+End Function
+
+' Serit metni: il, son guncelleme, sureler, satirlar ve toplam deger.
+Private Function Y_SERIT_METNI() As String
+    Dim adlar As Variant, i As Long, d As Object, satir As Long, deger As Double, tarih As Date
+    Dim enSon As Date, toplam As Double, metin As String, il As String, t As String, sure As Double
+    adlar = Y_STOK_ADLARI()
+    il = Y_AKTIF_IL()
+    For i = 0 To 3
+        Set d = CreateObject("Scripting.Dictionary")
+        satir = 0: deger = 0: tarih = 0
+        Y_OZET ThisWorkbook.Worksheets(CStr(adlar(i))), d, satir, deger, tarih
+        If tarih > enSon Then enSon = tarih
+        toplam = toplam + deger
+        metin = metin & "  |  " & Choose(i + 1, "CDP Yatırım ", "EPP Yatırım ", "CDP Yüklenici ", "EPP Yüklenici ") & _
+            AKSORA_SAYI_METNI(satir, "#,##0") & " satır"
+    Next i
+    If enSon = 0 Then
+        Y_SERIT_METNI = "Henüz SAP güncellemesi yapılmadı  |  CDP ve EPP yatırım: D002, D011  |  Yüklenici: malzeme stok birimindeki yüklenici depoları"
+        Exit Function
+    End If
+    If AKSORA_TOPLU_SON_SURE("_AKSORA_YATIRIM_SON_SURE") > 0 Then _
+        metin = "  |  Bütün iller " & AKSORA_SURE_METNI(AKSORA_TOPLU_SON_SURE("_AKSORA_YATIRIM_SON_SURE")) & metin
+    On Error Resume Next
+    t = ThisWorkbook.names("_AKSORA_YATIRIM_SURE_" & il).RefersTo
+    On Error GoTo 0
+    If Len(t) > 1 Then sure = Val(Mid$(t, 2))
+    If sure > 0 Then metin = "  |  İl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
+    Y_SERIT_METNI = "Son güncelleme " & Format$(enSon, "dd.mm.yyyy hh:nn") & metin & _
+        "  |  Toplam stok değeri " & Y_TL(toplam)
+End Function
+
+' durum: 0 bilgi, 1 calisiyor, 2 tamam, 3 hata
+' Seridin ustune binen IL DEGISTIR dugmesinin sol kenari (yoksa 0).
+Private Function Y_SERIT_SAG(ByVal ws As Worksheet, ByVal s As Shape) As Double
+    Dim b As Shape
+    Set b = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    If b Is Nothing Then Exit Function
+    If b.Left > s.Left And b.Left < s.Left + s.Width And b.top < s.top + s.Height And b.top + b.Height > s.top Then Y_SERIT_SAG = b.Left
+End Function
+
+Private Sub Y_SERIT(ByVal metin As String, ByVal durum As Long, Optional ByVal sayfa As String = "Y_ANA PANEL")
+    Dim ws As Worksheet, s As Shape, korumali As Boolean, pT As Double, gen As Double, ust As Double
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sayfa)
+    Set s = ws.Shapes("MUSTERI_ANA_SECIM_SERIDI")
+    If s Is Nothing Then Exit Sub
+    korumali = ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    s.Fill.ForeColor.RGB = Choose(durum + 1, RGB(224, 242, 254), RGB(255, 246, 219), RGB(209, 250, 229), RGB(254, 226, 226))
+    s.TextFrame2.TextRange.Text = metin
+    If Val(s.AlternativeText) <= 0 Then s.AlternativeText = CStr(s.TextFrame2.TextRange.Font.Size)
+    pT = Val(s.AlternativeText)
+    gen = s.Width - s.TextFrame2.MarginLeft - s.TextFrame2.MarginRight - 8
+    ust = Y_SERIT_SAG(ws, s)
+    If ust > 0 Then gen = application.Min(gen, ust - s.Left - s.TextFrame2.MarginLeft - 8)
+    Do While pT > 7 And Len(metin) * pT * 0.56 > gen
+        pT = pT - 0.5
+    Loop
+    s.TextFrame2.TextRange.Font.Size = pT
+    s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Choose(durum + 1, RGB(12, 45, 79), RGB(146, 64, 14), RGB(6, 95, 70), RGB(153, 27, 27))
+    s.TextFrame2.TextRange.Font.bold = msoTrue
+    If korumali Then Y_KORU ws
+    If durum = 1 Then DoEvents
+    On Error GoTo 0
+End Sub
+
+' Guncelleme bitince ana panel ekrana getirilir.
+Private Sub Y_PANEL_GOSTER(Optional ByVal ad As String = "Y_ANA PANEL")
+    Dim ws As Worksheet, ev As Boolean
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    If ws Is Nothing Then Exit Sub
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    mYonlendirme = True
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    mYonlendirme = False
+    application.EnableEvents = ev
+    AKSORA_YATIRIM_GORUNUM ws
+    application.ScreenUpdating = True
+    DoEvents
+    ' Excel islem bitince baska sayfayi one getirirse panel tekrar secilir.
+    mYOdak = ws.Name
+    application.OnTime Now + TimeSerial(0, 0, 1), BIRIM_MAKRO("AKSORA_YATIRIM_ODAK")
+    On Error GoTo 0
+End Sub
+
+Private Sub Y_SAYFA_SEC(ByVal ws As Worksheet)
+    Dim ev As Boolean, sc As Boolean
+    ' Yonetim merkezinden tum birimler guncellenirken ekran yonetim merkezinde kalir.
+    If AKSORA_ADMIN_TOPLU Then Exit Sub
+    On Error Resume Next
+    If ws Is Nothing Then Exit Sub
+    If ActiveSheet Is ws Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False
+    mYonlendirme = True
+    ws.Select Replace:=True
+    mYonlendirme = False
+    application.EnableEvents = ev
+    AKSORA_CIKTI_DUGME ws
+    AKSORA_YATIRIM_GORUNUM ws
+    application.ScreenUpdating = sc
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_ODAK()
+    Dim ad As String
+    ad = mYOdak: mYOdak = vbNullString
+    If Len(ad) = 0 Or mYCalisiyor Or mYToplu Then Exit Sub
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If ActiveSheet.Name = ad Then Exit Sub
+    If Not (AKSORA_YATIRIM_SAYFA(ActiveSheet) Or AKSORA_ILCE_SAYFA(ActiveSheet)) Then Exit Sub
+    Y_SAYFA_SEC ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+End Sub
+
+' Sekmeler: Ana panel, Teminat, Hakedis, Malzeme arama, ardindan stok/rapor ciftleri.
+Private Sub Y_SEKME_SIRASI(Optional ByVal ilce As Boolean)
+    Dim adlar As Variant, i As Long, onceki As Worksheet, ws As Worksheet
+    If ilce Then adlar = I_ADLAR() Else adlar = Y_ADLAR()
+    For i = 1 To UBound(adlar)
+        Set onceki = ThisWorkbook.Worksheets(CStr(adlar(i - 1)))
+        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        If ws.Index <> onceki.Index + 1 Then ws.Move After:=onceki
+    Next i
+End Sub
+
+' Depo bazinda dagilim bolumu: tum sekiller satir konumundan yeniden hesaplanir.
+Public Sub AKSORA_YATIRIM_DM_DUZEN(ByVal r As Worksheet)
+    Dim bas As Long, bit As Long, ust As Double, s As Shape, z As Shape, hz As Shape, co As ChartObject
+    Dim x2 As Double, zw As Double, zh As Double, gs As Double, lx As Double, lw As Double, adim As Double
+    Dim m As Long, i As Long, y As Double, t As String
+    Y_PAY_HIZALA r
+    bas = Val(CStr(r.Range("BX31").Value2)): bit = Val(CStr(r.Range("BX32").Value2))
+    If bas < 9 Or bit < bas Then Exit Sub
+    Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")
+    If z Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set co = r.ChartObjects("AKSORA_RP_DM_GRAFIK")
+    On Error GoTo 0
+    If co Is Nothing Then Exit Sub
+    ' Form listesi dusuk yakinlastirmada en az ~22 piksel cizilir; baslik satiri bu payi tasir.
+    If r.Rows(bas).Height < 55 Then r.Rows(bas).RowHeight = 56
+    ust = r.Rows(bas).top
+    Set hz = Y_SEKIL(r, "AKSORA_RP_HALKA_ZEMIN")
+    If hz Is Nothing Then
+        x2 = z.Left: zw = z.Width
+    Else
+        x2 = hz.Left: zw = hz.Width
+    End If
+    zh = application.Max(366, r.Rows(bit).top + r.Rows(bit).Height - ust)
+    z.Left = x2: z.top = ust: z.Width = zw: z.Height = zh
+    gs = application.Min(zh - 96, zw * 0.42)
+    If gs < 120 Then gs = 120
+    co.Left = x2 + zw * 0.04: co.top = ust + 76: co.Width = gs: co.Height = gs
+    Do While Not Y_SEKIL(r, "AKSORA_RP_DM_HALKA_AD_" & (m + 1)) Is Nothing
+        m = m + 1
+    Loop
+    If m < 1 Then m = 1
+    lx = co.Left + gs + zw * 0.05: lw = x2 + zw - 14 - lx
+    adim = application.Min(24, (gs - 20) / m)
+    For Each s In r.Shapes
+        t = s.Name
+        If Left$(t, 12) = "AKSORA_RP_DM" Then
+            Select Case True
+                Case t = "AKSORA_RP_DM_BASLIK" Or t = "AKSORA_RP_DM_SECIM_ETIKET"
+                    s.top = ust + 2: s.Height = 24
+                    On Error Resume Next
+                    s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+                    On Error GoTo 0
+                Case t = "AKSORA_RP_DM_LISTE"
+                    s.top = ust + 4: s.Height = 18
+                Case t = "AKSORA_RP_DM_GRAFIK_BASLIK"
+                    s.Left = x2 + 12: s.top = ust + 10: s.Width = zw - 24
+                Case t = "AKSORA_RP_DM_MERKEZ"
+                    s.Left = co.Left + gs * 0.2: s.top = co.top + gs * 0.36: s.Width = gs * 0.6: s.Height = gs * 0.28
+                Case t = "AKSORA_RP_DM_LISTE_BASLIK"
+                    s.Left = lx + 16: s.top = co.top - 4: s.Width = lw - 80
+                Case t = "AKSORA_RP_DM_PAY_BASLIK"
+                    s.Left = lx + lw - 60: s.top = co.top - 4: s.Width = 60
+                Case Left$(t, 24) = "AKSORA_RP_DM_HALKA_RENK_"
+                    i = Val(Mid$(t, 25)): y = co.top + 20 + (i - 1) * adim
+                    s.Left = lx: s.top = y + 4: s.Width = 10: s.Height = 10
+                Case Left$(t, 22) = "AKSORA_RP_DM_HALKA_AD_"
+                    i = Val(Mid$(t, 23)): y = co.top + 20 + (i - 1) * adim
+                    s.Left = lx + 16: s.top = y: s.Width = lw - 80: s.Height = 18
+                Case Left$(t, 23) = "AKSORA_RP_DM_HALKA_PAY_"
+                    i = Val(Mid$(t, 24)): y = co.top + 20 + (i - 1) * adim
+                    s.Left = lx + lw - 60: s.top = y: s.Width = 60: s.Height = 18
+            End Select
+        End If
+    Next s
+End Sub
+
+'' Ust halka lejanti: yuzdeler (PAY_n) her zaman PAY basliginin altinda, ayni genislik ve hizada.
+Private Sub Y_PAY_HIZALA(ByVal r As Worksheet)
+    Dim b As Shape, s As Shape, i As Long
+    Set b = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_BASLIK")
+    If b Is Nothing Then Exit Sub
+    On Error Resume Next
+    For i = 1 To 20
+        Set s = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_" & i)
+        If Not s Is Nothing Then
+            s.Left = b.Left: s.Width = b.Width
+            s.TextFrame2.MarginLeft = b.TextFrame2.MarginLeft: s.TextFrame2.MarginRight = b.TextFrame2.MarginRight
+            s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignRight
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Function Y_PAY_KAYIK(ByVal r As Worksheet) As Boolean
+    Dim b As Shape, s As Shape
+    Set b = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_BASLIK")
+    Set s = Y_SEKIL(r, "AKSORA_RP_HALKA_PAY_1")
+    If b Is Nothing Or s Is Nothing Then Exit Function
+    Y_PAY_KAYIK = (Abs(s.Left - b.Left) > 1 Or Abs(s.Width - b.Width) > 1)
+End Function
+
+' Sayfa acilirken bolum kaymissa (eski dosya ya da Excel'in yeniden konumlamasi) sessizce toparlanir.
+Private Sub Y_DM_KONTROL(ByVal r As Worksheet)
+    Dim bas As Long, z As Shape, co As ChartObject, ust As Double, korumali As Boolean
+    If Right$(r.Name, 6) <> "_RAPOR" Then Exit Sub
+    If Y_PAY_KAYIK(r) Then
+        On Error Resume Next
+        korumali = r.ProtectContents Or r.ProtectDrawingObjects
+        If korumali Then r.Unprotect ""
+        Y_PAY_HIZALA r
+        If korumali Then Y_KORU r
+        On Error GoTo 0
+    End If
+    bas = Val(CStr(r.Range("BX31").Value2))
+    If bas < 9 Then Exit Sub
+    Set z = Y_SEKIL(r, "AKSORA_RP_DM_ZEMIN")
+    If z Is Nothing Then Exit Sub
+    On Error Resume Next
+    Set co = r.ChartObjects("AKSORA_RP_DM_GRAFIK")
+    On Error GoTo 0
+    If co Is Nothing Then Exit Sub
+    ust = r.Rows(bas).top
+    If Abs(z.top - ust) < 1 And Abs(co.top - ust - 76) < 1 And r.Rows(bas).Height >= 55 Then Exit Sub
+    On Error Resume Next
+    korumali = r.ProtectContents Or r.ProtectDrawingObjects
+    If korumali Then r.Unprotect ""
+    AKSORA_YATIRIM_DM_DUZEN r
+    If korumali Then Y_KORU r
+    On Error GoTo 0
+End Sub
+
+Private Sub Y_PANEL_YENILE()
+    Dim ws As Worksheet, kartlar As Variant, adlar As Variant, i As Long, k As String, d As Object
+    Dim satir As Long, deger As Double, tarih As Date, korumali As Boolean
+    Set ws = ThisWorkbook.Worksheets("Y_ANA PANEL")
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    ws.Unprotect ""
+    adlar = Y_STOK_ADLARI()
+    kartlar = Array("B", "L", "Q")
+    For i = 0 To 2
+        k = CStr(kartlar(i))
+        Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+        satir = 0: deger = 0: tarih = 0
+        If i < 2 Then
+            Y_OZET ThisWorkbook.Worksheets(CStr(adlar(i))), d, satir, deger, tarih
+        Else
+            Y_OZET ThisWorkbook.Worksheets(CStr(adlar(2))), d, satir, deger, tarih
+            Y_OZET ThisWorkbook.Worksheets(CStr(adlar(3))), d, satir, deger, tarih
+        End If
+        If tarih > 0 Then
+            Y_KART_TARIH ws, k, tarih
+        Else
+            Y_KART_DURUM ws, k, "Veri bekleniyor", RGB(145, 162, 176), RGB(29, 78, 216)
+        End If
+        If tarih > 0 Then
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "1"), Format$(tarih, "dd.mm.yyyy hh:nn")
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "2"), AKSORA_SAYI_METNI(satir, "#,##0")
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "3"), Y_TL(deger)
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "4"), AKSORA_SAYI_METNI(d.Count, "#,##0")
+        Else
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "1"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "2"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "3"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "4"), "-"
+        End If
+    Next i
+    Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "Yatırım Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    If korumali Then Y_KORU ws
+    Y_SERIT Y_SERIT_METNI(), 0
+End Sub
+
+'---------- Malzeme arama (yalniz yatirim verisi) ----------
+Private Sub Y_ARAMA_TEMIZLE(ByVal ws As Worksheet)
+    Dim son As Long, s As Shape
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    son = application.Max(13, AKSORA_M_SON(ws))
+    ws.Range("A13:N" & son).ClearContents
+    ws.Range("B6").MergeArea.ClearContents
+    ws.Range(ws.Cells(13, 75), ws.Cells(son, 75)).ClearContents
+    AKSORA_ARAMA_FAZLA_SATIR ws, 13
+    ws.Range("BX21").Value2 = "TUMU"
+    Y_BAGLA Y_SEKIL(ws, "btnMalzemeAnaPanel"), "Y_ANA PANEL"
+    Set s = Y_SEKIL(ws, "btnMalzemeAra")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_MUSTERI_ARAMA_HAZIRLIK")
+    Set s = Y_SEKIL(ws, "AKSORA_TOPLU_GUNCELLE")
+    If Not s Is Nothing Then
+        Y_YAZ s, "BÜTÜN İLLERİ GÜNCELLE" & vbLf & "MB52  |  5 İL"
+        s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_BUTUN_ILLER")
+    End If
+    Set s = Y_SEKIL(ws, "AKSORA_TOPLU_VURGU")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_BUTUN_ILLER")
+    Y_YAZ Y_SEKIL(ws, "AKSORA_TOPLU_DURUM"), "Arama, her ilin yukarıdaki tarihli yatırım stoklarını kullanır."
+    Y_YAZ Y_SEKIL(ws, "AKSORA_ARAMA_SABIT_ACIKLAMA"), "Yalnızca yatırım birimi stokları aranır."
+    On Error Resume Next
+    If CStr(ws.Range("A3").Value2) <> "Yatırım (D002, D011) + Yüklenici Stokları" Then ws.Unprotect "": ws.Range("A3").Value2 = "Yatırım (D002, D011) + Yüklenici Stokları": ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    On Error GoTo 0
+End Sub
+
+Private Sub Y_ARAMA_TARIH(Optional ByVal ilce As Boolean)
+    Dim ws As Worksheet, s As Shape, kod As String, isim As String, t As Date, korumali As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(IIf(ilce, "I_MALZEME_ARA", "Y_MALZEME_ARA"))
+    If ws Is Nothing Then Exit Sub
+    korumali = ws.ProtectContents Or ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    For Each s In ws.Shapes
+        kod = s.AlternativeText: isim = vbNullString
+        Select Case kod
+            Case "GIRESUN": isim = "GİRESUN"
+            Case "TRABZON": isim = "TRABZON"
+            Case "RIZE": isim = "RİZE"
+            Case "GUMUSHANE": isim = "GÜMÜŞHANE"
+            Case "ARTVIN": isim = "ARTVİN"
+        End Select
+        If Len(isim) > 0 And Left$(s.Name, 10) = "AKSORA_V4_" Then
+            If ilce Then t = AKSORA_ILCE_IL_SON_TARIH(kod) Else t = AKSORA_YATIRIM_IL_SON_TARIH(kod)
+            s.TextFrame2.TextRange.Text = isim & vbLf & IIf(t > 0, Format$(t, "dd.mm.yyyy hh:nn"), "Henüz güncellenmedi")
+        End If
+    Next s
+    If korumali Then Y_KORU ws
+    On Error GoTo 0
+End Sub
+
+Private Sub Y_TOPLU_DURUM(ByVal metin As String, Optional ByVal sayfa As String = "Y_MALZEME_ARA")
+    Dim ws As Worksheet, s As Shape, korumali As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sayfa)
+    Set s = ws.Shapes("AKSORA_TOPLU_DURUM")
+    If s Is Nothing Then Exit Sub
+    korumali = ws.ProtectDrawingObjects
+    If korumali Then ws.Unprotect ""
+    s.TextFrame2.TextRange.Text = metin
+    If korumali Then Y_KORU ws
+    application.StatusBar = "AKSORA | Yatırım | " & Replace(metin, vbLf, " | ")
+    DoEvents
+    On Error GoTo 0
+End Sub
+
+' Bes ilin yatirim ve yuklenici stoklari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
+Public Sub AKSORA_YATIRIM_BUTUN_ILLER()
+    Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long, kart As Boolean
+    If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
+    If Not AKSORA_ADMIN_TOPLU Then
+        If MsgBox("Beş ilin (Artvin, Trabzon, Gümüşhane, Giresun, Rize) yatırım ve yüklenici stokları SAP'den güncellenecek. Devam edilsin mi?", _
+            vbYesNo + vbQuestion, "AKSORA | Yatırım Birimi") <> vbYes Then Exit Sub
+        kart = AKSORA_BEKLE_AC("AKSORA  |  YATIRIM  |  BÜTÜN İLLER", "Beş ilin yatırım ve yüklenici stokları güncelleniyor...", 0.03)
+    End If
+    sc = application.ScreenUpdating
+    If TypeOf ActiveSheet Is Worksheet Then Set baslangic = ActiveSheet
+    mYToplu = True: bas = Timer
+    application.ScreenUpdating = True
+    On Error GoTo Hata
+    For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandı." & vbCrLf: Exit For
+        bilgi = vbNullString
+        adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
+        Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor..."
+        If Y_GUNCELLE(CStr(il), "1234", True, bilgi) Then adet = adet + 1
+        sonuc = sonuc & bilgi & vbCrLf
+    Next il
+Bitir:
+    On Error Resume Next
+    mYToplu = False: mYSira = vbNullString
+    sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
+    ThisWorkbook.names.Add Name:="_AKSORA_YATIRIM_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
+    metin = IIf(Len(hataMetni) > 0, "İşlem durduruldu. ", "İşlem tamamlandı. ") & adet & "/5 il güncellendi." & vbLf & _
+        "Geçen süre: " & Format$(CLng(Fix(sure)) \ 60, "00") & ":" & Format$(CLng(Fix(sure)) Mod 60, "00")
+    Y_TOPLU_DURUM metin
+    Y_PANEL_YENILE
+    Y_ARAMA_TARIH
+    application.StatusBar = False
+    Y_PANEL_GOSTER
+    application.ScreenUpdating = sc
+    On Error GoTo 0
+    If kart Then AKSORA_BEKLE_KAPAT
+    If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "YATIRIM:" & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, hataMetni & vbCrLf, ""): Exit Sub
+    MsgBox "Yatırım birimi | Bütün iller" & vbCrLf & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, vbCrLf & hataMetni & vbCrLf, "") & vbCrLf & _
+        "Toplam süre: " & AKSORA_SURE_METNI(sure), IIf(adet = 5, vbInformation, vbExclamation), "AKSORA | Yatırım Birimi"
+    Exit Sub
+Hata:
+    hataMetni = Err.Description
+    Resume Bitir
+End Sub
+
+'==========================================================
+' YATIRIM - TEMINAT TAKIBI VE OTOMATIK HAKEDIS
+' Ortak: rapor sayfalariyla ayni ust bant, numarali KPI kartlari, lacivert tablo
+' basliklari. Giris hucreleri acik sari; hesaplar canli formul. Girilen degerler
+' il ve yuklenici bazinda gizli kayit sayfalarinda saklanir (_Y_TEMINAT, _Y_HAKEDIS).
+'==========================================================
+
+
+Private Function Y_GIRIS_RENK() As Long
+    Y_GIRIS_RENK = RGB(255, 249, 219)
+End Function
+
+' Gizli anahtar-deger kayit sayfasi (A: anahtar, B..: degerler).
+Public Function Y_KAYIT_SAYFA(ByVal ad As String) As Worksheet
+    Dim ws As Worksheet, onceki As Object, sc As Boolean, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+    If ws Is Nothing Then
+        sc = application.ScreenUpdating: ev = application.EnableEvents
+        application.ScreenUpdating = False: application.EnableEvents = False
+        Set onceki = ActiveSheet
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Visible = xlSheetVeryHidden
+        If Not onceki Is Nothing Then onceki.Activate
+        application.EnableEvents = ev: application.ScreenUpdating = sc
+    End If
+    Set Y_KAYIT_SAYFA = ws
+End Function
+
+Private Function Y_KAYIT_SATIR(ByVal ws As Worksheet, ByVal anahtar As String, ByVal olustur As Boolean) As Long
+    Dim m As Variant, son As Long
+    son = AKSORA_SON_SATIR(ws, 1)
+    If son >= 1 And Len(CStr(ws.Cells(1, 1).Value2)) > 0 Then
+        m = application.Match(anahtar, ws.Range("A1:A" & son), 0)
+        If Not IsError(m) Then Y_KAYIT_SATIR = CLng(m): Exit Function
+    Else
+        son = 0
+    End If
+    If olustur Then
+        ws.Cells(son + 1, 1).NumberFormat = "@"
+        ws.Cells(son + 1, 1).Value2 = anahtar
+        Y_KAYIT_SATIR = son + 1
+    End If
+End Function
+
+Private Function Y_KOD(ByVal v As Variant) As String
+    Select Case VarType(v)
+        Case vbEmpty, vbNull: Y_KOD = vbNullString
+        Case vbString: Y_KOD = "s" & Replace(Replace(Replace(CStr(v), vbTab, " "), vbLf, " "), vbCr, " ")
+        Case vbBoolean: Y_KOD = IIf(v, "b1", "b0")
+        Case vbError: Y_KOD = vbNullString
+        Case Else: Y_KOD = "n" & Trim$(Str$(CDbl(v)))
+    End Select
+End Function
+
+Private Function Y_COZ(ByVal t As String) As Variant
+    If Len(t) = 0 Then Exit Function
+    Select Case Left$(t, 1)
+        Case "s": Y_COZ = Mid$(t, 2)
+        Case "n": Y_COZ = Val(Mid$(t, 2))
+        Case "b": Y_COZ = (Mid$(t, 2) = "1")
+    End Select
+End Function
+
+' Sutun genislikleri nokta cinsinden.
+Public Sub Y_KOLONLAR(ByVal ws As Worksheet, ByVal gen As Variant)
+    Dim i As Long, k As Long, c As Range
+    For k = 1 To 2
+        For i = 0 To UBound(gen)
+            Set c = ws.Columns(i + 1)
+            If c.ColumnWidth > 0 And c.Width > 0 Then
+                c.ColumnWidth = application.Min(255, c.ColumnWidth * CDbl(gen(i)) / c.Width)
+            Else
+                c.ColumnWidth = CDbl(gen(i)) / 5.6
+            End If
+        Next i
+    Next k
+End Sub
+
+'' Kosullu bicim formulleri Excel dilinde istenir (Turkce Excel'de VE/N...): gecici hucreyle cevrilir.
+Private Function Y_YEREL(ByVal ws As Worksheet, ByVal formul As String) As String
+    Dim c As Range
+    Set c = ws.Range("BZ40")
+    On Error Resume Next
+    c.Formula = formul
+    Y_YEREL = c.FormulaLocal
+    c.ClearContents
+    On Error GoTo 0
+    If Len(Y_YEREL) = 0 Then Y_YEREL = formul
+End Function
+
+Public Sub Y_SAYFA_SIFIRLA(ByVal ws As Worksheet)
+    Dim s As Shape, ad As String, sIl As Collection, sv As Variant, son As Long
+    Set sIl = New Collection
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Not (ad = "AKT1_RAPOR_UST_ZEMIN" Or ad = "AKT1_RAPOR_BASLIK" Or ad = "btnAnaPanelDon" Or InStr(ad, "FILIGRAN") > 0 Or Left$(ad, 5) = "ADMY_") Then sIl.Add ad
+    Next s
+    On Error Resume Next
+    For Each sv In sIl
+        ws.Shapes(CStr(sv)).Delete
+    Next sv
+    On Error GoTo 0
+    ws.AutoFilterMode = False
+    ' Onceki kurulumdan kalan satirlar (400 sonrasi dahil) tamamen temizlenir.
+    son = application.Max(400, ws.UsedRange.Row + ws.UsedRange.Rows.Count)
+    ws.Range("A3:Z" & son).Validation.Delete
+    ws.Cells.FormatConditions.Delete
+    ws.Range("A3:Z" & son).UnMerge
+    ws.Range("A3:Z" & son).Clear
+    ws.Range("BZ1:BZ40").Clear
+    ws.Range(ws.Rows(3), ws.Rows(son)).Hidden = False
+    ws.Range(ws.Rows(3), ws.Rows(son)).RowHeight = ws.StandardHeight
+    ws.Columns("L:Z").ColumnWidth = 8.43
+    ws.Columns("BZ").Hidden = True
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "Y_ANA PANEL"
+End Sub
+
+' Rapor sayfalarindaki numarali kart: rozet + etiket + hucreye bagli deger.
+Public Sub Y_KPI(ByVal ws As Worksheet, ByVal i As Long, ByVal x As Double, ByVal y As Double, ByVal w As Double, _
+    ByVal h As Double, ByVal etiket As String, ByVal hucre As String, ByVal renk As Long)
+    Dim s As Shape
+    Set s = Y_KUTU(ws, "Y_KPI_KART_" & i, x, y, w, h, RGB(242, 249, 255), RGB(196, 220, 240))
+    Set s = Y_KUTU(ws, "Y_KPI_IKON_" & i, x + 8, y + 9, 40, h - 18, renk, -1)
+    Y_YAZ s, Format$(i, "00")
+    With s.TextFrame2
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 13: .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter: .VerticalAnchor = msoAnchorMiddle
+        .MarginLeft = 0: .MarginRight = 0
+    End With
+    Y_METIN ws, "Y_KPI_ETIKET_" & i, etiket, x + 58, y + 8, w - 66, 18, 10, RGB(28, 54, 83), True, msoAlignLeft
+    Set s = Y_METIN(ws, "Y_KPI_DEGER_" & i, "-", x + 58, y + 30, w - 66, 28, 17, RGB(22, 58, 96), True, msoAlignLeft)
+    s.DrawingObject.Formula = "='" & Replace(ws.Name, "'", "''") & "'!" & hucre
+End Sub
+
+Public Sub Y_BASLIK_SATIRI(ByVal r As Range, ByVal basliklar As Variant)
+    Dim i As Long
+    For i = 0 To UBound(basliklar)
+        r.Cells(1, i + 1).Value2 = basliklar(i)
+    Next i
+    With r
+        .Interior.Color = RGB(26, 75, 120): .Font.Color = vbWhite
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .WrapText = True
+    End With
+End Sub
+
+Public Sub Y_TABLO_GOVDE(ByVal r As Range)
+    Dim i As Long
+    With r
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.Color = RGB(30, 41, 59)
+        .VerticalAlignment = xlCenter
+        With .Borders(xlInsideHorizontal)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(214, 224, 236)
+        End With
+    End With
+    For i = 2 To r.Rows.Count Step 2
+        r.Rows(i).Interior.Color = RGB(244, 248, 252)
+    Next i
+End Sub
+
+Private Sub Y_GIRIS_HUCRE(ByVal r As Range)
+    r.Interior.Color = Y_GIRIS_RENK()
+    r.Locked = False
+    With r.Borders
+        .LineStyle = xlContinuous: .Weight = xlHairline: .Color = RGB(230, 200, 120)
+    End With
+End Sub
+
+Public Sub Y_TOPLAM_SATIRI(ByVal r As Range)
+    With r
+        .Font.bold = True: .Interior.Color = RGB(226, 236, 247)
+        .Font.Name = "Aptos": .Font.Size = 10: .VerticalAlignment = xlCenter
+        With .Borders(xlEdgeTop)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(26, 75, 120)
+        End With
+    End With
+End Sub
+
+Public Function Y_DUGME(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal renk As Long, ByVal makro As String) As Shape
+    Dim s As Shape
+    Set s = Y_KUTU(ws, ad, x, y, w, h, renk, -1)
+    Y_YAZ s, metin
+    With s.TextFrame2
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter: .VerticalAnchor = msoAnchorMiddle
+    End With
+    s.OnAction = BIRIM_MAKRO(makro)
+    Set Y_DUGME = s
+End Function
+
+Public Sub Y_DURUM_KF(ByVal r As Range, ByVal metin As String, ByVal zemin As Long, ByVal yazi As Long)
+    Dim fc As FormatCondition
+    Set fc = r.FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""" & metin & """")
+    fc.Interior.Color = zemin: fc.Font.Color = yazi: fc.Font.bold = True
+End Sub
+
+' Ilin yuklenici depolari: depo -> (ad, CDP degeri, EPP degeri). Liste sirasi malzeme biriminin sirasi.
+Private Function Y_YUKLENICI_OZET(ByVal il As String) As Object
+    Dim d As Object, x As Variant, i As Long, sh As Worksheet, son As Long, v As Variant, r As Long, dp As String, t As Variant
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For i = 3 To 4
+        Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
+        son = AKSORA_M_SON(sh)
+        If son >= 7 Then
+            v = sh.Range("A7:N" & son).Value2
+            For r = 1 To UBound(v, 1)
+                If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) Then
+                    dp = UCase$(Trim$(CStr(v(r, 2))))
+                    If Len(dp) > 0 And Len(Trim$(CStr(v(r, 5)))) > 0 And Left$(dp, 1) <> "Z" Then
+                        If Not d.Exists(dp) Then d(dp) = Array(vbNullString, 0#, 0#)
+                        t = d(dp)
+                        If Len(t(0)) = 0 And Not IsError(v(r, 3)) Then t(0) = Trim$(CStr(v(r, 3)))
+                        If Not IsError(v(r, 11)) Then
+                            If VarType(v(r, 11)) <> vbString And IsNumeric(v(r, 11)) Then t(i - 2) = t(i - 2) + CDbl(v(r, 11))
+                        End If
+                        d(dp) = t
+                    End If
+                End If
+            Next r
+        End If
+    Next i
+    ' Sira: ilin yuklenici depo listesi sirasi; listede olmayanlar sonda.
+    Dim s2 As Object
+    Set s2 = CreateObject("Scripting.Dictionary"): s2.CompareMode = vbTextCompare
+    For Each x In AKSORA_IL_YUKLENICI(il)
+        If d.Exists(CStr(x)) Then s2(CStr(x)) = d(CStr(x))
+    Next x
+    For Each x In d.keys
+        If Not s2.Exists(CStr(x)) Then s2(CStr(x)) = d(x)
+    Next x
+    Set Y_YUKLENICI_OZET = s2
+End Function
+
+'---------- TEMINAT ----------
+' Mantik: teminata yalniz DEPODA duran malzeme tabidir. Sahaya cikmis (kullanilmis, hakedis
+' bekleyen) malzeme teminati rahatlatir. Satir bazinda Konum: Depoda / Sahada / Kismi (kismi:
+' sahadaki adet girilir). Ayni yukleniciye ait depolar tek yuklenici adinda toplanir.
+' Sahada 45 gunu gecen malzeme "hakedis gecikiyor" olarak isaretlenir.
+
+Private Function Y_YUK_AD(ByVal depoAdi As String, ByVal depo As String) As String
+    Dim p As Long, sol As String
+    depoAdi = Trim$(depoAdi)
+    If Len(depoAdi) = 0 Then Y_YUK_AD = depo: Exit Function
+    p = InStr(depoAdi, " ")
+    If p > 0 Then
+        sol = Left$(depoAdi, p - 1)
+        If Len(sol) - Len(Replace(sol, ".", "")) >= 2 Then Y_YUK_AD = Trim$(Mid$(depoAdi, p + 1)): Exit Function
+    End If
+    Y_YUK_AD = depoAdi
+End Function
+
+Private Function Y_KAYIT_SOZLUK(ByVal ad As String) As Object
+    Dim ws As Worksheet, d As Object, son As Long, v As Variant, r As Long
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set ws = Y_KAYIT_SAYFA(ad)
+    son = AKSORA_SON_SATIR(ws, 1)
+    If son >= 1 And Len(CStr(ws.Cells(1, 1).Value2)) > 0 Then
+        v = ws.Range("A1:D" & son).Value2
+        For r = 1 To UBound(v, 1)
+            If Len(CStr(v(r, 1))) > 0 Then d(CStr(v(r, 1))) = Array(v(r, 2), v(r, 3), v(r, 4))
+        Next r
+    End If
+    Set Y_KAYIT_SOZLUK = d
+End Function
+
+Private Sub Y_KAYIT_YAZ(ByVal ad As String, ByVal anahtar As String, ByVal a As Variant, Optional ByVal b As Variant, Optional ByVal c As Variant)
+    Dim ws As Worksheet, sr As Long
+    Set ws = Y_KAYIT_SAYFA(ad)
+    sr = Y_KAYIT_SATIR(ws, anahtar, True)
+    ws.Cells(sr, 2).Value2 = a
+    If Not IsMissing(b) Then ws.Cells(sr, 3).Value2 = b
+    If Not IsMissing(c) Then ws.Cells(sr, 4).Value = c
+End Sub
+
+Private Function Y_ARALIK(ByVal ws As Worksheet, ByVal hucre As String, ByRef ilk As Long, ByRef son As Long) As Boolean
+    Dim t As String
+    t = CStr(ws.Range(hucre).Value2)
+    If InStr(t, "|") = 0 Then Exit Function
+    ilk = Val(Split(t, "|")(0)): son = Val(Split(t, "|")(1))
+    Y_ARALIK = (ilk > 0 And son >= ilk)
+End Function
+
+' Sayfadaki tum girisler kayda yazilir (yeniden kurulumdan once).
+Private Sub Y_TEMINAT_KAYDET(ByVal ws As Worksheet)
+    Dim il As String, a As Long, b As Long, r As Long, t As String, anahtar As String
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    If Len(il) = 0 Then Exit Sub
+    If CStr(ws.Range("BX25").Value2) <> "TM_V3" Then Exit Sub
+    If Y_ARALIK(ws, "BX23", a, b) Then
+        For r = a To b
+            If Len(CStr(ws.Cells(r, 1).Value2)) > 0 Then Y_KAYIT_YAZ "_Y_TEMINAT", "T|" & il & "|" & UCase$(CStr(ws.Cells(r, 1).Value2)), ws.Cells(r, 4).Value2
+        Next r
+    End If
+    If Y_ARALIK(ws, "BX27", a, b) Then
+        For r = a To b
+            If Len(CStr(ws.Cells(r, 3).Value2)) > 0 Then
+                anahtar = "K|" & il & "|" & UCase$(CStr(ws.Cells(r, 1).Value2)) & "|" & CStr(ws.Cells(r, 3).Value2)
+                t = CStr(ws.Cells(r, 7).Value2)
+                If t = "Sahada" Or t = "Kısmi" Then
+                    Y_KAYIT_YAZ "_Y_TEMINAT", anahtar, t, ws.Cells(r, 8).Value2, ws.Cells(r, 13).Value2
+                Else
+                    Y_KAYIT_YAZ "_Y_TEMINAT", anahtar, "Depoda", Empty, Empty
+                End If
+            End If
+        Next r
+    End If
+End Sub
+
+' Miktar bicimi: tam sayida ondalik ayirac gosterilmez; birim sayinin yaninda yazilir.
+Private Sub Y_MIKTAR_BICIM(ByVal c As Range, Optional ByVal birim As String = "")
+    Dim ek As String, v As Variant
+    v = c.Value2
+    If Len(birim) > 0 Then ek = " """ & Replace(birim, """", "") & """"
+    If VarType(v) = vbDouble Or VarType(v) = vbLong Or VarType(v) = vbInteger Or VarType(v) = vbCurrency Then
+        If v = Int(v) Then
+            c.NumberFormat = "#,##0" & ek & ";[Red]-#,##0" & ek
+        Else
+            c.NumberFormat = "#,##0.###" & ek & ";[Red]-#,##0.###" & ek
+        End If
+    End If
+End Sub
+
+' AKSORA amblemi icerigin altina, sag kenara alinir.
+Public Sub Y_FILIGRAN(ByVal ws As Worksheet, Optional ByVal y As Double, Optional ByVal w As Double)
+    ' AKSORA amblemi yatirim sayfalarinda kullanilmaz (listelerin ustune biniyordu).
+    Dim i As Long
+    On Error Resume Next
+    For i = ws.Shapes.Count To 1 Step -1
+        If InStr(ws.Shapes(i).Name, "FILIGRAN") > 0 Then ws.Shapes(i).Delete
+    Next i
+    On Error GoTo 0
+End Sub
+
+Private Sub Y_TEMINAT_KUR(ByVal il As String)
+    Dim ws As Worksheet, kayit As Object, ozet As Object, k As Variant, t As Variant, w As Double, kw As Double, y As Double
+    Dim s As Shape, r As Long, i As Long, n As Long, sh As Worksheet, son As Long, v As Variant, dp As String, mk As String
+    Dim det As Object, dk As Variant, a1 As Long, b1 As Long, a3 As Long, b3 As Long
+    Dim satirlar() As Variant, sira() As Long, j As Long, tmp As Long, rr As Range, db As Databar, liste As Shape, x As Variant
+    Dim anahT() As String
+    Dim tarih As Variant, nD As Long, nL As Long, sis As String, blok() As Variant
+    Set ws = ThisWorkbook.Worksheets("Y_TEMİNAT")
+    il = UCase$(Trim$(il))
+    ws.Unprotect ""
+    Y_TEMINAT_KAYDET ws
+    ' Kurulum yarida kalirsa sonraki giris eski duzeni okuyup tutarlari bozmasin.
+    ws.Range("BX25").ClearContents
+    Set kayit = Y_KAYIT_SOZLUK("_Y_TEMINAT")
+    Y_SAYFA_SIFIRLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    Y_KOLONLAR ws, Array(70, 230, 110, application.Max(80, w - 1284), 140, 140, 140, 110, 120, 120, 104)
+    ws.Columns("L:N").Hidden = True
+    Set ozet = Y_YUKLENICI_OZET(il)
+    ' Malzeme detayi: depo + malzeme toplami (CDP ve EPP birlikte)
+    Set det = CreateObject("Scripting.Dictionary"): det.CompareMode = vbTextCompare
+    For i = 3 To 4
+        Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
+        son = AKSORA_M_SON(sh)
+        If son >= 7 Then
+            v = sh.Range("A7:N" & son).Value2
+            For r = 1 To UBound(v, 1)
+                If Not IsError(v(r, 2)) And Not IsError(v(r, 5)) Then
+                    dp = UCase$(Trim$(CStr(v(r, 2)))): mk = Trim$(CStr(v(r, 5)))
+                    If Len(dp) > 0 And Len(mk) > 0 And Left$(dp, 1) <> "Z" Then
+                        If Not det.Exists(dp & "|" & mk) Then det(dp & "|" & mk) = Array(dp, mk, Trim$(CStr(v(r, 6))), Trim$(CStr(v(r, 8))), 0#, 0#)
+                        t = det(dp & "|" & mk)
+                        If Not IsError(v(r, 7)) Then If IsNumeric(v(r, 7)) Then t(4) = t(4) + CDbl(v(r, 7))
+                        If Not IsError(v(r, 11)) Then If VarType(v(r, 11)) <> vbString And IsNumeric(v(r, 11)) Then t(5) = t(5) + CDbl(v(r, 11))
+                        det(dp & "|" & mk) = t
+                    End If
+                End If
+            Next r
+        End If
+    Next i
+    nD = ozet.Count: nL = det.Count
+    a1 = 10: b1 = a1 + application.Max(nD, 1) - 1
+    a3 = b1 + 9: b3 = a3 + application.Max(nL, 1) - 1
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10
+    ws.Rows(a1 - 2).RowHeight = 30: ws.Rows(a1 - 1).RowHeight = 30
+    ' Detay basligi: baslik + depo secimi, arama etiketi, arama kutusu + ARA, aciklama, tablo basligi
+    ws.Rows(a3 - 6).RowHeight = 30: ws.Rows(a3 - 5).RowHeight = 20: ws.Rows(a3 - 4).RowHeight = 28
+    ws.Rows(a3 - 3).RowHeight = 18: ws.Rows(a3 - 2).RowHeight = 8: ws.Rows(a3 - 1).RowHeight = 30
+    ws.Range(ws.Rows(a1), ws.Rows(b1 + 1)).RowHeight = 22
+    ws.Rows(b1 + 2).RowHeight = 14
+    ws.Range(ws.Rows(a3), ws.Rows(b3)).RowHeight = 19
+    Y_BOLUM ws, a1 - 2, "DEPO BAZINDA TEMİNAT DURUMU", "Her depo ayrı yüklenici / ayrı hakediş. Teminata yalnız DEPODA duran malzeme tabidir."
+    Y_BOLUM ws, a3 - 6, "MALZEME DETAYI  –  SAHADA / DEPODA", ""
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 11)), Array("Depo", "Depo Adı", "Sistem", "Teminat Tutarı", _
+        "Depoda (teminata tabi)", "Sahada (hakediş bekleyen)", "Kalan Teminat", "Kullanım", "Durum", "Sahada > 45 gün", "")
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(a3 - 1, 11)), Array("Depo", "Depo Adı", "Malzeme", "Malzeme Tanımı", _
+        "Miktar", "Tutar", "Konum", "Sahadaki Miktar", "Depodaki Tutar", "Sahadaki Tutar", "Sahada (gün)")
+    ' Malzeme detayi (depo, tutar azalan)
+    If nL > 0 Then
+        ReDim satirlar(1 To nL): ReDim sira(1 To nL)
+        i = 0
+        For Each dk In det.keys
+            i = i + 1: satirlar(i) = det(dk): sira(i) = i
+        Next dk
+        ' Depo, sonra tutar azalan (hizli siralama; stok sayfasi A-Z oldugundan depolar karisik gelir).
+        ReDim anahT(1 To nL)
+        For i = 1 To nL
+            anahT(i) = UCase$(CStr(satirlar(i)(0))) & "|" & I_SIRA_ANAHTAR(CDbl(satirlar(i)(5)))
+        Next i
+        Y_SIRALA anahT, sira, 1, nL
+        ReDim blok(1 To nL, 1 To 13)
+        For i = 1 To nL
+            t = satirlar(sira(i))
+            blok(i, 1) = t(0)
+            If ozet.Exists(CStr(t(0))) Then blok(i, 2) = ozet(CStr(t(0)))(0)
+            blok(i, 3) = CStr(t(1)): blok(i, 4) = t(2)
+            blok(i, 5) = t(4): blok(i, 6) = Round(t(5), 2)
+            mk = "K|" & il & "|" & UCase$(CStr(t(0))) & "|" & CStr(t(1))
+            blok(i, 7) = "Depoda"
+            If kayit.Exists(mk) Then
+                If CStr(kayit(mk)(0)) = "Sahada" Or CStr(kayit(mk)(0)) = "Kısmi" Then
+                    blok(i, 7) = CStr(kayit(mk)(0)): blok(i, 8) = kayit(mk)(1): blok(i, 13) = kayit(mk)(2)
+                End If
+            End If
+        Next i
+        ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 1)).NumberFormat = "@"
+        ws.Range(ws.Cells(a3, 3), ws.Cells(b3, 3)).NumberFormat = "@"
+        ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 13)).Value2 = blok
+        ' Satir formulleri tek seferde (sutun bazinda R1C1; ayni formuller, hucre hucre yazimdan hizli).
+        ws.Range(ws.Cells(a3, 9), ws.Cells(b3, 9)).FormulaR1C1 = "=RC6-RC10"
+        ws.Range(ws.Cells(a3, 10), ws.Cells(b3, 10)).FormulaR1C1 = "=IF(N(RC5)=0,0,RC6*IF(RC7=""Sahada"",1,IF(RC7=""Kısmi"",MIN(N(RC8),RC5)/RC5,0)))"
+        ws.Range(ws.Cells(a3, 11), ws.Cells(b3, 11)).FormulaR1C1 = "=IF(OR(RC7=""Depoda"",N(RC13)=0),"""",TODAY()-INT(RC13))"
+        ws.Range(ws.Cells(a3, 14), ws.Cells(b3, 14)).FormulaR1C1 = "=RC3&"" ""&RC4"
+        For r = a3 To b3
+            If (r And 255) = 0 Then AKSORA_BEKLE_NABIZ
+            Y_MIKTAR_BICIM ws.Cells(r, 5), CStr(satirlar(sira(r - a3 + 1))(3))
+        Next r
+    Else
+        ws.Cells(a3, 2).Value2 = "Yüklenici depolarında stok yok (SAP güncellemesi sonrası dolar)."
+    End If
+    ' Depolar
+    r = a1
+    For Each k In ozet.keys
+        t = ozet(k)
+        ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value2 = CStr(k)
+        ws.Cells(r, 2).Value2 = IIf(Len(t(0)) > 0, t(0), "(depoda stok yok)")
+        sis = IIf(t(1) <> 0, "CDP", "") & IIf(t(1) <> 0 And t(2) <> 0, " + ", "") & IIf(t(2) <> 0, "EPP", "")
+        ws.Cells(r, 3).Value2 = IIf(Len(sis) > 0, sis, "-")
+        If kayit.Exists("T|" & il & "|" & UCase$(CStr(k))) Then
+            If Not IsError(kayit("T|" & il & "|" & UCase$(CStr(k)))(0)) Then
+                If Len(CStr(kayit("T|" & il & "|" & UCase$(CStr(k)))(0))) > 0 Then ws.Cells(r, 4).Value2 = kayit("T|" & il & "|" & UCase$(CStr(k)))(0)
+            End If
+        End If
+        ws.Cells(r, 5).Formula = "=SUMIFS($I$" & a3 & ":$I$" & b3 & ",$A$" & a3 & ":$A$" & b3 & ",A" & r & ")"
+        ws.Cells(r, 6).Formula = "=SUMIFS($J$" & a3 & ":$J$" & b3 & ",$A$" & a3 & ":$A$" & b3 & ",A" & r & ")"
+        ws.Cells(r, 7).Formula = "=IF(N(D" & r & ")>0,D" & r & "-E" & r & ","""")"
+        ws.Cells(r, 8).Formula = "=IF(N(D" & r & ")>0,E" & r & "/D" & r & ","""")"
+        ws.Cells(r, 9).Formula = "=IF(N(D" & r & ")<=0,""Teminat girilmedi"",IF(H" & r & ">1,""AŞIM"",IF(H" & r & ">=0.8,""DİKKAT"",""GÜVENLİ"")))"
+        ws.Cells(r, 10).Formula = "=COUNTIFS($A$" & a3 & ":$A$" & b3 & ",A" & r & ",$K$" & a3 & ":$K$" & b3 & ","">45"")"
+        r = r + 1
+    Next k
+    ws.Cells(b1 + 1, 2).Value2 = "TOPLAM"
+    For Each x In Array(4, 5, 6)
+        ws.Cells(b1 + 1, CLng(x)).Formula = "=SUM(" & ws.Range(ws.Cells(a1, CLng(x)), ws.Cells(b1, CLng(x))).Address(False, False) & ")"
+    Next x
+    ws.Cells(b1 + 1, 7).Formula = "=IF(D" & b1 + 1 & ">0,D" & b1 + 1 & "-SUMIF(D" & a1 & ":D" & b1 & ","">0"",E" & a1 & ":E" & b1 & "),"""")"
+    ws.Cells(b1 + 1, 8).Formula = "=IF(D" & b1 + 1 & ">0,SUMIF(D" & a1 & ":D" & b1 & ","">0"",E" & a1 & ":E" & b1 & ")/D" & b1 + 1 & ","""")"
+    ws.Cells(b1 + 1, 10).Formula = "=SUM(J" & a1 & ":J" & b1 & ")"
+    ' Bicimler
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 11))
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 11))
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(b1 + 1, 1), ws.Cells(b1 + 1, 11))
+    ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 1)).Font.bold = True
+    ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(b1, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a3, 1), ws.Cells(b3, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a3, 3), ws.Cells(b3, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 8)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a3, 11), ws.Cells(b3, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 2), ws.Cells(b1, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a3, 2), ws.Cells(b3, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a3, 4), ws.Cells(b3, 4)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 4), ws.Cells(b1 + 1, 7)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 8), ws.Cells(b1 + 1, 8)).NumberFormat = "0.0%"
+    ws.Range(ws.Cells(a1, 8), ws.Cells(b1 + 1, 10)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a3, 5), ws.Cells(b3, 5)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(a3, 8), ws.Cells(b3, 8)).NumberFormat = "General"
+    ws.Range(ws.Cells(a3, 6), ws.Cells(b3, 6)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a3, 9), ws.Cells(b3, 10)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a3, 13), ws.Cells(b3, 13)).NumberFormat = "dd.mm.yyyy"
+    If nD > 0 Then Y_GIRIS_HUCRE ws.Range(ws.Cells(a1, 4), ws.Cells(b1, 4))
+    If nL > 0 Then
+        Y_GIRIS_HUCRE ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 8))
+        ws.Range("BZ20").Value2 = "Depoda": ws.Range("BZ21").Value2 = "Sahada": ws.Range("BZ22").Value2 = "Kısmi"
+        Y_KONUM_LISTE ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 7))
+        Set rr = ws.Range(ws.Cells(a3, 7), ws.Cells(b3, 7))
+        Y_DURUM_KF rr, "Sahada", RGB(220, 252, 231), RGB(21, 128, 61)
+        Y_DURUM_KF rr, "Kısmi", RGB(254, 243, 199), RGB(180, 83, 9)
+        Set rr = ws.Range(ws.Cells(a3, 11), ws.Cells(b3, 11))
+        ' Depoda satirlarinda K bos metindir; yalniz sayi > 45 boyanir.
+        With rr.FormatConditions.Add(Type:=xlExpression, Formula1:=Y_YEREL(ws, "=AND(ISNUMBER(K" & a3 & "),K" & a3 & ">45)"))
+            .Interior.Color = RGB(254, 226, 226): .Font.Color = RGB(185, 28, 28): .Font.bold = True
+        End With
+    End If
+    Set rr = ws.Range(ws.Cells(a1, 8), ws.Cells(b1, 8))
+    On Error Resume Next
+    Set db = rr.FormatConditions.AddDatabar
+    db.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+    db.MaxPoint.Modify newtype:=xlConditionValueNumber, newvalue:=1.2
+    db.BarColor.Color = RGB(47, 144, 217)
+    db.BarFillType = xlDataBarFillSolid
+    On Error GoTo 0
+    Set rr = ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9))
+    Y_DURUM_KF rr, "AŞIM", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "DİKKAT", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF rr, "GÜVENLİ", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_DURUM_KF rr, "Teminat girilmedi", RGB(241, 245, 249), RGB(100, 116, 139)
+    Set rr = ws.Range(ws.Cells(a1, 10), ws.Cells(b1, 10))
+    With rr.FormatConditions.Add(Type:=xlCellValue, Operator:=xlGreater, Formula1:="=0")
+        .Font.Color = RGB(185, 28, 28): .Font.bold = True
+    End With
+    ' Filtre ve depo secimi
+    If nL > 0 Then ws.Range(ws.Cells(a3 - 1, 1), ws.Cells(b3, 14)).AutoFilter
+    ' Malzeme arama (musteri arama sayfasiyla ayni gorunum): etiket, kutu + ARA, aciklama.
+    With ws.Range(ws.Cells(a3 - 5, 2), ws.Cells(a3 - 5, 8))
+        .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlBottom
+    End With
+    ws.Cells(a3 - 5, 2).Value2 = "MALZEME ADI VEYA KODU"
+    With ws.Cells(a3 - 5, 2).Font
+        .Name = "Aptos": .Size = 11: .bold = True: .Color = RGB(64, 74, 89)
+    End With
+    With ws.Range(ws.Cells(a3 - 4, 2), ws.Cells(a3 - 4, 7))
+        .Merge
+        .Locked = False: .NumberFormat = "@"
+        .Interior.Color = RGB(255, 255, 255)
+        .Font.Name = "Aptos": .Font.Size = 11: .Font.Color = RGB(12, 45, 79)
+        .HorizontalAlignment = xlLeft: .VerticalAlignment = xlCenter: .IndentLevel = 1
+        With .Borders
+            .LineStyle = xlContinuous: .Weight = xlThin: .Color = RGB(165, 190, 214)
+        End With
+    End With
+    Y_DUGME ws, "Y_TM_ARA", "ARA", ws.Cells(a3 - 4, 8).Left + 6, ws.Cells(a3 - 4, 8).top + 1, _
+        ws.Cells(a3 - 4, 8).Width - 6, ws.Rows(a3 - 4).Height - 2, RGB(44, 95, 145), "AKSORA_YATIRIM_TEMINAT_ARA"
+    Set s = Y_SEKIL(ws, "Y_TM_ARA")
+    If Not s Is Nothing Then s.Adjustments.Item(1) = 0.18: s.TextFrame2.TextRange.Font.Size = 11
+    With ws.Range(ws.Cells(a3 - 3, 2), ws.Cells(a3 - 3, 8))
+        .HorizontalAlignment = xlCenterAcrossSelection: .VerticalAlignment = xlCenter
+    End With
+    ws.Cells(a3 - 3, 2).Value2 = "Malzeme adı veya kodunun tamamı ya da bir kısmı ile arama yapabilirsiniz. Boş bırakıp Enter: tüm liste."
+    With ws.Cells(a3 - 3, 2).Font
+        .Name = "Aptos": .Size = 9: .Color = RGB(100, 116, 139)
+    End With
+    ws.Range(ws.Rows(a3 - 5), ws.Rows(a3 - 3)).Interior.Color = RGB(244, 247, 251)
+    ws.Range(ws.Cells(a3 - 4, 2), ws.Cells(a3 - 4, 7)).Interior.Color = RGB(255, 255, 255)
+    ws.Range("BX29").Value2 = ws.Cells(a3 - 4, 2).Address(False, False)
+    ws.Cells(a3 - 6, 7).Value2 = "Depo:"
+    ws.Cells(a3 - 6, 7).HorizontalAlignment = xlRight: ws.Cells(a3 - 6, 7).Font.bold = True: ws.Cells(a3 - 6, 7).Font.Color = RGB(28, 54, 83)
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a3 - 6, 8).Left + 4, ws.Cells(a3 - 6, 8).top + 5, _
+        ws.Range(ws.Cells(a3 - 6, 8), ws.Cells(a3 - 6, 11)).Width - 6, 20)
+    liste.Name = "Y_TM_SECIM": liste.Placement = xlFreeFloating
+    liste.ControlFormat.AddItem "TÜM DEPOLAR"
+    For Each k In ozet.keys
+        t = ozet(k)
+        liste.ControlFormat.AddItem CStr(k) & IIf(Len(t(0)) > 0, "  -  " & t(0), "")
+    Next k
+    liste.ControlFormat.Value = 1
+    liste.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_TEMINAT_SEC")
+    tarih = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(2))).Range("C2").Value
+    ws.Cells(b3 + 2, 1).Value2 = "Kullanım = Depoda (teminata tabi) ÷ Teminat.  %80 ve üzeri DİKKAT, %100 üzeri AŞIM.  Konum: Depoda / Sahada / Kısmi " & _
+        "(kısmide sahadaki miktarı yazın).  Sahada 45 günü geçen kırmızı.  Depo değerleri SAP MB52" & _
+        IIf(IsDate(tarih), " (" & Format$(tarih, "dd.mm.yyyy hh:nn") & ")", "") & "."
+    ws.Cells(b3 + 2, 1).Font.Size = 9: ws.Cells(b3 + 2, 1).Font.Color = RGB(71, 85, 105)
+    ' KPI
+    ws.Range("BZ1").Formula = "=D" & b1 + 1
+    ws.Range("BZ2").Formula = "=E" & b1 + 1
+    ws.Range("BZ3").Formula = "=F" & b1 + 1
+    ws.Range("BZ4").Formula = "=COUNTIF(I" & a1 & ":I" & b1 & ",""AŞIM"")&"" aşım  •  ""&COUNTIF(I" & a1 & ":I" & b1 & ",""DİKKAT"")&"" dikkat  •  ""&J" & b1 + 1 & "&"" geciken saha"""
+    ws.Range("BZ1:BZ3").NumberFormat = "#,##0.00 ""TL"""
+    y = ws.Rows(3).top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "TOPLAM TEMİNAT", "$BZ$1", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "DEPODA  –  TEMİNATA TABİ", "$BZ$2", RGB(220, 38, 38)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "SAHADA  –  HAKEDİŞ BEKLEYEN", "$BZ$3", RGB(39, 160, 94)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "RİSK DURUMU", "$BZ$4", RGB(245, 158, 11)
+    Set s = Y_SEKIL(ws, "Y_KPI_DEGER_4")
+    If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 13
+    Y_FILIGRAN ws, ws.Rows(b3 + 3).top + 6, w
+    ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
+    ws.Range("BX23").Value2 = a1 & "|" & b1
+    ws.Range("BX26").ClearContents
+    ws.Range("BX27").Value2 = a3 & "|" & b3
+    ws.Range("BX25").Value2 = "TM_V3"
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | TEMİNAT TAKİBİ  |  " & Y_IL_ADI(il)
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+Public Sub Y_BOLUM(ByVal ws As Worksheet, ByVal r As Long, ByVal baslik As String, ByVal notu As String, _
+    Optional ByVal notSutun As Long = 11)
+    ws.Cells(r, 1).Value2 = baslik
+    With ws.Cells(r, 1).Font
+        .Name = "Aptos": .Size = 13: .bold = True: .Color = RGB(12, 45, 79)
+    End With
+    ws.Cells(r, 1).VerticalAlignment = xlCenter
+    ' Not, tablonun son sutununa saga yaslanir (tablonun disina tasmaz).
+    If notSutun <> 11 Then ws.Cells(r, 11).ClearContents
+    ws.Cells(r, notSutun).Value2 = notu
+    With ws.Cells(r, notSutun)
+        .HorizontalAlignment = xlRight: .VerticalAlignment = xlCenter
+        .Font.Name = "Aptos": .Font.Size = 9: .Font.Italic = True: .Font.Color = RGB(100, 116, 139)
+    End With
+End Sub
+
+'' Filtre sonrasi Teminat sayfasinda kalinir (Excel baska yatirim sayfasina gecerse geri alinir).
+' Konum hucreleri: sagda filtre oku (hucre bicimi; sekil yok). Tiklayinca secim menusu acilir
+' (AKSORA_YATIRIM_KONUM_SECIM). Dogrulama oku bazi Excel'lerde gorunmedigi icin kullanilmaz.
+Private Sub Y_KONUM_LISTE(ByVal r As Range)
+    On Error Resume Next
+    r.Validation.Delete
+    r.NumberFormat = "@* """ & ChrW(9660) & """"
+    r.HorizontalAlignment = xlGeneral
+    r.IndentLevel = 1
+End Sub
+
+' Teminat sayfasi acildiginda Konum listesi yeniden uygulanir (ok kaybolmus olsa da geri gelir).
+Public Sub Y_TEMINAT_LISTE_ONAR(ByVal ws As Worksheet)
+    Dim a As Long, b As Long
+    On Error Resume Next
+    If ws.Name <> "Y_TEMİNAT" Then Exit Sub
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If b < a Or Len(CStr(ws.Cells(a, 7).Value2)) = 0 Then Exit Sub
+    ' Zaten hazirsa dokunulmaz (her acilista sayfa yeniden bicimlenip titremesin).
+    If Left$(CStr(ws.Cells(a, 7).NumberFormat), 2) = "@*" And Left$(CStr(ws.Cells(b, 7).NumberFormat), 2) = "@*" _
+        And Not ws.Cells(a, 7).Locked Then
+        If ws.Shapes.Count > 0 Then
+            Dim s As Shape
+            Set s = Nothing: Set s = ws.Shapes("Y_TM_KONUM")
+            If s Is Nothing Then Exit Sub
+        Else
+            Exit Sub
+        End If
+    End If
+    application.ScreenUpdating = False
+    ws.Unprotect ""
+    ws.Shapes("Y_TM_KONUM").Delete
+    Y_KONUM_LISTE ws.Range(ws.Cells(a, 7), ws.Cells(b, 7))
+    ws.Range(ws.Cells(a, 7), ws.Cells(b, 8)).Locked = False
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+    application.ScreenUpdating = True
+End Sub
+
+' Konum secimi: Konum hucresine tiklayinca filtre listesi gibi kucuk menu (Depoda / Sahada / Kismi).
+' Secim hucreye yazilir; normal degisim akisi (kayit, sahada gunu, toplamlar) Workbook_SheetChange ile calisir.
+Public Sub AKSORA_YATIRIM_KONUM_SECIM(ByVal ws As Worksheet, ByVal hedef As Range)
+    Dim a As Long, b As Long, cB As Object, c As Object, x As Variant, s As Shape
+    On Error Resume Next
+    On Error GoTo 0
+    If hedef.Cells.Count <> 1 Then Exit Sub
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If hedef.Column <> 7 Or hedef.Row < a Or hedef.Row > b Then Exit Sub
+    If Len(CStr(ws.Cells(hedef.Row, 1).Value2)) = 0 Then Exit Sub
+    ' Satir bellekte tutulur (hucreye yazmak her tiklamada butun kitabi yeniden hesaplatiyordu).
+    mKonumSatir = hedef.Row
+    On Error Resume Next
+    ' Menu bir kez kurulur ve yeniden kullanilir (her tiklamada kurup silmek seridi yeniden cizip titretiyordu).
+    Set cB = Nothing
+    Set cB = application.CommandBars("AKSORA_KONUM")
+    If cB Is Nothing Then
+        Set cB = application.CommandBars.Add(Name:="AKSORA_KONUM", Position:=5, Temporary:=True)
+        For Each x In Array("Depoda", "Sahada", "Kısmi")
+            Set c = cB.Controls.Add(Type:=1, Temporary:=True)
+            c.Caption = CStr(x)
+            c.Parameter = CStr(x)
+        Next x
+    End If
+    For Each c In cB.Controls
+        c.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_KONUM_SEC")
+        c.State = IIf(CStr(hedef.Value2) = CStr(c.Parameter), -1, 0)
+    Next c
+    cB.ShowPopup
+    ' Menu kapaninca secim ayni satirin Tutar hucresine alinir: Konum'a yeniden tiklayinca menu tekrar acilir.
+    Dim ev As Boolean
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    ws.Cells(hedef.Row, 6).Select
+    application.EnableEvents = ev
+End Sub
+
+Public Sub AKSORA_YATIRIM_KONUM_SEC()
+    Dim ws As Worksheet, r As Long, a As Long, b As Long, t As String, ev As Boolean
+    On Error GoTo son
+    Set ws = ThisWorkbook.Worksheets("Y_TEMİNAT")
+    t = CStr(application.CommandBars.ActionControl.Parameter)
+    r = mKonumSatir
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    If r < a Or r > b Then Exit Sub
+    If Len(t) = 0 Or t = CStr(ws.Cells(r, 7).Value2) Then Exit Sub
+    ev = application.EnableEvents
+    application.ScreenUpdating = False
+    application.EnableEvents = True
+    ws.Cells(r, 7).Value2 = t
+    application.EnableEvents = ev
+    Y_TEMINAT_KAL ws
+    application.ScreenUpdating = True
+son:
+End Sub
+
+Private Sub Y_TEMINAT_KAL(ByVal ws As Worksheet)
+    On Error Resume Next
+    If Not (ActiveSheet Is ws) Then Y_SAYFA_SEC ws
+    mYOdak = ws.Name
+    application.OnTime Now + TimeSerial(0, 0, 1), BIRIM_MAKRO("AKSORA_YATIRIM_ODAK")
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_TEMINAT_ARA()
+    Dim ws As Worksheet, ev As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("Y_TEMİNAT")
+    If Len(CStr(ws.Range("BX29").Value2)) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    application.EnableEvents = True
+    AKSORA_YATIRIM_DEGISIM ws, ws.Range(CStr(ws.Range("BX29").Value2))
+    application.EnableEvents = ev
+End Sub
+
+Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
+    Dim ws As Worksheet, s As Shape, t As String, a As Long, b As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_TEMİNAT")
+    Set s = ws.Shapes("Y_TM_SECIM")
+    t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    ws.Unprotect ""
+    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 14)).AutoFilter
+    If s.ControlFormat.Value = 1 Then
+        ws.AutoFilter.Range.AutoFilter Field:=1
+    Else
+        ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:="=" & t
+    End If
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+'---------- HAKEDIS: PROJE - STOK KARSILASTIRMA ----------
+' Proje malzeme listesi (Excel) yuklenir; kod / tanim / miktar sutunlari otomatik bulunur.
+' Secili yuklenici deposu ve yatirim depolari (D002, D011) ile karsilastirilir.
+' Hakedis hesabi uzman gorusuyle kesinlesecek; sayfada yeri hazir.
+
+Public Function Y_NORM(ByVal t As String) As String
+    t = UCase$(Trim$(t))
+    t = Replace(t, "İ", "I"): t = Replace(t, "ı", "I"): t = Replace(t, "Ş", "S"): t = Replace(t, "Ğ", "G")
+    t = Replace(t, "Ü", "U"): t = Replace(t, "Ö", "O"): t = Replace(t, "Ç", "C")
+    t = Replace(t, "ş", "S"): t = Replace(t, "ğ", "G"): t = Replace(t, "ü", "U"): t = Replace(t, "ö", "O"): t = Replace(t, "ç", "C")
+    Y_NORM = t
+End Function
+
+Public Function Y_KOD_NORM(ByVal v As Variant) As String
+    Dim t As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbDouble Or VarType(v) = vbLong Or VarType(v) = vbInteger Or VarType(v) = vbCurrency Then
+        If v = Int(v) And Abs(v) < 1E+15 Then t = Format$(v, "0") Else t = CStr(v)
+    Else
+        t = Trim$(CStr(v))
+    End If
+    t = Replace(Replace(t, " ", ""), ChrW(160), "")
+    If Len(t) > 2 And Right$(t, 2) = ".0" Then t = Left$(t, Len(t) - 2)
+    If t Like String$(Len(t), "#") And Len(t) > 0 Then
+        Do While Len(t) > 1 And Left$(t, 1) = "0": t = Mid$(t, 2): Loop
+    End If
+    Y_KOD_NORM = t
+End Function
+
+Private Function Y_SAYI_DENE(ByVal v As Variant, ByRef x As Double) As Boolean
+    On Error GoTo Yok
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbString Then
+        If Len(Trim$(v)) = 0 Then Exit Function
+        x = AKSORA_YATIRIM_SAYI(v)
+    ElseIf IsNumeric(v) Then
+        x = CDbl(v)
+    Else
+        Exit Function
+    End If
+    Y_SAYI_DENE = True
+Yok:
+End Function
+
+' Bir sayfadaki proje listesini okur; bulunan kalem sayisini dondurur.
+Private Function Y_PROJE_TARA(ByVal v As Variant, ByVal d As Object, ByRef bilgi As String) As Long
+    Dim nr As Long, nc As Long, r As Long, c As Long, h As Long, t As String
+    Dim cKod As Long, cTan As Long, cMik As Long, cBir As Long, cFiy As Long, en As Long, sayac As Long
+    Dim kod As String, x As Double, f As Double, a As Variant, adet As Long
+    If Not IsArray(v) Then Exit Function
+    nr = UBound(v, 1): nc = UBound(v, 2)
+    For r = 1 To application.Min(40, nr)
+        cKod = 0: cTan = 0: cMik = 0: cBir = 0: cFiy = 0
+        For c = 1 To nc
+            If Not IsError(v(r, c)) Then
+                t = Y_NORM(CStr(v(r, c)))
+                If Len(t) > 0 And Len(t) < 40 Then
+                    If cFiy = 0 And InStr(t, "FIYAT") > 0 Then
+                        cFiy = c
+                    ElseIf cKod = 0 And (InStr(t, "MALZEME KOD") > 0 Or InStr(t, "MALZEME NO") > 0 Or InStr(t, "STOK KOD") > 0 Or _
+                        InStr(t, "SAP KOD") > 0 Or InStr(t, "SAP NO") > 0 Or t = "KOD" Or t = "KODU" Or t = "MALZEME" Or InStr(t, "MATERIAL") > 0) Then
+                        cKod = c
+                    ElseIf cTan = 0 And (InStr(t, "TANIM") > 0 Or InStr(t, "ACIKLAMA") > 0 Or InStr(t, "MALZEME ADI") > 0 Or _
+                        InStr(t, "CINSI") > 0 Or t = "ADI" Or InStr(t, "DESCRIPTION") > 0) Then
+                        cTan = c
+                    ElseIf cMik = 0 And (InStr(t, "MIKTAR") > 0 Or t = "ADET" Or InStr(t, "METRAJ") > 0 Or t = "QTY" Or InStr(t, "QUANTITY") > 0) Then
+                        cMik = c
+                    ElseIf cBir = 0 And (t = "BIRIM" Or t = "BIRIMI" Or InStr(t, "OLCU") > 0 Or t = "UNIT") Then
+                        cBir = c
+                    End If
+                End If
+            End If
+        Next c
+        If cKod > 0 And cMik > 0 Then h = r: Exit For
+    Next r
+    If h = 0 Then
+        ' Basliksiz liste: en cok 7-12 haneli sayi iceren sutun kod, sagindaki sayisal sutun miktar.
+        For c = 1 To nc
+            sayac = 0
+            For r = 1 To application.Min(nr, 300)
+                kod = Y_KOD_NORM(v(r, c))
+                If Len(kod) >= 7 And Len(kod) <= 12 And kod Like String$(Len(kod), "#") Then sayac = sayac + 1
+            Next r
+            If sayac > en Then en = sayac: cKod = c
+        Next c
+        If en < 3 Then Exit Function
+        For c = cKod + 1 To nc
+            sayac = 0
+            For r = 1 To application.Min(nr, 300)
+                If Y_SAYI_DENE(v(r, c), x) Then sayac = sayac + 1
+            Next r
+            If sayac >= en * 0.8 Then cMik = c: Exit For
+        Next c
+        If cMik = 0 Then Exit Function
+        For c = cKod + 1 To cMik - 1
+            If VarType(v(1, c)) = vbString Then cTan = c: Exit For
+        Next c
+        h = 0
+    End If
+    For r = h + 1 To nr
+        kod = Y_KOD_NORM(v(r, cKod))
+        If Len(kod) >= 4 And Y_SAYI_DENE(v(r, cMik), x) Then
+            If x <> 0 Then
+                If Not d.Exists(kod) Then d(kod) = Array(vbNullString, vbNullString, 0#, 0#)
+                a = d(kod)
+                If cTan > 0 And Len(a(0)) = 0 Then If Not IsError(v(r, cTan)) Then a(0) = Trim$(CStr(v(r, cTan)))
+                If cBir > 0 And Len(a(1)) = 0 Then If Not IsError(v(r, cBir)) Then a(1) = Trim$(CStr(v(r, cBir)))
+                a(2) = a(2) + x
+                If cFiy > 0 Then If Y_SAYI_DENE(v(r, cFiy), f) Then a(3) = f
+                d(kod) = a: adet = adet + 1
+            End If
+        End If
+    Next r
+    bilgi = "kod " & Y_SUTUN(cKod) & ", miktar " & Y_SUTUN(cMik) & IIf(cTan > 0, ", tanım " & Y_SUTUN(cTan), "") & _
+        IIf(cBir > 0, ", birim " & Y_SUTUN(cBir), "") & IIf(cFiy > 0, ", fiyat " & Y_SUTUN(cFiy), "") & IIf(h > 0, " (başlık satırı " & h & ")", " (başlıksız)")
+    Y_PROJE_TARA = adet
+End Function
+
+Private Function Y_SUTUN(ByVal c As Long) As String
+    If c <= 0 Then Exit Function
+    Y_SUTUN = Split(ThisWorkbook.Worksheets(1).Cells(1, c).Address(True, False), "$")(0)
+End Function
+
+Public Sub AKSORA_YATIRIM_PROJE_YUKLE()
+    Dim f As Variant, wb As Workbook, sh As Worksheet, d As Object, en As Object, bilgi As String, enBilgi As String
+    Dim n As Long, enN As Long, enAd As String, il As String, ws As Worksheet, g As Worksheet, k As Variant, r As Long, a As Variant
+    Dim sc As Boolean, ev As Boolean, da As Boolean, blok() As Variant, guv As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    f = application.GetOpenFilename("Excel ve CSV (*.xlsx;*.xlsm;*.xls;*.xlsb;*.csv),*.xlsx;*.xlsm;*.xls;*.xlsb;*.csv", , "Proje malzeme listesini seçin")
+    If VarType(f) = vbBoolean Then Exit Sub
+    sc = application.ScreenUpdating: ev = application.EnableEvents: da = application.DisplayAlerts
+    application.ScreenUpdating = False: application.EnableEvents = False: application.DisplayAlerts = False
+    application.StatusBar = "AKSORA | Proje listesi okunuyor..."
+    ' Proje dosyasindaki makrolar calistirilmaz.
+    guv = application.AutomationSecurity
+    application.AutomationSecurity = msoAutomationSecurityForceDisable
+    Set wb = Workbooks.Open(Filename:=CStr(f), ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+    application.AutomationSecurity = guv
+    For Each sh In wb.Worksheets
+        Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+        bilgi = vbNullString
+        n = Y_PROJE_TARA(sh.UsedRange.Value2, d, bilgi)
+        If n > enN Then enN = n: Set en = d: enBilgi = bilgi: enAd = sh.Name
+    Next sh
+    wb.Close SaveChanges:=False
+    Set wb = Nothing
+    application.StatusBar = False
+    application.DisplayAlerts = da
+    If enN = 0 Then
+        application.ScreenUpdating = sc: application.EnableEvents = ev
+        MsgBox "Dosyada malzeme kodu ve miktar sütunu bulunamadı." & vbCrLf & _
+            "Başlıklarda 'Malzeme Kodu' ve 'Miktar' (veya 'Adet') olmalı.", vbExclamation, "AKSORA | Proje"
+        Exit Sub
+    End If
+    ' Kayit: _Y_PROJE (A il, B kod, C tanim, D birim, E miktar, F fiyat); ust bilgi "#il" satirinda
+    Set g = Y_KAYIT_SAYFA("_Y_PROJE")
+    For r = AKSORA_SON_SATIR(g, 1) To 1 Step -1
+        If CStr(g.Cells(r, 1).Value2) = il Or CStr(g.Cells(r, 1).Value2) = "#" & il Then g.Rows(r).Delete
+    Next r
+    r = AKSORA_SON_SATIR(g, 1)
+    If Len(CStr(g.Cells(1, 1).Value2)) = 0 Then r = 0
+    ReDim blok(1 To en.Count + 1, 1 To 6)
+    blok(1, 1) = "#" & il: blok(1, 2) = Mid$(CStr(f), InStrRev(CStr(f), application.PathSeparator) + 1)
+    blok(1, 3) = enAd: blok(1, 4) = enBilgi: blok(1, 5) = Format$(Now, "dd.mm.yyyy hh:nn"): blok(1, 6) = en.Count
+    n = 1
+    For Each k In en.keys
+        n = n + 1: a = en(k)
+        blok(n, 1) = il: blok(n, 2) = CStr(k): blok(n, 3) = a(0): blok(n, 4) = a(1): blok(n, 5) = a(2): blok(n, 6) = a(3)
+    Next k
+    g.Range(g.Cells(r + 1, 1), g.Cells(r + n, 2)).NumberFormat = "@"
+    g.Range(g.Cells(r + 1, 1), g.Cells(r + n, 6)).Value2 = blok
+    ws.Unprotect ""
+    Y_PROJE_KARSILASTIR ws
+    Y_HAKEDIS_ALT ws
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.ScreenUpdating = sc: application.EnableEvents = ev
+    MsgBox "Proje yüklendi: " & blok(1, 2) & vbCrLf & "Sayfa: " & enAd & "   |   " & en.Count & " farklı malzeme" & vbCrLf & _
+        "Okunan sütunlar: " & enBilgi, vbInformation, "AKSORA | Proje"
+    Exit Sub
+Hata:
+    On Error Resume Next
+    If guv <> 0 Then application.AutomationSecurity = guv
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    application.StatusBar = False
+    application.ScreenUpdating = True: application.EnableEvents = True: application.DisplayAlerts = True
+    MsgBox "Proje dosyası okunamadı: " & Err.Description, vbExclamation, "AKSORA | Proje"
+End Sub
+
+' Proje ile stok karsilastirmasi (tablo VBA ile yazilir).
+Private Sub Y_PROJE_KARSILASTIR(ByVal ws As Worksheet)
+    Dim il As String, g As Worksheet, son As Long, v As Variant, r As Long, proje As Object, ust As Variant
+    Dim yuk As Object, yat As Object, i As Long, sh As Worksheet, sv As Variant, kod As String, depo As String, secim As String
+    Dim t As Variant, k As Variant, n As Long, blok() As Variant, sira() As Long, oncelik() As Long, j As Long, tmp As Long
+    Dim a As Long, b As Long, eksikTL As Double, yeterli As Long, eksik As Long, fazla As Long, p As Double, e As Double, y As Double, fy As Double
+    Dim satir() As Variant, ad As String
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    secim = UCase$(Trim$(CStr(ws.Range("BX24").Value2)))
+    a = 13
+    ' Eski tablo temizlenir
+    If ws.AutoFilterMode Then ws.AutoFilterMode = False
+    son = application.Max(a + 1, Val(CStr(ws.Range("BX28").Value2)))
+    With ws.Range(ws.Cells(a, 1), ws.Cells(son + 2, 11))
+        .Clear
+    End With
+    ws.Range(ws.Rows(a), ws.Rows(son + 2)).RowHeight = ws.StandardHeight
+    ' Proje
+    Set proje = CreateObject("Scripting.Dictionary"): proje.CompareMode = vbTextCompare
+    Set g = Y_KAYIT_SAYFA("_Y_PROJE")
+    son = AKSORA_SON_SATIR(g, 1)
+    If son >= 1 And Len(CStr(g.Cells(1, 1).Value2)) > 0 Then
+        v = g.Range("A1:F" & son).Value2
+        For r = 1 To UBound(v, 1)
+            If CStr(v(r, 1)) = il Then
+                proje(CStr(v(r, 2))) = Array(v(r, 3), v(r, 4), v(r, 5), v(r, 6))
+            ElseIf CStr(v(r, 1)) = "#" & il Then
+                ust = Array(v(r, 2), v(r, 3), v(r, 4), v(r, 5), v(r, 6))
+            End If
+        Next r
+    End If
+    ' Stoklar: yuklenici (secili depo veya tumu) ve yatirim depolari
+    Set yuk = CreateObject("Scripting.Dictionary"): yuk.CompareMode = vbTextCompare
+    Set yat = CreateObject("Scripting.Dictionary"): yat.CompareMode = vbTextCompare
+    For i = 1 To 4
+        Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
+        son = AKSORA_M_SON(sh)
+        If son >= 7 Then
+            sv = sh.Range("A7:N" & son).Value2
+            For r = 1 To UBound(sv, 1)
+                kod = Y_KOD_NORM(sv(r, 5))
+                If Len(kod) > 0 And Not IsError(sv(r, 2)) Then
+                    depo = UCase$(Trim$(CStr(sv(r, 2))))
+                    If i <= 2 Then
+                        Y_STOK_EKLE yat, kod, sv, r
+                    ElseIf Len(secim) = 0 Or secim = depo Then
+                        Y_STOK_EKLE yuk, kod, sv, r
+                    End If
+                End If
+            Next r
+        End If
+    Next i
+    ' Satirlar: proje kalemleri + depoda olup projede olmayanlar
+    n = proje.Count
+    If proje.Count > 0 Then
+        For Each k In yuk.keys
+            If Not proje.Exists(k) Then n = n + 1
+        Next k
+    End If
+    If n > 0 Then
+        ReDim blok(1 To n, 1 To 11): ReDim oncelik(1 To n): ReDim sira(1 To n)
+        i = 0
+        For Each k In proje.keys
+            i = i + 1: t = proje(k)
+            p = CDbl(t(2)): e = 0: y = 0: fy = 0
+            If yuk.Exists(k) Then e = yuk(k)(2)
+            If yat.Exists(k) Then y = yat(k)(2)
+            If Not IsError(t(3)) Then
+                If IsNumeric(t(3)) Then If CDbl(t(3)) <> 0 Then fy = CDbl(t(3))
+            End If
+            If fy = 0 And yuk.Exists(k) Then If yuk(k)(2) <> 0 Then fy = yuk(k)(3) / yuk(k)(2)
+            If fy = 0 And yat.Exists(k) Then If yat(k)(2) <> 0 Then fy = yat(k)(3) / yat(k)(2)
+            ad = CStr(t(0))
+            If Len(ad) = 0 And yuk.Exists(k) Then ad = yuk(k)(0)
+            If Len(ad) = 0 And yat.Exists(k) Then ad = yat(k)(0)
+            blok(i, 1) = CStr(k): blok(i, 2) = ad
+            ' IIf tum dallari hesaplar: eksik anahtarda yuk(k)(1) hata verirdi; acik dallanma.
+            If Len(CStr(t(1))) > 0 Then
+                blok(i, 3) = t(1)
+            ElseIf yuk.Exists(k) Then
+                blok(i, 3) = yuk(k)(1)
+            ElseIf yat.Exists(k) Then
+                blok(i, 3) = yat(k)(1)
+            Else
+                blok(i, 3) = ""
+            End If
+            blok(i, 4) = p: blok(i, 5) = e: blok(i, 6) = y: blok(i, 7) = e - p
+            If p > 0 Then blok(i, 8) = application.Min(1, e / p) Else blok(i, 8) = Empty
+            If e >= p Then
+                blok(i, 9) = "Depoda yeterli": oncelik(i) = 3: yeterli = yeterli + 1
+            ElseIf e + y >= p Then
+                blok(i, 9) = "Yatırımdan tamamlanır": oncelik(i) = 2
+            Else
+                blok(i, 9) = "EKSİK": oncelik(i) = 1: eksik = eksik + 1
+            End If
+            blok(i, 10) = IIf(fy > 0, fy, Empty)
+            blok(i, 11) = application.Max(0, p - e - y) * fy
+            eksikTL = eksikTL + blok(i, 11)
+        Next k
+        For Each k In yuk.keys
+            If Not proje.Exists(k) And proje.Count > 0 Then
+                i = i + 1: t = yuk(k)
+                blok(i, 1) = CStr(k): blok(i, 2) = t(0): blok(i, 3) = t(1)
+                blok(i, 4) = 0: blok(i, 5) = t(2): blok(i, 6) = 0: blok(i, 7) = t(2)
+                If yat.Exists(k) Then blok(i, 6) = yat(k)(2)
+                blok(i, 9) = "Projede yok (iade)": oncelik(i) = 4: fazla = fazla + 1
+                If t(2) <> 0 Then blok(i, 10) = t(3) / t(2)
+                blok(i, 11) = Empty
+            End If
+        Next k
+        For i = 1 To n: sira(i) = i: Next i
+        For i = 2 To n
+            tmp = sira(i): j = i - 1
+            Do While j >= 1
+                If oncelik(sira(j)) <= oncelik(tmp) Then Exit Do
+                sira(j + 1) = sira(j): j = j - 1
+            Loop
+            sira(j + 1) = tmp
+        Next i
+        ReDim satir(1 To n, 1 To 11)
+        For i = 1 To n
+            For j = 1 To 11: satir(i, j) = blok(sira(i), j): Next j
+        Next i
+        b = a + n - 1
+        ws.Range(ws.Cells(a, 1), ws.Cells(b, 1)).NumberFormat = "@"
+        ws.Range(ws.Cells(a, 1), ws.Cells(b, 11)).Value2 = satir
+        ws.Range(ws.Rows(a), ws.Rows(b + 1)).RowHeight = 20
+        Y_TABLO_GOVDE ws.Range(ws.Cells(a, 1), ws.Cells(b, 11))
+        ws.Cells(b + 1, 1).Value2 = "TOPLAM"
+        ws.Cells(b + 1, 4).Formula = "=SUM(D" & a & ":D" & b & ")"
+        ws.Cells(b + 1, 5).Formula = "=SUM(E" & a & ":E" & b & ")"
+        ws.Cells(b + 1, 6).Formula = "=SUM(F" & a & ":F" & b & ")"
+        ws.Cells(b + 1, 11).Formula = "=SUM(K" & a & ":K" & b & ")"
+        Y_TOPLAM_SATIRI ws.Range(ws.Cells(b + 1, 1), ws.Cells(b + 1, 11))
+        ws.Range(ws.Cells(a, 1), ws.Cells(b, 1)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a, 2), ws.Cells(b, 2)).IndentLevel = 1
+        ws.Range(ws.Cells(a, 3), ws.Cells(b, 3)).HorizontalAlignment = xlCenter
+        For i = a To b + 1
+            For j = 4 To 7
+                Y_MIKTAR_BICIM ws.Cells(i, j)
+            Next j
+        Next i
+        ws.Range(ws.Cells(a, 8), ws.Cells(b, 8)).NumberFormat = "0%"
+        ws.Range(ws.Cells(a, 8), ws.Cells(b, 9)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a, 10), ws.Cells(b + 1, 11)).NumberFormat = "#,##0.00 ""TL"""
+        Y_DURUM_KF ws.Range(ws.Cells(a, 9), ws.Cells(b, 9)), "EKSİK", RGB(254, 226, 226), RGB(185, 28, 28)
+        Y_DURUM_KF ws.Range(ws.Cells(a, 9), ws.Cells(b, 9)), "Yatırımdan tamamlanır", RGB(254, 243, 199), RGB(180, 83, 9)
+        Y_DURUM_KF ws.Range(ws.Cells(a, 9), ws.Cells(b, 9)), "Depoda yeterli", RGB(220, 252, 231), RGB(21, 128, 61)
+        Y_DURUM_KF ws.Range(ws.Cells(a, 9), ws.Cells(b, 9)), "Projede yok (iade)", RGB(237, 233, 254), RGB(91, 33, 182)
+        ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 11)).AutoFilter
+    Else
+        b = a
+        ws.Cells(a, 2).Value2 = "Proje yüklenmedi. 'PROJE EXCELİ YÜKLE' ile malzeme listesini seçin (kod ve miktar sütunları otomatik bulunur)."
+        ws.Cells(a, 2).Font.Italic = True: ws.Cells(a, 2).Font.Color = RGB(100, 116, 139)
+    End If
+    ws.Range("BX28").Value2 = b + 1
+    ' KPI degerleri
+    If IsArray(ust) Then
+        ws.Range("BZ1").Value2 = CStr(ust(0))
+        ws.Range("BZ5").Value2 = "Yüklendi: " & CStr(ust(3)) & "   |   " & CStr(ust(2))
+    Else
+        ws.Range("BZ1").Value2 = "Proje yüklenmedi"
+        ws.Range("BZ5").Value2 = ""
+    End If
+    ws.Range("BZ2").Value2 = proje.Count & " kalem"
+    If proje.Count > 0 Then
+        ws.Range("BZ3").Value2 = yeterli & " / " & proje.Count & " kalem  (" & Format$(yeterli / proje.Count, "0%") & ")"
+    Else
+        ws.Range("BZ3").Value2 = "-"
+    End If
+    ws.Range("BZ4").Value2 = eksik & " kalem  •  " & Format$(eksikTL, "#,##0.00") & " TL"
+    ws.Cells(a - 3, 1).Value2 = "Karşılaştırılan depo: " & IIf(Len(secim) > 0, secim, "TÜM YÜKLENİCİ DEPOLARI") & _
+        "  +  yatırım depoları (D002, D011)" & IIf(fazla > 0, "   |   projede olmayan " & fazla & " kalem depoda (iade / teminat)", "")
+    ws.Cells(a - 3, 1).Font.Size = 9: ws.Cells(a - 3, 1).Font.Color = RGB(71, 85, 105)
+End Sub
+
+Private Sub Y_STOK_EKLE(ByVal d As Object, ByVal kod As String, ByRef sv As Variant, ByVal r As Long)
+    Dim t As Variant
+    If Not d.Exists(kod) Then d(kod) = Array(Trim$(CStr(sv(r, 6))), Trim$(CStr(sv(r, 8))), 0#, 0#)
+    t = d(kod)
+    If Not IsError(sv(r, 7)) Then If IsNumeric(sv(r, 7)) Then t(2) = t(2) + CDbl(sv(r, 7))
+    If Not IsError(sv(r, 11)) Then If VarType(sv(r, 11)) <> vbString And IsNumeric(sv(r, 11)) Then t(3) = t(3) + CDbl(sv(r, 11))
+    d(kod) = t
+End Sub
+
+' (Eski hakedis sayfasi kurulumu PROJE MALZEME TAKIBI'ne tasindi: Y_HAKEDIS_KUR asagida.)
+
+' Hakedis hesabi icin ayrilan alan: akis kartlari (uzman gorusuyle doldurulacak).
+Private Sub Y_HAKEDIS_TASLAK(ByVal ws As Worksheet, ByVal y As Double, ByVal w As Double)
+    Dim s As Shape, i As Long, kw As Double, x As Double, basliklar As Variant, metinler As Variant, renk As Variant
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 8) = "Y_HK_TS_" Then ws.Shapes(i).Delete
+    Next i
+    Y_KUTU ws, "Y_HK_TS_ZEMIN", 0, y, w, 190, RGB(245, 250, 255), RGB(207, 227, 242)
+    Y_METIN ws, "Y_HK_TS_ETIKET", "HAKEDİŞ HESABI  •  TASARIM", 20, y + 12, 400, 18, 9, RGB(0, 125, 110), True, msoAlignLeft
+    Y_METIN ws, "Y_HK_TS_BASLIK", "Projeden hakedişe tek akış", 20, y + 32, w - 40, 28, 18, RGB(12, 45, 79), True, msoAlignLeft
+    basliklar = Array("1  Proje listesi", "2  Stok karşılaştırması", "3  Sahada kullanılan", "4  Hakediş tutarı")
+    metinler = Array("Proje Exceli yüklenir; kod, tanım, miktar otomatik okunur.", _
+        "Yüklenici ve yatırım depolarıyla kalem kalem karşılaştırılır.", _
+        "Teminat Takibi'nde 'Sahada' işaretlenen malzeme hakedişe bağlanır.", _
+        "Birim fiyat × metraj, kesintiler ve ödenecek tutar (uzman görüşüyle kesinleşecek).")
+    renk = Array(RGB(35, 119, 204), RGB(39, 160, 94), RGB(245, 158, 11), RGB(0, 125, 110))
+    kw = (w - 40 - 3 * 14) / 4
+    For i = 0 To 3
+        x = 20 + i * (kw + 14)
+        Y_KUTU ws, "Y_HK_TS_KART_" & i, x, y + 72, kw, 100, RGB(255, 255, 255), RGB(207, 227, 242)
+        Y_KUTU ws, "Y_HK_TS_SERIT_" & i, x, y + 72, 6, 100, CLng(renk(i)), -1
+        Y_METIN ws, "Y_HK_TS_KB_" & i, CStr(basliklar(i)), x + 18, y + 82, kw - 30, 22, 12, RGB(12, 45, 79), True, msoAlignLeft
+        Y_METIN ws, "Y_HK_TS_KM_" & i, CStr(metinler(i)), x + 18, y + 108, kw - 30, 56, 10, RGB(51, 65, 85), False, msoAlignLeft
+    Next i
+End Sub
+
+Public Sub AKSORA_YATIRIM_HAKEDIS_SEC()
+    Dim ws As Worksheet, s As Shape, t As String, ev As Boolean, sc As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    Set s = ws.Shapes("Y_HK_DEPO")
+    If s.ControlFormat.Value = 1 Then t = "" Else t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False: application.ScreenUpdating = False
+    ws.Unprotect ""
+    ws.Range("BX24").Value2 = t
+    Y_PROJE_KARSILASTIR ws
+    Y_HAKEDIS_ALT ws
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    application.EnableEvents = ev: application.ScreenUpdating = sc
+    Exit Sub
+Hata:
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
+End Sub
+
+' Tablo boyu degisince: tasarim karti tablonun altina alinir, yazdirma alani tabloyu kapsar.
+Private Sub Y_HAKEDIS_ALT(ByVal ws As Worksheet)
+    Dim s As Shape, w As Double, ust As Double, son As Long
+    son = CLng(Val(CStr(ws.Range("BX28").Value2)))
+    If son < 1 Then son = 14
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    ust = ws.Rows(son + 2).top + 10
+    Y_HAKEDIS_TASLAK ws, ust, w
+    Y_FILIGRAN ws, ust + 200, w
+    On Error Resume Next
+    ws.PageSetup.PrintArea = "$A$1:$K$" & son
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_YATIRIM_PROJE_YENILE()
+    AKSORA_YATIRIM_HAKEDIS_SEC
+End Sub
+
+Public Sub AKSORA_YATIRIM_HAKEDIS_PDF()
+    Dim ws As Worksheet, yol As String, kart As Boolean
+    kart = AKSORA_BEKLE_AC("AKSORA  |  HAKEDİŞ", "PDF hazırlanıyor...", 0.3)
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    ' Yazdirma alani her zaman guncel tablo boyuna gore (proje sonradan yuklendiyse kesik cikmaz).
+    On Error Resume Next
+    If Val(CStr(ws.Range("BX28").Value2)) > 0 Then ws.PageSetup.PrintArea = "$A$1:$K$" & CLng(Val(CStr(ws.Range("BX28").Value2)))
+    On Error GoTo Hata
+    yol = ThisWorkbook.Path & application.PathSeparator & "PROJE_KARSILASTIRMA_" & CStr(ws.Range("BX22").Value2) & "_" & _
+        Format$(Now, "yyyymmdd_hhnn") & ".pdf"
+    ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=yol, Quality:=xlQualityStandard, IncludeDocProperties:=False, _
+        IgnorePrintAreas:=False, OpenAfterPublish:=True
+    If kart Then AKSORA_BEKLE_KAPAT
+    Exit Sub
+Hata:
+    If kart Then AKSORA_BEKLE_KAPAT
+    MsgBox "PDF oluşturulamadı: " & Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Calisma kitabi SheetChange: teminat girisleri aninda kayda yazilir.
+Public Sub AKSORA_YATIRIM_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
+    Dim ev As Boolean, c As Range, il As String, a As Long, b As Long, alan As Range, t As String, anahtar As String
+    If Not TypeOf sh Is Worksheet Then Exit Sub
+    If sh.Name = "Y_HAKEDİŞ" Then Y_SAHA_DEGISIM sh, hedef: Exit Sub
+    If sh.Name <> "Y_TEMİNAT" Then Exit Sub
+    If mYCalisiyor Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Cikis
+    application.EnableEvents = False
+    il = UCase$(Trim$(CStr(sh.Range("BX22").Value2)))
+    If Len(il) = 0 Then GoTo Cikis
+    ' Malzeme arama hucresi
+    If Len(CStr(sh.Range("BX29").Value2)) > 0 Then
+        If Not Intersect(hedef, sh.Range(CStr(sh.Range("BX29").Value2)).MergeArea) Is Nothing Then
+            t = Trim$(CStr(sh.Range(CStr(sh.Range("BX29").Value2)).Value2))
+            sh.Unprotect ""
+            If Y_ARALIK(sh, "BX27", a, b) Then
+                If Not sh.AutoFilterMode Then sh.Range(sh.Cells(a - 1, 1), sh.Cells(b, 14)).AutoFilter
+                If Len(t) = 0 Then
+                    sh.AutoFilter.Range.AutoFilter Field:=14
+                Else
+                    sh.AutoFilter.Range.AutoFilter Field:=14, Criteria1:="=*" & t & "*"
+                End If
+            End If
+            sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+            Y_TEMINAT_KAL sh
+            GoTo Cikis
+        End If
+    End If
+    If Y_ARALIK(sh, "BX23", a, b) Then
+        Set alan = Intersect(hedef, sh.Range(sh.Cells(a, 4), sh.Cells(b, 4)))
+        If Not alan Is Nothing Then
+            For Each c In alan.Cells
+                If Len(CStr(sh.Cells(c.Row, 1).Value2)) > 0 Then Y_KAYIT_YAZ "_Y_TEMINAT", "T|" & il & "|" & UCase$(CStr(sh.Cells(c.Row, 1).Value2)), c.Value2
+            Next c
+        End If
+    End If
+    If Y_ARALIK(sh, "BX27", a, b) Then
+        Set alan = Intersect(hedef, sh.Range(sh.Cells(a, 7), sh.Cells(b, 8)))
+        If Not alan Is Nothing Then
+            sh.Unprotect ""
+            For Each c In alan.Cells
+                If Len(CStr(sh.Cells(c.Row, 3).Value2)) > 0 Then
+                    t = CStr(sh.Cells(c.Row, 7).Value2)
+                    If t <> "Sahada" And t <> "Kısmi" Then
+                        t = "Depoda": sh.Cells(c.Row, 7).Value2 = t
+                        sh.Cells(c.Row, 13).ClearContents
+                    ElseIf Len(CStr(sh.Cells(c.Row, 13).Value2)) = 0 Then
+                        sh.Cells(c.Row, 13).Value = Date
+                    End If
+                    anahtar = "K|" & il & "|" & UCase$(CStr(sh.Cells(c.Row, 1).Value2)) & "|" & CStr(sh.Cells(c.Row, 3).Value2)
+                    Y_KAYIT_YAZ "_Y_TEMINAT", anahtar, t, sh.Cells(c.Row, 8).Value2, sh.Cells(c.Row, 13).Value2
+                End If
+            Next c
+            sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+            ' Degisimden sonra baska yatirim sayfasina gecilirse teminat sayfasina donulur.
+            Y_TEMINAT_KAL sh
+        End If
+    End If
+Cikis:
+    application.EnableEvents = ev
+End Sub
+
+' Giris ve guncelleme sonrasi: hata olsa bile birim acilir, hata durum seridine yazilir.
+Private Sub Y_ALT_SAYFALAR(ByVal il As String)
+    Dim da As Boolean, ad As Variant, ws As Worksheet, s As Shape, var As Boolean, hesap As XlCalculation
+    ' AKSORA amblemi tum yatirim sayfalarindan kaldirilir.
+    On Error Resume Next
+    For Each ad In Y_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        var = False
+        For Each s In ws.Shapes
+            If InStr(s.Name, "FILIGRAN") > 0 Then var = True: Exit For
+        Next s
+        If var Then
+            ws.Unprotect ""
+            Y_FILIGRAN ws
+            ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        End If
+    Next ad
+    On Error GoTo 0
+    da = application.DisplayAlerts
+    application.DisplayAlerts = False
+    hesap = application.Calculation
+    application.Calculation = xlCalculationManual
+    On Error Resume Next
+    Y_TEMINAT_KUR il
+    If Err.Number <> 0 Then Y_SERIT "Teminat sayfası kurulamadı: " & Err.Description, 3: Err.Clear
+    ' Hakedis sayfasi yalniz il veya tasarim surumu degisince yeniden kurulur (girisler korunur).
+    With ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+        If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V4" Then
+            Y_HAKEDIS_KUR il
+        End If
+    End With
+    If Err.Number <> 0 Then Y_SERIT "Hakediş sayfası kurulamadı: " & Err.Description, 3: Err.Clear
+    On Error GoTo 0
+    application.Calculation = hesap
+    application.DisplayAlerts = da
+End Sub
+
+'==========================================================
+' ILCE YONETIM BIRIMI (I_ sayfalari)
+' CDP (7151-7155) ve EPP (7051-7055) uretim yerlerinin K001-K999 ilce depolari.
+' Ana panel, arama, stok ve rapor sayfalari musteri biriminin kilitli tasarimindan
+' kopyalanir; karsilastirma ve ISG sayfalari ayni rapor basligiyla kurulur.
+' Kayitlar: _IA_<IL> (son stok, paketli), _IH_<IL> (gunluk stok gecmisi, her sutun bir gun).
+'==========================================================
+
+Private Function I_ADLAR() As Variant
+    I_ADLAR = Array("I_ANA PANEL", "I_MALZEME_ARA", "I_STOK_KARŞILAŞTIRMA", "I_AYLIK_DEMONTAJ", "I_CDP_İLÇELER_STOK", _
+        "I_CDP_İLÇELER_RAPOR", "I_EPP_İLÇELER_STOK", "I_EPP_İLÇELER_RAPOR", "I_BİRLEŞİK_STOK", "I_BİRLEŞİK_RAPOR", _
+        "I_İSG_MALZEMELERİ")
+End Function
+
+Private Function I_TUR(ByVal ad As String) As String
+    Select Case ad
+        Case "I_ANA PANEL": I_TUR = "PANEL"
+        Case "I_MALZEME_ARA": I_TUR = "ARAMA"
+        Case "I_CDP_İLÇELER_STOK", "I_EPP_İLÇELER_STOK", "I_BİRLEŞİK_STOK": I_TUR = "STOK"
+        Case "I_CDP_İLÇELER_RAPOR", "I_EPP_İLÇELER_RAPOR", "I_BİRLEŞİK_RAPOR": I_TUR = "RAPOR"
+        Case "I_STOK_KARŞILAŞTIRMA": I_TUR = "KARS"
+        Case Else: I_TUR = "BOS"
+    End Select
+End Function
+
+Public Function AKSORA_ILCE_SAYFA(ByVal sh As Object) As Boolean
+    Dim ad As Variant
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If Left$(sh.Name, 2) <> "I_" Then Exit Function
+    For Each ad In I_ADLAR()
+        If sh.Name = CStr(ad) Then AKSORA_ILCE_SAYFA = (CStr(sh.Range("BX1").Value2) = I_ETIKET): Exit Function
+    Next ad
+End Function
+
+Public Sub AKSORA_BIRIM_ILCE()
+    Dim ac As Boolean, no As Long, metin As String
+    If Not BIRIM_SIFRE_KONTROL("ILCE", "İLÇE YÖNETİM BİRİMİ") Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  İLÇE YÖNETİM BİRİMİ", "Birim açılıyor...")
+    On Error GoTo son
+    BIRIM_ILCE_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub BIRIM_ILCE_ASIL()
+    On Error GoTo Hata
+    YATIRIM_KAPAK_AC True
+    Exit Sub
+Hata:
+    AKSORA_HATA_GOSTER "İlçe Yönetim birimi", Err.Number, Err.Description
+End Sub
+
+Public Sub AKSORA_ILCE_GIRIS()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  İLÇE YÖNETİM BİRİMİ", "İl stokları ve ekranlar hazırlanıyor...")
+    On Error GoTo son
+    ILCE_GIRIS_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_GIRIS_ASIL()
+    Dim ws As Worksheet
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(ILCE_KAPAK)
+    If Len(CStr(ws.Range("AZ1").Value2)) = 0 Then
+        MsgBox "Lütfen bir il seçiniz.", vbInformation, "AKSORA"
+    Else
+        I_GIRIS CStr(ws.Range("AZ1").Value2)
+    End If
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+' Kopyalanan sayfanin dugmeleri ilce birimine baglanir.
+Private Sub I_TEMIZLE(ByVal ws As Worksheet)
+    Select Case I_TUR(ws.Name)
+        Case "PANEL": I_PANEL_TEMIZLE ws
+        Case "ARAMA": Y_ARAMA_TEMIZLE ws
+        Case "STOK": Y_STOK_TEMIZLE ws
+        Case "RAPOR": Y_RAPOR_TEMIZLE ws
+        Case "KARS": I_KARS_HAZIRLA ws
+        Case Else: Y_SAYFA_SIFIRLA ws
+    End Select
+    If I_TUR(ws.Name) = "STOK" Then ws.Range("A7").Value2 = "Veri bekleniyor: SAP STOKLARINI GÜNCELLE ile ilçe depoları (K001-K999, PB) SAP'den alınır."
+    If I_TUR(ws.Name) = "RAPOR" Then ws.Range("A9").Value2 = "Veri bekleniyor: ilçe stokları güncellenince rapor oluşacak."
+    I_BAGLA ws
+End Sub
+
+Private Sub I_BAGLA(ByVal ws As Worksheet)
+    Dim s As Shape
+    Y_BAGLA Y_SEKIL(ws, "btnAnaPanelDon"), "I_ANA PANEL"
+    Y_BAGLA Y_SEKIL(ws, "btnMalzemeAnaPanel"), "I_ANA PANEL"
+    Set s = Y_SEKIL(ws, "SAP_STOK_GUNCELLE_BTN")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_GUNCELLE")
+    If ws.Name = "I_MALZEME_ARA" Then
+        Set s = Y_SEKIL(ws, "AKSORA_TOPLU_GUNCELLE")
+        If Not s Is Nothing Then
+            Y_YAZ s, "BÜTÜN İLLERİN İLÇELERİNİ GÜNCELLE" & vbLf & "MB52  |  5 İL"
+            s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_BUTUN_ILLER")
+        End If
+        Set s = Y_SEKIL(ws, "AKSORA_TOPLU_VURGU")
+        If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_BUTUN_ILLER")
+        Y_YAZ Y_SEKIL(ws, "AKSORA_TOPLU_DURUM"), "Arama, her ilin yukarıdaki tarihli ilçe depo stoklarını kullanır."
+        Y_YAZ Y_SEKIL(ws, "AKSORA_ARAMA_SABIT_ACIKLAMA"), "Yalnızca ilçe depoları (CDP ve EPP, K001-K999 ve PB planlı bakım) aranır."
+        On Error Resume Next
+        If CStr(ws.Range("A3").Value2) <> "CDP + EPP İlçe Depoları" Then ws.Unprotect "": ws.Range("A3").Value2 = "CDP + EPP İlçe Depoları": ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+        On Error GoTo 0
+    End If
+End Sub
+
+Private Sub I_PANEL_TEMIZLE(ByVal ws As Worksheet)
+    Dim s As Shape, ad As String, b As Variant
+    For Each s In ws.Shapes
+        ad = s.Name
+        If Left$(ad, 20) = "AKSORA15_KART_DEGER_" Then
+            If Right$(ad, 1) = "0" Then Y_YAZ s, "Veri bekleniyor" Else Y_YAZ s, "-"
+        End If
+        If Left$(ad, 18) = "AKSORA15_KART_LED_" Then s.Fill.ForeColor.RGB = RGB(145, 162, 176)
+    Next s
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "STOK / DEMONTAJ KONTROLÜ": Y_BAGLA Y_SEKIL(ws, "btnBaglantiKontrol"), "I_STOK_KARŞILAŞTIRMA"
+    Y_YAZ Y_SEKIL(ws, "btnMalzemeAraPanel"), "MALZEME ARAMA": Y_BAGLA Y_SEKIL(ws, "btnMalzemeAraPanel"), "I_MALZEME_ARA"
+    Y_YAZ Y_SEKIL(ws, "btnTumStok"), "TÜM İLÇE STOKLARINI GÜNCELLE"
+    Y_YAZ Y_SEKIL(ws, "btnCDP"), "CDP İLÇE GÜNCELLE"
+    Y_YAZ Y_SEKIL(ws, "btnIlce"), "EPP İLÇE GÜNCELLE"
+    For Each b In Array("btnTumStok", "btnCDP", "btnIlce")
+        Set s = Y_SEKIL(ws, CStr(b))
+        If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_GUNCELLE")
+    Next b
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "İSG ZİMMET KONTROLÜ": Y_BAGLA Y_SEKIL(ws, "btnYuk"), "I_İSG_MALZEMELERİ"
+    Set s = Y_SEKIL(ws, "AKSORA15_IL_DEGISTIR")
+    If Not s Is Nothing Then s.OnAction = BIRIM_MAKRO("AKSORA_BIRIM_ILCE")
+    I_HIZLI ws
+End Sub
+
+' Buyuk dugmeler: ust sira islem sayfalari ayni beyaz temada (STOK / DEMONTAJ | MALZEME ARAMA |
+' ISG ZIMMET), alt sira guncellemeler (CDP | TUM ILCE - yesil, farkli | EPP). Bir kez uygulanir (BX27).
+Private Sub I_PANEL_DUGME_DUZEN(ByVal ws As Worksheet)
+    Dim l1 As Shape, m1 As Shape, r1 As Shape, l2 As Shape, m2 As Shape, r2 As Shape, g As Variant
+    Set l1 = Y_SEKIL(ws, "btnBaglantiKontrol"): Set m1 = Y_SEKIL(ws, "btnTumStok"): Set r1 = Y_SEKIL(ws, "btnMalzemeAraPanel")
+    Set l2 = Y_SEKIL(ws, "btnCDP"): Set m2 = Y_SEKIL(ws, "btnIlce"): Set r2 = Y_SEKIL(ws, "btnYuk")
+    If l1 Is Nothing Or m1 Is Nothing Or r1 Is Nothing Or l2 Is Nothing Or m2 Is Nothing Or r2 Is Nothing Then Exit Sub
+    g = Array(m1.Left, m1.top, m1.Width, m1.Height, r1.Left, r1.top, r1.Width, r1.Height, _
+        m2.Left, m2.top, m2.Width, m2.Height, r2.Left, r2.top, r2.Width, r2.Height)
+    On Error Resume Next
+    r1.Left = g(0): r1.top = g(1): r1.Width = g(2): r1.Height = g(3)
+    l1.PickUp: r2.Apply
+    r2.Left = g(4): r2.top = g(5): r2.Width = g(6): r2.Height = g(7)
+    With r2.TextFrame2.TextRange.Font
+        .Size = l1.TextFrame2.TextRange.Font.Size
+        .bold = l1.TextFrame2.TextRange.Font.bold
+        .Fill.ForeColor.RGB = l1.TextFrame2.TextRange.Font.Fill.ForeColor.RGB
+    End With
+    m1.Left = g(8): m1.top = g(9): m1.Width = g(10): m1.Height = g(11)
+    m1.TextFrame2.TextRange.Font.Size = l2.TextFrame2.TextRange.Font.Size
+    m2.Left = g(12): m2.top = g(13): m2.Width = g(14): m2.Height = g(15)
+    On Error GoTo 0
+    ws.Range("BX27").Value2 = "DUGME_V1"
+End Sub
+
+' Hizli erisim: 7 sayfa ayni satirda esit aralikla (eksik dugme ilk dugmeden cogaltilir).
+Private Sub I_HIZLI(ByVal ws As Worksheet)
+    Dim s As Shape, ilk As Shape, i As Long, x0 As Double, x1 As Double, bw As Double, g As Double
+    Dim adlar As Variant, hedefler As Variant, yeni As Shape
+    Set ilk = Y_SEKIL(ws, "MUSTERI_HIZLI_0")
+    If ilk Is Nothing Then Exit Sub
+    x0 = ilk.Left: x1 = CDbl(Val(CStr(ws.Range("BX26").Value2))): g = 6
+    If x1 <= x0 Then
+        For Each s In ws.Shapes
+            If Left$(s.Name, 14) = "MUSTERI_HIZLI_" Then x1 = application.Max(x1, s.Left + s.Width)
+        Next s
+        ws.Range("BX26").Value2 = x1
+    End If
+    For i = 1 To 5
+        If Y_SEKIL(ws, "MUSTERI_HIZLI_" & i) Is Nothing Then
+            Set yeni = ilk.Duplicate
+            yeni.Name = "MUSTERI_HIZLI_" & i
+        End If
+    Next i
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 14) = "MUSTERI_HIZLI_" Then
+            If Val(Mid$(ws.Shapes(i).Name, 15)) > 5 Then ws.Shapes(i).Delete
+        End If
+    Next i
+    bw = (x1 - x0 - 5 * g) / 6
+    ' Buyuk dugmesi olan sayfalar (arama, stok/demontaj, zimmet) burada tekrarlanmaz.
+    adlar = Array("CDP İLÇE STOK", "CDP İLÇE RAPOR", "EPP İLÇE STOK", "EPP İLÇE RAPOR", "BİRLEŞİK STOK", "BİRLEŞİK RAPOR")
+    hedefler = Array("I_CDP_İLÇELER_STOK", "I_CDP_İLÇELER_RAPOR", "I_EPP_İLÇELER_STOK", "I_EPP_İLÇELER_RAPOR", _
+        "I_BİRLEŞİK_STOK", "I_BİRLEŞİK_RAPOR")
+    Y_YAZ Y_SEKIL(ws, "btnBaglantiKontrol"), "STOK / DEMONTAJ KONTROLÜ"
+    Y_YAZ Y_SEKIL(ws, "btnYuk"), "İSG ZİMMET KONTROLÜ"
+    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "İSG ZİMMET KONTROLÜ"
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, "MUSTERI_HIZLI_" & i)
+        If Not s Is Nothing Then
+            s.Left = x0 + i * (bw + g): s.Width = bw: s.top = ilk.top: s.Height = ilk.Height
+            Y_YAZ s, CStr(adlar(i))
+            On Error Resume Next
+            s.TextFrame2.WordWrap = msoTrue
+            s.TextFrame2.MarginLeft = 2: s.TextFrame2.MarginRight = 2
+            On Error GoTo 0
+            Y_BAGLA s, CStr(hedefler(i))
+        End If
+    Next i
+    If CStr(ws.Range("BX27").Value2) <> "DUGME_V1" Then I_PANEL_DUGME_DUZEN ws
+    ws.Range("BX25").Value2 = "IP_V5"
+End Sub
+
+' Secili ile gore basliklar, kart basliklari, alt bilgi ve panel bandi.
+Private Sub I_IL_UYGULA(ByVal kod As String)
+    Dim ad As Variant, ws As Worksheet, il As String, s As Shape
+    il = Y_IL_ADI(kod)
+    For Each ad In I_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        If CStr(ws.Range("BX20").Value2) <> kod Then
+            ws.Unprotect ""
+            Select Case I_TUR(ws.Name)
+                Case "PANEL"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_B"), "CDP İLÇELER / " & AKSORA_IL_TESIS(kod, "CDP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_L"), "EPP İLÇELER / " & AKSORA_IL_TESIS(kod, "EPP")
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_BASLIK_Q"), "İSG ZİMMET KONTROLÜ"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_ALT_KURUM"), "ÇORUH ELEKTRİK DAĞITIM A.Ş. | " & il & " İl Müdürlüğü"
+                    Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "İlçe Yönetim Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
+                    Set s = Y_SEKIL(ws, "MUSTERI_ANA_SECIM_SERIDI")
+                    If Not s Is Nothing Then
+                        s.Fill.ForeColor.RGB = RGB(224, 242, 254)
+                        Y_YAZ s, il & " İlçe Yönetim Birimi"
+                        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(12, 45, 79)
+                    End If
+                    Y_BANNER ws, kod, "AKSORA_ILCE_PANEL_BANTLARI.png"
+                Case "STOK"
+                    Y_YAZ Y_SEKIL(ws, "AKT1_STOK_BASLIK"), Y_BASLIK(ws.Name) & "  |  " & il & " İl Müdürlüğü"
+                Case "ARAMA"
+                Case Else
+                    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | " & Y_BASLIK(ws.Name) & "  |  " & il
+                    Y_YAZ Y_SEKIL(ws, "AKSORA_RP_ALT"), "AKSORA  |  " & Y_BASLIK(ws.Name) & "  |  " & il & " İl Müdürlüğü"
+            End Select
+            ws.Range("BX20").Value2 = kod
+            Y_KORU ws
+        End If
+    Next ad
+End Sub
+
+' Il secim ekranindan giris: sayfalar kurulur, secili ile uyarlanir, yalniz I_ sayfalari gorunur.
+Private Sub I_GIRIS(ByVal kod As String)
+    Dim ev As Boolean, ad As Variant, k As Worksheet, panel As Worksheet, no As Long, metin As String
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    mYonlendirme = True
+    kod = UCase$(Trim$(kod))
+    I_ESKI_KARS_SIL
+    Y_KUR True
+    I_IL_UYGULA kod
+    I_IL_VERI kod
+    I_ALT_SAYFALAR kod, True
+    I_PANEL_YENILE
+    Y_ARAMA_TARIH True
+    For Each ad In I_ADLAR()
+        ThisWorkbook.Worksheets(CStr(ad)).Visible = xlSheetVisible
+    Next ad
+    Y_SEKME_SIRASI True
+    Set panel = ThisWorkbook.Worksheets("I_ANA PANEL")
+    panel.Select Replace:=True
+    For Each k In ThisWorkbook.Worksheets
+        If Not AKSORA_ILCE_SAYFA(k) Then
+            If k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden
+        End If
+    Next k
+    AKSORA_YATIRIM_GORUNUM panel
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If no <> 0 Then MsgBox "İlçe Yönetim birimi açılamadı." & vbCrLf & metin & vbCrLf & "(Hata " & no & ")", vbExclamation, "AKSORA"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    application.DisplayAlerts = True
+    Resume Cikis
+End Sub
+
+' Ilk surumdeki (rapor kopyasi) karsilastirma sayfasi kaldirilir; yerine malzeme biriminin kopyasi kurulur.
+Private Sub I_ESKI_KARS_SIL()
+    Dim ws As Worksheet, da As Boolean
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+    If Left$(CStr(ws.Range("BX25").Value2), 3) = "IK_" Then Exit Sub
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    ws.Visible = xlSheetVisible
+    ws.Delete
+    application.DisplayAlerts = da
+End Sub
+
+' Karsilastirma ve ISG sayfalari: hata olsa bile birim acilir, hata seride yazilir.
+Private Sub I_ALT_SAYFALAR(ByVal il As String, ByVal sifirla As Boolean)
+    Dim da As Boolean, ad As Variant, ws As Worksheet
+    da = application.DisplayAlerts
+    application.DisplayAlerts = False
+    On Error Resume Next
+    I_KARS_KUR il, sifirla
+    If Err.Number <> 0 Then Y_SERIT "Stok karşılaştırma sayfası kurulamadı: " & Err.Description, 3, "I_ANA PANEL": Err.Clear
+    I_ISG_KUR il
+    If Err.Number <> 0 Then Y_SERIT "İSG sayfası kurulamadı: " & Err.Description, 3, "I_ANA PANEL": Err.Clear
+    I_AYLIK_KUR il
+    If Err.Number <> 0 Then Y_SERIT "Aylık demontaj sayfası kurulamadı: " & Err.Description, 3, "I_ANA PANEL": Err.Clear
+    ' AKSORA amblemi ilce sayfalarinda kullanilmaz (listelerin ustune biniyordu).
+    For Each ad In I_ADLAR()
+        Set ws = ThisWorkbook.Worksheets(CStr(ad))
+        ws.Unprotect ""
+        Y_FILIGRAN ws
+        Y_KORU ws
+    Next ad
+    On Error GoTo 0
+    application.DisplayAlerts = da
+End Sub
+
+'---------- Ilce stoklari (SAP MB52) ----------
+Private Function I_DEPO_UYGUN(ByVal depo As String) As Boolean
+    depo = UCase$(Trim$(depo))
+    If Len(depo) <> 4 Or Left$(depo, 1) <> "K" Then Exit Function
+    If Not (Mid$(depo, 2, 3) Like "###") Then Exit Function
+    I_DEPO_UYGUN = (Val(Mid$(depo, 2, 3)) >= 1)
+End Function
+
+Private Function I_AKTIF_IL() As String
+    On Error Resume Next
+    I_AKTIF_IL = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("I_ANA PANEL").Range("BX20").Value2)))
+    On Error GoTo 0
+    If Len(I_AKTIF_IL) = 0 Then I_AKTIF_IL = "ARTVIN"
+End Function
+
+Private Function I_ARSIV_SAYFA(ByVal il As String, ByVal olustur As Boolean) As Worksheet
+    Dim ad As String
+    ad = "_IA_" & UCase$(Trim$(il))
+    If olustur Then Set I_ARSIV_SAYFA = Y_KAYIT_SAYFA(ad): Exit Function
+    On Error Resume Next
+    Set I_ARSIV_SAYFA = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+End Function
+
+Public Function AKSORA_ILCE_ARSIV_SAYFA(ByVal il As String) As Worksheet
+    Set AKSORA_ILCE_ARSIV_SAYFA = I_ARSIV_SAYFA(il, False)
+End Function
+
+' Ilin son ilce guncellemesi (kayit yoksa 0).
+Public Function AKSORA_ILCE_IL_SON_TARIH(ByVal il As String) As Date
+    Dim ar As Worksheet, v As Variant
+    Set ar = I_ARSIV_SAYFA(il, False)
+    If ar Is Nothing Then Exit Function
+    v = ar.Range("A1").Value
+    If Not IsError(v) Then
+        If IsDate(v) Then AKSORA_ILCE_IL_SON_TARIH = CDate(v)
+    End If
+End Function
+
+Public Function I_SAYI(ByVal v As Variant) As Double
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbString Then
+        If IsNumeric(v) Then I_SAYI = CDbl(v)
+    ElseIf IsNumeric(v) Then
+        I_SAYI = CDbl(v)
+    End If
+End Function
+
+' Kayittaki bir uretim yerinin satirlari (tek sistem guncellenince digeri korunur).
+Private Function I_SISTEM_SATIRLARI(ByVal v As Variant, ByVal tesis As String) As Variant
+    Dim r As Long, c As Long, n As Long, s() As Variant
+    If Not IsArray(v) Then Exit Function
+    For r = 1 To UBound(v, 1)
+        If Trim$(CStr(v(r, 1))) = tesis Then n = n + 1
+    Next r
+    If n = 0 Then Exit Function
+    ReDim s(1 To n, 1 To 14)
+    n = 0
+    For r = 1 To UBound(v, 1)
+        If Trim$(CStr(v(r, 1))) = tesis Then
+            n = n + 1
+            For c = 1 To application.Min(14, UBound(v, 2)): s(n, c) = v(r, c): Next c
+        End If
+    Next r
+    I_SISTEM_SATIRLARI = s
+End Function
+
+' CDP ve EPP satirlari tek listede: depo, uretim yeri, malzeme sirasiyla.
+Private Function I_BIRLESTIR(ByVal a As Variant, ByVal b As Variant) As Variant
+    Dim na As Long, nb As Long, n As Long, k() As String, idx() As Long, r As Long, c As Long, j As Long, s() As Variant
+    If IsArray(a) Then na = UBound(a, 1)
+    If IsArray(b) Then nb = UBound(b, 1)
+    n = na + nb
+    If n = 0 Then Exit Function
+    ReDim k(1 To n): ReDim idx(1 To n)
+    For r = 1 To n
+        idx(r) = r
+        If r <= na Then
+            k(r) = CStr(a(r, 2)) & "|" & CStr(a(r, 1)) & "|" & CStr(a(r, 5)) & "|" & CStr(a(r, 9))
+        Else
+            k(r) = CStr(b(r - na, 2)) & "|" & CStr(b(r - na, 1)) & "|" & CStr(b(r - na, 5)) & "|" & CStr(b(r - na, 9))
+        End If
+    Next r
+    Y_SIRALA k, idx, 1, n
+    ReDim s(1 To n, 1 To 14)
+    For r = 1 To n
+        j = idx(r)
+        For c = 1 To 14
+            If j <= na Then s(r, c) = a(j, c) Else s(r, c) = b(j - na, c)
+        Next c
+    Next r
+    I_BIRLESTIR = s
+End Function
+
+' Il degisince stok sayfasi o ilin kaydindan yuklenir (kayit yoksa bos).
+Private Sub I_IL_VERI(ByVal kod As String)
+    Dim ar As Worksheet, a As Variant, tarih As Variant
+    If CStr(ThisWorkbook.Worksheets("I_CDP_İLÇELER_STOK").Range("BX19").Value2) = kod And _
+        CStr(ThisWorkbook.Worksheets("I_EPP_İLÇELER_STOK").Range("BX19").Value2) = kod And _
+        CStr(ThisWorkbook.Worksheets("I_BİRLEŞİK_STOK").Range("BX19").Value2) = kod Then Exit Sub
+    Set ar = I_ARSIV_SAYFA(kod, False)
+    If Not ar Is Nothing Then
+        tarih = ar.Range("A1").Value
+        a = AKSORA_PAKET_OKU(ar)
+        I_DEPO_KAYDET kod, a
+    End If
+    I_STOK_YAZ kod, a, tarih
+End Sub
+
+' CDP ve EPP ilce stoklari ayri sayfalara, ikisinin birlesimi I_BIRLESIK_STOK sayfasina (kayit tek: _IA_<IL>).
+' Birlesik rapor, malzeme stok birimindeki STOKLAR / RAPORLAR gibi iki sistemi tek tabloda toplar.
+Private Sub I_STOK_YAZ(ByVal il As String, ByVal a As Variant, ByVal tarih As Variant)
+    Dim ac As Variant, aE As Variant, wb As Worksheet
+    ac = I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "CDP"))
+    aE = I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "EPP"))
+    Y_STOK_YAZ ThisWorkbook.Worksheets("I_CDP_İLÇELER_STOK"), ac, il, tarih
+    Y_STOK_YAZ ThisWorkbook.Worksheets("I_EPP_İLÇELER_STOK"), aE, il, tarih
+    AKSORA_BEKLE_NABIZ
+    ' Birlesik sayfalar sonradan eklendi: birim hic acilmadan guncelleme yapilirsa once kurulur.
+    On Error Resume Next
+    Set wb = ThisWorkbook.Worksheets("I_BİRLEŞİK_STOK")
+    If wb Is Nothing Then
+        Y_KUR True
+        Set wb = ThisWorkbook.Worksheets("I_BİRLEŞİK_STOK")
+        If Not wb Is Nothing Then wb.Visible = ThisWorkbook.Worksheets("I_CDP_İLÇELER_STOK").Visible
+        If Not wb Is Nothing Then ThisWorkbook.Worksheets("I_BİRLEŞİK_RAPOR").Visible = wb.Visible
+    End If
+    On Error GoTo 0
+    If Not wb Is Nothing Then Y_STOK_YAZ wb, I_BIRLESTIR(ac, aE), il, tarih
+End Sub
+
+
+' Ilin ilce depolari kalici listede tutulur (stogu olmayan depo da sayilir).
+Private Sub I_DEPO_KAYDET(ByVal il As String, ByVal a As Variant)
+    Dim d As Object, r As Long, k As String, kayit As Object, x As Variant
+    If Not IsArray(a) Then Exit Sub
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For r = 1 To UBound(a, 1)
+        k = UCase$(I_TEMIZ(a(r, 2)))
+        If Len(k) > 0 Then
+            If Not d.Exists(k) Then d(k) = I_TEMIZ(a(r, 3))
+            If Len(CStr(d(k))) = 0 Then d(k) = I_TEMIZ(a(r, 3))
+        End If
+    Next r
+    Set kayit = Y_KAYIT_SOZLUK("_I_DEPO")
+    For Each x In d.keys
+        If Not kayit.Exists(UCase$(il) & "|" & CStr(x)) Then
+            Y_KAYIT_YAZ "_I_DEPO", UCase$(il) & "|" & CStr(x), CStr(d(x))
+        ElseIf Len(CStr(d(x))) > 0 And CStr(kayit(UCase$(il) & "|" & CStr(x))(0)) <> CStr(d(x)) Then
+            Y_KAYIT_YAZ "_I_DEPO", UCase$(il) & "|" & CStr(x), CStr(d(x))
+        End If
+    Next x
+End Sub
+
+' Ilin bilinen ilce depolari: depo -> ad.
+Private Function I_DEPOLAR(ByVal il As String) As Object
+    Dim d As Object, kayit As Object, x As Variant, onEk As String
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set kayit = Y_KAYIT_SOZLUK("_I_DEPO")
+    onEk = UCase$(Trim$(il)) & "|"
+    For Each x In kayit.keys
+        If Left$(CStr(x), Len(onEk)) = onEk Then d(Mid$(CStr(x), Len(onEk) + 1)) = CStr(kayit(x)(0))
+    Next x
+    Set I_DEPOLAR = d
+End Function
+
+Private Sub I_DURUM(ByVal metin As String)
+    If Not AKSORA_ADMIN_TOPLU Then AKSORA_BEKLE_ILERLE 0.5, metin
+    application.StatusBar = "AKSORA | İlçe Yönetim | " & metin
+    AKSORA_ADMIN_DURUM metin
+    If mYToplu Then Y_TOPLU_DURUM metin, "I_MALZEME_ARA"
+    Y_SERIT "Güncelleniyor  •  " & mYSira & metin, 1, "I_ANA PANEL"
+    DoEvents
+End Sub
+
+' Dugmeye gore kapsam: C = CDP ilceler, E = EPP ilceler.
+Public Sub AKSORA_ILCE_GUNCELLE()
+    Dim cagiran As String, kapsam As String, bilgi As String, ac As Boolean
+    If AKSORA_V11_MESGUL Or mYCalisiyor Then Exit Sub
+    On Error Resume Next
+    cagiran = CStr(application.Caller)
+    On Error GoTo 0
+    Select Case cagiran
+        Case "btnCDP": kapsam = "C"
+        Case "btnIlce": kapsam = "E"
+        Case Else: kapsam = "CE"
+    End Select
+    On Error Resume Next
+    If Left$(ActiveSheet.Name, 6) = "I_CDP_" Then kapsam = "C"
+    If Left$(ActiveSheet.Name, 6) = "I_EPP_" Then kapsam = "E"
+    On Error GoTo 0
+    ac = AKSORA_BEKLE_AC("AKSORA  |  İLÇE", Y_IL_ADI(I_AKTIF_IL()) & " ilçe stokları SAP'den alınıyor...", 0.1)
+    I_GUNCELLE I_AKTIF_IL(), kapsam, False, bilgi
+    If ac Then AKSORA_BEKLE_KAPAT
+End Sub
+
+Private Function I_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal sessiz As Boolean, ByRef bilgi As String) As Boolean
+    Dim vC As Variant, vE As Variant, ac As Variant, aE As Variant, eski As Variant, a As Variant, mesaj As String
+    Dim tarih As Date, bas As Double, sure As Double, ev As Boolean, sc As Boolean, hesap As XlCalculation
+    Dim ekran As Boolean, mesgulOnce As Boolean, hMesaj As String, ar As Worksheet, n As Long, ws As Worksheet
+    Dim nc As Long, ne As Long
+    If mYCalisiyor Then Exit Function
+    mYCalisiyor = True: bas = Timer
+    mesgulOnce = AKSORA_V11_MESGUL
+    ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
+    On Error GoTo Hata
+    il = UCase$(Trim$(il))
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("I_CDP_İLÇELER_STOK")
+    If Not ws Is Nothing Then ekran = (CStr(ws.Range("BX19").Value2) = il)
+    On Error GoTo Hata
+    Y_CANLI_BASLAT "I_ANA PANEL", Y_IL_ADI(il) & "  •  SAP bağlantısı hazırlanıyor..."
+    AKSORA_V11_MESGUL = True
+    If InStr(kapsam, "C") > 0 Then
+        I_DURUM Y_IL_ADI(il) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " ilçe depoları SAP'den alınıyor..."
+        vC = AKSORA_YATIRIM_MB52("CDP", il, mesaj)
+        If Not IsArray(vC) Then Err.Raise vbObjectError + 2111, , "CDP " & AKSORA_IL_TESIS(il, "CDP") & ": " & mesaj
+        ac = Y_DONUSTUR(vC, il, 5)
+    End If
+    If InStr(kapsam, "E") > 0 Then
+        I_DURUM Y_IL_ADI(il) & " | EPP " & AKSORA_IL_TESIS(il, "EPP") & " ilçe depoları SAP'den alınıyor..."
+        mesaj = vbNullString
+        vE = AKSORA_YATIRIM_MB52("EPP", il, mesaj)
+        If Not IsArray(vE) Then Err.Raise vbObjectError + 2112, , "EPP " & AKSORA_IL_TESIS(il, "EPP") & ": " & mesaj
+        aE = Y_DONUSTUR(vE, il, 6)
+    End If
+    ' SAP'den ilce deposu satiri gelmediyse (rapor duzeni / varyant degisimi) ve onceki kayitta
+    ' o tesisin satirlari varsa bos sonuc kaydedilmez: aksi halde tum stok "kullanildi" sayilir.
+    If (InStr(kapsam, "C") > 0 And Not IsArray(ac)) Or (InStr(kapsam, "E") > 0 And Not IsArray(aE)) Then
+        Set ar = I_ARSIV_SAYFA(il, False)
+        If Not ar Is Nothing Then eski = AKSORA_PAKET_OKU(ar)
+        If InStr(kapsam, "C") > 0 And Not IsArray(ac) Then
+            If IsArray(I_SISTEM_SATIRLARI(eski, AKSORA_IL_TESIS(il, "CDP"))) Then Err.Raise vbObjectError + 2113, , _
+                "CDP " & AKSORA_IL_TESIS(il, "CDP") & ": SAP'den ilçe deposu satırı gelmedi; önceki kayıt korundu."
+        End If
+        If InStr(kapsam, "E") > 0 And Not IsArray(aE) Then
+            If IsArray(I_SISTEM_SATIRLARI(eski, AKSORA_IL_TESIS(il, "EPP"))) Then Err.Raise vbObjectError + 2114, , _
+                "EPP " & AKSORA_IL_TESIS(il, "EPP") & ": SAP'den ilçe deposu satırı gelmedi; önceki kayıt korundu."
+        End If
+        eski = Empty: Set ar = Nothing
+    End If
+    I_DURUM Y_IL_ADI(il) & " | Sayfalar yazılıyor..."
+    AKSORA_V11_MESGUL = mesgulOnce
+    application.EnableEvents = False: application.Calculation = xlCalculationManual
+    application.ScreenUpdating = False
+    ' Yalniz bir sistem guncellenince digerinin son kaydi korunur.
+    If InStr(kapsam, "C") = 0 Or InStr(kapsam, "E") = 0 Then
+        Set ar = I_ARSIV_SAYFA(il, False)
+        If Not ar Is Nothing Then eski = AKSORA_PAKET_OKU(ar)
+        If InStr(kapsam, "C") = 0 Then ac = I_SISTEM_SATIRLARI(eski, AKSORA_IL_TESIS(il, "CDP"))
+        If InStr(kapsam, "E") = 0 Then aE = I_SISTEM_SATIRLARI(eski, AKSORA_IL_TESIS(il, "EPP"))
+    End If
+    If IsArray(ac) Then nc = UBound(ac, 1)
+    If IsArray(aE) Then ne = UBound(aE, 1)
+    a = I_BIRLESTIR(ac, aE)
+    If IsArray(a) Then n = UBound(a, 1)
+    tarih = Now
+    Set ar = I_ARSIV_SAYFA(il, True)
+    ar.Range("A1").Value = tarih: ar.Range("B1").Value2 = il
+    AKSORA_PAKET_YAZ ar, a
+    I_GECMIS_EKLE il, a, tarih
+    I_MAL_DIZI a
+    I_DEFTER_GUNCELLE il
+    I_DEPO_KAYDET il, a
+    sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
+    ThisWorkbook.names.Add Name:="_AKSORA_ILCE_SURE_" & il, RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
+    If ekran Then
+        I_STOK_YAZ il, a, tarih
+        I_ALT_SAYFALAR il, True
+        I_PANEL_YENILE
+        Y_ARAMA_TARIH True
+    End If
+    application.Calculation = hesap: application.EnableEvents = ev
+    application.ScreenUpdating = sc
+    bilgi = Y_IL_ADI(il) & ": güncellendi (" & AKSORA_SAYI_METNI(sure, "0.0") & " sn)"
+    I_GUNCELLE = True
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlandı  |  " & I_SERIT_METNI(), 2, "I_ANA PANEL"
+    If Not mYToplu And Not sessiz Then Y_PANEL_GOSTER "I_ANA PANEL"
+    If Not sessiz Then AKSORA_BEKLE_KAPAT
+    If Not sessiz Then MsgBox "İlçe Yönetim birimi | " & Y_IL_ADI(il) & " güncellendi." & vbCrLf & vbCrLf & _
+        "CDP " & AKSORA_IL_TESIS(il, "CDP") & " ilçe depoları: " & AKSORA_SAYI_METNI(nc, "#,##0") & " satır" & vbCrLf & _
+        "EPP " & AKSORA_IL_TESIS(il, "EPP") & " ilçe depoları: " & AKSORA_SAYI_METNI(ne, "#,##0") & " satır" & vbCrLf & _
+        "Depolar: K001 - K999" & vbCrLf & _
+        "Süre: " & AKSORA_SAYI_METNI(sure, "0.00") & " sn", vbInformation, "AKSORA | İlçe Yönetim Birimi"
+Cikis:
+    On Error Resume Next
+    AKSORA_V11_MESGUL = mesgulOnce
+    application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = sc
+    application.StatusBar = False
+    mYCalisiyor = False
+    Exit Function
+Hata:
+    hMesaj = "Hata " & CStr(Err.Number) & ": " & Err.Description
+    bilgi = Y_IL_ADI(il) & ": güncellenemedi; " & hMesaj
+    On Error Resume Next
+    application.Calculation = hesap: application.EnableEvents = ev: application.ScreenUpdating = True
+    If Not mYToplu Then Y_SERIT "Güncelleme tamamlanamadı  |  " & hMesaj, 3, "I_ANA PANEL"
+    If Not sessiz Then AKSORA_BEKLE_KAPAT
+    If Not sessiz Then MsgBox "İlçe stokları güncellenemedi." & vbCrLf & hMesaj, vbExclamation, "AKSORA | İlçe Yönetim Birimi"
+    On Error GoTo 0
+    Resume Cikis
+End Function
+
+' Bes ilin ilce depolari sirayla alinir; ekrandaki il sayfalara, digerleri kendi kaydina yazilir.
+Public Sub AKSORA_ILCE_BUTUN_ILLER()
+    Dim il As Variant, bilgi As String, sonuc As String, adet As Long, bas As Double, sure As Double
+    Dim hataMetni As String, metin As String, sc As Boolean, baslangic As Worksheet, adim As Long, kart As Boolean
+    If AKSORA_V11_MESGUL Or mYCalisiyor Or mYToplu Then Exit Sub
+    If Not AKSORA_ADMIN_TOPLU Then
+        If MsgBox("Beş ilin (Artvin, Trabzon, Gümüşhane, Giresun, Rize) CDP ve EPP ilçe depo stokları SAP'den güncellenecek. Devam edilsin mi?", _
+            vbYesNo + vbQuestion, "AKSORA | İlçe Yönetim Birimi") <> vbYes Then Exit Sub
+        kart = AKSORA_BEKLE_AC("AKSORA  |  İLÇE  |  BÜTÜN İLLER", "Beş ilin ilçe depo stokları güncelleniyor...", 0.03)
+    End If
+    sc = application.ScreenUpdating
+    If TypeOf ActiveSheet Is Worksheet Then Set baslangic = ActiveSheet
+    mYToplu = True: bas = Timer
+    application.ScreenUpdating = True
+    On Error GoTo Hata
+    For Each il In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+        If AKSORA_ADMIN_IPTAL Then sonuc = sonuc & "Durduruldu: kalan iller atlandı." & vbCrLf: Exit For
+        bilgi = vbNullString
+        adim = adim + 1: mYSira = "Bütün iller " & adim & "/5  •  "
+        Y_TOPLU_DURUM Y_IL_ADI(CStr(il)) & " güncelleniyor...", "I_MALZEME_ARA"
+        If I_GUNCELLE(CStr(il), "CE", True, bilgi) Then adet = adet + 1
+        sonuc = sonuc & bilgi & vbCrLf
+    Next il
+Bitir:
+    On Error Resume Next
+    mYToplu = False: mYSira = vbNullString
+    sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
+    ThisWorkbook.names.Add Name:="_AKSORA_ILCE_SON_SURE", RefersTo:="=" & Trim$(Str$(Round(sure, 2))), Visible:=False
+    metin = IIf(Len(hataMetni) > 0, "İşlem durduruldu. ", "İşlem tamamlandı. ") & adet & "/5 il güncellendi." & vbLf & _
+        "Geçen süre: " & Format$(CLng(Fix(sure)) \ 60, "00") & ":" & Format$(CLng(Fix(sure)) Mod 60, "00")
+    Y_TOPLU_DURUM metin, "I_MALZEME_ARA"
+    I_PANEL_YENILE
+    Y_ARAMA_TARIH True
+    application.StatusBar = False
+    Y_PANEL_GOSTER "I_ANA PANEL"
+    application.ScreenUpdating = sc
+    On Error GoTo 0
+    If kart Then AKSORA_BEKLE_KAPAT
+    If AKSORA_ADMIN_TOPLU Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "İLÇE:" & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, hataMetni & vbCrLf, ""): Exit Sub
+    MsgBox "İlçe Yönetim birimi | Bütün iller" & vbCrLf & vbCrLf & sonuc & IIf(Len(hataMetni) > 0, vbCrLf & hataMetni & vbCrLf, "") & vbCrLf & _
+        "Toplam süre: " & AKSORA_SURE_METNI(sure), IIf(adet = 5, vbInformation, vbExclamation), "AKSORA | İlçe Yönetim Birimi"
+    Exit Sub
+Hata:
+    hataMetni = Err.Description
+    Resume Bitir
+End Sub
+
+'---------- Ana panel ----------
+Private Sub I_OZET(ByVal sh As Worksheet, ByVal tesis As String, ByVal d As Object, ByRef satir As Long, ByRef deger As Double, ByRef tarih As Date)
+    Dim son As Long, v As Variant, r As Long, t As Variant
+    t = sh.Range("C2").Value
+    If Not IsError(t) Then
+        If IsDate(t) Then
+            If CDate(t) > tarih Then tarih = CDate(t)
+        End If
+    End If
+    son = AKSORA_M_SON(sh)
+    If son < 7 Then Exit Sub
+    v = sh.Range("A7:N" & son).Value2
+    For r = 1 To UBound(v, 1)
+        If Not IsError(v(r, 5)) And Not IsError(v(r, 1)) Then
+            If Len(Trim$(CStr(v(r, 5)))) > 0 And (Len(tesis) = 0 Or Trim$(CStr(v(r, 1))) = tesis) Then
+                satir = satir + 1
+                If Not IsError(v(r, 2)) Then d(Trim$(CStr(v(r, 2)))) = True
+                deger = deger + I_SAYI(v(r, 11))
+            End If
+        End If
+    Next r
+End Sub
+
+Private Function I_SERIT_METNI() As String
+    Dim sh As Worksheet, d As Object, satir As Long, deger As Double, tarih As Date, metin As String, i As Long
+    Dim toplam As Double, il As String, t As String, sure As Double, sistem As Variant
+    il = I_AKTIF_IL()
+    For Each sistem In Array("CDP", "EPP")
+        Set sh = ThisWorkbook.Worksheets("I_" & CStr(sistem) & "_İLÇELER_STOK")
+        Set d = CreateObject("Scripting.Dictionary")
+        satir = 0: deger = 0
+        I_OZET sh, AKSORA_IL_TESIS(il, CStr(sistem)), d, satir, deger, tarih
+        toplam = toplam + deger
+        metin = metin & "  |  " & CStr(sistem) & " İlçe " & AKSORA_SAYI_METNI(satir, "#,##0") & " satır"
+    Next sistem
+    If tarih = 0 Then
+        I_SERIT_METNI = "Henüz SAP güncellemesi yapılmadı  |  CDP " & AKSORA_IL_TESIS(il, "CDP") & " ve EPP " & _
+            AKSORA_IL_TESIS(il, "EPP") & " ilçe depoları: K001 - K999"
+        Exit Function
+    End If
+    If AKSORA_TOPLU_SON_SURE("_AKSORA_ILCE_SON_SURE") > 0 Then _
+        metin = "  |  Bütün iller " & AKSORA_SURE_METNI(AKSORA_TOPLU_SON_SURE("_AKSORA_ILCE_SON_SURE")) & metin
+    On Error Resume Next
+    t = ThisWorkbook.names("_AKSORA_ILCE_SURE_" & il).RefersTo
+    On Error GoTo 0
+    If Len(t) > 1 Then sure = Val(Mid$(t, 2))
+    If sure > 0 Then metin = "  |  İl güncelleme süresi " & AKSORA_SURE_METNI(sure) & metin
+    I_SERIT_METNI = "Son güncelleme " & Format$(tarih, "dd.mm.yyyy hh:nn") & "  |  " & I_DEPOLAR(il).Count & " ilçe deposu" & metin & _
+        "  |  Toplam stok değeri " & Y_TL(toplam)
+End Function
+
+Private Sub I_PANEL_YENILE()
+    Dim ws As Worksheet, sh As Worksheet, isg As Worksheet, i As Long, k As String, d As Object, il As String
+    Dim satir As Long, deger As Double, tarih As Date, depo As Long, x As Variant, t As Variant
+    Set ws = ThisWorkbook.Worksheets("I_ANA PANEL")
+    Set isg = ThisWorkbook.Worksheets("I_İSG_MALZEMELERİ")
+    il = I_AKTIF_IL()
+    ws.Unprotect ""
+    ' Depo sayisi: ilin butun ilce depolari (stogu olmasa da).
+    depo = I_DEPOLAR(il).Count
+    If CStr(ws.Range("BX25").Value2) <> "IP_V5" Then I_HIZLI ws
+    For i = 0 To 2
+        k = Choose(i + 1, "B", "L", "Q")
+        Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+        satir = 0: deger = 0: tarih = 0
+        If i < 2 Then
+            Set sh = ThisWorkbook.Worksheets(IIf(i = 0, "I_CDP_İLÇELER_STOK", "I_EPP_İLÇELER_STOK"))
+            I_OZET sh, AKSORA_IL_TESIS(il, IIf(i = 0, "CDP", "EPP")), d, satir, deger, tarih
+            If satir = 0 Then tarih = 0
+        Else
+            ' ISG karti: yalniz tarih gerekir (satir/deger ISG sayfasindan); tam stok okumasi yapilmaz.
+            For Each x In Array("I_CDP_İLÇELER_STOK", "I_EPP_İLÇELER_STOK")
+                t = ThisWorkbook.Worksheets(CStr(x)).Range("C2").Value
+                If Not IsError(t) Then
+                    If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
+                End If
+            Next x
+            satir = CLng(I_SAYI(isg.Range("BZ21").Value2))
+            deger = I_SAYI(isg.Range("BZ22").Value2)
+        End If
+        If tarih > 0 Then
+            Y_KART_TARIH ws, k, tarih
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "1"), Format$(tarih, "dd.mm.yyyy hh:nn")
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "2"), AKSORA_SAYI_METNI(satir, "#,##0")
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "3"), Y_TL(deger)
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "4"), AKSORA_SAYI_METNI(depo, "#,##0")
+        Else
+            Y_KART_DURUM ws, k, "Veri bekleniyor", RGB(145, 162, 176), RGB(29, 78, 216)
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "1"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "2"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "3"), "-"
+            Y_YAZ Y_SEKIL(ws, "AKSORA15_KART_DEGER_" & k & "4"), "-"
+        End If
+    Next i
+    Y_YAZ Y_SEKIL(ws, "AKSORA15_PANEL_TARIHI"), "İlçe Yönetim Birimi  |  Panel kontrolü: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    Y_KORU ws
+    Y_SERIT I_SERIT_METNI(), 0, "I_ANA PANEL"
+End Sub
+
+'---------- Gunluk stok gecmisi (karsilastirma icin) ----------
+' _IH_<IL>: her sutun bir gun (gunun son guncellemesi). 1. satir tarih, alti metin bloklari.
+' Satir: depo TAB uretim yeri TAB malzeme TAB degerleme TAB depo adi TAB tanim TAB birim TAB miktar TAB deger.
+' (Eski 8 alanli kayitlarda degerleme yoktur.)
+
+Public Function I_TEMIZ(ByVal v As Variant) As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    I_TEMIZ = Replace(Replace(Replace(Trim$(CStr(v)), vbTab, " "), vbLf, " "), vbCr, " ")
+End Function
+
+Private Function I_GECMIS_SON(ByVal ws As Worksheet) As Long
+    I_GECMIS_SON = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    If I_GECMIS_SON = 1 And Len(CStr(ws.Cells(1, 1).Value2)) = 0 Then I_GECMIS_SON = 0
+End Function
+
+Private Sub I_GECMIS_EKLE(ByVal il As String, ByVal a As Variant, ByVal tarih As Date)
+    Dim ws As Worksheet, d As Object, r As Long, k As String, t As Variant, c As Long, son As Long
+    Dim satir As String, tampon As String, j As Long, x As Variant
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    If IsArray(a) Then
+        For r = 1 To UBound(a, 1)
+            k = I_TEMIZ(a(r, 2)) & vbTab & I_TEMIZ(a(r, 1)) & vbTab & I_TEMIZ(a(r, 5)) & vbTab & I_TEMIZ(a(r, 9))
+            If d.Exists(k) Then
+                t = d(k)
+            Else
+                t = Array(I_TEMIZ(a(r, 3)), I_TEMIZ(a(r, 6)), I_TEMIZ(a(r, 8)), 0#, 0#)
+            End If
+            t(3) = t(3) + I_SAYI(a(r, 7)): t(4) = t(4) + I_SAYI(a(r, 11))
+            d(k) = t
+        Next r
+    End If
+    Set ws = Y_KAYIT_SAYFA("_IH_" & UCase$(Trim$(il)))
+    ' Ayni gunun onceki kaydi yerine yenisi yazilir; en fazla I_GECMIS_GUN gun tutulur.
+    son = I_GECMIS_SON(ws)
+    For c = son To 1 Step -1
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            If Int(CDbl(CDate(x))) = Int(CDbl(tarih)) Then ws.Columns(c).Delete
+        Else
+            ws.Columns(c).Delete
+        End If
+    Next c
+    son = I_GECMIS_SON(ws)
+    Do While son >= I_GECMIS_GUN
+        ws.Columns(1).Delete
+        son = son - 1
+    Loop
+    c = son + 1
+    ws.Columns(c).NumberFormat = "@"
+    ws.Cells(1, c).NumberFormat = "dd.mm.yyyy hh:mm:ss"
+    ws.Cells(1, c).Value = tarih
+    j = 1
+    For Each x In d.keys
+        t = d(x)
+        satir = CStr(x) & vbTab & t(0) & vbTab & t(1) & vbTab & t(2) & vbTab & Trim$(Str$(t(3))) & vbTab & Trim$(Str$(Round(t(4), 2)))
+        If Len(tampon) + Len(satir) + 1 > 30000 And Len(tampon) > 0 Then
+            j = j + 1: ws.Cells(j, c).Value2 = tampon: tampon = vbNullString
+        End If
+        If Len(tampon) > 0 Then tampon = tampon & vbLf
+        tampon = tampon & satir
+    Next x
+    If Len(tampon) > 0 Then j = j + 1: ws.Cells(j, c).Value2 = tampon
+End Sub
+
+' Kayitli gunler, en yeni ustte.
+Private Function I_GECMIS_TARIHLER(ByVal il As String) As Collection
+    Dim ws As Worksheet, son As Long, c As Long, x As Variant, sonuc As Collection
+    Set sonuc = New Collection
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("_IH_" & UCase$(Trim$(il)))
+    On Error GoTo 0
+    If Not ws Is Nothing Then
+        son = I_GECMIS_SON(ws)
+        For c = son To 1 Step -1
+            x = ws.Cells(1, c).Value
+            If IsDate(x) Then sonuc.Add CDate(x)
+        Next c
+    End If
+    Set I_GECMIS_TARIHLER = sonuc
+End Function
+
+' Bir gunun stoku: depo|uretim yeri|malzeme|degerleme -> (depo adi, tanim, birim, miktar, deger).
+Private Function I_GECMIS_OKU(ByVal il As String, ByVal metin As String) As Object
+    Dim ws As Worksheet, son As Long, c As Long, x As Variant, d As Object, r As Long, satirlar() As String, f() As String
+    Dim i As Long
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set I_GECMIS_OKU = d
+    If Len(metin) = 0 Then Exit Function
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("_IH_" & UCase$(Trim$(il)))
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    son = I_GECMIS_SON(ws)
+    For c = 1 To son
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            If Format$(CDate(x), I_TF) = metin Then Exit For
+        End If
+    Next c
+    If c > son Then Exit Function
+    r = 2
+    Do While Len(CStr(ws.Cells(r, c).Value2)) > 0
+        AKSORA_BEKLE_NABIZ
+        satirlar = Split(CStr(ws.Cells(r, c).Value2), vbLf)
+        For i = 0 To UBound(satirlar)
+            f = Split(satirlar(i), vbTab)
+            If UBound(f) >= 8 Then
+                d(f(0) & "|" & f(1) & "|" & f(2) & "|" & f(3)) = Array(f(4), f(5), f(6), Val(f(7)), Val(f(8)))
+            ElseIf UBound(f) = 7 Then
+                d(f(0) & "|" & f(1) & "|" & f(2) & "|") = Array(f(3), f(4), f(5), Val(f(6)), Val(f(7)))
+            End If
+        Next i
+        r = r + 1
+    Loop
+End Function
+
+'---------- AYLIK DEMONTAJ (ilce) ----------
+' Demontaj defteri _ID_<IL>: her sutun bir gun. 1. satir gun, 2. satir kaynak (eski|yeni guncelleme),
+' alti metin bloklari. Satir: depo TAB uretim yeri TAB malzeme TAB kullanilan TAB demontaj girilen TAB kullanilan TL.
+' Gun degeri, o gunun son guncellemesi ile bir onceki kayitli gunun son guncellemesi arasindaki farktir
+' (gunluk STOK/DEMONTAJ kontroluyle ayni kural). Aylik eksik = kullanilan - girilen (depo|uretim yeri|malzeme);
+' ay icindeki gec girisler de sayilir. Malzeme bilgisi (mal grubu, tanim, birim) _I_MALZEME sayfasinda birikir.
+
+' Demontaj kontrolu disi: ISG malzemeleri, sayac / modem / aparat-muhur mal gruplari ve kritik olmayan
+' tum malzemeler. Demontaj yalniz trafo, pano, armatur, kablo, direk ve hucre icin izlenir. Bos = kontrol edilir.
+Private Function I_DEM_DISI(ByVal mal As String, ByVal isgL As Object) As String
+    Dim d As Object, k As String, mg As String
+    If isgL.Exists(Trim$(mal)) Or isgL.Exists(Y_KOD_NORM(mal)) Then I_DEM_DISI = "İSG malzemesi (demontaj gerekmez)": Exit Function
+    Set d = I_MAL_HARITA()
+    k = Y_KOD_NORM(mal)
+    If d.Exists(k) Then mg = CStr(d(k)(0))
+    Select Case mg
+        Case "M03550000": I_DEM_DISI = "Sayaç (demontaj kontrolü dışı)"
+        Case "M03250000": I_DEM_DISI = "Modem (demontaj kontrolü dışı)"
+        Case "M03550100": I_DEM_DISI = "Aparat / mühür (demontaj kontrolü dışı)"
+    End Select
+    If Len(I_DEM_DISI) = 0 And Len(I_KATEGORI(mal)) = 0 Then I_DEM_DISI = "Kritik değil (demontaj kontrolü dışı)"
+End Function
+
+' Malzeme -> Array(mal grubu, tanim, birim). Bos ise il kayitlarindan (_IA_) doldurulur.
+Private Function I_MAL_HARITA() As Object
+    Dim ws As Worksheet, v As Variant, r As Long, son As Long, il As Variant, a As Variant
+    If Not mIMal Is Nothing Then Set I_MAL_HARITA = mIMal: Exit Function
+    Set mIMal = CreateObject("Scripting.Dictionary"): mIMal.CompareMode = vbTextCompare
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("_I_MALZEME")
+    On Error GoTo 0
+    If Not ws Is Nothing Then
+        son = AKSORA_SON_SATIR(ws, 1)
+        If Len(CStr(ws.Cells(son, 1).Value2)) > 0 Then
+            v = ws.Range("A1:D" & son).Value2
+            For r = 1 To UBound(v, 1)
+                If Len(CStr(v(r, 1))) > 0 Then mIMal(CStr(v(r, 1))) = Array(CStr(v(r, 2)), CStr(v(r, 3)), CStr(v(r, 4)))
+            Next r
+        End If
+    End If
+    If mIMal.Count = 0 Then
+        For Each il In ADM_ILLER()
+            a = Empty
+            On Error Resume Next
+            a = AKSORA_PAKET_OKU(I_ARSIV_SAYFA(CStr(il), False))
+            On Error GoTo 0
+            I_MAL_DIZI a
+        Next il
+        If mIMalKirli Then I_MAL_KAYDET
+    End If
+    Set I_MAL_HARITA = mIMal
+End Function
+
+' Ilce stok dizisi (4 mal grubu, 5 malzeme, 6 tanim, 8 birim) haritaya eklenir.
+Private Sub I_MAL_DIZI(ByVal a As Variant)
+    Dim r As Long, k As String, mg As String, t As Variant, d As Object
+    If Not IsArray(a) Then Exit Sub
+    On Error Resume Next
+    Set d = I_MAL_HARITA()
+    For r = 1 To UBound(a, 1)
+        k = Y_KOD_NORM(a(r, 5))
+        If Len(k) > 0 Then
+            mg = UCase$(I_TEMIZ(a(r, 4)))
+            If d.Exists(k) Then
+                t = d(k)
+                If (Len(mg) > 0 And CStr(t(0)) <> mg) Or Len(CStr(t(1))) = 0 Then
+                    If Len(mg) > 0 Then t(0) = mg
+                    If Len(CStr(t(1))) = 0 Then t(1) = I_TEMIZ(a(r, 6)): t(2) = I_TEMIZ(a(r, 8))
+                    d(k) = t: mIMalKirli = True
+                End If
+            Else
+                d(k) = Array(mg, I_TEMIZ(a(r, 6)), I_TEMIZ(a(r, 8))): mIMalKirli = True
+            End If
+        End If
+    Next r
+End Sub
+
+' Gecmisten gelen tanim / birim (artik stokta olmayan malzemeler icin).
+Private Sub I_MAL_NOT(ByVal mal As String, ByVal tanim As String, ByVal birim As String)
+    Dim d As Object, k As String
+    Set d = I_MAL_HARITA()
+    k = Y_KOD_NORM(mal)
+    If Len(k) = 0 Then Exit Sub
+    If Not d.Exists(k) Then d(k) = Array("", tanim, birim): mIMalKirli = True
+End Sub
+
+Private Sub I_MAL_KAYDET()
+    Dim ws As Worksheet, v() As Variant, k As Variant, i As Long, t As Variant
+    If mIMal Is Nothing Then Exit Sub
+    If mIMal.Count = 0 Then Exit Sub
+    Set ws = Y_KAYIT_SAYFA("_I_MALZEME")
+    ws.Cells.ClearContents
+    ReDim v(1 To mIMal.Count, 1 To 4)
+    For Each k In mIMal.keys
+        i = i + 1: t = mIMal(k)
+        v(i, 1) = CStr(k): v(i, 2) = t(0): v(i, 3) = t(1): v(i, 4) = t(2)
+    Next k
+    ws.Range("A1").Resize(i, 4).NumberFormat = "@"
+    ws.Range("A1").Resize(i, 4).Value2 = v
+    mIMalKirli = False
+End Sub
+
+Private Function I_MAL_BILGI(ByVal mal As String) As Variant
+    Dim d As Object, k As String
+    Set d = I_MAL_HARITA()
+    k = Y_KOD_NORM(mal)
+    If d.Exists(k) Then I_MAL_BILGI = d(k) Else I_MAL_BILGI = Array("", "", "")
+End Function
+
+' Gecmisteki her gun cifti icin deftere gun yazilir (yeni veya kaynagi degismis gunler).
+Private Sub I_DEFTER_GUNCELLE(ByVal il As String)
+    Dim tarihler As Collection, ws As Worksheet, i As Long, c As Long, son As Long, imza As String, x As Variant
+    Dim gunler As Object, gun As Long, isgL As Object, sinir As Long, yaz As Boolean
+    Dim eskiT As String, yeniT As String, onceT As String, dOnce As Object, dE As Object, dY As Object
+    On Error GoTo bitti
+    il = UCase$(Trim$(il))
+    Set tarihler = I_GECMIS_TARIHLER(il)
+    If tarihler.Count < 2 Then GoTo bitti
+    Set ws = Y_KAYIT_SAYFA("_ID_" & il)
+    Set gunler = CreateObject("Scripting.Dictionary")
+    son = I_GECMIS_SON(ws)
+    For c = 1 To son
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then gunler(CLng(Int(CDbl(CDate(x))))) = c
+    Next c
+    Set isgL = I_ISG_LISTE()
+    For i = tarihler.Count - 1 To 1 Step -1
+        eskiT = Format$(tarihler(i + 1), I_TF): yeniT = Format$(tarihler(i), I_TF)
+        imza = eskiT & "|" & yeniT
+        gun = CLng(Int(CDbl(tarihler(i))))
+        c = 0: yaz = True
+        If gunler.Exists(gun) Then
+            c = gunler(gun)
+            If CStr(ws.Cells(2, c).Value2) = imza Then yaz = False
+        End If
+        If yaz Then
+            AKSORA_BEKLE_NABIZ
+            If c = 0 Then
+                c = I_GECMIS_SON(ws) + 1
+                gunler(gun) = c
+            End If
+            If eskiT = onceT And Not dOnce Is Nothing Then Set dE = dOnce Else Set dE = I_GECMIS_OKU(il, eskiT)
+            Set dY = I_GECMIS_OKU(il, yeniT)
+            I_DEFTER_GUN ws, c, gun, imza, dE, dY, isgL
+            onceT = yeniT: Set dOnce = dY
+        End If
+    Next i
+    ' En fazla I_DEFTER_SURE gun tutulur.
+    sinir = CLng(Int(CDbl(Date))) - I_DEFTER_SURE
+    For c = I_GECMIS_SON(ws) To 1 Step -1
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            If CLng(Int(CDbl(CDate(x)))) < sinir Then ws.Columns(c).Delete
+        End If
+    Next c
+bitti:
+    On Error Resume Next
+    If mIMalKirli Then I_MAL_KAYDET
+    On Error GoTo 0
+End Sub
+
+Private Sub I_DEFTER_GUN(ByVal ws As Worksheet, ByVal c As Long, ByVal gun As Long, ByVal imza As String, _
+    ByVal dE As Object, ByVal dY As Object, ByVal isgL As Object)
+    Dim anahtar As Object, grup As Object, k As Variant, x As Variant, p() As String, gk As String
+    Dim qE As Double, qY As Double, qV As Double, t As Variant, g As Variant
+    Dim satir As String, tampon As String, j As Long, sonR As Long, nak As Object, dq As Double
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    ' Ilceler arasi nakil kullanim sayilmaz.
+    Set nak = I_NAKIL(dE, dY)
+    For Each x In Array(dE, dY)
+        For Each k In x.keys
+            anahtar(k) = True
+        Next k
+    Next x
+    For Each k In anahtar.keys
+        qE = 0: qY = 0: qV = 0
+        If dE.Exists(k) Then t = dE(k): qE = t(3): qV = t(4)
+        If dY.Exists(k) Then t = dY(k): qY = t(3)
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 And Abs(qY - qE) > 0.0005 Then
+            I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
+            If Len(I_DEM_DISI(p(2), isgL)) = 0 Then
+                gk = p(0) & "|" & p(1) & "|" & p(2)
+                If Not grup.Exists(gk) Then grup(gk) = Array(0#, 0#, 0#)
+                g = grup(gk)
+                If I_DEMONTAJ_MI(p(3)) Then
+                    If qY > qE Then g(1) = g(1) + (qY - qE)
+                ElseIf qY < qE Then
+                    dq = application.Max(0, (qE - qY) - I_NAKIL_D(nak, CStr(k), 0))
+                    g(0) = g(0) + dq
+                    If qE > 0 Then g(2) = g(2) + dq * qV / qE
+                End If
+                grup(gk) = g
+            End If
+        End If
+    Next k
+    I_ARMATUR_DAGIT grup
+    sonR = AKSORA_SON_SATIR(ws, c)
+    If sonR >= 2 Then ws.Range(ws.Cells(2, c), ws.Cells(sonR, c)).ClearContents
+    ws.Columns(c).NumberFormat = "@"
+    ws.Cells(1, c).NumberFormat = "dd.mm.yyyy"
+    ws.Cells(1, c).Value = CDate(gun)
+    j = 2
+    For Each k In grup.keys
+        g = grup(k)
+        If g(0) > 0.0005 Or g(1) > 0.0005 Then
+            satir = Replace(CStr(k), "|", vbTab) & vbTab & Trim$(Str$(Round(g(0), 4))) & vbTab & _
+                Trim$(Str$(Round(g(1), 4))) & vbTab & Trim$(Str$(Round(g(2), 2)))
+            If Len(tampon) + Len(satir) + 1 > 30000 And Len(tampon) > 0 Then
+                j = j + 1: ws.Cells(j, c).Value2 = tampon: tampon = vbNullString
+            End If
+            If Len(tampon) > 0 Then tampon = tampon & vbLf
+            tampon = tampon & satir
+        End If
+    Next k
+    If Len(tampon) > 0 Then j = j + 1: ws.Cells(j, c).Value2 = tampon
+    ' Imza en son yazilir: yazim yarida kalirsa gun bir sonraki guncellemede yeniden hesaplanir.
+    ws.Cells(2, c).Value2 = imza
+End Sub
+
+' Defter: ay (yyyymm) -> Array(gun sayisi, ilk gun, son gun, kalemler)
+'   kalemler: depo|uretim yeri|malzeme -> Array(kullanilan, girilen, kullanilan TL)
+Private Function I_DEFTER_OKU(ByVal il As String) As Object
+    Dim ws As Worksheet, son As Long, c As Long, x As Variant, r As Long, satirlar() As String, f() As String, i As Long
+    Dim aylar As Object, ay As Long, o As Variant, kal As Object, k As String, t As Variant, imza As String, v As Variant
+    If mIDefter Is Nothing Then Set mIDefter = CreateObject("Scripting.Dictionary")
+    il = UCase$(Trim$(il))
+    Set aylar = CreateObject("Scripting.Dictionary")
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("_ID_" & il)
+    On Error GoTo 0
+    If ws Is Nothing Then Set I_DEFTER_OKU = aylar: Exit Function
+    son = I_GECMIS_SON(ws)
+    If son = 0 Then Set I_DEFTER_OKU = aylar: Exit Function
+    v = ws.Range(ws.Cells(2, 1), ws.Cells(2, son + 1)).Value2
+    imza = CStr(son)
+    For c = 1 To son
+        imza = imza & ";" & CStr(v(1, c))
+    Next c
+    If mIDefter.Exists(il) Then
+        o = mIDefter(il)
+        If CStr(o(0)) = imza Then Set I_DEFTER_OKU = o(1): Exit Function
+    End If
+    For c = 1 To son
+        x = ws.Cells(1, c).Value
+        If IsDate(x) Then
+            ay = Year(CDate(x)) * 100 + Month(CDate(x))
+            If Not aylar.Exists(ay) Then
+                Set kal = CreateObject("Scripting.Dictionary"): kal.CompareMode = vbTextCompare
+                aylar.Add ay, Array(0&, CDate(x), CDate(x), kal)
+            End If
+            o = aylar(ay)
+            o(0) = o(0) + 1
+            If CDate(x) < o(1) Then o(1) = CDate(x)
+            If CDate(x) > o(2) Then o(2) = CDate(x)
+            Set kal = o(3)
+            aylar(ay) = o
+            AKSORA_BEKLE_NABIZ
+            r = 3
+            Do While Len(CStr(ws.Cells(r, c).Value2)) > 0
+                satirlar = Split(CStr(ws.Cells(r, c).Value2), vbLf)
+                For i = 0 To UBound(satirlar)
+                    f = Split(satirlar(i), vbTab)
+                    If UBound(f) >= 5 Then
+                        k = f(0) & "|" & f(1) & "|" & f(2)
+                        If kal.Exists(k) Then t = kal(k) Else t = Array(0#, 0#, 0#)
+                        t(0) = t(0) + Val(f(3)): t(1) = t(1) + Val(f(4)): t(2) = t(2) + Val(f(5))
+                        kal(k) = t
+                    End If
+                Next i
+                r = r + 1
+            Loop
+        End If
+    Next c
+    If mIDefter.Exists(il) Then mIDefter.Remove il
+    mIDefter.Add il, Array(imza, aylar)
+    Set I_DEFTER_OKU = aylar
+End Function
+
+' Bir ayin kalemlerinden ozet. Donus: Array(top, depolar, malzemeler, detay)
+'   top / depo: Array(kullanilan TL, eksik TL, kullanilan kalem, eksik kalem, tamam kalem, giris yok, eksik giris, girilen TL,
+'               kritik kullanilan TL, kritik eksik TL, kritik kullanilan kalem, kritik eksik kalem)
+'   malzeme: Array(kullanilan, girilen, eksik, eksik TL, kullanilan TL, ilce sayisi, girilen (ham))
+'   detay (depo|malzeme): Array(kullanilan, girilen, eksik, eksik TL, kullanilan TL, girilen (ham))
+' Yalniz kritik malzemeler: kablo, direk, pano, hucre, trafo, armatur (I_KATEGORI).
+Private Function I_AY_HESAP(ByVal kal As Object) As Variant
+    Dim top As Variant, dd As Object, dM As Object, dx As Object, mIl As Object, k As Variant, p() As String, kr As Boolean
+    Dim t As Variant, o As Variant, u As Double, e As Double, v As Double, ek As Double, ekTl As Double, gi As Double, xk As String
+    top = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+    Set dd = CreateObject("Scripting.Dictionary"): dd.CompareMode = vbTextCompare
+    Set dM = CreateObject("Scripting.Dictionary"): dM.CompareMode = vbTextCompare
+    Set dx = CreateObject("Scripting.Dictionary"): dx.CompareMode = vbTextCompare
+    Set mIl = CreateObject("Scripting.Dictionary"): mIl.CompareMode = vbTextCompare
+    For Each k In kal.keys
+        t = kal(k): u = t(0): e = t(1): v = t(2)
+        p = Split(CStr(k), "|")
+        If u > 0.0005 And Len(I_KATEGORI(p(2))) > 0 Then
+            ek = u - e
+            If ek < 0.0005 Then ek = 0
+            gi = u - ek
+            ekTl = ek * v / u
+            kr = True
+            I_AY_EKLE top, v, ekTl, ek, e, gi, kr
+            If dd.Exists(p(0)) Then o = dd(p(0)) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+            I_AY_EKLE o, v, ekTl, ek, e, gi, kr
+            dd(p(0)) = o
+            If dM.Exists(p(2)) Then o = dM(p(2)) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#)
+            o(0) = o(0) + u: o(1) = o(1) + gi: o(2) = o(2) + ek: o(3) = o(3) + ekTl: o(4) = o(4) + v: o(6) = o(6) + e
+            If Not mIl.Exists(p(2) & "|" & p(0)) Then mIl(p(2) & "|" & p(0)) = True: o(5) = o(5) + 1
+            dM(p(2)) = o
+            xk = p(0) & "|" & p(2)
+            If dx.Exists(xk) Then o = dx(xk) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#)
+            o(0) = o(0) + u: o(1) = o(1) + gi: o(2) = o(2) + ek: o(3) = o(3) + ekTl: o(4) = o(4) + v: o(5) = o(5) + e
+            dx(xk) = o
+        End If
+    Next k
+    I_AY_HESAP = Array(top, dd, dM, dx)
+End Function
+
+Private Sub I_AY_EKLE(ByRef o As Variant, ByVal v As Double, ByVal ekTl As Double, ByVal ek As Double, ByVal e As Double, _
+    ByVal gi As Double, ByVal kritik As Boolean)
+    o(0) = o(0) + v: o(1) = o(1) + ekTl: o(2) = o(2) + 1
+    If ek > 0 Then
+        o(3) = o(3) + 1
+        If e <= 0.0005 Then o(5) = o(5) + 1 Else o(6) = o(6) + 1
+    Else
+        o(4) = o(4) + 1
+    End If
+    If v > 0 And gi > 0 Then o(7) = o(7) + v - ekTl
+    If kritik Then
+        o(8) = o(8) + v: o(9) = o(9) + ekTl: o(10) = o(10) + 1
+        If ek > 0 Then o(11) = o(11) + 1
+    End If
+End Sub
+
+' Demontaji izlenen (kritik) kategori: kablo, direk, pano, hucre, trafo, armatur. Digerleri (sigorta, ampul vb.) bos.
+Private Function I_KATEGORI(ByVal mal As String) As String
+    Dim b As Variant, mg As String, tn As String
+    b = I_MAL_BILGI(mal)
+    mg = UCase$(Trim$(CStr(b(0)))): tn = Y_NORM(CStr(b(1)))
+    If Left$(tn, 6) = "IPTAL." Then tn = Trim$(Mid$(tn, 7))
+    Select Case True
+        Case Left$(mg, 5) = "M0316": I_KATEGORI = "KABLO"
+        Case Left$(mg, 5) = "M0308": I_KATEGORI = "DİREK"
+        Case Left$(mg, 5) = "M0327": I_KATEGORI = "PANO"
+        Case Left$(mg, 5) = "M0314": I_KATEGORI = "HÜCRE"
+        Case Left$(mg, 5) = "M0340": I_KATEGORI = "TRAFO"
+        Case Left$(mg, 7) = "M030103": I_KATEGORI = "ARMATÜR"
+        Case Len(mg) > 0: I_KATEGORI = vbNullString
+        Case Left$(tn, 6) = "KABLO ": I_KATEGORI = "KABLO"
+        Case Left$(tn, 6) = "DIREK ": I_KATEGORI = "DİREK"
+        Case Left$(tn, 5) = "PANO ": I_KATEGORI = "PANO"
+        Case Left$(tn, 6) = "HUCRE ": I_KATEGORI = "HÜCRE"
+        Case Left$(tn, 6) = "TRAFO ": I_KATEGORI = "TRAFO"
+        Case Left$(tn, 8) = "ARMATUR " And Left$(tn, 15) <> "ARMATUR BORUSU ": I_KATEGORI = "ARMATÜR"
+    End Select
+End Function
+
+Private Function I_KAT_SIRA(ByVal kat As String) As Long
+    Select Case kat
+        Case "KABLO": I_KAT_SIRA = 1
+        Case "DİREK": I_KAT_SIRA = 2
+        Case "PANO": I_KAT_SIRA = 3
+        Case "HÜCRE": I_KAT_SIRA = 4
+        Case "TRAFO": I_KAT_SIRA = 5
+        Case "ARMATÜR": I_KAT_SIRA = 6
+        Case Else: I_KAT_SIRA = 9
+    End Select
+End Function
+
+' Kategori ozeti (malzeme listesinden): kat -> Array(cesit, kullanilan, girilen, eksik, kullanilan TL, eksik TL,
+'   eksik cesit, birim, birim tutarli, girilen (ham)). Kritik olmayanlar "DİĞER".
+Private Function I_KAT_OZET(ByVal dM As Object) As Object
+    Dim d As Object, k As Variant, t As Variant, kat As String, o As Variant, b As Variant
+    Set d = CreateObject("Scripting.Dictionary")
+    For Each k In dM.keys
+        t = dM(k): kat = I_KATEGORI(CStr(k))
+        If Len(kat) = 0 Then kat = "DİĞER"
+        b = I_MAL_BILGI(CStr(k))
+        If d.Exists(kat) Then o = d(kat) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, CStr(b(2)), True, 0#)
+        o(0) = o(0) + 1: o(1) = o(1) + t(0): o(2) = o(2) + t(1): o(3) = o(3) + t(2)
+        o(4) = o(4) + t(4): o(5) = o(5) + t(3): o(9) = o(9) + t(6)
+        If t(2) > 0.0005 Then o(6) = o(6) + 1
+        If UCase$(CStr(o(7))) <> UCase$(CStr(b(2))) Then o(8) = False
+        d(kat) = o
+    Next k
+    Set I_KAT_OZET = d
+End Function
+
+' Kritik malzeme uyumu (%): deger agirlikli; deger yoksa kalem bazli.
+Private Function I_UYUM_K(ByVal t As Variant) As Double
+    If t(8) > 0.005 Then
+        I_UYUM_K = (t(8) - t(9)) / t(8) * 100
+    ElseIf t(10) > 0 Then
+        I_UYUM_K = (t(10) - t(11)) / t(10) * 100
+    Else
+        I_UYUM_K = 100
+    End If
+End Function
+
+' Kategori dizisinin uyumu (%).
+Private Function I_UYUM_KAT(ByVal o As Variant) As Double
+    If o(4) > 0.005 Then
+        I_UYUM_KAT = (o(4) - o(5)) / o(4) * 100
+    ElseIf o(1) > 0 Then
+        I_UYUM_KAT = (o(1) - o(3)) / o(1) * 100
+    Else
+        I_UYUM_KAT = 100
+    End If
+End Function
+
+Private Function I_OZET_DURUM(ByVal t As Variant) As String
+    If t(11) > 0 Then
+        I_OZET_DURUM = "KRİTİK EKSİK"
+    ElseIf t(3) > 0 Then
+        I_OZET_DURUM = "DİĞER EKSİK"
+    Else
+        I_OZET_DURUM = "TAMAM"
+    End If
+End Function
+
+Private Function I_KAT_KAPSAM(ByVal kat As String) As String
+    Select Case kat
+        Case "KABLO": I_KAT_KAPSAM = "Kablo çeşitleri"
+        Case "DİREK": I_KAT_KAPSAM = "Direk çeşitleri"
+        Case "PANO": I_KAT_KAPSAM = "Panolar"
+        Case "HÜCRE": I_KAT_KAPSAM = "Hücreler"
+        Case "TRAFO": I_KAT_KAPSAM = "Trafolar"
+        Case "ARMATÜR": I_KAT_KAPSAM = "Armatürler"
+        Case Else: I_KAT_KAPSAM = "Sigorta, ampul vb. (ikinci planda)"
+    End Select
+End Function
+
+' Ayin ozeti: Array(top, depolar, malzemeler, detay, gun sayisi, ilk gun, son gun); kayit yoksa Empty.
+Private Function I_AY_OZET(ByVal aylar As Object, ByVal ay As Long) As Variant
+    Dim o As Variant, h As Variant
+    If aylar Is Nothing Then Exit Function
+    If Not aylar.Exists(ay) Then Exit Function
+    o = aylar(ay)
+    h = I_AY_HESAP(o(3))
+    I_AY_OZET = Array(h(0), h(1), h(2), h(3), o(0), o(1), o(2))
+End Function
+
+' Demontaj uyumu (%): deger agirlikli; deger yoksa kalem bazli.
+Private Function I_UYUM(ByVal t As Variant) As Double
+    If t(0) > 0.005 Then
+        I_UYUM = (t(0) - t(1)) / t(0) * 100
+    ElseIf t(2) > 0 Then
+        I_UYUM = t(4) / t(2) * 100
+    Else
+        I_UYUM = 100
+    End If
+End Function
+
+Private Function I_AY_ADI(ByVal ay As Long) As String
+    Dim m As Long
+    m = ay Mod 100
+    If m < 1 Or m > 12 Then Exit Function
+    I_AY_ADI = Choose(m, "OCAK", "ŞUBAT", "MART", "NİSAN", "MAYIS", "HAZİRAN", "TEMMUZ", "AĞUSTOS", "EYLÜL", "EKİM", "KASIM", "ARALIK") & " " & (ay \ 100)
+End Function
+
+Private Function I_AY_ONCEKI(ByVal ay As Long) As Long
+    If ay Mod 100 = 1 Then I_AY_ONCEKI = (ay \ 100 - 1) * 100 + 12 Else I_AY_ONCEKI = ay - 1
+End Function
+
+' Aylar (en yeni ilk). Kayit yoksa Empty.
+Private Function I_AY_LISTE(ByVal aylar As Object) As Variant
+    Dim v() As Long, k As Variant, i As Long, j As Long, t As Long
+    If aylar Is Nothing Then Exit Function
+    If aylar.Count = 0 Then Exit Function
+    ReDim v(1 To aylar.Count)
+    For Each k In aylar.keys
+        i = i + 1
+        v(i) = CLng(k)
+    Next k
+    For i = 1 To UBound(v) - 1
+        For j = i + 1 To UBound(v)
+            If v(j) > v(i) Then t = v(i): v(i) = v(j): v(j) = t
+        Next j
+    Next i
+    I_AY_LISTE = v
+End Function
+
+' Uyum yuzdesi: trafik isigi ikonu (yesil >= 90, sari >= 70, kirmizi < 70) + yesil veri cubugu.
+Private Sub I_UYUM_CUBUK(ByVal r As Range)
+    Dim db As Object, ic As Object
+    r.NumberFormat = """%""0.0"
+    r.HorizontalAlignment = xlCenter
+    On Error Resume Next
+    Set ic = r.FormatConditions.AddIconSetCondition
+    ic.IconSet = ThisWorkbook.IconSets(xl3TrafficLights1)
+    ic.IconCriteria(2).Type = xlConditionValueNumber: ic.IconCriteria(2).Value = 70: ic.IconCriteria(2).Operator = xlGreaterEqual
+    ic.IconCriteria(3).Type = xlConditionValueNumber: ic.IconCriteria(3).Value = 90: ic.IconCriteria(3).Operator = xlGreaterEqual
+    Set db = r.FormatConditions.AddDatabar
+    db.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+    db.MaxPoint.Modify newtype:=xlConditionValueNumber, newvalue:=100
+    db.BarColor.Color = RGB(74, 197, 125)
+    On Error GoTo 0
+End Sub
+
+' Fire degeri sutunu: beyazdan kirmiziya renk skalasi.
+Public Sub I_FIRE_ISI(ByVal r As Range)
+    Dim cs As Object
+    On Error Resume Next
+    Set cs = r.FormatConditions.AddColorScale(ColorScaleType:=2)
+    cs.ColorScaleCriteria(1).Type = xlConditionValueLowestValue
+    cs.ColorScaleCriteria(1).FormatColor.Color = RGB(255, 255, 255)
+    cs.ColorScaleCriteria(2).Type = xlConditionValueHighestValue
+    cs.ColorScaleCriteria(2).FormatColor.Color = RGB(252, 165, 165)
+    On Error GoTo 0
+End Sub
+
+Private Function I_KAT_RENK(ByVal kat As String) As Long
+    Select Case kat
+        Case "KABLO": I_KAT_RENK = RGB(37, 99, 235)
+        Case "DİREK": I_KAT_RENK = RGB(180, 83, 9)
+        Case "PANO": I_KAT_RENK = RGB(124, 58, 237)
+        Case "HÜCRE": I_KAT_RENK = RGB(13, 148, 136)
+        Case "TRAFO": I_KAT_RENK = RGB(220, 38, 38)
+        Case "ARMATÜR": I_KAT_RENK = RGB(202, 138, 4)
+        Case Else: I_KAT_RENK = RGB(148, 163, 184)
+    End Select
+End Function
+
+Private Function I_DEGERLENDIR(ByVal u As Double) As String
+    If u >= 95 Then
+        I_DEGERLENDIR = "ÇOK İYİ"
+    ElseIf u >= 80 Then
+        I_DEGERLENDIR = "İYİ"
+    ElseIf u >= 50 Then
+        I_DEGERLENDIR = "ORTA"
+    Else
+        I_DEGERLENDIR = "ZAYIF"
+    End If
+End Function
+
+' Ilce karnesi (kritik malzemeler): depo -> Array(kritik kullanilan TL, fire TL, kullanilan kalem, eksik kalem,
+'   kablo eksik, direk eksik, pano eksik, hucre eksik, trafo eksik, armatur eksik, uyum %). Yalniz kritik kullanimi olan depolar.
+Private Function I_KARNE(ByVal dd As Object, ByVal dx As Object) As Object
+    Dim d As Object, k As Variant, t As Variant, o As Variant, p() As String, kat As String, s As Long, br As Object, b0 As String
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each k In dd.keys
+        t = dd(k)
+        If t(10) > 0 Then d(CStr(k)) = Array(t(8), t(9), t(10), t(11), 0#, 0#, 0#, 0#, 0#, 0#, I_UYUM_K(t))
+    Next k
+    Set br = CreateObject("Scripting.Dictionary"): br.CompareMode = vbTextCompare
+    For Each k In dx.keys
+        p = Split(CStr(k), "|")
+        If d.Exists(p(0)) Then
+            kat = I_KATEGORI(p(1))
+            s = I_KAT_SIRA(kat)
+            If s <= 6 Then
+                t = dx(k): o = d(p(0))
+                If t(2) > 0.0005 Then
+                    ' Ayni kategoride farkli birimler (M / KG ...) toplanmaz: -1 = "farkli birim".
+                    b0 = UCase$(Trim$(CStr(I_MAL_BILGI(p(1))(2))))
+                    If br.Exists(p(0) & "|" & s) Then
+                        If br(p(0) & "|" & s) <> b0 Then o(3 + s) = -1
+                    Else
+                        br(p(0) & "|" & s) = b0
+                    End If
+                    If o(3 + s) >= 0 Then o(3 + s) = o(3 + s) + t(2)
+                End If
+                d(p(0)) = o
+            End If
+        End If
+    Next k
+    Set I_KARNE = d
+End Function
+
+Public Sub I_DURUM_RENK(ByVal r As Range)
+    Y_DURUM_KF r, "TAMAM", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_DURUM_KF r, "KRİTİK EKSİK", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF r, "DİĞER EKSİK", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF r, "EKSİK VAR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF r, "GİRİŞ YOK", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF r, "EKSİK GİRİŞ", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF r, "KULLANIM YOK", RGB(241, 245, 249), RGB(100, 116, 139)
+    Y_DURUM_KF r, "ÇOK İYİ", RGB(187, 247, 208), RGB(21, 128, 61)
+    Y_DURUM_KF r, "İYİ", RGB(220, 252, 231), RGB(22, 101, 52)
+    Y_DURUM_KF r, "ORTA", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF r, "ZAYIF", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF r, ChrW(9733) & " EN İYİ", RGB(22, 163, 74), RGB(255, 255, 255)
+    Y_DURUM_KF r, ChrW(9660) & " EN KÖTÜ", RGB(220, 38, 38), RGB(255, 255, 255)
+    r.HorizontalAlignment = xlCenter
+End Sub
+
+Private Function I_SATIR_DURUM(ByVal eksik As Double, ByVal girilenHam As Double) As String
+    If eksik <= 0.0005 Then
+        I_SATIR_DURUM = "TAMAM"
+    ElseIf girilenHam <= 0.0005 Then
+        I_SATIR_DURUM = "GİRİŞ YOK"
+    Else
+        I_SATIR_DURUM = "EKSİK GİRİŞ"
+    End If
+End Function
+
+Public Function I_SIRA_ANAHTAR(ByVal x As Double) As String
+    I_SIRA_ANAHTAR = Format$(1E+15 - Round(x, 2) * 100, "0000000000000000")
+End Function
+
+Public Sub AKSORA_ILCE_AY_SEC()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  AYLIK DEMONTAJ", "Ay raporu hazırlanıyor...")
+    On Error GoTo son
+    ILCE_AY_SEC_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_AY_SEC_ASIL()
+    Dim ws As Worksheet, ay As String, ev As Boolean, no As Long, metin As String
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_AYLIK_DEMONTAJ")
+    ay = ws.Shapes(CStr(application.Caller)).AlternativeText
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect ""
+    ws.Range("BX30").Value2 = ay
+    I_AYLIK_KUR CStr(ws.Range("BX22").Value2)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    On Error GoTo 0
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Err.Raise no, , metin
+End Sub
+
+' I_AYLIK_DEMONTAJ (ilce birimi): yalniz kritik malzemeler (kablo, direk, pano, hucre, trafo, armatur).
+' KPI: uyum, fire degeri, en iyi ve en kotu ilce. Tablolar: kritik malzemeler, ilce karnesi, kritik fire listesi.
+Private Sub I_AYLIK_KUR(ByVal il As String)
+    Dim ws As Worksheet, w As Double, sw As Double, s As Shape, aylar As Object, liste As Variant, secAy As Long
+    Dim ayrim As Boolean
+    Dim h As Variant, o As Variant, top As Variant, dd As Object, dM As Object, dx As Object, depolar As Object, karne As Object
+    Dim k As Variant, t As Variant, mb As Variant, p() As String, r As Long, a1 As Long, i As Long, j As Long, n As Long
+    Dim y As Double, bw As Double, kw As Double, anah() As String, idx() As Long, kod() As String, sonuc() As Variant
+    Dim ad As String, ilk As Date, ilkVar As Boolean, dk As Object, kat As String, kats As Variant, fireli As Object
+    Dim enIyi As String, enKotu As String, bos As String, br() As String
+    Set ws = ThisWorkbook.Worksheets("I_AYLIK_DEMONTAJ")
+    il = UCase$(Trim$(il))
+    I_DEFTER_GUNCELLE il
+    ws.Unprotect ""
+    secAy = CLng(Val(CStr(ws.Range("BX30").Value2)))
+    If CStr(ws.Range("BX22").Value2) <> il Then secAy = 0
+    Y_SAYFA_SIFIRLA ws
+    I_BAGLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    sw = (w - 630) / 8
+    If sw < 70 Then sw = 70
+    Y_KOLONLAR ws, Array(70, 180, 100, 280, sw, sw, sw, sw, sw, sw, sw, sw)
+    Set aylar = I_DEFTER_OKU(il)
+    Set depolar = I_DEPOLAR(il)
+    liste = I_AY_LISTE(aylar)
+    If IsArray(liste) Then
+        For i = 1 To UBound(liste)
+            If liste(i) = secAy Then Exit For
+        Next i
+        If i > UBound(liste) Then secAy = liste(1)
+        For Each k In aylar.keys
+            o = aylar(k)
+            If Not ilkVar Or o(1) < ilk Then ilk = o(1): ilkVar = True
+        Next k
+    Else
+        secAy = 0
+    End If
+    ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il: ws.Range("BX30").Value2 = secAy
+    ws.Range("BX31:BX34").ClearContents
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 30: ws.Rows(9).RowHeight = 10: ws.Rows(10).RowHeight = 10
+    If IsArray(liste) Then
+        n = application.Min(12, UBound(liste))
+        bw = application.Min(130, (w - 150 - 12 * 6) / 12)
+        y = ws.Rows(8).top + 1
+        Y_DUGME ws, "I_AY_EXCEL", "EXCEL'E AKTAR", w - 150, y, 150, 28, RGB(33, 115, 70), "AKSORA_ILCE_AY_AKTAR"
+        For i = 1 To n
+            Set s = Y_DUGME(ws, "I_AY_" & i, I_AY_ADI(CLng(liste(i))), (i - 1) * (bw + 6), y, bw, 28, _
+                IIf(liste(i) = secAy, RGB(79, 70, 160), RGB(148, 163, 184)), "AKSORA_ILCE_AY_SEC")
+            s.AlternativeText = CStr(liste(i))
+        Next i
+    End If
+    h = I_AY_OZET(aylar, secAy)
+    If IsArray(h) Then
+        top = h(0): Set dd = h(1): Set dM = h(2): Set dx = h(3)
+    Else
+        top = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+        Set dd = CreateObject("Scripting.Dictionary"): Set dM = CreateObject("Scripting.Dictionary"): Set dx = CreateObject("Scripting.Dictionary")
+    End If
+    Set dk = I_KAT_OZET(dM)
+    Set karne = I_KARNE(dd, dx)
+    ' ilce siralamasi: uyum yuksekten dusuge, esitlikte fire degeri az olan once
+    n = karne.Count
+    If n > 0 Then
+        ReDim anah(1 To n): ReDim idx(1 To n): ReDim kod(1 To n)
+        i = 0
+        For Each k In karne.keys
+            t = karne(k): i = i + 1: idx(i) = i: kod(i) = CStr(k)
+            anah(i) = I_SIRA_ANAHTAR(t(10)) & Format$(Round(t(1), 2) * 100, "0000000000000000")
+        Next k
+        Y_SIRALA anah, idx, 1, n
+        ' En iyi / en kotu ancak aralarinda gercek fark varsa gosterilir (tek ilce veya hepsi esitse yok).
+        ayrim = False
+        If n > 1 Then ayrim = (karne(kod(idx(1)))(10) > karne(kod(idx(n)))(10) + 0.05) Or (karne(kod(idx(n)))(1) > karne(kod(idx(1)))(1) + 0.005)
+        ad = vbNullString
+        If depolar.Exists(kod(idx(1))) Then ad = I_DEPO_KISA(CStr(depolar(kod(idx(1)))))
+        enIyi = IIf(Len(ad) > 0, ad, kod(idx(1))) & "  •  %" & AKSORA_SAYI_METNI(karne(kod(idx(1)))(10), "0.0")
+        ad = vbNullString
+        If depolar.Exists(kod(idx(n))) Then ad = I_DEPO_KISA(CStr(depolar(kod(idx(n)))))
+        enKotu = IIf(Len(ad) > 0, ad, kod(idx(n))) & "  •  %" & AKSORA_SAYI_METNI(karne(kod(idx(n)))(10), "0.0")
+        If Not ayrim Then enKotu = "-"
+    Else
+        enIyi = "-": enKotu = "-"
+    End If
+    ' KPI
+    ws.Range("BZ21").Value2 = "%" & AKSORA_SAYI_METNI(I_UYUM_K(top), "0.0")
+    ws.Range("BZ22").Value2 = Round(top(9), 2): ws.Range("BZ22").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("BZ23").Value2 = enIyi
+    ws.Range("BZ24").Value2 = enKotu
+    y = ws.Rows(3).top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "KRİTİK DEMONTAJ UYUMU", "$BZ$21", RGB(39, 160, 94)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "KRİTİK FİRE (EKSİK DEMONTAJ)", "$BZ$22", RGB(220, 38, 38)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, ChrW(9733) & " EN İYİ İLÇE", "$BZ$23", RGB(22, 163, 74)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, ChrW(9660) & " EN KÖTÜ İLÇE", "$BZ$24", RGB(185, 28, 28)
+    For i = 3 To 4
+        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    Next i
+
+    '--- kritik malzemeler
+    r = 11
+    Y_BOLUM ws, r, "KRİTİK MALZEMELER  –  " & I_AY_ADI(secAy), "Ay boyunca kullanılan, demontajı girilen ve eksik (fire) miktarlar.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("", "Kategori", "Malzeme çeşidi", "Demontaj oranı", _
+        "Kullanılan", "Demontajı girilen", "Eksik (fire)", "Fire değeri", "Kullanılan değer", "Fireli çeşit", "Fireli ilçe", "Durum")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    Set fireli = CreateObject("Scripting.Dictionary"): fireli.CompareMode = vbTextCompare
+    For Each k In dx.keys
+        p = Split(CStr(k), "|")
+        If dx(k)(2) > 0.0005 Then
+            kat = I_KATEGORI(p(1))
+            If Len(kat) > 0 Then fireli(kat & "|" & p(0)) = True
+        End If
+    Next k
+    kats = Array("KABLO", "DİREK", "PANO", "HÜCRE", "TRAFO", "ARMATÜR")
+    For i = 0 To 5
+        kat = CStr(kats(i))
+        r = r + 1
+        ws.Cells(r, 1).Value2 = ChrW(9632): ws.Cells(r, 1).Font.Color = I_KAT_RENK(kat): ws.Cells(r, 1).Font.Size = 16
+        ws.Cells(r, 2).Value2 = kat & "   " & I_KAT_KAPSAM(kat)
+        If dk.Exists(kat) Then
+            o = dk(kat)
+            ws.Cells(r, 3).Value2 = o(0)
+            ws.Cells(r, 4).Value2 = Round(I_UYUM_KAT(o), 1)
+            If o(8) Then
+                ws.Cells(r, 5).Value2 = o(1): ws.Cells(r, 6).Value2 = o(2): ws.Cells(r, 7).Value2 = o(3)
+                For j = 5 To 7
+                    Y_MIKTAR_BICIM ws.Cells(r, j), CStr(o(7))
+                Next j
+            Else
+                ws.Cells(r, 5).Value2 = "farklı birimler"
+            End If
+            ws.Cells(r, 8).Value2 = Round(o(5), 2): ws.Cells(r, 9).Value2 = Round(o(4), 2)
+            n = 0
+            For Each k In fireli.keys
+                If Left$(CStr(k), Len(kat) + 1) = kat & "|" Then n = n + 1
+            Next k
+            ws.Cells(r, 10).Value2 = o(6)
+            ws.Cells(r, 11).Value2 = n
+            ws.Cells(r, 12).Value2 = IIf(o(6) > 0, "KRİTİK EKSİK", "TAMAM")
+            If o(3) > 0.0005 Then ws.Cells(r, 7).Font.Color = RGB(185, 28, 28)
+        Else
+            ws.Cells(r, 12).Value2 = "KULLANIM YOK"
+        End If
+    Next i
+    ws.Range("BX32").Value2 = a1 & "|" & r
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+    ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 24
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).Font.bold = True
+    ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 5), ws.Cells(r, 7)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(a1, 7), ws.Cells(r, 7)).Font.bold = True
+    ws.Range(ws.Cells(a1, 8), ws.Cells(r, 9)).NumberFormat = "#,##0.00 ""TL"""
+    I_UYUM_CUBUK ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4))
+    I_FIRE_ISI ws.Range(ws.Cells(a1, 8), ws.Cells(r, 8))
+    I_DURUM_RENK ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12))
+
+    '--- ilce karnesi
+    r = r + 2
+    Y_BOLUM ws, r, "İLÇE KARNESİ  –  " & I_AY_ADI(secAy) & "  (en iyiden en kötüye)", "Sıra: kritik demontaj uyumu; eşitlikte fire değeri az olan önde.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Sıra", "İlçe", "Depo", "Kritik demontaj uyumu", _
+        "Kablo eksik", "Direk eksik", "Pano eksik", "Hücre eksik", "Trafo eksik", "Armatür eksik", "Fire değeri", "Değerlendirme")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    n = karne.Count
+    If n > 0 Then
+        For i = 1 To n
+            k = kod(idx(i)): t = karne(k)
+            r = r + 1
+            ad = vbNullString
+            If depolar.Exists(k) Then ad = I_DEPO_KISA(CStr(depolar(k)))
+            ws.Cells(r, 1).Value2 = i
+            ws.Cells(r, 2).Value2 = ad
+            ws.Cells(r, 3).NumberFormat = "@": ws.Cells(r, 3).Value2 = CStr(k)
+            ws.Cells(r, 4).Value2 = Round(t(10), 1)
+            For j = 0 To 5
+                If t(4 + j) < 0 Then
+                    ws.Cells(r, 5 + j).Value2 = "farklı birim"
+                    ws.Cells(r, 5 + j).Font.Color = RGB(185, 28, 28)
+                Else
+                    ws.Cells(r, 5 + j).Value2 = t(4 + j)
+                    If t(4 + j) > 0.0005 Then ws.Cells(r, 5 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 5 + j).Font.bold = True
+                End If
+            Next j
+            ws.Cells(r, 11).Value2 = Round(t(1), 2)
+            If i = 1 And ayrim Then
+                ws.Cells(r, 12).Value2 = ChrW(9733) & " EN İYİ"
+            ElseIf i = n And ayrim Then
+                ws.Cells(r, 12).Value2 = ChrW(9660) & " EN KÖTÜ"
+            Else
+                ws.Cells(r, 12).Value2 = I_DEGERLENDIR(t(10))
+            End If
+        Next i
+        ws.Range("BX31").Value2 = a1 & "|" & r
+        Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+        ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 22
+        If ayrim Then
+            ws.Range(ws.Cells(a1, 1), ws.Cells(a1, 11)).Interior.Color = RGB(240, 253, 244)
+            ws.Range(ws.Cells(r, 1), ws.Cells(r, 11)).Interior.Color = RGB(254, 242, 242)
+        End If
+        ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 1), ws.Cells(r, 2)).Font.bold = True
+        ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).IndentLevel = 1
+        ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 5), ws.Cells(r, 10)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).NumberFormat = "#,##0.## ""m"";-#,##0.## ""m"";""–"""
+        ws.Range(ws.Cells(a1, 6), ws.Cells(r, 10)).NumberFormat = "#,##0.## ""adet"";-#,##0.## ""adet"";""–"""
+        ws.Range(ws.Cells(a1, 11), ws.Cells(r, 11)).NumberFormat = "#,##0.00 ""TL"""
+        I_UYUM_CUBUK ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4))
+        I_FIRE_ISI ws.Range(ws.Cells(a1, 11), ws.Cells(r, 11))
+        I_DURUM_RENK ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12))
+    Else
+        r = r + 1
+        ws.Cells(r, 2).Value2 = "Bu ay ilçe depolarında kritik malzeme kullanımı yok."
+        ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(100, 116, 139)
+    End If
+    ' kritik kullanimi olmayan ilceler (tek satir)
+    For Each k In depolar.keys
+        If Not karne.Exists(CStr(k)) Then bos = bos & IIf(Len(bos) > 0, ", ", "") & I_DEPO_KISA(CStr(depolar(k)))
+    Next k
+    If Len(bos) > 0 Then
+        r = r + 1
+        ws.Cells(r, 2).Value2 = "Bu ay kritik malzeme kullanmayan ilçeler: " & bos
+        ws.Cells(r, 2).Font.Size = 9: ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(100, 116, 139)
+    End If
+
+    '--- tum kayitli aylar: ilce siralamasi (toplam)
+    If IsArray(liste) Then
+        r = r + 2
+        r = I_AY_TOPLAM_CIZ(ws, r, aylar, depolar)
+    End If
+
+    '--- kritik fire listesi (yalniz eksik olanlar)
+    r = r + 2
+    Y_BOLUM ws, r, "KRİTİK FİRE LİSTESİ  –  " & I_AY_ADI(secAy), "En yüksek fire değeri üstte. Başlıklardaki filtrelerle ilçe veya kategori seçilebilir.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Depo", "İlçe", "Malzeme", "Malzeme tanımı", "Kategori", _
+        "Kullanılan", "Demontajı girilen", "Eksik (fire)", "Fire değeri", "Kullanılan değer", "Demontaj oranı", "Durum")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    n = 0
+    If dx.Count > 0 Then
+        ReDim anah(1 To dx.Count): ReDim idx(1 To dx.Count): ReDim kod(1 To dx.Count)
+        For Each k In dx.keys
+            t = dx(k): p = Split(CStr(k), "|")
+            If t(2) > 0.0005 Then
+                If Len(I_KATEGORI(p(1))) > 0 Then
+                    n = n + 1: idx(n) = n: kod(n) = CStr(k)
+                    anah(n) = I_SIRA_ANAHTAR(t(3)) & I_SIRA_ANAHTAR(t(2))
+                End If
+            End If
+        Next k
+    End If
+    If n > 0 Then
+        ReDim Preserve anah(1 To n): ReDim Preserve idx(1 To n)
+        Y_SIRALA anah, idx, 1, n
+        ReDim sonuc(1 To n, 1 To 12): ReDim br(1 To n)
+        For i = 1 To n
+            t = dx(kod(idx(i))): p = Split(kod(idx(i)), "|"): mb = I_MAL_BILGI(p(1))
+            ad = vbNullString
+            If depolar.Exists(p(0)) Then ad = I_DEPO_KISA(CStr(depolar(p(0))))
+            sonuc(i, 1) = p(0): sonuc(i, 2) = ad: sonuc(i, 3) = p(1): sonuc(i, 4) = mb(1): sonuc(i, 5) = I_KATEGORI(p(1))
+            sonuc(i, 6) = t(0): sonuc(i, 7) = t(1): sonuc(i, 8) = t(2): sonuc(i, 9) = Round(t(3), 2)
+            sonuc(i, 10) = Round(t(4), 2)
+            sonuc(i, 11) = Round((t(0) - t(2)) / t(0) * 100, 1)
+            sonuc(i, 12) = I_SATIR_DURUM(t(2), t(5))
+            br(i) = CStr(mb(2))
+        Next i
+        ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
+        r = a1 + n - 1
+        ws.Range("BX33").Value2 = a1 & "|" & r
+        For i = 1 To n
+            If (i And 255) = 0 Then AKSORA_BEKLE_NABIZ
+            For j = 6 To 8
+                Y_MIKTAR_BICIM ws.Cells(a1 + i - 1, j), br(i)
+            Next j
+            ws.Cells(a1 + i - 1, 5).Font.Color = I_KAT_RENK(CStr(sonuc(i, 5)))
+        Next i
+        Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+        ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 19
+        ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5)).Font.bold = True
+        ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).IndentLevel = 1
+        ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
+        ws.Range(ws.Cells(a1, 6), ws.Cells(r, 8)).HorizontalAlignment = xlRight
+        ws.Range(ws.Cells(a1, 8), ws.Cells(r, 8)).Font.bold = True
+        ws.Range(ws.Cells(a1, 8), ws.Cells(r, 8)).Font.Color = RGB(185, 28, 28)
+        ws.Range(ws.Cells(a1, 9), ws.Cells(r, 10)).NumberFormat = "#,##0.00 ""TL"""
+        I_FIRE_ISI ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9))
+        I_UYUM_CUBUK ws.Range(ws.Cells(a1, 11), ws.Cells(r, 11))
+        I_DURUM_RENK ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12))
+        ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(r, 12)).AutoFilter
+    Else
+        r = r + 1
+        ws.Cells(r, 2).Value2 = IIf(secAy > 0, "Bu ay kritik malzemelerde fire yok.", "Henüz kayıt yok.")
+        ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(21, 128, 61)
+    End If
+    r = r + 2
+    ws.Cells(r, 1).Value2 = "Demontaj yalnız kritik malzemelerde izlenir: kablo, direk, pano, hücre, trafo, armatür. Fire: kullanılıp demontajı girilmeyen miktar (ay içindeki geç girişler düşülür)." & _
+        IIf(ilkVar, " Kayıt başlangıcı: " & Format$(ilk, "dd.mm.yyyy") & ".", "")
+    ws.Cells(r, 1).Font.Size = 9: ws.Cells(r, 1).Font.Color = RGB(71, 85, 105)
+    Y_FILIGRAN ws
+    ad = "AKSORA | AYLIK DEMONTAJ  |  " & Y_IL_ADI(il)
+    If secAy > 0 Then ad = ad & "  |  " & I_AY_ADI(secAy)
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), ad
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+' Admin aylik satir: ad | donem | kritik eksik kalem | diger eksik kalem | kritik kullanilan TL | kritik eksik TL | kritik uyum | onceki ay | durum
+Private Sub ADM_AY_SATIR(ByVal ws As Worksheet, ByVal r As Long, ByVal ad As String, ByVal donem As String, _
+    ByVal t As Variant, ByVal tOn As Variant, ByVal toplam As Boolean)
+    Dim drm As String
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(toplam, RGB(226, 236, 247), vbWhite)
+    ws.Cells(r, 2).NumberFormat = "@": ws.Cells(r, 2).Value2 = ad: ws.Cells(r, 2).Font.bold = True
+    ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Cells(r, 3).NumberFormat = "@": ws.Cells(r, 3).Value2 = donem
+    ws.Range(ADM_ADRES(r, 7, r, 8)).Merge: ws.Range(ADM_ADRES(r, 9, r, 10)).Merge
+    If IsArray(t) Then
+        ws.Cells(r, 5).Value2 = t(11): ws.Cells(r, 6).Value2 = t(3) - t(11)
+        ws.Cells(r, 7).Value2 = Round(t(8), 2): ws.Cells(r, 9).Value2 = Round(t(9), 2)
+        ws.Cells(r, 11).Value2 = Round(I_UYUM_K(t), 1)
+        If IsArray(tOn) Then ws.Cells(r, 12).Value2 = Round(I_UYUM_K(tOn), 1)
+        ws.Range(ADM_ADRES(r, 5, r, 6)).NumberFormat = "#,##0"
+        ws.Cells(r, 7).NumberFormat = "#,##0.00 ""TL""": ws.Cells(r, 9).NumberFormat = "#,##0.00 ""TL"""
+        ws.Range(ADM_ADRES(r, 11, r, 12)).NumberFormat = """%""0.0"
+        ws.Cells(r, 6).Font.Color = RGB(100, 116, 139)
+        drm = I_OZET_DURUM(t)
+        Select Case drm
+            Case "KRİTİK EKSİK"
+                ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+                ws.Cells(r, 5).Font.Color = RGB(185, 28, 28): ws.Cells(r, 9).Font.Color = RGB(185, 28, 28)
+                ws.Cells(r, 5).Font.bold = True: ws.Cells(r, 9).Font.bold = True
+            Case "DİĞER EKSİK"
+                ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(254, 243, 199), RGB(180, 83, 9), 8, True, xlCenter
+            Case Else
+                ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(220, 252, 231), RGB(21, 128, 61), 8, True, xlCenter
+        End Select
+    Else
+        If Len(donem) = 0 Then ws.Cells(r, 3).Value2 = "kayıt yok"
+        ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "VERİ YOK", RGB(241, 245, 249), RGB(100, 116, 139), 8, True, xlCenter
+    End If
+    ws.Range(ADM_ADRES(r, 2, r, 12)).HorizontalAlignment = xlCenter
+    ws.Range(ADM_ADRES(r, 7, r, 10)).ShrinkToFit = True
+End Sub
+
+Private Sub ADM_TOP_TOPLA(ByRef hedef As Variant, ByVal t As Variant)
+    Dim i As Long
+    For i = 0 To UBound(t)
+        hedef(i) = hedef(i) + t(i)
+    Next i
+End Sub
+
+Private Sub ADM_MAL_TOPLA(ByVal hedef As Object, ByVal dM As Object)
+    Dim k As Variant, t As Variant, o As Variant, i As Long
+    For Each k In dM.keys
+        t = dM(k)
+        If hedef.Exists(k) Then
+            o = hedef(k)
+            For i = 0 To UBound(t)
+                o(i) = o(i) + t(i)
+            Next i
+            hedef(k) = o
+        Else
+            hedef(k) = t
+        End If
+    Next k
+End Sub
+
+' En ust N malzeme (alan: 3 eksik TL, 4 kullanilan TL). sadeceEksik / sadeceKritik ile suzulur.
+Private Function ADM_MAL_SIRA(ByVal dM As Object, ByVal alan As Long, ByVal adet As Long, ByVal sadeceEksik As Boolean, _
+    ByVal sadeceKritik As Boolean) As Variant
+    Dim anah() As String, idx() As Long, kod() As String, k As Variant, t As Variant, n As Long, i As Long, sonuc() As String
+    If dM.Count = 0 Then Exit Function
+    ReDim anah(1 To dM.Count): ReDim idx(1 To dM.Count): ReDim kod(1 To dM.Count)
+    For Each k In dM.keys
+        t = dM(k)
+        If (Not sadeceEksik Or t(2) > 0.0005) And (Not sadeceKritik Or Len(I_KATEGORI(CStr(k))) > 0) Then
+            n = n + 1: idx(n) = n: kod(n) = CStr(k)
+            anah(n) = I_SIRA_ANAHTAR(t(alan)) & I_SIRA_ANAHTAR(t(4))
+        End If
+    Next k
+    If n = 0 Then Exit Function
+    ReDim Preserve anah(1 To n): ReDim Preserve idx(1 To n)
+    Y_SIRALA anah, idx, 1, n
+    ReDim sonuc(1 To application.Min(adet, n))
+    For i = 1 To UBound(sonuc)
+        sonuc(i) = kod(idx(i))
+    Next i
+    ADM_MAL_SIRA = sonuc
+End Function
+
+' Admin gunluk eksik listesi siralamasi: kritik malzemeler once, sonra eksik deger.
+Private Function ADM_DEM_SKOR(ByVal t As Variant) As Double
+    ADM_DEM_SKOR = t(8)
+    If Len(I_KATEGORI(CStr(t(3)))) > 0 Then ADM_DEM_SKOR = ADM_DEM_SKOR + 1000000000000#
+End Function
+
+Private Function ADM_DEM_DURUM(ByVal t As Variant) As String
+    Dim kat As String
+    kat = I_KATEGORI(CStr(t(3)))
+    ADM_DEM_DURUM = CStr(t(7))
+    If Len(kat) > 0 Then ADM_DEM_DURUM = ADM_DEM_DURUM & "  •  " & kat
+End Function
+
+' Admin aylik demontaj (yalniz kritik malzemeler): il ozeti, kritik malzemeler, ilce karnesi (en kotu / en iyi).
+Private Sub ADM_AYLIK_CIZ(ByVal ws As Worksheet, ByRef r As Long, ByVal aylik As Object, ByVal ayCur As Long, _
+    ByVal secIl As String, ByVal ilMetin As String)
+    Dim iller As Variant, p As Long, il As String, hA As Variant, hb As Variant, aT As Variant, aTO As Variant
+    Dim aMal As Object, k As Variant, t As Variant, i As Long, j As Long, satirNo As Long, ayOnc As Long, n As Long
+    Dim depolar As Object, anah() As String, idx() As Long, kod() As Variant, ad As String, dk As Object
+    Dim kats As Variant, kat As String, o As Variant, karne As Object, tum As Object, ilE As Variant, fireli As Object
+    Dim adet As Long, sec As Collection, x As Variant, drm As String, ayrim As Boolean
+    iller = ADM_ILLER()
+    ayOnc = I_AY_ONCEKI(ayCur)
+    Set aMal = CreateObject("Scripting.Dictionary"): aMal.CompareMode = vbTextCompare
+    Set tum = CreateObject("Scripting.Dictionary"): tum.CompareMode = vbTextCompare
+    Set fireli = CreateObject("Scripting.Dictionary"): fireli.CompareMode = vbTextCompare
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "AYLIK DEMONTAJ (KRİTİK MALZEMELER)   •   " & ilMetin & "   •   " & I_AY_ADI(ayCur) & "   (kablo, direk, pano, hücre, trafo, armatür)"
+    r = r + 1: satirNo = r
+    aT = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#): aTO = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+    If Len(secIl) = 0 Then
+        ADM_BASLIKLAR ws, r, 2, Array("İl", "Kritik kullanım değeri", "", "Kritik fire değeri", "", "Kritik uyum", "", "Kablo eksik", "Direk eksik", "Pano / hücre / trafo / armatür eksik", "Önceki ay", "Durum")
+        ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 7, r, 8)).Merge
+    End If
+    For p = 0 To 4
+        il = CStr(iller(p))
+        If Len(secIl) = 0 Or il = secIl Then
+            hA = I_AY_OZET(aylik(il), ayCur): hb = I_AY_OZET(aylik(il), ayOnc)
+            o = Array(0#, 0#, 0#, 0#, 0#, 0#)
+            If IsArray(hA) Then
+                ADM_TOP_TOPLA aT, hA(0): ADM_MAL_TOPLA aMal, hA(2)
+                If IsArray(hb) Then ADM_TOP_TOPLA aTO, hb(0)
+                Set karne = I_KARNE(hA(1), hA(3))
+                Set depolar = I_DEPOLAR(il)
+                For Each k In karne.keys
+                    t = karne(k)
+                    ad = vbNullString
+                    If depolar.Exists(k) Then ad = I_DEPO_KISA(CStr(depolar(k)))
+                    tum(il & "|" & k) = Array(il, CStr(k), ad, t)
+                    For j = 0 To 5
+                        If t(4 + j) > 0 Then o(j) = o(j) + t(4 + j)
+                        If t(4 + j) > 0.0005 Or t(4 + j) < 0 Then fireli(j & "|" & il & "|" & k) = True
+                    Next j
+                Next k
+            End If
+            If Len(secIl) = 0 Then
+                r = r + 1
+                ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+                ws.Cells(r, 2).NumberFormat = "@": ws.Cells(r, 2).Value2 = Y_IL_ADI(il): ws.Cells(r, 2).Font.bold = True
+                ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 7, r, 8)).Merge
+                If IsArray(hA) Then
+                    t = hA(0)
+                    ws.Cells(r, 3).Value2 = Round(t(8), 2): ws.Cells(r, 5).Value2 = Round(t(9), 2)
+                    ws.Cells(r, 9).Value2 = o(0): ws.Cells(r, 10).Value2 = o(1): ws.Cells(r, 11).Value2 = o(2) + o(3) + o(4) + o(5)
+                    If IsArray(hb) Then
+                        If hb(0)(10) > 0 Then ws.Cells(r, 12).Value2 = Round(I_UYUM_K(hb(0)), 1)
+                    End If
+                    ' Kritik kullanim yoksa uyum %100 gosterilmez (yaniltici olur).
+                    If t(10) > 0 Then
+                        ws.Cells(r, 7).Value2 = Round(I_UYUM_K(t), 1)
+                        drm = IIf(t(11) > 0, "KRİTİK EKSİK", "TAMAM")
+                        ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, IIf(t(11) > 0, RGB(254, 226, 226), RGB(220, 252, 231)), IIf(t(11) > 0, RGB(185, 28, 28), RGB(21, 128, 61)), 8, True, xlCenter
+                    Else
+                        ws.Cells(r, 7).Value2 = "–": ws.Cells(r, 7).Font.Color = RGB(148, 163, 184)
+                        ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "KULLANIM YOK", RGB(241, 245, 249), RGB(100, 116, 139), 8, True, xlCenter
+                    End If
+                Else
+                    ws.Cells(r, 3).Value2 = "kayıt yok": ws.Cells(r, 3).Font.Color = RGB(148, 163, 184)
+                    ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "VERİ YOK", RGB(241, 245, 249), RGB(100, 116, 139), 8, True, xlCenter
+                End If
+            End If
+        End If
+    Next p
+    If Len(secIl) = 0 Then
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
+        ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 7, r, 8)).Merge
+        ws.Cells(r, 2).Value2 = "TOPLAM": ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
+        ws.Cells(r, 3).Value2 = Round(aT(8), 2): ws.Cells(r, 5).Value2 = Round(aT(9), 2): ws.Cells(r, 7).Value2 = Round(I_UYUM_K(aT), 1)
+        If aTO(10) > 0 Then ws.Cells(r, 12).Value2 = Round(I_UYUM_K(aTO), 1)
+        ws.Range(ADM_ADRES(satirNo + 1, 3, r, 6)).NumberFormat = "#,##0.00 ""TL"""
+        ws.Range(ADM_ADRES(satirNo + 1, 9, r, 9)).NumberFormat = "#,##0.## ""m"";-#,##0.## ""m"";""–"""
+        ws.Range(ADM_ADRES(satirNo + 1, 10, r, 11)).NumberFormat = "#,##0.## ""adet"";-#,##0.## ""adet"";""–"""
+        ws.Range(ADM_ADRES(satirNo + 1, 2, r, 12)).HorizontalAlignment = xlCenter
+        ws.Range(ADM_ADRES(satirNo + 1, 3, r, 6)).ShrinkToFit = True
+        ws.Range(ADM_ADRES(satirNo + 1, 5, r, 6)).Font.Color = RGB(185, 28, 28)
+        I_UYUM_CUBUK ws.Range(ADM_ADRES(satirNo + 1, 7, r, 8))
+        I_UYUM_CUBUK ws.Range(ADM_ADRES(satirNo + 1, 12, r, 12))
+        I_FIRE_ISI ws.Range(ADM_ADRES(satirNo + 1, 5, r - 1, 5))
+        ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+        r = r + 2
+        ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "KRİTİK MALZEMELER   •   " & ilMetin & "   •   " & I_AY_ADI(ayCur)
+        r = r + 1: satirNo = r
+    End If
+    '--- kritik malzemeler
+    Set dk = I_KAT_OZET(aMal)
+    ADM_BASLIKLAR ws, r, 2, Array("Kategori", "", "Çeşit", "Demontaj oranı", "", "Kullanılan", "Girilen", "Eksik (fire)", "Fire değeri", "", "Fireli ilçe", "Durum")
+    ws.Range(ADM_ADRES(r, 2, r, 3)).Merge: ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge
+    kats = Array("KABLO", "DİREK", "PANO", "HÜCRE", "TRAFO", "ARMATÜR")
+    For i = 0 To 5
+        kat = CStr(kats(i))
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+        ws.Range(ADM_ADRES(r, 2, r, 3)).Merge: ws.Range(ADM_ADRES(r, 5, r, 6)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge
+        ws.Cells(r, 2).Value2 = ChrW(9632) & "  " & kat
+        ws.Cells(r, 2).Font.bold = True: ws.Cells(r, 2).Font.Color = I_KAT_RENK(kat): ws.Cells(r, 2).HorizontalAlignment = xlLeft
+        If dk.Exists(kat) Then
+            o = dk(kat)
+            ws.Cells(r, 4).Value2 = o(0)
+            ws.Cells(r, 5).Value2 = Round(I_UYUM_KAT(o), 1)
+            If o(8) Then
+                ws.Cells(r, 7).Value2 = o(1): ws.Cells(r, 8).Value2 = o(2): ws.Cells(r, 9).Value2 = o(3)
+                For j = 7 To 9
+                    Y_MIKTAR_BICIM ws.Cells(r, j), CStr(o(7))
+                Next j
+            Else
+                ws.Cells(r, 7).Value2 = "farklı birim"
+            End If
+            ws.Cells(r, 10).Value2 = Round(o(5), 2): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+            n = 0
+            For Each k In fireli.keys
+                If Left$(CStr(k), 2) = i & "|" Then n = n + 1
+            Next k
+            ws.Cells(r, 12).Value2 = n
+            If o(6) > 0 Then
+                ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "KRİTİK EKSİK", RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+                ws.Cells(r, 9).Font.Color = RGB(185, 28, 28): ws.Cells(r, 9).Font.bold = True
+            Else
+                ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "TAMAM", RGB(220, 252, 231), RGB(21, 128, 61), 8, True, xlCenter
+            End If
+        Else
+            ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), "KULLANIM YOK", RGB(241, 245, 249), RGB(100, 116, 139), 8, True, xlCenter
+        End If
+        ws.Range(ADM_ADRES(r, 4, r, 12)).HorizontalAlignment = xlCenter
+        ws.Range(ADM_ADRES(r, 10, r, 11)).ShrinkToFit = True
+    Next i
+    I_UYUM_CUBUK ws.Range(ADM_ADRES(r - 5, 5, r, 6))
+    I_FIRE_ISI ws.Range(ADM_ADRES(r - 5, 10, r, 10))
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+    '--- ilce karnesi (en iyiden en kotuye)
+    r = r + 2: satirNo = r
+    n = tum.Count
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "İLÇE KARNESİ   •   " & ilMetin & "   •   " & I_AY_ADI(ayCur) & IIf(Len(secIl) = 0 And n > 15, "   (en iyi 5 ve en kötü 10)", "   (en iyiden en kötüye)")
+    r = r + 1
+    ADM_BASLIKLAR ws, r, 2, Array("Sıra", "İl", "İlçe", "Kritik uyum", "Kablo eksik", "Direk eksik", "Pano eksik", "Hücre eksik", "Trafo eksik", "Armatür eksik", "Fire değeri", "Değerlendirme")
+    If n > 0 Then
+        ReDim anah(1 To n): ReDim idx(1 To n): ReDim kod(1 To n)
+        i = 0
+        For Each k In tum.keys
+            t = tum(k)(3): i = i + 1: idx(i) = i: kod(i) = k
+            anah(i) = I_SIRA_ANAHTAR(t(10)) & Format$(Round(t(1), 2) * 100, "0000000000000000")
+        Next k
+        Y_SIRALA anah, idx, 1, n
+        ayrim = False
+        If n > 1 Then ayrim = (tum(kod(idx(1)))(3)(10) > tum(kod(idx(n)))(3)(10) + 0.05) Or (tum(kod(idx(n)))(3)(1) > tum(kod(idx(1)))(3)(1) + 0.005)
+        Set sec = New Collection
+        If Len(secIl) = 0 And n > 15 Then
+            For i = 1 To 5
+                sec.Add i
+            Next i
+            sec.Add 0
+            For i = n - 9 To n
+                sec.Add i
+            Next i
+        Else
+            For i = 1 To n
+                sec.Add i
+            Next i
+        End If
+        For Each x In sec
+            r = r + 1
+            ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+            If x = 0 Then
+                ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(244, 248, 252)
+                ws.Cells(r, 4).Value2 = "…  " & (n - 15) & " ilçe  …": ws.Cells(r, 4).Font.Color = RGB(148, 163, 184)
+                ws.Cells(r, 4).HorizontalAlignment = xlCenter
+            Else
+                ilE = tum(kod(idx(x))): t = ilE(3)
+                ws.Cells(r, 2).Value2 = x: ws.Cells(r, 2).Font.bold = True
+                ws.Cells(r, 3).NumberFormat = "@": ws.Cells(r, 3).Value2 = Y_IL_ADI(CStr(ilE(0)))
+                ws.Cells(r, 4).NumberFormat = "@": ws.Cells(r, 4).Value2 = IIf(Len(ilE(2)) > 0, ilE(2), ilE(1)): ws.Cells(r, 4).Font.bold = True
+                ws.Cells(r, 5).Value2 = Round(t(10), 1)
+                For j = 0 To 5
+                    If t(4 + j) < 0 Then
+                        ws.Cells(r, 6 + j).Value2 = "farklı birim": ws.Cells(r, 6 + j).Font.Color = RGB(185, 28, 28)
+                    Else
+                        ws.Cells(r, 6 + j).Value2 = t(4 + j)
+                        If t(4 + j) > 0.0005 Then ws.Cells(r, 6 + j).Font.Color = RGB(185, 28, 28): ws.Cells(r, 6 + j).Font.bold = True
+                    End If
+                Next j
+                ws.Cells(r, 12).Value2 = Round(t(1), 2)
+                If x = 1 And ayrim Then
+                    drm = ChrW(9733) & " EN İYİ"
+                ElseIf x = n And ayrim Then
+                    drm = ChrW(9660) & " EN KÖTÜ"
+                Else
+                    drm = I_DEGERLENDIR(t(10))
+                End If
+                Select Case drm
+                    Case ChrW(9733) & " EN İYİ": ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(22, 163, 74), vbWhite, 8, True, xlCenter
+                    Case ChrW(9660) & " EN KÖTÜ": ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(220, 38, 38), vbWhite, 8, True, xlCenter
+                    Case "ÇOK İYİ", "İYİ": ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(220, 252, 231), RGB(21, 128, 61), 8, True, xlCenter
+                    Case "ORTA": ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(254, 243, 199), RGB(180, 83, 9), 8, True, xlCenter
+                    Case Else: ADM_BLOK ws, ADM_ADRES(r, 13, r, 13), drm, RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+                End Select
+                If x = 1 And ayrim Then ws.Range(ADM_ADRES(r, 2, r, 12)).Interior.Color = RGB(240, 253, 244)
+                If x = n And ayrim Then ws.Range(ADM_ADRES(r, 2, r, 12)).Interior.Color = RGB(254, 242, 242)
+            End If
+        Next x
+        ws.Range(ADM_ADRES(satirNo + 2, 2, r, 3)).HorizontalAlignment = xlCenter
+        ws.Range(ADM_ADRES(satirNo + 2, 5, r, 11)).HorizontalAlignment = xlCenter
+        ws.Range(ADM_ADRES(satirNo + 2, 6, r, 6)).NumberFormat = "#,##0.## ""m"";-#,##0.## ""m"";""–"""
+        ws.Range(ADM_ADRES(satirNo + 2, 7, r, 11)).NumberFormat = "#,##0.## ""adet"";-#,##0.## ""adet"";""–"""
+        ws.Range(ADM_ADRES(satirNo + 2, 12, r, 12)).NumberFormat = "#,##0.00 ""TL"""
+        ws.Range(ADM_ADRES(satirNo + 2, 12, r, 12)).ShrinkToFit = True
+        I_UYUM_CUBUK ws.Range(ADM_ADRES(satirNo + 2, 5, r, 5))
+        I_FIRE_ISI ws.Range(ADM_ADRES(satirNo + 2, 12, r, 12))
+    Else
+        r = r + 1
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Bu ay ilçe depolarında kritik malzeme kullanımı yok.", vbWhite, RGB(100, 116, 139), 10, False, xlLeft
+    End If
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo + 1, 2, r, 13)), True
+    r = r + 1
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Kritik uyum: kablo, direk, pano, hücre, trafo ve armatür kullanım değerinin demontajı girilen oranı. Fire: kullanılıp demontajı girilmeyen miktar. " & _
+        "Ayrıntı: İlçe Yönetim birimi > AYLIK DEMONTAJ.", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    ws.Cells(r, 2).Font.Italic = True
+End Sub
+
+'---------- STOK KARSILASTIRMA (ilce) ----------
+' Sayfa malzeme stok biriminin STOK_KARŞILAŞTIRMA sayfasinin kopyasidir (ayni gorunum).
+' Il dugmeleri yerine ilce depo dugmeleri; durumlar AZALDI / ARTTI / DEMONTAJ GİRİŞ.
+' Demontaj kontrolu: azalan her malzeme icin ayni depo + uretim yeri + malzemede
+' CIKMA BEDELSIZ degerlemeli stok artisi aranir. Yoksa DEMONTAJ GİRİŞİ YAPINIZ (kirmizi).
+
+' Ilceler arasi nakil: ayni uretim yeri + malzeme + degerlemede (demontaj disi) bir ilce deposunda azalis,
+' baska ilce deposunda artis. Once esit miktarlar, sonra kalanlar eslesir. Nakil kullanim sayilmaz (demontaj beklenmez).
+' Donus: depo|UY|malzeme|degerleme -> Array(cikan, giren, karsi depolar "K005=40|K007=10")
+Private Function I_NAKIL(ByVal dE As Object, ByVal dY As Object) As Object
+    Dim res As Object, az As Object, ar As Object, anahtar As Object, k As Variant, x As Variant, p() As String
+    Dim qE As Double, qY As Double, mk As Variant, a As Collection, b As Collection, i As Long, j As Long, gec As Long
+    Dim ra() As Double, rb() As Double, m As Double, t As Variant
+    Set res = CreateObject("Scripting.Dictionary"): res.CompareMode = vbTextCompare
+    Set az = CreateObject("Scripting.Dictionary"): az.CompareMode = vbTextCompare
+    Set ar = CreateObject("Scripting.Dictionary"): ar.CompareMode = vbTextCompare
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set I_NAKIL = res
+    For Each x In Array(dE, dY)
+        For Each k In x.keys: anahtar(k) = True: Next k
+    Next x
+    For Each k In anahtar.keys
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            If Not I_DEMONTAJ_MI(p(3)) Then
+                qE = 0: qY = 0
+                If dE.Exists(k) Then t = dE(k): qE = t(3)
+                If dY.Exists(k) Then t = dY(k): qY = t(3)
+                mk = p(1) & "|" & p(2) & "|" & p(3)
+                If qY < qE - 0.0005 Then
+                    If Not az.Exists(mk) Then az.Add mk, New Collection
+                    az(mk).Add Array(CStr(k), p(0), qE - qY)
+                ElseIf qY > qE + 0.0005 Then
+                    If Not ar.Exists(mk) Then ar.Add mk, New Collection
+                    ar(mk).Add Array(CStr(k), p(0), qY - qE)
+                End If
+            End If
+        End If
+    Next k
+    For Each mk In az.keys
+        If ar.Exists(mk) Then
+            Set a = az(mk): Set b = ar(mk)
+            ReDim ra(1 To a.Count): ReDim rb(1 To b.Count)
+            For i = 1 To a.Count: ra(i) = a(i)(2): Next i
+            For j = 1 To b.Count: rb(j) = b(j)(2): Next j
+            For gec = 1 To 2
+                For i = 1 To a.Count
+                    For j = 1 To b.Count
+                        If ra(i) > 0.0005 And rb(j) > 0.0005 And UCase$(a(i)(1)) <> UCase$(b(j)(1)) Then
+                            ' 2. gecis: alan depodaki artis verenin azalisini asmaz (fazlasi baska kaynaktan gelmis olabilir).
+                            If Abs(ra(i) - rb(j)) <= 0.0005 Or (gec = 2 And rb(j) <= ra(i) + 0.0005) Then
+                                m = application.Min(ra(i), rb(j))
+                                I_NAKIL_EKLE res, CStr(a(i)(0)), m, 0, CStr(b(j)(1))
+                                I_NAKIL_EKLE res, CStr(b(j)(0)), 0, m, CStr(a(i)(1))
+                                ra(i) = ra(i) - m: rb(j) = rb(j) - m
+                            End If
+                        End If
+                    Next j
+                Next i
+            Next gec
+        End If
+    Next mk
+End Function
+
+Private Sub I_NAKIL_EKLE(ByVal res As Object, ByVal k As String, ByVal cikan As Double, ByVal giren As Double, ByVal karsi As String)
+    Dim t As Variant
+    If res.Exists(k) Then t = res(k) Else t = Array(0#, 0#, "")
+    t(0) = t(0) + cikan: t(1) = t(1) + giren
+    t(2) = t(2) & IIf(Len(t(2)) > 0, "|", "") & karsi & "=" & I_MIKTAR_METNI(cikan + giren)
+    res(k) = t
+End Sub
+
+Private Function I_NAKIL_D(ByVal nak As Object, ByVal k As String, ByVal i As Long) As Double
+    If nak.Exists(k) Then I_NAKIL_D = CDbl(nak(k)(i))
+End Function
+
+' Nakil karsi depolari okunur metin: "K005 Hopa 40" (depolar: kod -> ad).
+Private Function I_NAKIL_METIN(ByVal nak As Object, ByVal k As String, ByVal depolar As Object) As String
+    Dim x As Variant, f() As String
+    If Not nak.Exists(k) Then Exit Function
+    For Each x In Split(CStr(nak(k)(2)), "|")
+        f = Split(CStr(x), "=")
+        I_NAKIL_METIN = I_NAKIL_METIN & IIf(Len(I_NAKIL_METIN) > 0, ", ", "") & f(0)
+        If Not depolar Is Nothing Then
+            If depolar.Exists(f(0)) Then I_NAKIL_METIN = I_NAKIL_METIN & " " & I_DEPO_KISA(CStr(depolar(f(0))))
+        End If
+        If UBound(f) >= 1 Then I_NAKIL_METIN = I_NAKIL_METIN & " " & f(1)
+    Next x
+End Function
+
+' Ekipman ikamesi: 150W yerine 250W armatur, 1250A hucre yerine 630A, farkli kVA trafo / pano, farkli boy direk
+' demontaji girilebilir (sahadan sokulen eski ekipman). Ayni depo + uretim yeri + kategoride (armatur, hucre, trafo, pano,
+' direk; kablo haric) demontaj girisi once kendi malzemesine, artan kismi demontaji eksik diger armaturlere dagitilir.
+' grup: depo|UY|malzeme -> Array(kullanilan, girilen, ...). Toplam girilen degismez.
+Private Sub I_ARMATUR_DAGIT(ByVal grup As Object)
+    Dim k As Variant, p() As String, dk As Variant, aile As Object, x As Variant, g As Variant, havuz As Double, al As Double, kat As String
+    Set aile = CreateObject("Scripting.Dictionary"): aile.CompareMode = vbTextCompare
+    For Each k In grup.keys
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 2 Then
+            kat = I_KATEGORI(p(2))
+            If kat = "ARMATÜR" Or kat = "HÜCRE" Or kat = "TRAFO" Or kat = "PANO" Or kat = "DİREK" Then
+                If Not aile.Exists(p(0) & "|" & p(1) & "|" & kat) Then aile.Add p(0) & "|" & p(1) & "|" & kat, New Collection
+                aile(p(0) & "|" & p(1) & "|" & kat).Add CStr(k)
+            End If
+        End If
+    Next k
+    For Each dk In aile.keys
+        If aile(dk).Count > 1 Then
+            havuz = 0
+            For Each x In aile(dk)
+                g = grup(x)
+                If g(1) > g(0) Then havuz = havuz + (g(1) - g(0)): g(1) = g(0): grup(x) = g
+            Next x
+            For Each x In aile(dk)
+                If havuz <= 0.0005 Then Exit For
+                g = grup(x)
+                If g(0) > g(1) Then
+                    al = application.Min(havuz, g(0) - g(1))
+                    g(1) = g(1) + al: havuz = havuz - al: grup(x) = g
+                End If
+            Next x
+            If havuz > 0.0005 Then
+                x = aile(dk)(1): g = grup(x): g(1) = g(1) + havuz: grup(x) = g
+            End If
+        End If
+    Next dk
+End Sub
+
+Private Function I_DEMONTAJ_MI(ByVal degerleme As String) As Boolean
+    Dim t As String
+    t = Y_NORM(degerleme)
+    t = Replace(Replace(Replace(Replace(Replace(t, " ", ""), "_", ""), "-", ""), ".", ""), "/", "")
+    ' SAP degerleme adi: CIKMA/BDSZ (cikma bedelsiz).
+    I_DEMONTAJ_MI = (InStr(t, "CIKMA") > 0 And (InStr(t, "BDSZ") > 0 Or InStr(t, "BEDELSIZ") > 0))
+End Function
+
+' Kopya sayfa ilk kurulumda ilce birimine uyarlanir.
+Private Sub I_KARS_HAZIRLA(ByVal ws As Worksheet)
+    Dim i As Long, s As Shape, adlar As Variant, metinler As Variant, makrolar As Variant, son As Long
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    For i = ws.Shapes.Count To 1 Step -1
+        Set s = ws.Shapes(i)
+        If Left$(s.Name, 7) = "AKSKV1_" Or s.Name = "AKSORA_GECMIS_KAYIT_NOTU" Then s.Delete
+    Next i
+    son = application.Max(400, ws.UsedRange.Row + ws.UsedRange.Rows.Count)
+    ws.Range("A16:N" & son).Clear
+    ws.Range("X1:AD" & son).ClearContents
+    ws.Range("B6").MergeArea.ClearContents: ws.Range("I6").MergeArea.ClearContents
+    ws.Range("B7").MergeArea.ClearContents: ws.Range("I7").MergeArea.ClearContents
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    metinler = Array("TÜMÜ", "AZALAN", "ARTAN", "DEMONTAJ GİRİŞ", "DEMONTAJ YAPINIZ", "KARŞILAŞTIR")
+    makrolar = Array("AKSORA_ILCE_KF_TUMU", "AKSORA_ILCE_KF_AZALAN", "AKSORA_ILCE_KF_ARTAN", _
+        "AKSORA_ILCE_KF_DEMONTAJ", "AKSORA_ILCE_KF_EKSIK", "AKSORA_ILCE_KARS_YENILE")
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then
+            Y_YAZ s, CStr(metinler(i))
+            s.OnAction = BIRIM_MAKRO(CStr(makrolar(i)))
+            If i = 4 Then
+                s.Fill.ForeColor.RGB = RGB(185, 28, 28)
+                On Error Resume Next
+                s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+                On Error GoTo 0
+            End If
+        End If
+    Next i
+    ws.Range("G9").Value2 = "DEMONTAJ GİRİŞ"
+    ws.Range("J9").Value2 = "DEMONTAJ GİRİŞİ YAPINIZ"
+    ws.Range("O6").Value2 = "KARŞILAŞTIRILACAK İLÇE"
+    ws.Range("F15").Value2 = "DEĞERLEME"
+    ' Demontaj kontrolu sutunu (N): tablo basligi M ile ayni bicimde.
+    ws.Columns("N").ColumnWidth = 34
+    With ws.Range("N15")
+        .Interior.Color = ws.Range("M15").Interior.Color
+        .Font.Name = ws.Range("M15").Font.Name: .Font.Size = ws.Range("M15").Font.Size
+        .Font.bold = ws.Range("M15").Font.bold: .Font.Color = ws.Range("M15").Font.Color
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .Borders.LineStyle = ws.Range("M15").Borders(xlEdgeBottom).LineStyle
+    End With
+    ws.Range("N15").Value2 = "DEMONTAJ KONTROLÜ"
+    ws.Range("BX25").Value2 = "IK_V2"
+End Sub
+
+' Tablo tek parca: baslik, tarih ve ozet bantlari demontaj sutununu (N) da kapsar;
+' filtre dugmeleri A:N boyunca esit, ANA PANEL sagda.
+Private Sub I_KARS_DUZEN(ByVal ws As Worksheet)
+    Dim r As Long, b As Variant, s As Shape, i As Long, gen As Double, da As Boolean, adlar As Variant
+    da = application.DisplayAlerts: application.DisplayAlerts = False
+    ws.Columns("N").ColumnWidth = 30
+    For r = 1 To 14
+        If ws.Cells(r, 13).Interior.Pattern = xlNone Then
+            ws.Cells(r, 14).Interior.Pattern = xlNone
+        Else
+            ws.Cells(r, 14).Interior.Color = ws.Cells(r, 13).Interior.Color
+        End If
+    Next r
+    For Each b In Array("A1:M2", "A3:M3", "H5:M5", "I6:M6", "I7:M7", "J9:M9", "J10:M10", "J11:M11", "J12:M12")
+        ws.Range(CStr(b)).UnMerge
+        ws.Range(Replace(CStr(b), "M", "N")).Merge
+    Next b
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    gen = (ws.Range("A1:N1").Width - 5 * 2) / 6
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then
+            s.Placement = xlFreeFloating
+            s.Left = i * (gen + 2): s.Width = gen
+        End If
+    Next i
+    Set s = Y_SEKIL(ws, "btnAnaPanelDon")
+    If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = ws.Columns("O").Left + 12
+    application.DisplayAlerts = da
+    ws.Range("BX25").Value2 = "IK_V3"
+End Sub
+
+'' Tablo surum 4: DEPO'nun yaninda ILCE sutunu; BIRIM sutunu kalkar (birim miktarlarin yaninda yazilir).
+Private Sub I_KARS_SUTUN(ByVal ws As Worksheet)
+    Dim gen As Variant, i As Long, s As Shape, adlar As Variant, w As Double
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    gen = Array(16.8, 7.8, 8.8, 15.8, 12.8, 42.8, 12.8, 13.8, 13.8, 11.8, 15.8, 15.8, 15.8, 32.8)
+    For i = 0 To 13
+        ws.Columns(i + 1).ColumnWidth = gen(i)
+    Next i
+    ws.Range("A15:N15").Value2 = Array("DURUM", "ÜY", "DEPO", "İLÇE", "MALZEME", "MALZEME AÇIKLAMASI", "DEĞERLEME", _
+        "ESKİ MİKTAR", "YENİ MİKTAR", "FARK", "ESKİ DEĞER", "YENİ DEĞER", "DEĞER FARKI", "DEMONTAJ KONTROLÜ")
+    ws.Range("A15:N15").HorizontalAlignment = xlCenter
+    adlar = Array("btnKarsTum", "btnKarsAzalan", "btnKarsArtan", "btnKarsYeni", "btnKarsSifir", "btnKarsKarsilastir")
+    w = (ws.Range("A1:N1").Width - 5 * 2) / 6
+    For i = 0 To 5
+        Set s = Y_SEKIL(ws, CStr(adlar(i)))
+        If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = i * (w + 2): s.Width = w
+    Next i
+    Set s = Y_SEKIL(ws, "btnAnaPanelDon")
+    If Not s Is Nothing Then s.Placement = xlFreeFloating: s.Left = ws.Columns("O").Left + 12
+    ws.Range("BX25").Value2 = "IK_V4"
+End Sub
+
+' Ilce secimi: tek acilir liste (ilce sayisi arttikca sayfa asagi uzamaz).
+Private Sub I_KARS_SECICI(ByVal ws As Worksheet, ByVal depolar As Object, ByVal sec As String)
+    Dim i As Long, s As Shape, k As Variant, n As Long, secIx As Long, a As Shape
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 7) = "I_KV_D_" Or ws.Shapes(i).Name = "I_KV_SECIM" Then ws.Shapes(i).Delete
+    Next i
+    Set s = ws.Shapes.AddFormControl(xlDropDown, ws.Range("O8").Left + 2, ws.Range("O8").top + 6, ws.Range("O8:P8").Width - 4, 24)
+    s.Name = "I_KV_SECIM": s.Placement = xlFreeFloating
+    s.ControlFormat.AddItem "TÜM İLÇELER  (" & depolar.Count & " depo)"
+    secIx = 1: n = 1
+    For Each k In depolar.keys
+        n = n + 1
+        s.ControlFormat.AddItem CStr(k) & "  -  " & I_DEPO_KISA(CStr(depolar(k)))
+        If UCase$(CStr(k)) = sec Then secIx = n
+    Next k
+    s.ControlFormat.DropDownLines = application.Min(30, n)
+    s.ControlFormat.Value = secIx
+    s.OnAction = BIRIM_MAKRO("AKSORA_ILCE_KARS_LISTE")
+    Set a = Y_SEKIL(ws, "AKSORA_KARS_SABIT_ACIKLAMA")
+    If Not a Is Nothing Then
+        a.Left = s.Left: a.Width = s.Width: a.top = s.top + s.Height + 6: a.Height = 30
+        Y_YAZ a, "Listeden ilçe deposunu seçin; karşılaştırma seçilen depo için yapılır."
+        a.TextFrame2.WordWrap = msoTrue
+    End If
+End Sub
+
+Public Sub AKSORA_ILCE_KARS_LISTE()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARŞILAŞTIRMA", "Karşılaştırma hazırlanıyor...")
+    On Error GoTo son
+    ILCE_KARS_LISTE_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_LISTE_ASIL()
+    Dim ws As Worksheet, s As Shape, k As String, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    Set s = ws.Shapes("I_KV_SECIM")
+    If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect ""
+    ws.Range("BX30").Value2 = k
+    I_KARS_KUR CStr(ws.Range("BX22").Value2), False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
+    Dim ws As Worksheet, tarihler As Collection, nT As Long, i As Long, j As Long, eskiT As String, yeniT As String
+    Dim dTum As Object
+    Dim dE As Object, dY As Object, anahtar As Object, grup As Object, depolar As Object, k As Variant, x As Variant, p() As String
+    Dim sec As String, gk As String, t As Variant, n As Long, son As Long, r As Long
+    Dim mEski As Double, mYeni As Double, vEski As Double, vYeni As Double, tE As Double, tY As Double
+    Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
+    Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
+    Dim birimler() As String, isgL As Object, nak As Object, nK As Double
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    Set isgL = I_ISG_LISTE()
+    il = UCase$(Trim$(il))
+    ws.Unprotect ""
+    If Left$(CStr(ws.Range("BX25").Value2), 3) <> "IK_" Or CStr(ws.Range("BX25").Value2) = "IK_V1" Then I_KARS_HAZIRLA ws
+    If CStr(ws.Range("BX25").Value2) = "IK_V2" Then I_KARS_DUZEN ws
+    If CStr(ws.Range("BX25").Value2) = "IK_V3" Then I_KARS_SUTUN ws
+    If CStr(ws.Range("BX22").Value2) <> il Then sifirla = True: ws.Range("BX30").ClearContents
+    If ws.FilterMode Then ws.ShowAllData
+    ws.AutoFilterMode = False
+    ' Gunler (en yeni ustte): X sutunu tarih listesi
+    Set tarihler = I_GECMIS_TARIHLER(il)
+    nT = tarihler.Count
+    ws.Range("X1:X200").ClearContents
+    ws.Range("X1:X200").NumberFormat = "@"
+    ws.Range("X1").Value2 = "GÖRÜNEN"
+    For i = 1 To nT
+        ws.Cells(i + 1, 24).Value2 = Format$(tarihler(i), I_TF)
+    Next i
+    eskiT = Trim$(CStr(ws.Range("B6").Value2)): yeniT = Trim$(CStr(ws.Range("I6").Value2))
+    If Not sifirla Then
+        If Not I_LISTEDE(tarihler, eskiT) Or Not I_LISTEDE(tarihler, yeniT) Then sifirla = True
+    End If
+    If sifirla Then
+        eskiT = vbNullString: yeniT = vbNullString
+        If nT > 0 Then
+            ' Varsayilan: yeni = son guncelleme, eski = bir onceki gunun son guncellemesi.
+            yeniT = Format$(tarihler(1), I_TF)
+            eskiT = yeniT
+            For i = 2 To nT
+                If Int(CDbl(tarihler(i))) < Int(CDbl(tarihler(1))) Then eskiT = Format$(tarihler(i), I_TF): Exit For
+            Next i
+        End If
+    End If
+    For Each x In Array("B6", "I6")
+        With ws.Range(CStr(x))
+            .MergeArea.NumberFormat = "@"
+            ' Tarih secim kutulari koruma altinda da degistirilebilir.
+            .MergeArea.Locked = False
+            .Validation.Delete
+            If nT > 0 Then
+                .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:="=$X$2:$X$" & (nT + 1)
+                .Validation.IgnoreBlank = True: .Validation.InCellDropdown = True
+            End If
+        End With
+    Next x
+    ws.Range("B6").Value2 = eskiT: ws.Range("I6").Value2 = yeniT
+    ws.Range("BX34").Value2 = "B6": ws.Range("BX35").Value2 = "I6"
+    Set dE = I_GECMIS_OKU(il, eskiT)
+    Set dY = I_GECMIS_OKU(il, yeniT)
+    ' Ilce depolari (iki gunun birlesimi)
+    Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
+    For Each x In Array(dY, dE)
+        For Each k In x.keys
+            p = Split(CStr(k), "|")
+            If Not depolar.Exists(p(0)) Then depolar(p(0)) = x(k)(0)
+            If Len(CStr(depolar(p(0)))) = 0 Then depolar(p(0)) = x(k)(0)
+        Next k
+    Next x
+    Set dTum = I_DEPOLAR(il)
+    For Each k In dTum.keys
+        If Not depolar.Exists(CStr(k)) Then depolar(CStr(k)) = dTum(k)
+    Next k
+    I_ANAHTAR_SIRALA depolar
+    sec = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
+    If Len(sec) > 0 And Not depolar.Exists(sec) Then sec = vbNullString
+    ws.Range("BX30").Value2 = sec
+    I_KARS_SECICI ws, depolar, sec
+    ' Kalemler ve demontaj gruplari (depo|uretim yeri|malzeme). Ilceler arasi nakil kullanim sayilmaz.
+    Set nak = I_NAKIL(dE, dY)
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    For Each x In Array(dE, dY)
+        For Each k In x.keys
+            If Len(sec) = 0 Or UCase$(Split(CStr(k), "|")(0)) = sec Then anahtar(k) = True
+        Next k
+    Next x
+    For Each k In anahtar.keys
+        mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
+        If dE.Exists(k) Then t = dE(k): mEski = t(3): vEski = t(4)
+        If dY.Exists(k) Then t = dY(k): mYeni = t(3): vYeni = t(4)
+        tE = tE + vEski: tY = tY + vYeni
+        p = Split(CStr(k), "|")
+        gk = p(0) & "|" & p(1) & "|" & p(2)
+        If Not grup.Exists(gk) Then grup(gk) = Array(0#, 0#)
+        g = grup(gk)
+        If I_DEMONTAJ_MI(p(3)) Then
+            If mYeni > mEski Then g(1) = g(1) + (mYeni - mEski)
+        ElseIf mYeni < mEski Then
+            g(0) = g(0) + application.Max(0, (mEski - mYeni) - I_NAKIL_D(nak, CStr(k), 0))
+        End If
+        grup(gk) = g
+        I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
+    Next k
+    I_ARMATUR_DAGIT grup
+    n = 0
+    If anahtar.Count > 0 Then
+        ReDim blok(1 To anahtar.Count, 1 To 15): ReDim anah(1 To anahtar.Count): ReDim idx(1 To anahtar.Count)
+    End If
+    For Each k In anahtar.keys
+        mEski = 0: mYeni = 0: vEski = 0: vYeni = 0
+        If dE.Exists(k) Then t = dE(k): mEski = t(3): vEski = t(4)
+        If dY.Exists(k) Then t = dY(k): mYeni = t(3): vYeni = t(4)
+        If Abs(mYeni - mEski) > 0.0005 Then
+            p = Split(CStr(k), "|")
+            demontaj = I_DEMONTAJ_MI(p(3))
+            kontrol = vbNullString
+            If mYeni > mEski Then
+                If demontaj Then
+                    durum = "DEMONTAJ GİRİŞ": nDm = nDm + 1: sira = 5: kontrol = "Demontaj girişi"
+                Else
+                    durum = "ARTTI": nAr = nAr + 1: sira = 4
+                    If I_NAKIL_D(nak, CStr(k), 1) > 0.0005 Then kontrol = "İlçeler arası nakil  •  " & I_NAKIL_METIN(nak, CStr(k), depolar) & " deposundan bu depoya"
+                End If
+            Else
+                durum = "AZALDI": nAz = nAz + 1: sira = 3
+                ' Demontaj yalniz kritik malzemelerde (trafo, pano, armatur, kablo, direk, hucre) izlenir.
+                I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
+                kontrol = I_DEM_DISI(p(2), isgL)
+                If Len(kontrol) > 0 Then
+                    sira = 3
+                ElseIf Not demontaj Then
+                    g = grup(p(0) & "|" & p(1) & "|" & p(2))
+                    nK = I_NAKIL_D(nak, CStr(k), 0)
+                    If nK >= (mEski - mYeni) - 0.0005 Then
+                        kontrol = "İlçeler arası nakil  •  " & I_NAKIL_METIN(nak, CStr(k), depolar) & " deposuna (demontaj gerekmez)"
+                    ElseIf g(0) <= 0.0005 Then
+                        kontrol = "Demontaj girildi"
+                    ElseIf g(1) <= 0.0005 Then
+                        kontrol = "DEMONTAJ GİRİŞİ YAPINIZ  •  " & I_MIKTAR_METNI(mEski - mYeni - nK) & " " & CStr(t(2))
+                        sira = 1: nEk = nEk + 1
+                    ElseIf g(1) + 0.0005 < g(0) Then
+                        kontrol = "EKSİK DEMONTAJ  •  " & I_MIKTAR_METNI(g(0) - g(1)) & " " & CStr(t(2)) & " eksik (" & _
+                            I_MIKTAR_METNI(g(1)) & " / " & I_MIKTAR_METNI(g(0)) & ")"
+                        sira = 2: nEk = nEk + 1
+                    Else
+                        kontrol = "Demontaj girildi"
+                    End If
+                    If nK > 0.0005 And InStr(kontrol, "nakil") = 0 Then kontrol = kontrol & "  •  nakil " & I_NAKIL_METIN(nak, CStr(k), depolar)
+                End If
+            End If
+            n = n + 1
+            ' Sutunlar: durum, UY, depo, ilce, malzeme, tanim, degerleme, eski/yeni/fark miktar (birimiyle),
+            ' eski/yeni/fark deger, demontaj kontrolu. Birim ayri sutun yerine miktarlarin yaninda yazilir.
+            blok(n, 1) = durum: blok(n, 2) = p(1): blok(n, 3) = p(0)
+            blok(n, 4) = I_DEPO_KISA(CStr(depolar(p(0)))): blok(n, 5) = p(2)
+            blok(n, 6) = t(1): blok(n, 7) = p(3)
+            blok(n, 8) = mEski: blok(n, 9) = mYeni: blok(n, 10) = mYeni - mEski
+            blok(n, 11) = Round(vEski, 2): blok(n, 12) = Round(vYeni, 2): blok(n, 13) = Round(vYeni - vEski, 2)
+            blok(n, 14) = kontrol: blok(n, 15) = CStr(t(2))
+            anah(n) = Left$(UCase$(CStr(blok(n, 4))) & Space$(40), 40) & CStr(sira) & Format$(1E+15 - Abs(vYeni - vEski) * 100, "0000000000000000")
+            idx(n) = n
+        End If
+    Next k
+    ' Tablo
+    son = application.Max(16, AKSORA_SON_SATIR(ws, 4), AKSORA_SON_SATIR(ws, 14))
+    ws.Range("A16:N" & son + 1).Clear
+    If n > 0 Then
+        Y_SIRALA anah, idx, 1, n
+        ReDim sonuc(1 To n, 1 To 14): ReDim birimler(1 To n)
+        For i = 1 To n
+            For j = 1 To 14: sonuc(i, j) = blok(idx(i), j): Next j
+            birimler(i) = CStr(blok(idx(i), 15))
+        Next i
+        ws.Range("B16:G" & n + 15).NumberFormat = "@"
+        ws.Range("A16").Resize(n, 14).Value2 = sonuc
+        With ws.Range("A16:N" & n + 15)
+            .Interior.Color = RGB(255, 255, 255)
+            .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(225, 230, 236): .Borders.Weight = xlThin
+            .VerticalAlignment = xlCenter
+            .Font.Name = "Aptos": .Font.Size = 10
+        End With
+        ws.Range("A16:E" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("D16:D" & n + 15).HorizontalAlignment = xlLeft: ws.Range("D16:D" & n + 15).IndentLevel = 1
+        ws.Range("G16:G" & n + 15).HorizontalAlignment = xlCenter
+        ws.Range("H16:J" & n + 15).HorizontalAlignment = xlRight
+        ws.Range("K16:M" & n + 15).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
+        ws.Range("A16:A" & n + 15).Font.bold = True
+        ws.Range("N16:N" & n + 15).HorizontalAlignment = xlCenter
+        For r = 16 To n + 15
+            If (r And 255) = 0 Then AKSORA_BEKLE_NABIZ
+            For j = 8 To 10
+                Y_MIKTAR_BICIM ws.Cells(r, j), birimler(r - 15)
+            Next j
+            Select Case CStr(ws.Cells(r, 1).Value2)
+                Case "AZALDI": ws.Cells(r, 1).Font.Color = RGB(192, 0, 0)
+                Case "ARTTI": ws.Cells(r, 1).Font.Color = RGB(0, 140, 75)
+                Case Else: ws.Cells(r, 1).Font.Color = RGB(29, 78, 216)
+            End Select
+            kontrol = CStr(ws.Cells(r, 14).Value2)
+            If Left$(kontrol, 8) = "DEMONTAJ" And InStr(kontrol, "YAPINIZ") > 0 Then
+                ws.Cells(r, 14).Interior.Color = RGB(220, 38, 38): ws.Cells(r, 14).Font.Color = RGB(255, 255, 255): ws.Cells(r, 14).Font.bold = True
+            ElseIf Left$(kontrol, 5) = "EKSİK" Then
+                ws.Cells(r, 14).Interior.Color = RGB(254, 243, 199): ws.Cells(r, 14).Font.Color = RGB(180, 83, 9): ws.Cells(r, 14).Font.bold = True
+            ElseIf Left$(kontrol, 16) = "Demontaj girildi" Then
+                ws.Cells(r, 14).Font.Color = RGB(21, 128, 61)
+            ElseIf InStr(kontrol, "nakil") > 0 Then
+                ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
+            ElseIf kontrol = "Demontaj girişi" Then
+                ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
+            ElseIf InStr(kontrol, "gerekmez") > 0 Or InStr(kontrol, "kontrolü dışı") > 0 Then
+                ws.Cells(r, 14).Font.Color = RGB(100, 116, 139): ws.Cells(r, 14).Font.Italic = True
+            End If
+        Next r
+        ws.Range("A15:N" & n + 15).AutoFilter
+    Else
+        ws.Range("A16").Value2 = IIf(nT < 2, "Karşılaştırma için bu ilde en az iki farklı günde ilçe stok güncellemesi yapılmalıdır" & _
+            IIf(nT = 1, " (mevcut kayıt: " & yeniT & ").", "."), "Seçilen tarihler arasında stok değişikliği yok.")
+        ws.Range("A16").Font.Italic = True: ws.Range("A16").Font.Color = RGB(100, 116, 139)
+    End If
+    ' Ozet kutulari
+    ws.Range("A10").Value = nAz: ws.Range("D10").Value = nAr: ws.Range("G10").Value = nDm: ws.Range("J10").Value = nEk
+    ws.Range("J10").Font.Color = IIf(nEk > 0, RGB(192, 0, 0), RGB(24, 55, 88))
+    ws.Range("A12").Value = Round(tE, 2): ws.Range("D12").Value = Round(tY, 2)
+    ws.Range("G12").Value = Round(tY - tE, 2): ws.Range("J12").Value = n
+    ws.Range("A12,D12,G12").NumberFormat = "#,##0.00 ""TL"""
+    ws.Range("G12").Font.Color = IIf(tY - tE < 0, RGB(192, 0, 0), IIf(tY - tE > 0, RGB(0, 140, 75), RGB(24, 55, 88)))
+    ws.Range("B7").Value2 = IIf(Len(eskiT) > 0, "Son karşılaştırılan: " & eskiT, "")
+    ws.Range("I7").Value2 = IIf(Len(yeniT) > 0, "Son karşılaştırılan: " & yeniT, "")
+    ws.Range("A1").Value2 = "STOK / DEMONTAJ KONTROL MERKEZİ"
+    Y_FILIGRAN ws
+    ws.Range("A3").Value2 = UCase$(Y_IL_ADI(il)) & " | CDP " & AKSORA_IL_TESIS(il, "CDP") & " + EPP " & AKSORA_IL_TESIS(il, "EPP") & _
+        " | İlçe Depoları (K001-K999, PB)" & IIf(Len(sec) > 0, " | " & sec & " " & I_DEPO_KISA(CStr(depolar(sec))), "")
+    ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
+    I_BAGLA ws
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+Private Function I_MIKTAR_METNI(ByVal x As Double) As String
+    If x = Int(x) Then I_MIKTAR_METNI = AKSORA_SAYI_METNI(x, "#,##0") Else I_MIKTAR_METNI = AKSORA_SAYI_METNI(x, "#,##0.###")
+End Function
+
+Private Function I_LISTEDE(ByVal c As Collection, ByVal metin As String) As Boolean
+    Dim x As Variant
+    For Each x In c
+        If Format$(x, I_TF) = metin Then I_LISTEDE = True: Exit Function
+    Next x
+End Function
+
+' Hizli filtreler: TUMU, AZALDI, ARTTI, DEMONTAJ GIRIS, DEMONTAJ YAPINIZ (eksik/yok).
+Private Sub I_KARS_FILTRE(ByVal tur As String)
+    Dim ws As Worksheet, son As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    ws.Unprotect ""
+    If ws.FilterMode Then ws.ShowAllData
+    son = AKSORA_SON_SATIR(ws, 4)
+    If son >= 16 Then
+        If Not ws.AutoFilterMode Then ws.Range("A15:N" & son).AutoFilter
+        Select Case tur
+            Case "AZALDI", "ARTTI", "DEMONTAJ GİRİŞ"
+                ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:=tur
+            Case "EKSIK"
+                ws.AutoFilter.Range.AutoFilter Field:=14, Criteria1:="=DEMONTAJ GİRİŞİ YAPINIZ*", Operator:=xlOr, Criteria2:="=EKSİK DEMONTAJ*"
+        End Select
+    End If
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_KF_TUMU(): I_KARS_FILTRE "": End Sub
+Public Sub AKSORA_ILCE_KF_AZALAN(): I_KARS_FILTRE "AZALDI": End Sub
+Public Sub AKSORA_ILCE_KF_ARTAN(): I_KARS_FILTRE "ARTTI": End Sub
+Public Sub AKSORA_ILCE_KF_DEMONTAJ(): I_KARS_FILTRE "DEMONTAJ GİRİŞ": End Sub
+
+' ISG zimmet kontrolu Excel'e: 1. sayfa ilce bazinda ISG durumu (ekrandaki renklerle), 2. sayfa malzeme listesi
+' (zimmet kirmizi, manuel sarf mavi). Ilce secili ise yalniz o ilce; malzeme listesi ekrandaki filtreye uyar.
+' Masaustune "<il / ilce> - İSG Zimmet Kontrolü - <tarih>.xlsx" olarak kaydedilir ve acik kalir.
+Public Sub AKSORA_ILCE_ISG_AKTAR()
+    Dim ws As Worksheet, wb As Workbook, c As Worksheet, a1 As Long, b1 As Long, a2 As Long, b2 As Long, p() As String
+    Dim secim As String, il As String, v As Variant, r As Long, n As Long, i As Long, j As Long, veri() As Variant
+    Dim gorV As Variant, t As String, ev As Boolean, ust As String, ad As String, sonuc As String, no As Long, metin As String
+    Dim top(1 To 5) As Double, tarih As String, durum As String, hz As Range, bTop As Double
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_İSG_MALZEMELERİ")
+    p = Split(CStr(ws.Range("BX27").Value2), "|")
+    If UBound(p) < 1 Then MsgBox "Önce İSG sayfası oluşturulmalı (ilçe stoklarını güncelleyin).", vbInformation, "AKSORA": Exit Sub
+    a2 = CLng(Val(p(0))): b2 = CLng(Val(p(1))): a1 = 10: b1 = a2 - 7
+    secim = UCase$(Trim$(CStr(ws.Range("BX30").Value2)))
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    tarih = Format$(Date, "dd.mm.yyyy")
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    application.Cursor = xlWait
+    AKSORA_DONUS_KAYDET
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    wb.Worksheets.Add After:=wb.Worksheets(1)
+    '--- 1. sayfa: ilce bazinda ISG durumu
+    v = ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9)).Value2
+    ReDim veri(1 To b1 - a1 + 2, 1 To 9)
+    For r = 1 To b1 - a1 + 1
+        If Len(CStr(v(r, 1))) > 0 And (Len(secim) = 0 Or UCase$(CStr(v(r, 1))) = secim) Then
+            n = n + 1
+            veri(n, 1) = v(r, 1): veri(n, 2) = v(r, 2)
+            For j = 3 To 6: veri(n, j) = v(r, j): top(j - 2) = top(j - 2) + I_SAYI(v(r, j)): Next j
+            veri(n, 7) = v(r, 7): bTop = bTop + I_SAYI(v(r, 7))
+            veri(n, 8) = v(r, 8): top(5) = top(5) + I_SAYI(v(r, 8))
+            veri(n, 9) = v(r, 9)
+        End If
+    Next r
+    If n = 0 Then Err.Raise vbObjectError + 9711, , "İlçe listesi boş (ilçe stoklarını güncelleyin)."
+    n = n + 1
+    veri(n, 2) = "TOPLAM": veri(n, 3) = top(1): veri(n, 4) = top(2): veri(n, 5) = top(3): veri(n, 6) = top(4)
+    veri(n, 7) = bTop: veri(n, 8) = Round(top(5), 2)
+    If Len(secim) > 0 Then ad = I_DEPO_KISA(CStr(veri(1, 2))) Else ad = Y_IL_ADI(il)
+    ust = "İSG ZİMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  İlçe bazında İSG durumu"
+    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adı", "Zimmet Kalem", "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", _
+        "Bölge Sarfı Kalem", "İSG Stok Değeri", "Durum"), veri, n, Array(8, 26, 12, 13, 14, 15, 12, 18, 26), _
+        Array("@", "@", "General", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
+        "Depoda İSG malzemesi bekletilmez: kişisel zimmet ya da manuel sarf yapılmalıdır. Birim fiyatı " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüğü sarf eder (Bölge Sarfı Kalem)", "İlçe Durumu", Empty
+    ' TOPLAM satiri ve durum renkleri (ekrandaki gibi)
+    With c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 9))
+        .Interior.Color = RGB(226, 236, 247): .Font.bold = True
+    End With
+    For r = 1 To n - 1
+        Set hz = c.Cells(r + 4, 9)
+        Select Case CStr(hz.Value2)
+            Case "ZİMMET + SARF BEKLİYOR", "ZİMMET BEKLİYOR": hz.Interior.Color = RGB(254, 226, 226): hz.Font.Color = RGB(185, 28, 28)
+            Case "SARF BEKLİYOR": hz.Interior.Color = RGB(219, 234, 254): hz.Font.Color = RGB(29, 78, 216)
+            Case "BÖLGE SARFI BEKLİYOR": hz.Interior.Color = RGB(226, 232, 240): hz.Font.Color = RGB(51, 65, 85)
+            Case "TEMİZ": hz.Interior.Color = RGB(220, 252, 231): hz.Font.Color = RGB(21, 128, 61)
+        End Select
+        hz.Font.bold = True
+    Next r
+    ' Ilce siralamasi (tablonun sagina; tabloya dokunulmaz): en iyiden en kotuye.
+    I_ISG_SIRALAMA c, veri, n - 1, top(5)
+    '--- 2. sayfa: malzeme listesi (ekrandaki filtreye gore gorunur satirlar)
+    n = 0
+    If b2 >= a2 And Len(CStr(ws.Cells(a2, 1).Value2)) > 0 Then
+        v = ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9)).Value2
+        gorV = AKSORA_GORUNUR(ws, a2, b2, 9)
+        ReDim veri(1 To b2 - a2 + 1, 1 To 10)
+        For r = 1 To b2 - a2 + 1
+            If gorV(r) = 1 And Len(CStr(v(r, 1))) > 0 Then
+                n = n + 1
+                For j = 1 To 6: veri(n, j) = v(r, j): Next j
+                veri(n, 7) = Round(I_SAYI(v(r, 7)), 3)
+                t = Trim$(ws.Cells(a2 + r - 1, 7).Text)
+                If InStrRev(t, " ") > 0 Then veri(n, 8) = Mid$(t, InStrRev(t, " ") + 1)
+                veri(n, 9) = v(r, 8): veri(n, 10) = v(r, 9)
+            End If
+        Next r
+    End If
+    Set c = wb.Worksheets(2)
+    If n = 0 Then
+        ReDim veri(1 To 1, 1 To 10): veri(1, 6) = "İSG malzemesi yok.": n = 1
+    End If
+    ust = "İSG ZİMMET KONTROLÜ  |  " & Y_IL_ADI(il) & IIf(Len(secim) > 0, "  |  " & ad & " (" & secim & ")", "") & "  |  Malzeme listesi – yapılacak işlem"
+    AKSORA_EXCEL_SAYFA c, Array("Depo", "Depo Adı", "Sistem", "Mal Grubu", "Malzeme", "Malzeme Tanımı", "Miktar", "Birim", _
+        "Stok Değeri", "Yapılacak İşlem"), veri, n, Array(8, 22, 9, 12, 13, 44, 10, 8, 15, 22), _
+        Array("@", "@", "@", "@", "0", "@", "General", "@", "#,##0.00 ""TL""", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter), ust, _
+        "Kırmızı: kişiye ZİMMET yapılacak  |  Mavi: MANUEL SARF yapılacak  |  Gri: BÖLGE müdürlüğü sarf edecek (birim fiyatı " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri)", "Malzeme Listesi", Empty
+    For r = 1 To n
+        Set hz = c.Cells(r + 4, 10)
+        Select Case CStr(hz.Value2)
+            Case "ZİMMET YAPIN": hz.Interior.Color = RGB(220, 38, 38): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
+            Case "MANUEL SARF YAPIN": hz.Interior.Color = RGB(29, 78, 216): hz.Font.Color = RGB(255, 255, 255): hz.Font.bold = True
+            Case "BÖLGE SARF EDECEK": hz.Interior.Color = RGB(226, 232, 240): hz.Font.Color = RGB(51, 65, 85): hz.Font.bold = True
+        End Select
+    Next r
+    wb.Worksheets(1).Activate
+    sonuc = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI(ad & " - İSG Zimmet Kontrolü - " & tarih) & ".xlsx", False)
+    application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Len(sonuc) = 0 Then
+        MsgBox "Liste açıldı ancak masaüstüne kaydedilemedi; Farklı Kaydet ile kaydediniz.", vbExclamation, "AKSORA"
+    Else
+        application.StatusBar = "Masaüstüne kaydedildi: " & sonuc
+    End If
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.Cursor = xlDefault
+    application.EnableEvents = True: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox "İSG listesi Excel'e aktarılamadı." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla birebir ayni kural (nakil + ikame dahil), yalniz kritik malzemeler
+' (trafo, pano, armatur, kablo, direk, hucre). Grup: depo + uretim yeri + malzeme.
+' Donus: Collection of Array(depo, ilce, malzeme, tanim, kategori, kullanilan, girilen, eksik, birim, eksik TL, durum, uretim yeri)
+Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal yeniT As String) As Collection
+    Dim dE As Object, dY As Object, anahtar As Object, grup As Object, bilgi As Object, disi As Object, isgL As Object
+    Dim depolar As Object, k As Variant, x As Variant, p() As String, gk As String, g As Variant, t As Variant
+    Dim mEs As Double, mYe As Double, vEs As Double, i As Long, eksik As Double, b As Variant, ad As String
+    Dim nak As Object, dq As Double
+    Set I_DEM_EKSIK = New Collection
+    Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
+    ' Ekranla ayni kural: ilceler arasi nakil kullanim sayilmaz, ekipman ikamesi (I_ARMATUR_DAGIT) uygulanir.
+    Set nak = I_NAKIL(dE, dY)
+    Set isgL = I_ISG_LISTE()
+    Set depolar = I_DEPOLAR(il)
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    Set bilgi = CreateObject("Scripting.Dictionary"): bilgi.CompareMode = vbTextCompare
+    Set disi = CreateObject("Scripting.Dictionary"): disi.CompareMode = vbTextCompare
+    For Each x In Array(dE, dY)
+        For Each k In x.keys
+            anahtar(k) = True
+        Next k
+    Next x
+    For Each k In anahtar.keys
+        i = i + 1: If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            gk = p(0) & "|" & p(1) & "|" & p(2)
+            If Not disi.Exists(p(2)) Then
+                If dY.Exists(k) Then t = dY(k) Else t = dE(k)
+                I_MAL_NOT p(2), CStr(t(1)), CStr(t(2))
+                disi(p(2)) = (Len(I_DEM_DISI(p(2), isgL)) > 0)
+            End If
+            If Not disi(p(2)) Then
+                mEs = 0: mYe = 0: vEs = 0
+                If dE.Exists(k) Then t = dE(k): mEs = t(3): vEs = t(4): bilgi(gk) = Array(t(0), t(1), t(2))
+                If dY.Exists(k) Then t = dY(k): mYe = t(3): If Not bilgi.Exists(gk) Then bilgi(gk) = Array(t(0), t(1), t(2))
+                If grup.Exists(gk) Then g = grup(gk) Else g = Array(0#, 0#, 0#)
+                If I_DEMONTAJ_MI(p(3)) Then
+                    If mYe > mEs Then g(1) = g(1) + (mYe - mEs)
+                ElseIf mYe + 0.0005 < mEs Then
+                    dq = application.Max(0, (mEs - mYe) - I_NAKIL_D(nak, CStr(k), 0))
+                    g(0) = g(0) + dq
+                    If mEs > 0 Then g(2) = g(2) + dq * vEs / mEs
+                End If
+                grup(gk) = g
+            End If
+        End If
+    Next k
+    I_ARMATUR_DAGIT grup
+    For Each k In grup.keys
+        g = grup(k)
+        If g(0) > 0.0005 And g(1) + 0.0005 < g(0) Then
+            p = Split(CStr(k), "|"): b = bilgi(k)
+            eksik = g(0) - g(1)
+            If depolar.Exists(p(0)) Then ad = I_DEPO_KISA(CStr(depolar(p(0)))) Else ad = I_DEPO_KISA(CStr(b(0)))
+            I_DEM_EKSIK.Add Array(p(0), ad, p(2), CStr(b(1)), I_KATEGORI(p(2)), g(0), g(1), eksik, CStr(b(2)), _
+                Round(g(2) * eksik / g(0), 2), IIf(g(1) <= 0.0005, "GİRİŞ YOK", "EKSİK GİRİŞ"), p(1))
+        End If
+    Next k
+End Function
+
+' STOK / DEMONTAJ KONTROLU ekranindaki iki tarih icin demontaj eksikleri: her ilce ayri Excel (ilce adiyla)
+' ve tum ilceler tek dosya; masaustunde tek klasore kaydedilir (mail ile gonderilmeye hazir).
+Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
+    Dim ws As Worksheet, il As String, eskiT As String, yeniT As String, liste As Collection, ac As Boolean, ev As Boolean
+    Dim gruplar As Object, k As Variant, c As Collection, x As Variant, veri() As Variant, i As Long, j As Long, n As Long
+    Dim klasor As String, ust As String, ok As Long, Hata As String, toplam As Double, no As Long, metin As String
+    Dim bas As Variant, gen As Variant, bicim As Variant, hiza As Variant, sonuc As String, sira As Long, kodlar() As String, t As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    eskiT = Trim$(CStr(ws.Range("B6").Value2)): yeniT = Trim$(CStr(ws.Range("I6").Value2))
+    If Len(il) = 0 Or Len(eskiT) = 0 Or Len(yeniT) = 0 Or eskiT = yeniT Then
+        MsgBox "Karşılaştırma için iki farklı tarih seçiniz (en az iki farklı günde ilçe stok güncellemesi gerekir).", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    ac = AKSORA_BEKLE_AC("AKSORA  |  DEMONTAJ EKSİKLERİ", Y_IL_ADI(il) & "  •  demontaj eksikleri hesaplanıyor...", 0.05)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set liste = I_DEM_EKSIK(il, eskiT, yeniT)
+    If liste.Count = 0 Then
+        application.EnableEvents = ev: application.ScreenUpdating = True
+        If ac Then AKSORA_BEKLE_KAPAT
+        MsgBox "Seçilen tarihler arasında (" & eskiT & " - " & yeniT & ") demontaj girişi eksik kritik malzeme yok.", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    Set gruplar = CreateObject("Scripting.Dictionary"): gruplar.CompareMode = vbTextCompare
+    For Each x In liste
+        If Not gruplar.Exists(x(0)) Then gruplar.Add x(0), New Collection
+        gruplar(x(0)).Add x
+        toplam = toplam + x(9)
+    Next x
+    klasor = AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("AKSORA - " & Y_IL_ADI(il) & " - Demontaj Eksikleri - " & Left$(yeniT, 10))
+    If Not AKSORA_KLASOR_HAZIRLA(klasor) Then Err.Raise vbObjectError + 9701, , "Klasör oluşturulamadı: " & klasor
+    bas = Array("Depo", "İlçe", "Malzeme", "Malzeme kısa metni", "Kategori", "Kullanılan (azalan)", "Demontajı girilen", _
+        "Eksik", "Birim", "Eksik değer (TL)", "Durum", "Açıklama")
+    gen = Array(8, 18, 13, 44, 11, 12, 12, 10, 8, 14, 13, 30)
+    bicim = Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00 ""TL""", "@", "@")
+    hiza = Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlCenter, xlLeft)
+    ReDim kodlar(1 To gruplar.Count)
+    For Each k In gruplar.keys
+        n = n + 1: kodlar(n) = CStr(k)
+    Next k
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If kodlar(j) < kodlar(i) Then t = kodlar(i): kodlar(i) = kodlar(j): kodlar(j) = t
+        Next j
+    Next i
+    ' her ilce ayri dosya; sonra tum ilceler
+    For sira = 1 To n + 1
+        If sira <= n Then Set c = gruplar(kodlar(sira)) Else Set c = liste
+        ReDim veri(1 To c.Count, 1 To 12)
+        i = 0
+        For Each x In c
+            i = i + 1
+            veri(i, 1) = x(0): veri(i, 2) = x(1): veri(i, 3) = x(2): veri(i, 4) = x(3): veri(i, 5) = x(4)
+            veri(i, 6) = Round(x(5), 3): veri(i, 7) = Round(x(6), 3): veri(i, 8) = Round(x(7), 3)
+            veri(i, 9) = x(8): veri(i, 10) = x(9): veri(i, 11) = x(10)
+        Next x
+        If sira <= n Then
+            t = c(1)(1)
+            AKSORA_BEKLE_ILERLE 0.1 + 0.85 * (sira - 1) / (n + 1), sira & " / " & n & "  •  " & t
+            ust = "DEMONTAJ GİRİŞİ YAPILMAYAN MALZEMELER  |  " & Y_IL_ADI(il) & "  |  " & t & " (" & kodlar(sira) & ")  |  " & eskiT & "  -  " & yeniT
+            sonuc = AKSORA_EXCEL_TABLO(bas, veri, c.Count, gen, bicim, hiza, ust, "Kritik: trafo, pano, armatür, kablo, direk, hücre", _
+                t, klasor & application.PathSeparator & AKSORA_DOSYA_ADI(t) & ".xlsx", True, Array(4, 3, 1))
+        Else
+            AKSORA_BEKLE_ILERLE 0.96, "Tüm ilçeler tek dosya..."
+            ust = "DEMONTAJ GİRİŞİ YAPILMAYAN MALZEMELER  |  " & Y_IL_ADI(il) & "  |  Tüm ilçeler  |  " & eskiT & "  -  " & yeniT
+            sonuc = AKSORA_EXCEL_TABLO(bas, veri, c.Count, gen, bicim, hiza, ust, "Toplam eksik değer: " & Y_TL(toplam), _
+                "Tüm ilçeler", klasor & application.PathSeparator & "00 - Tüm İlçeler.xlsx", True, Array(2, 4, 3))
+        End If
+        If Len(sonuc) > 0 Then ok = ok + 1 Else Hata = Hata & vbCrLf & IIf(sira <= n, t, "Tüm İlçeler")
+        ThisWorkbook.Activate: ws.Activate
+    Next sira
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    MsgBox n & " ilçe için demontaj eksikleri Excel'e aktarıldı (" & liste.Count & " kalem, " & Y_TL(toplam) & ")." & vbCrLf & _
+        "Ayrıca tüm ilçeler tek dosyada: 00 - Tüm İlçeler." & _
+        IIf(Len(Hata) > 0, vbCrLf & vbCrLf & "Kaydedilemeyenler:" & Hata, "") & vbCrLf & vbCrLf & "Klasör: " & klasor, _
+        IIf(Len(Hata) > 0, vbExclamation, vbInformation), "AKSORA  |  DEMONTAJ EKSİKLERİ"
+    If ok > 0 Then AKSORA_KLASOR_AC klasor
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    ThisWorkbook.Activate: ws.Activate
+    application.EnableEvents = True: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Demontaj eksikleri aktarılamadı." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+Public Sub AKSORA_ILCE_KF_EKSIK(): I_KARS_FILTRE "EKSIK": End Sub
+
+' Depo kodlari artan sirada (sozluk yeniden kurulur).
+Private Sub I_ANAHTAR_SIRALA(ByRef d As Object)
+    Dim k() As String, idx() As Long, i As Long, n As Long, x As Variant, y As Object
+    n = d.Count
+    If n < 2 Then Exit Sub
+    ReDim k(1 To n): ReDim idx(1 To n)
+    For Each x In d.keys
+        i = i + 1: k(i) = CStr(x): idx(i) = i
+    Next x
+    Y_SIRALA k, idx, 1, n
+    Set y = CreateObject("Scripting.Dictionary"): y.CompareMode = vbTextCompare
+    For i = 1 To n
+        y(k(i)) = d(k(i))
+    Next i
+    Set d = y
+End Sub
+
+Private Function I_DUGME_LISTESI(ByVal d As Object) As Collection
+    Dim c As Collection, x As Variant
+    Set c = New Collection
+    c.Add vbNullString
+    For Each x In d.keys
+        c.Add CStr(x)
+    Next x
+    Set I_DUGME_LISTESI = c
+End Function
+
+' "ARHAVI ILCE DEPOSU" gibi adlardan kisa ilce adi.
+Private Function I_DEPO_KISA(ByVal ad As String) As String
+    Dim t As String, x As Variant
+    t = Trim$(ad)
+    For Each x In Array(" İLÇE DEPOSU", " ILCE DEPOSU", " İLÇE DEPO", " ILCE DEPO", " DEPOSU", " DEPO")
+        If UCase$(Right$(t, Len(x))) = UCase$(x) Then t = Trim$(Left$(t, Len(t) - Len(x))): Exit For
+    Next x
+    If Len(t) = 0 Then t = ad
+    I_DEPO_KISA = t
+End Function
+
+Public Sub AKSORA_ILCE_KARS_SEC()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARŞILAŞTIRMA", "Karşılaştırma hazırlanıyor...")
+    On Error GoTo son
+    ILCE_KARS_SEC_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_SEC_ASIL()
+    Dim ws As Worksheet, ev As Boolean, k As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    k = ws.Shapes(CStr(application.Caller)).AlternativeText
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect ""
+    ws.Range("BX30").Value2 = k
+    I_KARS_KUR CStr(ws.Range("BX22").Value2), False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_KARS_YENILE()
+    Dim ac As Boolean, no As Long, metin As String
+    ac = AKSORA_BEKLE_AC("AKSORA  |  STOK KARŞILAŞTIRMA", "Karşılaştırma hazırlanıyor...")
+    On Error GoTo son
+    ILCE_KARS_YENILE_ASIL
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub ILCE_KARS_YENILE_ASIL()
+    Dim ws As Worksheet, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_STOK_KARŞILAŞTIRMA")
+    If Len(CStr(ws.Range("BX34").Value2)) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ws.Unprotect ""
+    ws.Range("BX32").Value2 = Trim$(CStr(ws.Range(CStr(ws.Range("BX34").Value2)).Value2))
+    ws.Range("BX33").Value2 = Trim$(CStr(ws.Range(CStr(ws.Range("BX35").Value2)).Value2))
+    I_KARS_KUR CStr(ws.Range("BX22").Value2), False
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    Dim hMetin As String
+    hMetin = Err.Description
+    ' Sayfa korumasiz kalmasin; olaylar onceki durumuna doner.
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hMetin, vbExclamation, "AKSORA"
+End Sub
+
+' Ilce ISG malzemeleri (docs/isg/ISG_ISLEM.csv): kod + Z (kisisel zimmet) / M (manuel sarf).
+Private Function I_ISG_LISTE() As Object
+    Static d As Object, adet As Long
+    Dim s As String, x As Variant
+    ' Sozluge yanlislikla anahtar eklenmisse (d(k) okumasi anahtar ekler) liste yeniden kurulur.
+    If Not d Is Nothing Then If d.Count = adet Then Set I_ISG_LISTE = d: Exit Function
+    s = s & "7500050332Z;7500051142Z;7500051144Z;7500050334Z;7500051145Z;7500050240Z;7500000038Z;7500050254Z;7500051153Z;7500051152Z;7500050908Z;7500051135Z;7500000042Z;7500000233Z;"
+    s = s & "7500000067Z;7500050900Z;7500050977Z;7500050266Z;7500000060Z;7500050335Z;7500000253Z;7500001730Z;7500000709Z;7500000710Z;7500000711Z;7500000712Z;7500000713Z;7500000714Z;"
+    s = s & "7500000715Z;7500000716Z;7500000717Z;7500000729Z;7500000733Z;7500000735Z;7500000737Z;7500000739Z;7500000740Z;7500000744Z;7500000747Z;7500000752Z;7500000762Z;7500000769Z;"
+    s = s & "7500000775Z;7500000777Z;7500000785Z;7500000790Z;7500000833Z;7500000837Z;7500000842Z;7500000843Z;7500000844Z;7500000847Z;7500000996Z;7500001021Z;7500001040Z;7500001043Z;"
+    s = s & "7500001045Z;7500001047Z;7500001049Z;7500001051Z;7500001157Z;7500000665Z;7500000666Z;7500000667Z;7500000670Z;7500000671Z;7500001583Z;7500001591Z;7500000683Z;7500000684Z;"
+    s = s & "7500051420Z;7500000687Z;7500001644Z;7500000697Z;7500000699Z;7500000700Z;7500000703Z;7500050815Z;7500050816Z;7500050920Z;7500050858Z;7500050883Z;7500053995Z;7500050916Z;"
+    s = s & "7500001435Z;7500001312Z;7500001314Z;7500051046Z;7500050960Z;7500050910Z;7500050909Z;7500050967Z;7500050905Z;7500050787Z;7500051010Z;7500051009Z;7500053643Z;7500000381Z;"
+    s = s & "7500000382Z;7500050895Z;7500000473Z;7500050849Z;7500051455Z;7500050398Z;7500051423Z;7500000370Z;7500050931Z;7500050861Z;7500050860Z;7500050887Z;7500051422Z;7500050377Z;"
+    s = s & "7500050876Z;7500000338Z;7500050992Z;7500050875Z;7500050934Z;7500050397Z;7500050921Z;7500050949Z;7500000504Z;7500000507Z;7500000556Z;7500000559Z;7500000496Z;7500000564Z;"
+    s = s & "7500050431Z;7500000616Z;7500000617Z;7500000618Z;7500000458Z;7500050375Z;7500050961Z;7500050962Z;7500050954Z;7500051011Z;7500050938M;7500052804Z;7500053648M;7500051020Z;"
+    s = s & "7500051022Z;7500051023Z;7500051026Z;7500051025Z;7500051131M;7500050843Z;7500050944Z;7500050888Z;7500050790Z;7500050404Z;7500050974Z;7500050871Z;7500050933Z;7500050870Z;"
+    s = s & "7500050868Z;7500050918M;7500050857M;7500050856M;7500050940M;7500050919M;7500001504M;7500001505M;7500050356M;7500001510M;7500001618M;7500050388Z;7500050405M;7500050917Z;"
+    s = s & "7500050981Z;7500001512M;7500050852Z;7500050903M;7500050391Z;7500001475Z;7500050785Z;7500050889Z;7500050929Z;7500050351M;7500001514M;7500001469M;7500000506Z;7500000558Z;"
+    s = s & "7500000498Z;7500000501Z;7500000565Z;7500000568Z;7500000481Z;7500001581Z;7500001580Z;7500050913M;7500050899Z;7500050872Z;7500050348M;7500051001M;7500050345M;7500051000M;"
+    s = s & "7500050924M;7500051003M;7500050923Z;7500050932Z;7500050341Z;7500050912Z;7500051136Z;7500051514Z;7500051513Z;7500050267Z;7500052777Z;7500051147Z;7500051148Z;7500051149Z;"
+    s = s & "7500051150Z;7500026511Z;7500050299Z;7500050243Z;7500000006Z;7500050797Z;7500051424Z;7500051516Z;7500051517Z;7500051134Z;7500052669Z;7500052579Z;7500050926Z;7500050271Z;"
+    s = s & "7500051432Z;7500050265Z;7500001993Z;7500052616Z;7500051028Z;7500050950Z;7500050874Z;7500030895Z;7500050904Z;7500050836Z;7500000080Z;7500050902Z;7500050825Z;7500051137Z;"
+    s = s & "7500053641M;7500051024Z;7500051456Z;7500050988Z;7500050810Z;7500050942Z;7500051073Z;7500050823Z;7500050827Z;7500050824Z;7500050813Z;7500053644M;7500050826Z;7500000226Z;"
+    s = s & "7500000228Z;7500000229Z;7500000232Z;7500000246Z;7500051014Z;7500050833Z;7500050822Z;7500050821Z;7500050820Z;7500000249Z;7500000250Z;7500050247Z;7500050835Z;7500050834Z;"
+    s = s & "7500051138Z;7500050878Z;7500000012Z;7500052668Z;7500000313Z;7500051133Z;7500050809Z;7500050630M;7500050286Z;7500050293Z;7500050290Z;7500050295Z;7500050288Z;7500050268Z;"
+    s = s & "7500050289Z;7500053129Z;7500050287Z;7500050294Z;7500050291Z;7500050296Z;7500050292Z;7500051452M;7500050971Z;7500050914Z;7500051130Z;7500050845Z;7500050968Z;7500000039Z;"
+    s = s & "7500000417Z;7500000851Z;7500001547M;7500001826M;7500001871M;7500002103M;7500027707M;7500031802M;7500050069M;7500050195M;7500050215M;7500050261Z;7500050262Z;7500050347Z;"
+    s = s & "7500050362Z;7500050392M;7500050429Z;7500050616M;7500050632M;7500050779M;7500050786M;7500050788M;7500050828Z;7500050837Z;7500050885Z;7500050893Z;7500050927Z;7500050941M;"
+    s = s & "7500050970M;7500050990Z;7500050991M;7500050999M;7500051040Z;7500051109Z;7500051175M;7500051182M;7500051186M;7500051206M;7500051244M;7500051884M;7500051916M;"
+    s = s & "7500051917M;7500051918M;7500052731M;7500053283M;7500053365M;7500053649M;7500053715M;7500053716M;7500053717M;7500053718M;7500053719M;7500053806M;7500053807M;7500053808M;"
+    s = s & "7500053809M;7500053811M;7500053812M;7500053813M;7500053814M;7500053815M;7500053820M;7500053821M;7500053822M;7500053823M;7500053824M;7500053825M;7500053826M;7500061862M;"
+    s = s & "7500000420Z;7500001665M;7500050352M;7500050798Z;7500050925M;7500052667Z;7500052825Z;7500053526M;7500053690M;"
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    For Each x In Split(s, ";")
+        If Len(x) > 1 Then d(Left$(CStr(x), Len(x) - 1)) = Right$(CStr(x), 1)
+    Next x
+    adet = d.Count
+    Set I_ISG_LISTE = d
+End Function
+
+'---------- ISG MALZEMELERI ----------
+' Ilce depolarindaki ISG malzemeleri (ana liste: docs/isg). Depoda ISG malzemesi bekletilmez:
+' kisisel zimmet listesindekiler icin ZİMMET YAPIN, digerleri icin MANUEL SARF YAPIN.
+' Ust bolum ilce ozeti, alt bolum malzeme listesi (ilce secimi ve islem filtreleri).
+
+Private Sub I_ISG_KUR(ByVal il As String)
+    Dim ws As Worksheet, w As Double, s As Shape, v As Variant, r As Long, i As Long, j As Long, liste As Object
+    Dim mal As Object, ozet As Object, depolar As Object, k As Variant, t As Variant, mk As String, dp As String
+    Dim islem As String, a1 As Long, b1 As Long, a2 As Long, b2 As Long, n As Long, nD As Long
+    Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, y As Double, kw As Double
+    Dim zK As Long, zM As Double, sk As Long, sM As Double, toplam As Double, rr As Range, bw As Double
+    Dim dd As Shape, secim As String, birim As String, o As Variant, bK As Long
+    Set ws = ThisWorkbook.Worksheets("I_İSG_MALZEMELERİ")
+    il = UCase$(Trim$(il))
+    ws.Unprotect ""
+    secim = CStr(ws.Range("BX30").Value2)
+    If CStr(ws.Range("BX22").Value2) <> il Then secim = vbNullString
+    Y_SAYFA_SIFIRLA ws
+    I_BAGLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    Y_KOLONLAR ws, Array(70, 190, 64, 100, 100, application.Max(120, w - 1034), 110, 130, 270)
+    Set liste = I_ISG_LISTE()
+    ' Ilce depo + malzeme toplamlari (CDP ve EPP birlikte, butun degerlemeler)
+    Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
+    Set depolar = I_DEPOLAR(il)
+    v = AKSORA_PAKET_OKU(I_ARSIV_SAYFA(il, False))
+    If IsArray(v) Then
+        For r = 1 To UBound(v, 1)
+            mk = Y_KOD_NORM(v(r, 5))
+            If liste.Exists(mk) Then
+                dp = UCase$(I_TEMIZ(v(r, 2)))
+                If Len(dp) > 0 And I_SAYI(v(r, 7)) > 0 Then
+                    If Not depolar.Exists(dp) Then depolar(dp) = I_TEMIZ(v(r, 3))
+                    k = dp & "|" & I_TEMIZ(v(r, 1)) & "|" & mk
+                    If Not mal.Exists(k) Then
+                        mal(k) = Array(dp, I_TEMIZ(v(r, 3)), IIf(Left$(I_TEMIZ(v(r, 1)), 2) = "70", "EPP", "CDP"), _
+                            I_TEMIZ(v(r, 4)), mk, I_TEMIZ(v(r, 6)), 0#, I_TEMIZ(v(r, 8)), 0#, _
+                            IIf(liste(mk) = "Z", "ZİMMET YAPIN", "MANUEL SARF YAPIN"))
+                    End If
+                    t = mal(k)
+                    t(6) = t(6) + I_SAYI(v(r, 7)): t(8) = t(8) + I_SAYI(v(r, 11))
+                    mal(k) = t
+                End If
+            End If
+        Next r
+    End If
+    I_ANAHTAR_SIRALA depolar
+    ' Birim fiyati yuksek manuel sarf malzemesi bolge mudurlugunun isi.
+    For Each k In mal.keys
+        t = mal(k)
+        If t(9) = "MANUEL SARF YAPIN" And t(6) > 0 Then
+            If t(8) / t(6) >= I_ISG_BOLGE_TL - 0.005 Then t(9) = "BÖLGE SARF EDECEK": mal(k) = t
+        End If
+    Next k
+    ' Ilce ozeti: depo -> (ad, zimmet kalem, zimmet miktar, sarf kalem, sarf miktar, deger, bolge sarfi kalem)
+    Set ozet = CreateObject("Scripting.Dictionary"): ozet.CompareMode = vbTextCompare
+    For Each k In depolar.keys
+        ozet(CStr(k)) = Array(CStr(depolar(k)), 0, 0#, 0, 0#, 0#, 0)
+    Next k
+    For Each k In mal.keys
+        t = mal(k)
+        If ozet.Exists(CStr(t(0))) Then
+            o = ozet(CStr(t(0)))
+            If Len(CStr(o(0))) = 0 Then o(0) = t(1)
+            If t(9) = "ZİMMET YAPIN" Then
+                o(1) = o(1) + 1: o(2) = o(2) + t(6): zK = zK + 1: zM = zM + t(6)
+            ElseIf t(9) = "MANUEL SARF YAPIN" Then
+                o(3) = o(3) + 1: o(4) = o(4) + t(6): sk = sk + 1: sM = sM + t(6)
+            Else
+                o(6) = o(6) + 1: bK = bK + 1
+            End If
+            o(5) = o(5) + t(8): toplam = toplam + t(8)
+            ozet(CStr(t(0))) = o
+        End If
+    Next k
+    nD = ozet.Count: n = mal.Count
+    a1 = 10: b1 = a1 + application.Max(nD, 1) - 1
+    a2 = b1 + 7: b2 = a2 + application.Max(n, 1) - 1
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10
+    ws.Rows(a1 - 2).RowHeight = 30: ws.Rows(a1 - 1).RowHeight = 30
+    ws.Range(ws.Rows(a1), ws.Rows(b1 + 1)).RowHeight = 21
+    ws.Rows(b1 + 2).RowHeight = 14
+    ws.Rows(a2 - 4).RowHeight = 30: ws.Rows(a2 - 3).RowHeight = 32: ws.Rows(a2 - 2).RowHeight = 8: ws.Rows(a2 - 1).RowHeight = 30
+    ws.Range(ws.Rows(a2), ws.Rows(b2)).RowHeight = 19
+    Y_BOLUM ws, a1 - 2, "İLÇE BAZINDA İSG DURUMU", "Depoda İSG malzemesi bekletilmez: kişisel zimmet ya da manuel sarf yapılmalıdır. " & _
+        "Birim fiyatı " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüğü sarf eder.", 9
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 - 1, 9)), Array("Depo", "Depo Adı", "Zimmet Kalem", _
+        "Zimmet Miktar", "Manuel Sarf Kalem", "Manuel Sarf Miktar", "Bölge Sarfı Kalem", "İSG Stok Değeri", "Durum")
+    r = a1
+    For Each k In ozet.keys
+        o = ozet(k)
+        ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value2 = CStr(k)
+        ws.Cells(r, 2).Value2 = o(0)
+        ws.Cells(r, 3).Value2 = o(1): ws.Cells(r, 4).Value2 = o(2)
+        ws.Cells(r, 5).Value2 = o(3): ws.Cells(r, 6).Value2 = o(4): ws.Cells(r, 7).Value2 = o(6)
+        ws.Cells(r, 8).Value2 = Round(o(5), 2)
+        If o(1) > 0 And o(3) > 0 Then
+            ws.Cells(r, 9).Value2 = "ZİMMET + SARF BEKLİYOR"
+        ElseIf o(1) > 0 Then
+            ws.Cells(r, 9).Value2 = "ZİMMET BEKLİYOR"
+        ElseIf o(3) > 0 Then
+            ws.Cells(r, 9).Value2 = "SARF BEKLİYOR"
+        ElseIf o(6) > 0 Then
+            ' Ilceye is yok; depodaki deger bolge mudurlugunun sarf edecegi malzeme.
+            ws.Cells(r, 9).Value2 = "BÖLGE SARFI BEKLİYOR"
+        Else
+            ws.Cells(r, 9).Value2 = "TEMİZ"
+        End If
+        Y_MIKTAR_BICIM ws.Cells(r, 4): Y_MIKTAR_BICIM ws.Cells(r, 6)
+        r = r + 1
+    Next k
+    If nD = 0 Then ws.Cells(a1, 2).Value2 = "İlçe stokları güncellenince ilçeler listelenir."
+    ws.Cells(b1 + 1, 2).Value2 = "TOPLAM"
+    ws.Cells(b1 + 1, 3).Value2 = zK: ws.Cells(b1 + 1, 4).Value2 = zM
+    ws.Cells(b1 + 1, 5).Value2 = sk: ws.Cells(b1 + 1, 6).Value2 = sM: ws.Cells(b1 + 1, 7).Value2 = bK
+    ws.Cells(b1 + 1, 8).Value2 = Round(toplam, 2)
+    Y_MIKTAR_BICIM ws.Cells(b1 + 1, 4): Y_MIKTAR_BICIM ws.Cells(b1 + 1, 6)
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 9))
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(b1 + 1, 1), ws.Cells(b1 + 1, 9))
+    ws.Range(ws.Cells(a1, 1), ws.Cells(b1 + 1, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(b1 + 1, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 2), ws.Cells(b1, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 8), ws.Cells(b1 + 1, 8)).NumberFormat = "#,##0.00 ""TL"""
+    Set rr = ws.Range(ws.Cells(a1, 9), ws.Cells(b1, 9))
+    Y_DURUM_KF rr, "ZİMMET + SARF BEKLİYOR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "ZİMMET BEKLİYOR", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "SARF BEKLİYOR", RGB(219, 234, 254), RGB(29, 78, 216)
+    Y_DURUM_KF rr, "BÖLGE SARFI BEKLİYOR", RGB(226, 232, 240), RGB(51, 65, 85)
+    Y_DURUM_KF rr, "TEMİZ", RGB(220, 252, 231), RGB(21, 128, 61)
+    ' Malzeme listesi: baslik + ilce secimi, islem filtreleri, tablo
+    Y_BOLUM ws, a2 - 4, "İSG MALZEME LİSTESİ  –  YAPILACAK İŞLEM", ""
+    ws.Cells(a2 - 4, 7).Value2 = "İlçe:"
+    ws.Cells(a2 - 4, 7).HorizontalAlignment = xlRight: ws.Cells(a2 - 4, 7).Font.bold = True: ws.Cells(a2 - 4, 7).Font.Color = RGB(28, 54, 83)
+    Set dd = ws.Shapes.AddFormControl(xlDropDown, ws.Cells(a2 - 4, 8).Left + 4, ws.Cells(a2 - 4, 8).top + 4, _
+        ws.Range(ws.Cells(a2 - 4, 8), ws.Cells(a2 - 4, 9)).Width - 6, 22)
+    dd.Name = "I_ISG_SECIM": dd.Placement = xlFreeFloating
+    dd.ControlFormat.AddItem "TÜM İLÇELER"
+    i = 1
+    For Each k In ozet.keys
+        dd.ControlFormat.AddItem CStr(k) & "  -  " & I_DEPO_KISA(CStr(ozet(k)(0)))
+        i = i + 1
+        If CStr(k) = secim Then dd.ControlFormat.Value = i
+    Next k
+    If dd.ControlFormat.Value < 1 Then dd.ControlFormat.Value = 1
+    dd.ControlFormat.DropDownLines = application.Min(30, i)
+    dd.OnAction = BIRIM_MAKRO("AKSORA_ILCE_ISG_SEC")
+    bw = (w - 3 * 8) / 4
+    y = ws.Rows(a2 - 3).top + 2
+    Set s = Y_DUGME(ws, "I_ISG_F_TUMU", "TÜMÜ  (" & n & " kalem)", 0, y, bw, 28, RGB(45, 95, 145), "AKSORA_ILCE_ISG_TUMU")
+    Set s = Y_DUGME(ws, "I_ISG_F_ZIMMET", "ZİMMET YAPIN  (" & zK & " kalem)", bw + 8, y, bw, 28, RGB(185, 28, 28), "AKSORA_ILCE_ISG_ZIMMET")
+    Set s = Y_DUGME(ws, "I_ISG_F_SARF", "MANUEL SARF YAPIN  (" & sk & " kalem)", 2 * (bw + 8), y, bw, 28, RGB(29, 78, 216), "AKSORA_ILCE_ISG_SARF")
+    Set s = Y_DUGME(ws, "I_ISG_F_BOLGE", "BÖLGE SARF EDECEK  (" & bK & " kalem)", 3 * (bw + 8), y, bw, 28, RGB(100, 116, 139), "AKSORA_ILCE_ISG_BOLGE")
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(a2 - 1, 9)), Array("Depo", "Depo Adı", "Sistem", "Mal Grubu", _
+        "Malzeme", "Malzeme Tanımı", "Miktar", "Stok Değeri", "YAPILACAK İŞLEM")
+    If n > 0 Then
+        ReDim blok(1 To n, 1 To 10): ReDim anah(1 To n): ReDim idx(1 To n)
+        i = 0
+        For Each k In mal.keys
+            t = mal(k): i = i + 1: idx(i) = i
+            blok(i, 1) = t(0): blok(i, 2) = t(1): blok(i, 3) = t(2): blok(i, 4) = t(3)
+            blok(i, 5) = t(4): blok(i, 6) = t(5): blok(i, 7) = t(6): blok(i, 8) = Round(t(8), 2): blok(i, 9) = t(9): blok(i, 10) = t(7)
+            anah(i) = CStr(t(0)) & "|" & IIf(t(9) = "ZİMMET YAPIN", "1", IIf(t(9) = "MANUEL SARF YAPIN", "2", "3")) & "|" & Y_NORM(CStr(t(5))) & "|" & CStr(t(2))
+        Next k
+        Y_SIRALA anah, idx, 1, n
+        ReDim sonuc(1 To n, 1 To 9)
+        For i = 1 To n
+            For j = 1 To 9: sonuc(i, j) = blok(idx(i), j): Next j
+        Next i
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9)).Value2 = sonuc
+        For i = 1 To n
+            birim = CStr(blok(idx(i), 10))
+            Y_MIKTAR_BICIM ws.Cells(a2 + i - 1, 7), birim
+        Next i
+        Y_TABLO_GOVDE ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 9))
+        ws.Range(ws.Cells(a2, 1), ws.Cells(b2, 1)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 3), ws.Cells(b2, 5)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 7), ws.Cells(b2, 7)).HorizontalAlignment = xlRight
+        ws.Range(ws.Cells(a2, 9), ws.Cells(b2, 9)).HorizontalAlignment = xlCenter
+        ws.Range(ws.Cells(a2, 2), ws.Cells(b2, 2)).IndentLevel = 1
+        ws.Range(ws.Cells(a2, 6), ws.Cells(b2, 6)).IndentLevel = 1
+        ws.Range(ws.Cells(a2, 8), ws.Cells(b2, 8)).NumberFormat = "#,##0.00 ""TL"""
+        Set rr = ws.Range(ws.Cells(a2, 9), ws.Cells(b2, 9))
+        Y_DURUM_KF rr, "ZİMMET YAPIN", RGB(220, 38, 38), RGB(255, 255, 255)
+        Y_DURUM_KF rr, "MANUEL SARF YAPIN", RGB(29, 78, 216), RGB(255, 255, 255)
+        Y_DURUM_KF rr, "BÖLGE SARF EDECEK", RGB(226, 232, 240), RGB(51, 65, 85)
+        ws.Range(ws.Cells(a2 - 1, 1), ws.Cells(b2, 9)).AutoFilter
+        If Len(secim) > 0 Then ws.AutoFilter.Range.AutoFilter Field:=1, Criteria1:="=" & secim
+    Else
+        ws.Cells(a2, 2).Value2 = IIf(IsArray(v) Or nD > 0, "İlçe depolarında İSG malzemesi yok.", "Veri bekleniyor: ilçe stokları güncellenince İSG malzemeleri listelenir.")
+        ws.Cells(a2, 2).Font.Italic = True: ws.Cells(a2, 2).Font.Color = RGB(100, 116, 139)
+    End If
+    ws.Cells(b2 + 2, 1).Value2 = "İSG malzemesi ana listesi ve kişisel zimmet listesi AKSORA'da kayıtlıdır (" & liste.Count & _
+        " İSG malzemesi). Zimmet listesindekiler kişiye zimmetlenir, diğerleri manuel sarf edilir; birim fiyatı " & _
+        Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri manuel sarf malzemesini bölge müdürlüğü sarf eder (ilçeden beklenmez)."
+    ws.Cells(b2 + 2, 1).Font.Size = 9: ws.Cells(b2 + 2, 1).Font.Color = RGB(71, 85, 105)
+    ' KPI (panel karti BZ21 / BZ22 kullanir)
+    ws.Range("BZ21").Value2 = n
+    ws.Range("BZ22").Value2 = Round(toplam, 2)
+    ws.Range("BZ23").Value2 = zK & " kalem  •  " & I_MIKTAR_METNI(zM) & " adet"
+    ws.Range("BZ24").Value2 = sk & " kalem  •  " & I_MIKTAR_METNI(sM) & " adet"
+    ws.Range("BZ21").NumberFormat = "#,##0"
+    ws.Range("BZ22").NumberFormat = "#,##0.00 ""TL"""
+    y = ws.Rows(3).top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "İLÇE DEPOLARINDA İSG KALEMİ", "$BZ$21", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "İSG STOK DEĞERİ", "$BZ$22", RGB(39, 160, 94)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "ZİMMET YAPILACAK", "$BZ$23", RGB(220, 38, 38)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "MANUEL SARF YAPILACAK", "$BZ$24", RGB(29, 78, 216)
+    For i = 3 To 4
+        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    Next i
+    ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il
+    ws.Range("BX30").Value2 = secim
+    ws.Range("BX27").Value2 = a2 & "|" & b2
+    Y_FILIGRAN ws
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | İSG ZİMMET KONTROLÜ  |  " & Y_IL_ADI(il)
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+Private Sub I_ISG_FILTRE(ByVal alan As Long, ByVal deger As String)
+    Dim ws As Worksheet, a As Long, b As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_İSG_MALZEMELERİ")
+    If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
+    ws.Unprotect ""
+    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 9)).AutoFilter
+    If Len(deger) = 0 Then
+        ws.AutoFilter.Range.AutoFilter Field:=alan
+    Else
+        ws.AutoFilter.Range.AutoFilter Field:=alan, Criteria1:="=" & deger
+    End If
+    If alan = 1 Then ws.Range("BX30").Value2 = deger
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Y_TEMINAT_KAL ws
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_ISG_SEC()
+    Dim ws As Worksheet, s As Shape, k As String
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_İSG_MALZEMELERİ")
+    Set s = ws.Shapes("I_ISG_SECIM")
+    If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    I_ISG_FILTRE 1, k
+    Exit Sub
+Hata:
+    MsgBox Err.Description, vbExclamation, "AKSORA"
+End Sub
+
+Public Sub AKSORA_ILCE_ISG_TUMU(): I_ISG_FILTRE 9, "": End Sub
+Public Sub AKSORA_ILCE_ISG_ZIMMET(): I_ISG_FILTRE 9, "ZİMMET YAPIN": End Sub
+Public Sub AKSORA_ILCE_ISG_SARF(): I_ISG_FILTRE 9, "MANUEL SARF YAPIN": End Sub
+Public Sub AKSORA_ILCE_ISG_BOLGE(): I_ISG_FILTRE 9, "BÖLGE SARF EDECEK": End Sub
+
+' Karsilastirma tarihleri degisince sayfa yenilenir.
+Public Sub AKSORA_ILCE_DEGISIM(ByVal sh As Object, ByVal hedef As Range)
+    Dim ev As Boolean, a As String
+    If Not TypeOf sh Is Worksheet Then Exit Sub
+    If mYCalisiyor Or mYonlendirme Then Exit Sub
+    If Len(CStr(sh.Range("BX22").Value2)) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Cikis
+    If sh.Name = "I_STOK_KARŞILAŞTIRMA" Then
+        a = CStr(sh.Range("BX34").Value2)
+        If Len(a) = 0 Then GoTo Cikis
+        If Intersect(hedef, sh.Range(a & "," & CStr(sh.Range("BX35").Value2))) Is Nothing Then GoTo Cikis
+        application.EnableEvents = False
+        AKSORA_ILCE_KARS_YENILE
+    End If
+Cikis:
+    application.EnableEvents = ev
+End Sub
+
+'==================== ADMIN | YONETIM MERKEZI ====================
+' Sifreli yonetici (CEO) raporu. Il filtresi (TUMU veya tek il): her birimin ekrandaki ili canli sayfalardan,
+' diger iller birimlerin il kayitlarindan (_AKLIVE_, _YA_, _MA_, _IA_) okunur. Okunan veri imza (tarih+satir)
+' degismedikce bellekte tutulur. Birimler arasi ayni depo (il+UY+depo) tekil toplamda bir kez sayilir.
+
+' Yonetici girisi: sifre kutusu (Windows), yazilan sifre yildizla gizlenir.
+'' Birim girisi: birimin kendi sifresi ya da yonetici (mudur) sifresi. Dogru giris bu oturumda hatirlanir.
+Private Function BIRIM_SIFRE_KONTROL(ByVal birim As String, ByVal ad As String) As Boolean
+    Dim s As String, dogru As String
+    If Not BIRIM_SIFRE_AKTIF Then BIRIM_SIFRE_KONTROL = True: Exit Function
+    If mAdmOturum Or InStr(mBirimAcik, "|" & birim & "|") > 0 Then BIRIM_SIFRE_KONTROL = True: Exit Function
+    Select Case birim
+        Case "MALZEME": dogru = SIFRE_MALZEME
+        Case "YATIRIM": dogru = SIFRE_YATIRIM
+        Case "MUSTERI": dogru = SIFRE_MUSTERI
+        Case "ILCE": dogru = SIFRE_ILCE
+    End Select
+    s = ADM_SIFRE_SOR("AKSORA  |  " & ad & vbCrLf & vbCrLf & "Birim şifresini girin:", BIRIM_KUTU_BASLIK)
+    If Len(s) = 0 Then Exit Function
+    If s = dogru Or s = ADM_SIFRE Then
+        mBirimAcik = mBirimAcik & "|" & birim & "|"
+        If s = ADM_SIFRE Then mAdmOturum = True
+        BIRIM_SIFRE_KONTROL = True
+    Else
+        MsgBox "Şifre hatalı." & vbCrLf & ad & " yalnızca birimin yetkilileri ve müdürler tarafından açılabilir.", vbCritical, "AKSORA"
+    End If
+End Function
+
+Public Sub AKSORA_ADMIN_GIRIS()
+    Dim s As String
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Then Exit Sub
+    s = ADM_SIFRE_SOR()
+    If Len(s) = 0 Then Exit Sub
+    If s <> ADM_SIFRE Then
+        ADM_LOG_YAZ "HATALI"
+        MsgBox "Şifre hatalı." & vbCrLf & "Yönetim merkezine yalnızca yetkili kullanıcılar girebilir." & vbCrLf & _
+            "Deneme kayıt altına alındı.", vbCritical, "AKSORA | ADMİN"
+        Exit Sub
+    End If
+    ADM_LOG_YAZ "GİRİŞ"
+    mAdmOturum = True
+    ADM_AC
+End Sub
+
+' Sifre kutusu: InputBox acilinca zamanlayici yazilani yildizli yapar ve
+' kutunun altina "Sifreyi goster" secenegini ekler. Her giriste gizli baslar.
+Private Function ADM_SIFRE_SOR(Optional ByVal istem As String = "", Optional ByVal baslik As String = "") As String
+    If Len(baslik) = 0 Then baslik = ADM_KUTU_BASLIK
+    If Len(istem) = 0 Then istem = "AKSORA YÖNETİM MERKEZİ" & vbCrLf & vbCrLf & "Yönetici şifresini girin:"
+    mSifreBaslik = baslik
+    On Error Resume Next
+    mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
+    mAdmZaman = ADMW_SetTimer(0, 0, 40, AddressOf ADM_MASKE_ZAMAN)
+    On Error GoTo 0
+    ADM_SIFRE_SOR = InputBox(istem, baslik)
+    On Error Resume Next
+    If mAdmZaman <> 0 Then ADMW_KillTimer 0, mAdmZaman
+    mAdmZaman = 0: mAdmKutu = 0: mAdmGoster = False
+    On Error GoTo 0
+End Function
+
+Public Sub ADM_MASKE_ZAMAN(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal idEvent As LongPtr, ByVal dwTime As Long)
+    Dim dlg As LongPtr, ed As LongPtr, goster As Boolean
+    On Error Resume Next
+    dlg = ADMW_FindWindow(vbNullString, IIf(Len(mSifreBaslik) > 0, mSifreBaslik, ADM_KUTU_BASLIK))
+    If dlg = 0 Then Exit Sub
+    ed = ADMW_FindWindowEx(dlg, 0, "Edit", vbNullString)
+    If ed = 0 Then Exit Sub
+    If mAdmKutu = 0 Then
+        ADMW_SendMessage ed, &HCC, 42, 0
+        ADM_KUTU_EKLE dlg, ed
+        Exit Sub
+    End If
+    goster = (ADMW_SendMessage(mAdmKutu, &HF0, 0, 0) = 1)
+    If goster <> mAdmGoster Then
+        mAdmGoster = goster
+        ADMW_SendMessage ed, &HCC, IIf(goster, 0, 42), 0
+        ADMW_InvalidateRect ed, 0, 1
+        ADMW_SetFocus ed
+    End If
+End Sub
+
+Private Sub ADM_KUTU_EKLE(ByVal dlg As LongPtr, ByVal ed As LongPtr)
+    Dim rd As ADMW_RECT, re As ADMW_RECT, h As Long, metin As String, sinif As String
+    ADMW_GetWindowRect dlg, rd
+    ADMW_GetWindowRect ed, re
+    ADMW_MapWindowPoints 0, dlg, re, 2
+    h = re.Bottom - re.top
+    If h < 16 Then h = 16
+    ADMW_SetWindowPos dlg, 0, 0, 0, rd.Right - rd.Left, rd.Bottom - rd.top + h + 10, &H16
+    sinif = "Button"
+    metin = ChrW(350) & "ifreyi g" & ChrW(246) & "ster"
+    mAdmKutu = ADMW_CreateWindowEx(0, StrPtr(sinif), StrPtr(metin), &H50010003, re.Left, re.Bottom + 6, re.Right - re.Left, h, dlg, 4001, 0, 0)
+    If mAdmKutu = 0 Then mAdmKutu = -1: Exit Sub
+    ADMW_SendMessage mAdmKutu, &H30, ADMW_SendMessage(ed, &H31, 0, 0), 1
+End Sub
+
+Private Sub ADM_AC()
+    Dim ws As Worksheet, ev As Boolean, sc As Boolean, no As Long, metin As String, hesap As Long
+    If mAdmMesgul Then Exit Sub
+    mAdmMesgul = True
+    ev = application.EnableEvents: sc = application.ScreenUpdating: hesap = application.Calculation
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    If hesap <> xlCalculationManual Then application.Calculation = xlCalculationManual
+    AKSORA_BEKLE_AC "AKSORA  |  YÖNETİM MERKEZİ", "Yönetim merkezi hazırlanıyor...", 0.03
+    application.Cursor = xlWait
+    mYonlendirme = True
+    Set ws = ADM_SAYFA()
+    AN_ONB_AC
+    ADM_KUR ws
+    AN_ONB_KAPAT
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    BIRIM_DIGERLERINI_GIZLE ADM
+    ADM_GORUNUM ws
+Cikis:
+    ' Temizlik hatasi Hata'ya donup sonsuz donguye girmesin.
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        If Not ws.ProtectContents Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    End If
+    AN_ONB_KAPAT
+    AKSORA_BEKLE_KAPAT
+    mAdmMesgul = False
+    mYonlendirme = False
+    application.StatusBar = False
+    application.Cursor = xlDefault
+    If application.Calculation <> hesap Then application.Calculation = hesap
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    application.Interactive = True
+    If no <> 0 Then MsgBox "Yönetim merkezi açılamadı." & vbCrLf & vbCrLf & metin, vbExclamation, "AKSORA | ADMİN"
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    Resume Cikis
+End Sub
+
+'---------- bekleme karti (tum uzun gecisler) ----------
+' AKSORA penceresinin tam ortasinda, basliksiz kucuk kart (frmSplash kart olarak yeniden bicimlenir).
+' Kart kendi penceresinde cizildigi icin Excel ekrani donsa da hemen gorunur; AKSORA hangi ekrandaysa orada acilir.
+Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4, _
+    Optional ByVal durdur As Boolean = False) As Boolean
+    If AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_V11_MESGUL Then Exit Function
+    If mAdmYukleme Then AKSORA_BEKLE_KAPAT
+    mAdmYukleme = False
+    On Error GoTo son
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
+    If application.WindowState = xlMinimized Then Exit Function
+    AKSORA_BEKLE_KIPI = True
+    Load frmSplash
+    AKSORA_BEKLE_KIPI = False
+    BEKLE_KART_BICIM baslik, durdur
+    frmSplash.Show vbModeless
+    BEKLE_KART_KONUM
+    mAdmYukleme = True: mAdmYukSon = 0
+    AKSORA_BEKLE_AC = True
+    AKSORA_BEKLE_ILERLE y0, mesaj
+    Exit Function
+son:
+    AKSORA_BEKLE_KIPI = False
+    On Error Resume Next
+    Unload frmSplash
+    mAdmYukleme = False
+    On Error GoTo 0
+End Function
+
+Private Sub BEKLE_KART_BICIM(ByVal baslik As String, Optional ByVal durdur As Boolean = False)
+    Dim w As Single
+    On Error Resume Next
+    With frmSplash
+        .Caption = "AKSORA"
+        .StartUpPosition = 0
+        .Width = 420: .Height = IIf(durdur, 196, 164)
+        .Left = application.Left + (application.Width - .Width) / 2
+        .top = application.top + (application.Height - .Height) / 2
+        .BackColor = RGB(255, 255, 255)
+        .BorderStyle = fmBorderStyleSingle: .BorderColor = RGB(20, 103, 173)
+        w = .InsideWidth
+        .imgLogo.Visible = False
+        .lblImza.Visible = durdur
+        With .lblBaslik
+            .Caption = baslik: .Left = 0: .top = 18: .Width = w: .Height = 26
+            .Font.Name = "Segoe UI": .Font.Size = 15: .Font.bold = True: .Font.Italic = False
+            .ForeColor = RGB(12, 45, 79): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
+        End With
+        With .lblDurum
+            ' Durdurulabilir islerde iki satir: adim + gecen sure.
+            .Caption = vbNullString: .Left = 8: .top = IIf(durdur, 50, 58): .Width = w - 16: .Height = IIf(durdur, 34, 18)
+            .Font.Name = "Segoe UI": .Font.Size = 10: .Font.bold = False: .Font.Italic = False
+            .ForeColor = RGB(20, 103, 173): .TextAlign = fmTextAlignCenter: .WordWrap = durdur: .BackStyle = fmBackStyleTransparent
+        End With
+        With .lblBarArka
+            .Left = 36: .top = IIf(durdur, 92, 88): .Width = w - 72: .Height = 8: .BackColor = RGB(224, 232, 240): .BackStyle = fmBackStyleOpaque
+        End With
+        With .lblBar
+            .Left = 36: .top = IIf(durdur, 92, 88): .Width = 1: .Height = 8: .BackColor = RGB(0, 125, 110): .BackStyle = fmBackStyleOpaque
+            .ZOrder 0
+        End With
+        If durdur Then
+            ' DURDUR (lblImza) ve ARKA PLANA AL (lblAltBaslik) yan yana dugme.
+            With .lblImza
+                .Caption = "DURDUR": .Left = w / 2 - 166: .top = 114: .Width = 160: .Height = 28
+                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+                .ForeColor = vbWhite: .BackColor = RGB(220, 38, 38): .BackStyle = fmBackStyleOpaque
+                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
+            End With
+            With .lblAltBaslik
+                .Caption = "ARKA PLANA AL": .Left = w / 2 + 6: .top = 114: .Width = 160: .Height = 28
+                .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+                .ForeColor = vbWhite: .BackColor = RGB(20, 103, 173): .BackStyle = fmBackStyleOpaque
+                .TextAlign = fmTextAlignCenter: .WordWrap = False: .BorderStyle = fmBorderStyleNone
+            End With
+        Else
+            With .lblAltBaslik
+                .Caption = "Lütfen bekleyin, AKSORA verileri hazırlıyor": .Left = 0: .top = 106: .Width = w: .Height = 16
+                .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.bold = False: .Font.Italic = False
+                .ForeColor = RGB(100, 116, 139): .TextAlign = fmTextAlignCenter: .WordWrap = False: .BackStyle = fmBackStyleTransparent
+            End With
+        End If
+    End With
+    AKSORA_TELIF_ETIKET frmSplash
+    On Error GoTo 0
+End Sub
+
+' Kart penceresinin basligi kaldirilir ve AKSORA penceresinin tam ortasina alinir.
+Private Sub BEKLE_KART_KONUM()
+    Dim h As LongPtr, st As LongPtr, rx As ADMW_RECT, rF As ADMW_RECT, x As Long, y As Long
+    On Error Resume Next
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    If h = 0 Then Exit Sub
+    st = ADMW_GetWindowLong(h, -16)
+    st = st And Not &HC40000
+    ADMW_SetWindowLong h, -16, st
+    ADMW_SetWindowPos h, 0, 0, 0, 0, 0, &H37
+    ADMW_GetWindowRect application.hWnd, rx
+    ADMW_GetWindowRect h, rF
+    x = (rx.Left + rx.Right) \ 2 - (rF.Right - rF.Left) \ 2
+    y = (rx.top + rx.Bottom) \ 2 - (rF.Bottom - rF.top) \ 2
+    ADMW_SetWindowPos h, 0, x, y, 0, 0, &H15
+    frmSplash.Repaint
+    On Error GoTo 0
+End Sub
+
+' Karti ilerletir; kart kendi penceresinde hemen cizilir. Uzun islemlerde pencere "yanit vermiyor"a
+' dusmesin diye yarim saniyede bir mesaj kuyrugu bosaltilir (bu sirada tiklamalar engelli).
+Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
+    Dim iv As Boolean
+    If Not mAdmYukleme Then Exit Sub
+    On Error Resume Next
+    If y > 1 Then y = 1
+    If y < 0 Then y = 0
+    frmSplash.lblDurum.Caption = mesaj
+    frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * y)
+    frmSplash.Repaint
+    If mAdmYukSon = 0 Or Abs(Timer - mAdmYukSon) > 0.5 Then
+        iv = application.Interactive
+        application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+        ARKA_PLAN_KORU
+        mAdmYukSon = Timer
+    End If
+    On Error GoTo 0
+End Sub
+
+' Uzun dongulerde cagrilir: kart acikken yarim saniyede bir mesaj kuyrugunu bosaltir (yazilar degismez).
+Public Sub AKSORA_BEKLE_NABIZ()
+    Dim iv As Boolean
+    If Abs(Timer - mAdmYukSon) <= 0.25 Then Exit Sub
+    ' Kart acilamadiysa da (simge durumu, acilis vb.) Windows "Yanit vermiyor" demesin.
+    If Not mAdmYukleme Then
+        On Error Resume Next
+        iv = application.Interactive: application.Interactive = False
+        DoEvents
+        application.Interactive = iv
+        mAdmYukSon = Timer
+        Exit Sub
+    End If
+    On Error Resume Next
+    iv = application.Interactive
+    application.Interactive = False
+    DoEvents
+    application.Interactive = iv
+    ARKA_PLAN_KORU
+    mAdmYukSon = Timer
+    AKSORA_ADMIN_DURUM vbNullString
+    On Error GoTo 0
+End Sub
+
+' Kartin "ARKA PLANA AL" dugmesi (frmSplash lblAltBaslik_Click): kart ve Excel penceresi z-sirasinda en alta
+' gonderilir; pencere boyutu/durumu degismez, giris kapali kalir. Kullanici baska programlarla calisir.
+Public Sub AKSORA_ARKA_PLANA_AL()
+    Dim h As LongPtr
+    On Error Resume Next
+    AKSORA_ARKA_PLAN = True
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    ' SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE; HWND_BOTTOM = 1
+    If h <> 0 Then ADMW_SetWindowPos h, 1, 0, 0, 0, 0, &H13
+    ADMW_SetWindowPos application.hWnd, 1, 0, 0, 0, 0, &H13
+    On Error GoTo 0
+End Sub
+
+' ARKA PLANDA dugmesine ikinci tiklama: kart ve Excel one getirilir, is surer.
+Public Sub AKSORA_ONE_GETIR()
+    Dim h As LongPtr
+    On Error Resume Next
+    AKSORA_ARKA_PLAN = False
+    ' SWP_NOSIZE Or SWP_NOMOVE; HWND_TOP = 0
+    ADMW_SetWindowPos application.hWnd, 0, 0, 0, 0, 0, &H3
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    If h <> 0 Then ADMW_SetWindowPos h, 0, 0, 0, 0, 0, &H3
+    On Error GoTo 0
+End Sub
+
+' Uzun is surerken Excel simge durumuna alinmissa geri acilir ve arkaya gonderilir (kucuk pencerede sayfa denetimleri yazilamiyor).
+Private Sub ARKA_PLAN_KORU()
+    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
+    On Error Resume Next
+    If application.WindowState = xlMinimized Then
+        application.WindowState = xlMaximized
+        AKSORA_ARKA_PLANA_AL
+    End If
+    On Error GoTo 0
+End Sub
+
+' Is bitince Excel gorev cubugunda yanip soner (pencere one zorla getirilmez); sonuc mesaji Excel'de bekler.
+Public Sub AKSORA_ARKA_PLAN_BITIR()
+    Dim f As ADMW_FLASH
+    If Not AKSORA_ARKA_PLAN Then Exit Sub
+    AKSORA_ARKA_PLAN = False
+    On Error Resume Next
+    f.cbSize = LenB(f): f.hWnd = application.hWnd: f.dwFlags = 15: f.uCount = 0: f.dwTimeout = 0
+    ADMW_FlashWindowEx f
+    On Error GoTo 0
+End Sub
+
+Public Sub AKSORA_BEKLE_KAPAT()
+    On Error Resume Next
+    ADM_EKRAN_KILIT False
+    If mAdmYukleme Then Unload frmSplash
+    mAdmYukleme = False: Set mAdmYukWs = Nothing
+    On Error GoTo 0
+End Sub
+
+' Koruma ayarlarini saklayip korumayi gecici kaldirir (korumasizsa ayar bos kalir).
+Private Function BEKLE_SERBEST(ByVal ws As Worksheet, ByRef ayar As Variant) As Boolean
+    ayar = Empty
+    If Not (ws.ProtectContents Or ws.ProtectDrawingObjects Or ws.ProtectScenarios) Then BEKLE_SERBEST = True: Exit Function
+    With ws.Protection
+        ayar = Array(ws.ProtectContents, ws.ProtectDrawingObjects, ws.ProtectScenarios, .AllowFiltering, .AllowSorting, _
+            .AllowFormattingCells, .AllowFormattingColumns, .AllowFormattingRows)
+    End With
+    On Error Resume Next
+    ws.Unprotect pw
+    BEKLE_SERBEST = (Err.Number = 0)
+    On Error GoTo 0
+End Function
+
+Private Sub BEKLE_KORU(ByVal ws As Worksheet, ByVal ayar As Variant)
+    If Not IsArray(ayar) Then Exit Sub
+    On Error Resume Next
+    ws.Protect Password:=pw, Contents:=ayar(0), DrawingObjects:=ayar(1), Scenarios:=ayar(2), UserInterfaceOnly:=True, _
+        AllowFiltering:=ayar(3), AllowSorting:=ayar(4), AllowFormattingCells:=ayar(5), AllowFormattingColumns:=ayar(6), AllowFormattingRows:=ayar(7)
+    On Error GoTo 0
+End Sub
+
+Private Sub BEKLE_METIN(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
+    ByVal w As Double, ByVal h As Double, ByVal boyut As Double, ByVal renk As Long, ByVal kalin As Boolean)
+    Dim s As Shape
+    Set s = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, x, y, w, h)
+    s.Name = ad: s.Fill.Visible = msoFalse: s.line.Visible = msoFalse
+    With s.TextFrame2
+        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
+        .WordWrap = msoFalse: .AutoSize = msoAutoSizeNone
+        .TextRange.Text = metin
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = boyut: .TextRange.Font.bold = IIf(kalin, msoTrue, msoFalse)
+        .TextRange.Font.Fill.ForeColor.RGB = renk
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+    End With
+End Sub
+
+Private Sub BEKLE_SIL(ByVal ws As Worksheet)
+    Dim i As Long
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 5) = "ADMY_" Then ws.Shapes(i).Delete
+    Next i
+End Sub
+
+Public Sub ADM_ILERLE(ByVal y As Double, ByVal mesaj As String)
+    AKSORA_BEKLE_ILERLE y, mesaj
+End Sub
+
+Public Sub AKSORA_ADMIN_YENILE()
+    ADM_AC
+End Sub
+
+Public Sub AKSORA_ADMIN_CIKIS()
+    mAdmOturum = False
+    AKSORA_BIRIM_ANA_MENU
+End Sub
+
+Public Sub AKSORA_ADMIN_CIKTI()
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+    AKSORA_CIKTI_SAYFA ws
+End Sub
+
+Private Function ADM_SAYFA() As Worksheet
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ADM
+    End If
+    Set ADM_SAYFA = ws
+End Function
+
+Private Sub ADM_GORUNUM(ByVal ws As Worksheet)
+    Dim z As Double, sr As Long
+    If Not (ActiveSheet Is ws) Then Exit Sub
+    On Error Resume Next
+    With ThisWorkbook.Windows(1)
+        If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+        .DisplayGridlines = False: .DisplayHeadings = False: .DisplayWorkbookTabs = False
+        .DisplayHorizontalScrollBar = False: .DisplayVerticalScrollBar = True
+        z = (.UsableWidth - 20) / ws.Range("A1:N1").Width * 100
+        z = application.Max(10, application.Min(400, Fix(z)))
+        If .Zoom <> z Then .Zoom = z
+        .ScrollRow = 1: .ScrollColumn = 1
+    End With
+    ws.Range(ADM_ARA_HUCRE).Select
+    On Error GoTo 0
+End Sub
+
+' Il secimi (C4) raporu yeniden kurar; arama kutusu (C30) aramayi calistirir.
+Public Sub AKSORA_ADMIN_DEGISIM(ByVal hedef As Range)
+    Dim ev As Boolean, ws As Worksheet, il As String
+    If mYonlendirme Then Exit Sub
+    Set ws = hedef.Worksheet
+    ev = application.EnableEvents
+    application.EnableEvents = False
+    On Error GoTo son
+    If Not Intersect(hedef, ws.Range(ADM_IL_HUCRE)) Is Nothing Then
+        il = ADM_IL_KOD(CStr(ws.Range(ADM_IL_HUCRE).Value2))
+        ws.Unprotect ""
+        ws.Range("BX3").Value2 = il
+        application.EnableEvents = ev
+        ADM_AC
+        Exit Sub
+    End If
+    If Not Intersect(hedef, ws.Range(ADM_ARA_HUCRE)) Is Nothing Then AKSORA_ADMIN_ARA
+son:
+    application.EnableEvents = ev
+End Sub
+
+'---------- birimler, iller ----------
+' Birim: ad, renk, canli stok sayfalari, duzen (1 malzeme sutunlari, 2 musteri/yatirim/ilce sutunlari), kisa ad
+Private Function ADM_BIRIMLER() As Variant
+    ADM_BIRIMLER = Array( _
+        Array("Malzeme Stok Birimi", RGB(0, 125, 110), Array("CDP_STOK", "EPP_STOK", "İLÇE_STOK", "YÜKLENİCİ_STOK"), 1, "MALZEME"), _
+        Array("Yatırım Birimi", RGB(20, 103, 173), Array("Y_CDP_YATIRIM_STOK", "Y_EPP_YATIRIM_STOK", "Y_CDP_YÜKLENİCİ_STOK", "Y_EPP_YÜKLENİCİ_STOK"), 2, "YATIRIM"), _
+        Array("Müşteri Birimi", RGB(32, 133, 158), Array("M_CDP_STOK", "M_İLÇE_STOK", "M_YÜKLENİCİ_STOK"), 2, "MÜŞTERİ"), _
+        Array("İlçe Yönetim Birimi", RGB(79, 70, 160), Array("I_CDP_İLÇELER_STOK", "I_EPP_İLÇELER_STOK"), 2, "İLÇE"))
+End Function
+
+Public Function ADM_ILLER() As Variant
+    ADM_ILLER = Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+End Function
+
+Private Function ADM_IL_KOD(ByVal metin As String) As String
+    metin = AKFIX_NORMAL(Replace(Replace(metin, "İl Müdürlüğü", ""), "İL MÜDÜRLÜĞÜ", ""))
+    Select Case metin
+        Case "ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE": ADM_IL_KOD = metin
+        Case Else: ADM_IL_KOD = vbNullString
+    End Select
+End Function
+
+' Birimin ekrandaki ili (canli stok sayfasinin A5 basligindan).
+' Birimin ekrandaki ili: once verinin uretim yeri kodundan (en guvenilir; sayfa basligi il degisince
+' guncellenmeyebilir), veri yoksa sayfa isaretlerinden (BX19/BX20) ve basliktan (A5).
+Public Function ADM_CANLI_IL(ByVal u As Long) As String
+    Dim kx As Variant, sh As Worksheet, bb As Variant, r As Long, uy As String, v As Variant
+    bb = ADM_BIRIMLER()
+    For Each kx In bb(u)(2)
+        Set sh = ADM_WS(CStr(kx))
+        If Not sh Is Nothing Then
+            v = sh.Range("A7:A40").Value2
+            For r = 1 To UBound(v, 1)
+                If Not IsError(v(r, 1)) Then
+                    uy = Trim$(CStr(v(r, 1)))
+                    If Len(uy) = 4 Then
+                        ADM_CANLI_IL = ATIL_TESIS_IL(uy)
+                        If Len(ADM_CANLI_IL) > 0 Then Exit Function
+                    End If
+                End If
+            Next r
+        End If
+    Next kx
+    For Each kx In bb(u)(2)
+        Set sh = ADM_WS(CStr(kx))
+        If Not sh Is Nothing Then
+            ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("BX19").Value2))
+            If Len(ADM_CANLI_IL) = 0 Then ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("BX20").Value2))
+            If Len(ADM_CANLI_IL) = 0 Then ADM_CANLI_IL = ADM_IL_KOD(ADM_METIN(sh.Range("A5").Value2))
+            If Len(ADM_CANLI_IL) > 0 Then Exit Function
+        End If
+    Next kx
+End Function
+
+' Il kayit sayfalari (canli il disindaki iller icin).
+Private Function ADM_KAYIT_ADLARI(ByVal u As Long, ByVal il As String) As Variant
+    Select Case u
+        Case 0: ADM_KAYIT_ADLARI = Array("_AKLIVE_" & il & "_CDP", "_AKLIVE_" & il & "_EPP", "_AKLIVE_" & il & "_ILC", "_AKLIVE_" & il & "_YUK")
+        Case 1: ADM_KAYIT_ADLARI = Array("_YA_" & il & "_1", "_YA_" & il & "_2", "_YA_" & il & "_3", "_YA_" & il & "_4")
+        Case 2: ADM_KAYIT_ADLARI = Array("_MA_" & il & "_CDP", "_MA_" & il & "_ILCE", "_MA_" & il & "_YUK")
+        Case Else: ADM_KAYIT_ADLARI = Array("_IA_" & il)
+    End Select
+End Function
+
+'---------- veri okuma (bellekte tutulur) ----------
+' Kayit: Array(0 tarih, 1 satirlar() metin, 2 satir sayisi, 3 ozet, 4 depolar, 5 isg, 6 kaynak)
+'   satir metni: UY|depo|depo adi|malzeme|tanim|parti|miktar|olcu|deger|seri  (vbTab ile)
+'   ozet: Array(satir, deger, eksi, fiyatsiz, hurda kalem, hurda TL, cikma kalem)
+'   depolar: UY|depo -> Array(ad, satir, deger)
+'   isg (yalniz ilce): depo -> Array(ad, zimmet kalem, zimmet adet, sarf kalem, sarf adet)
+' Uretim yeri ile ait degilse False (bilinmeyen uretim yeri: True, eski davranis).
+Private Function ADM_IL_UYGUN(ByVal uy As String, ByVal il As String) As Boolean
+    Static onb As Object
+    Dim t As String
+    If onb Is Nothing Then Set onb = CreateObject("Scripting.Dictionary")
+    If Not onb.Exists(uy) Then onb(uy) = ATIL_TESIS_IL(uy)
+    t = onb(uy)
+    ADM_IL_UYGUN = (Len(t) = 0 Or t = il)
+End Function
+
+Private Function ADM_VERI(ByVal u As Long, ByVal il As String) As Variant
+    Dim isgVar As Boolean
+    Dim imza As String, canli As Boolean, kx As Variant, sh As Worksheet, son As Long, t As Variant, k As String
+    Dim v As Variant, satirlar() As String, n As Long, tarih As Date, ozet(0 To 6) As Double, depolar As Object, isg As Object
+    Dim i As Long, cU As Long, cD As Long, cA As Long, cM As Long, cT As Long, cP As Long, cQ As Long, cB As Long, cV As Long, cs As Long, cF As Long
+    Dim mal As String, parti As String, x As Double, d As Double, liste As Object, kod As String, kalem As Object, duzen As Long
+    Dim bb As Variant, kaynaklar As Variant
+    If mAdmOnbellek Is Nothing Then Set mAdmOnbellek = CreateObject("Scripting.Dictionary")
+    bb = ADM_BIRIMLER()
+    canli = (il = ADM_CANLI_IL(u))
+    ' imza: tarih ve satir sayilari
+    If canli Then
+        For Each kx In bb(u)(2)
+            Set sh = ADM_WS(CStr(kx))
+            If Not sh Is Nothing Then imza = imza & "|" & CStr(sh.Range("C2").Value2) & "#" & AKSORA_SON_SATIR(sh, IIf(u = 0, 7, 5))
+        Next kx
+    Else
+        For Each kx In ADM_KAYIT_ADLARI(u, il)
+            Set sh = ADM_WS(CStr(kx))
+            If Not sh Is Nothing Then imza = imza & "|" & CStr(sh.Range("A1").Value2) & CStr(sh.Range("A3").Value2) & "#" & CStr(sh.Range("D1").Value2) & "#" & CStr(sh.Range("A4").Value2)
+        Next kx
+    End If
+    imza = IIf(canli, "C", "K") & imza
+    k = u & "|" & il
+    If mAdmOnbellek.Exists(k) Then
+        If mAdmOnbellek(k)(7) = imza Then ADM_VERI = mAdmOnbellek(k): Exit Function
+    End If
+    application.StatusBar = "AKSORA Yönetim Merkezi  •  " & bb(u)(4) & "  •  " & Y_IL_ADI(il) & " okunuyor..."
+    Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
+    Set isg = CreateObject("Scripting.Dictionary"): isg.CompareMode = vbTextCompare
+    Set kalem = CreateObject("Scripting.Dictionary"): kalem.CompareMode = vbTextCompare
+    If u = 3 Then Set liste = I_ISG_LISTE()
+    ReDim satirlar(1 To 1)
+    If canli Then kaynaklar = bb(u)(2) Else kaynaklar = ADM_KAYIT_ADLARI(u, il)
+    For Each kx In kaynaklar
+        Set sh = ADM_WS(CStr(kx))
+        v = Empty: duzen = IIf(u = 0, 1, 2)
+        If Not sh Is Nothing Then
+            If canli Or u = 0 Then
+                ' canli sayfa veya malzeme kaydi (_AKLIVE_): stok sayfasiyla ayni duzen, veri 7. satirdan
+                If canli Then
+                    t = sh.Range("C2").Value
+                Else
+                    t = sh.Range("A3").Value
+                End If
+                If Not IsError(t) Then
+                    If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
+                End If
+                son = AKSORA_SON_SATIR(sh, IIf(u = 0, 7, 5))
+                If son >= 7 Then v = sh.Range(sh.Cells(7, 1), sh.Cells(son, 14)).Value2
+            Else
+                t = sh.Range("A1").Value
+                If Not IsError(t) Then
+                    If IsDate(t) Then If CDate(t) > tarih Then tarih = CDate(t)
+                End If
+                On Error Resume Next
+                v = AKSORA_PAKET_OKU(sh)
+                If Err.Number <> 0 Then v = Empty
+                On Error GoTo 0
+            End If
+        End If
+        If IsArray(v) Then
+            If duzen = 1 Then
+                cU = 1: cD = 2: cA = 3: cP = 6: cM = 7: cT = 8: cQ = 9: cB = 10: cV = 11: cs = 0: cF = 0
+            Else
+                cU = 1: cD = 2: cA = 3: cM = 5: cT = 6: cQ = 7: cB = 8: cP = 9: cs = 10: cV = 11: cF = 14
+            End If
+            If n + UBound(v, 1) > UBound(satirlar) Then ReDim Preserve satirlar(1 To n + UBound(v, 1) + 1)
+            For i = 1 To UBound(v, 1)
+                If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+                mal = Y_KOD_NORM(v(i, cM))
+                ' Baska ilin uretim yerine ait satir (il degisiminde yenilenmemis sayfa) bu ile sayilmaz.
+                If Len(mal) > 0 Then If Not ADM_IL_UYGUN(I_TEMIZ(v(i, cU)), il) Then mal = vbNullString
+                If Len(mal) > 0 Then
+                    n = n + 1
+                    x = I_SAYI(v(i, cQ)): d = I_SAYI(v(i, cV)): parti = I_TEMIZ(v(i, cP))
+                    satirlar(n) = I_TEMIZ(v(i, cU)) & vbTab & I_TEMIZ(v(i, cD)) & vbTab & I_TEMIZ(v(i, cA)) & vbTab & mal & vbTab & _
+                        I_TEMIZ(v(i, cT)) & vbTab & parti & vbTab & Trim$(Str$(x)) & vbTab & I_TEMIZ(v(i, cB)) & vbTab & Trim$(Str$(d)) & vbTab & _
+                        IIf(cs > 0, I_TEMIZ(v(i, IIf(cs > 0, cs, 1))), "")
+                    ozet(0) = ozet(0) + 1: ozet(1) = ozet(1) + d
+                    If x < 0 Then ozet(2) = ozet(2) + 1
+                    If u = 2 And cF > 0 Then
+                        If UBound(v, 2) >= cF Then If I_SAYI(v(i, cF)) = 1 Then ozet(3) = ozet(3) + 1
+                    End If
+                    If InStr(1, parti, "HURDA", vbTextCompare) > 0 Then ozet(4) = ozet(4) + 1: ozet(5) = ozet(5) + d
+                    If InStr(1, parti, "CIKMA", vbTextCompare) > 0 Then ozet(6) = ozet(6) + 1
+                    kod = I_TEMIZ(v(i, cU)) & "|" & I_TEMIZ(v(i, cD))
+                    If Not depolar.Exists(kod) Then depolar(kod) = Array(I_TEMIZ(v(i, cA)), 0#, 0#)
+                    t = depolar(kod): t(1) = t(1) + 1: t(2) = t(2) + d: depolar(kod) = t
+                    ' Ilce ISG: zimmet listesindeki (Z) ve manuel sarf (M) malzemeler, depoda miktar > 0
+                    ' Dikkat: VBA And kisa devre yapmaz; liste(mal) yalniz Exists sonrasi okunur (yoksa sozluge bos anahtar eklenir).
+                    isgVar = False
+                    If u = 3 Then
+                        If liste.Exists(mal) Then isgVar = (x > 0 And Not (liste(mal) <> "Z" And d >= (I_ISG_BOLGE_TL - 0.005) * x))
+                    End If
+                    If isgVar Then
+                            kod = UCase$(I_TEMIZ(v(i, cD)))
+                            If Not isg.Exists(kod) Then isg(kod) = Array(I_TEMIZ(v(i, cA)), 0#, 0#, 0#, 0#)
+                            t = isg(kod)
+                            If Not kalem.Exists(kod & "|" & I_TEMIZ(v(i, cU)) & "|" & mal) Then
+                                kalem(kod & "|" & I_TEMIZ(v(i, cU)) & "|" & mal) = True
+                                If liste(mal) = "Z" Then t(1) = t(1) + 1 Else t(3) = t(3) + 1
+                            End If
+                            If liste(mal) = "Z" Then t(2) = t(2) + x Else t(4) = t(4) + x
+                            isg(kod) = t
+                    End If
+                End If
+            Next i
+        End If
+    Next kx
+    t = Array(tarih, satirlar, n, ozet, depolar, isg, IIf(canli, "ekran", "kayıt"), imza)
+    mAdmOnbellek(k) = t
+    ADM_VERI = t
+End Function
+
+Public Function ADM_WS(ByVal ad As String) As Worksheet
+    On Error Resume Next
+    Set ADM_WS = ThisWorkbook.Worksheets(ad)
+    On Error GoTo 0
+End Function
+
+Private Function ADM_SAYI(ByVal v As Variant) As Double
+    ADM_SAYI = I_SAYI(v)
+End Function
+
+Private Function ADM_METIN(ByVal v As Variant) As String
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    ADM_METIN = Trim$(CStr(v))
+End Function
+
+Public Function ADM_TL(ByVal x As Double) As String
+    ADM_TL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
+End Function
+
+' Buyuk tutarlar kisa: 12,4 mn TL
+Public Function ADM_TL_KISA(ByVal x As Double) As String
+    If Abs(x) >= 1000000# Then
+        ADM_TL_KISA = AKSORA_SAYI_METNI(x / 1000000#, "#,##0.0") & " mn TL"
+    ElseIf Abs(x) >= 1000# Then
+        ADM_TL_KISA = AKSORA_SAYI_METNI(x / 1000#, "#,##0.0") & " bin TL"
+    Else
+        ADM_TL_KISA = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
+    End If
+End Function
+
+Public Function ADM_ADET(ByVal x As Double) As String
+    If x = Int(x) Then ADM_ADET = AKSORA_SAYI_METNI(x, "#,##0") Else ADM_ADET = AKSORA_SAYI_METNI(x, "#,##0.###")
+End Function
+
+' Uyari: Array(seviye 1 KRITIK / 2 UYARI / 3 BILGI, mesaj, kaynak, kategori)
+Public Sub ADM_UYAR(ByVal c As Collection, ByVal seviye As Long, ByVal mesaj As String, ByVal kaynak As String, Optional ByVal kategori As String = "")
+    If Len(kategori) = 0 Then kategori = kaynak
+    c.Add Array(seviye, mesaj, kaynak, kategori)
+End Sub
+
+Private Function ADM_GUN(ByVal t As Date) As Long
+    If t = 0 Then ADM_GUN = -1 Else ADM_GUN = DateDiff("d", DateValue(t), Date)
+End Function
+
+'---------- il secim dugmeleri ----------
+Public Sub AKSORA_ADMIN_IL_SEC()
+    Dim ws As Worksheet, il As String
+    If mAdmMesgul Then Exit Sub
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    il = ws.Shapes(CStr(application.Caller)).AlternativeText
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+    ws.Unprotect ""
+    ws.Range("BX3").Value2 = il
+    ADM_AC
+End Sub
+
+Public Sub AKSORA_ADMIN_ARA_TEMIZLE()
+    Dim ws As Worksheet, ev As Boolean
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    ev = application.EnableEvents: application.EnableEvents = False
+    On Error Resume Next
+    ws.Unprotect ""
+    ws.Range(ADM_ARA_HUCRE).MergeArea.ClearContents
+    ws.Range("BX4").ClearContents
+    On Error GoTo 0
+    application.EnableEvents = ev
+    AKSORA_ADMIN_ARA
+End Sub
+
+Private Sub ADM_IL_DUGMELERI(ByVal ws As Worksheet, ByVal secIl As String)
+    Dim iller As Variant, i As Long, s As Shape, x As Double, w As Double, kod As String, secili As Boolean
+    iller = Array("", "ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+    w = ws.Columns("C").Width * 1.05
+    x = ws.Range("C4").Left
+    For i = 0 To 5
+        kod = CStr(iller(i)): secili = (kod = secIl)
+        Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x + i * (w + 6), ws.Range("C4").top + 4, w, ws.Rows(4).Height - 8)
+        With s
+            .Name = "ADM_IL_" & i
+            .AlternativeText = kod
+            .Adjustments.Item(1) = 0.3
+            .Fill.ForeColor.RGB = IIf(secili, RGB(12, 45, 79), vbWhite)
+            .line.ForeColor.RGB = RGB(20, 103, 173): .line.Weight = IIf(secili, 1.5, 1)
+            .Placement = xlFreeFloating
+            .OnAction = BIRIM_MAKRO("AKSORA_ADMIN_IL_SEC")
+            With .TextFrame2
+                .MarginLeft = 2: .MarginRight = 2: .MarginTop = 0: .MarginBottom = 0
+                .VerticalAnchor = msoAnchorMiddle
+                .TextRange.Text = IIf(Len(kod) = 0, "TÜMÜ", UCase$(Y_IL_ADI(kod)))
+                .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10: .TextRange.Font.bold = msoTrue
+                .TextRange.Font.Fill.ForeColor.RGB = IIf(secili, vbWhite, RGB(12, 45, 79))
+                .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+            End With
+        End With
+    Next i
+End Sub
+
+'---------- demontaj kontrolu (ilce gecmisinden, her il icin) ----------
+' Ilce biriminin STOK/DEMONTAJ ekraniyla ayni kural: yeni = son guncelleme, eski = onceki gunun son guncellemesi.
+' Azalan (demontaj disi) her malzeme icin ayni depo + UY + malzemede CIKMA/BDSZ girisi aranir.
+' Donus: Array(eskiT, yeniT, depolar, eksikler)
+'   depolar: depo -> Array(ad, azalan kalem, girilen kalem, eksik kalem, eksik adet)
+'   eksikler: Collection of Array(il, depo, depo adi, malzeme, tanim, eksik adet, olcu, durum)
+Private Function ADM_DEMONTAJ(ByVal il As String) As Variant
+    Dim tarihler As Collection, eskiT As String, yeniT As String, i As Long, dE As Object, dY As Object, anahtar As Object
+    Dim grup As Object, k As Variant, p() As String, t As Variant, g As Variant, depolar As Object, eksik As Collection
+    Dim mEs As Double, mYe As Double, gk As String, ad As String, imza As String, o As Variant, bf As Double, vEs As Double, isgL As Object
+    If mAdmOnbellek Is Nothing Then Set mAdmOnbellek = CreateObject("Scripting.Dictionary")
+    Set depolar = CreateObject("Scripting.Dictionary"): depolar.CompareMode = vbTextCompare
+    Set eksik = New Collection
+    Set tarihler = I_GECMIS_TARIHLER(il)
+    If tarihler.Count > 0 Then
+        yeniT = Format$(tarihler(1), I_TF)
+        For i = 2 To tarihler.Count
+            If Int(CDbl(tarihler(i))) < Int(CDbl(tarihler(1))) Then eskiT = Format$(tarihler(i), I_TF): Exit For
+        Next i
+    End If
+    If Len(eskiT) = 0 Then ADM_DEMONTAJ = Array(eskiT, yeniT, depolar, eksik): Exit Function
+    imza = "DEM6|" & il & "|" & eskiT & "|" & yeniT & "|" & I_MAL_HARITA().Count
+    If mAdmOnbellek.Exists(imza) Then ADM_DEMONTAJ = mAdmOnbellek(imza): Exit Function
+    application.StatusBar = "AKSORA Yönetim Merkezi  •  " & Y_IL_ADI(il) & " demontaj kontrolü..."
+    Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
+    Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    ' ISG malzemeleri demontaj kontrolune girmez (zimmet / manuel sarf ile cikar).
+    Set isgL = I_ISG_LISTE()
+    For Each k In dE.keys
+        I_MAL_NOT ADM_KOD3(k), CStr(dE(k)(1)), CStr(dE(k)(2))
+        If Len(I_DEM_DISI(ADM_KOD3(k), isgL)) = 0 Then anahtar(k) = True
+    Next k
+    For Each k In dY.keys
+        I_MAL_NOT ADM_KOD3(k), CStr(dY(k)(1)), CStr(dY(k)(2))
+        If Len(I_DEM_DISI(ADM_KOD3(k), isgL)) = 0 Then anahtar(k) = True
+    Next k
+    For Each k In anahtar.keys
+        mEs = 0: mYe = 0
+        If dE.Exists(k) Then mEs = dE(k)(3)
+        If dY.Exists(k) Then mYe = dY(k)(3)
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            gk = p(0) & "|" & p(1) & "|" & p(2)
+            If Not grup.Exists(gk) Then grup(gk) = Array(0#, 0#)
+            g = grup(gk)
+            If I_DEMONTAJ_MI(p(3)) Then
+                If mYe > mEs Then g(1) = g(1) + (mYe - mEs)
+            ElseIf mYe < mEs Then
+                g(0) = g(0) + (mEs - mYe)
+            End If
+            grup(gk) = g
+        End If
+    Next k
+    i = 0
+    For Each k In anahtar.keys
+        i = i + 1: If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+        mEs = 0: mYe = 0: vEs = 0
+        If dE.Exists(k) Then mEs = dE(k)(3): vEs = dE(k)(4): t = dE(k)
+        If dY.Exists(k) Then mYe = dY(k)(3): t = dY(k)
+        p = Split(CStr(k), "|")
+        If UBound(p) >= 3 Then
+            If mYe + 0.0005 < mEs And Not I_DEMONTAJ_MI(p(3)) Then
+                ad = CStr(t(0))
+                If mEs > 0 Then bf = vEs / mEs Else bf = 0
+                If Not depolar.Exists(p(0)) Then depolar(p(0)) = Array(ad, 0&, 0&, 0&, 0#, 0#)
+                o = depolar(p(0))
+                o(1) = o(1) + 1
+                g = grup(p(0) & "|" & p(1) & "|" & p(2))
+                If g(1) <= 0.0005 Then
+                    o(3) = o(3) + 1: o(4) = o(4) + (mEs - mYe): o(5) = o(5) + (mEs - mYe) * bf
+                    eksik.Add Array(il, p(0), ad, p(2), CStr(t(1)), mEs - mYe, CStr(t(2)), "GİRİŞ YOK", (mEs - mYe) * bf)
+                ElseIf g(1) + 0.0005 < g(0) Then
+                    gk = "#" & p(0) & "|" & p(1) & "|" & p(2)
+                    If Not grup.Exists(gk) Then
+                        grup(gk) = True
+                        o(3) = o(3) + 1: o(4) = o(4) + (g(0) - g(1)): o(5) = o(5) + (g(0) - g(1)) * bf
+                        eksik.Add Array(il, p(0), ad, p(2), CStr(t(1)), g(0) - g(1), CStr(t(2)), "EKSİK GİRİŞ", (g(0) - g(1)) * bf)
+                    End If
+                Else
+                    o(2) = o(2) + 1
+                End If
+                depolar(p(0)) = o
+            End If
+        End If
+    Next k
+    I_ANAHTAR_SIRALA depolar
+    t = Array(eskiT, yeniT, depolar, eksik)
+    mAdmOnbellek(imza) = t
+    ADM_DEMONTAJ = t
+End Function
+
+'---------- rapor ----------
+Private Sub ADM_KUR(ByVal ws As Worksheet)
+    Dim b As Variant, iller As Variant, secIl As String, u As Long, p As Long, il As String, veri As Variant, i As Long, j As Long, r As Long
+    Dim ad(0 To 3) As String, deger(0 To 3) As Double, satir(0 To 3) As Double, depoSay(0 To 3) As Long
+    Dim fiyatsiz(0 To 3) As Double, hurda(0 To 3) As Double, hurdaTl(0 To 3) As Double, enEski(0 To 3) As Date, enYeni(0 To 3) As Date
+    Dim ilDeger(0 To 4, 0 To 3) As Double, ilTarih(0 To 4, 0 To 3) As Date, ilIsgZ(0 To 4) As Double, ilIsgS(0 To 4) As Double
+    Dim ilIsgZK(0 To 4) As Double, ilIsgSK(0 To 4) As Double, ilHurda(0 To 4) As Double, ilEksi(0 To 4) As Double, ilTekil(0 To 4) As Double
+    Dim ilDemK(0 To 4) As Double, ilDemA(0 To 4) As Double, ilDemAz(0 To 4) As Double, ilDemG(0 To 4) As Double, ilDemT(0 To 4) As String
+    Dim ilDemTl(0 To 4) As Double, demToplamTl As Double, enler As Variant
+    Dim tekil As Object, tekilSec As Object, k As Variant, kx As Variant, t As Variant, uy As Collection, tekilToplam As Double, tumToplam As Double
+    Dim isgSatir As Collection, dem As Variant, demEksik As Collection, sh As Worksheet, gun As Long, secili As Boolean
+    Dim krit As Long, uyari As Long, bilgi As Long, skor As Long, ozet As String, oncelik As String, n As Long, renk As Long
+    Dim sira() As Variant, satirNo As Long, s As Shape, malz As Object, parca() As String, x As Double, d As Double, ilMetin As String
+    Dim tAsim As Long, tDikkat As Long, tGirilmedi As Long, t45 As Long, ter As Long, terIl As String, enBirim As Long, isgZ As Double
+    Dim kategori As Object, aramaMetni As String, demToplamK As Double, demToplamA As Double
+    Dim aylik As Object, ayCur As Long
+    Set uy = New Collection: Set isgSatir = New Collection: Set demEksik = New Collection
+    Set tekil = CreateObject("Scripting.Dictionary"): tekil.CompareMode = vbTextCompare
+    Set tekilSec = CreateObject("Scripting.Dictionary"): tekilSec.CompareMode = vbTextCompare
+    b = ADM_BIRIMLER(): iller = ADM_ILLER()
+    secIl = ADM_IL_KOD(CStr(ws.Range("BX3").Value2))
+    aramaMetni = CStr(ws.Range("BX4").Value2)
+    If Len(secIl) = 0 Then ilMetin = "Tüm iller" Else ilMetin = Y_IL_ADI(secIl)
+    '--- birim x il verileri (il karsilastirmasi icin her zaman bes il)
+    For u = 0 To 3
+        ad(u) = CStr(b(u)(0))
+        For p = 0 To 4
+            il = CStr(iller(p))
+            secili = (Len(secIl) = 0 Or il = secIl)
+            ADM_ILERLE 0.05 + 0.6 * (u * 5 + p) / 20, ad(u) & "  •  " & Y_IL_ADI(il) & " okunuyor..."
+            veri = ADM_VERI(u, il)
+            ilTarih(p, u) = veri(0)
+            If veri(2) > 0 Then
+                ilDeger(p, u) = veri(3)(1)
+                If u = 0 Then ilHurda(p) = veri(3)(4)
+                ' Ilce (K) depolari uc birimde birden bulunur: toplanmaz, en yuksek birim degeri alinir.
+                If veri(3)(2) > ilEksi(p) Then ilEksi(p) = veri(3)(2)
+                For Each k In veri(4).keys
+                    kx = il & "|" & k
+                    If Not tekil.Exists(kx) Then
+                        tekil(kx) = Array(u, veri(4)(k)(0), veri(4)(k)(1), veri(4)(k)(2), CStr(b(u)(4)), il, CStr(k))
+                    Else
+                        t = tekil(kx)
+                        If InStr(t(4), CStr(b(u)(4))) = 0 Then t(4) = t(4) & " + " & CStr(b(u)(4))
+                        If veri(4)(k)(2) > t(3) Then t(0) = u: t(1) = veri(4)(k)(0): t(2) = veri(4)(k)(1): t(3) = veri(4)(k)(2)
+                        tekil(kx) = t
+                    End If
+                Next k
+                If u = 3 Then
+                    For Each k In veri(5).keys
+                        ilIsgZ(p) = ilIsgZ(p) + veri(5)(k)(2): ilIsgS(p) = ilIsgS(p) + veri(5)(k)(4)
+                        ilIsgZK(p) = ilIsgZK(p) + veri(5)(k)(1): ilIsgSK(p) = ilIsgSK(p) + veri(5)(k)(3)
+                        If secili Then isgSatir.Add Array(il, CStr(k), veri(5)(k)(0), veri(5)(k)(1), veri(5)(k)(2), veri(5)(k)(3), veri(5)(k)(4))
+                    Next k
+                End If
+            End If
+            If secili Then
+                If veri(2) > 0 Then
+                    satir(u) = satir(u) + veri(3)(0): deger(u) = deger(u) + veri(3)(1)
+                    fiyatsiz(u) = fiyatsiz(u) + veri(3)(3)
+                    hurda(u) = hurda(u) + veri(3)(4): hurdaTl(u) = hurdaTl(u) + veri(3)(5)
+                    depoSay(u) = depoSay(u) + veri(4).Count
+                End If
+                If veri(0) > 0 Then
+                    If enEski(u) = 0 Or veri(0) < enEski(u) Then enEski(u) = veri(0)
+                    If veri(0) > enYeni(u) Then enYeni(u) = veri(0)
+                End If
+                gun = ADM_GUN(CDate(veri(0)))
+                If gun < 0 Then
+                    ADM_UYAR uy, 3, ad(u) & " • " & Y_IL_ADI(il) & ": henüz güncelleme / kayıt yok.", ad(u), "Güncellik"
+                ElseIf gun >= 3 Then
+                    ADM_UYAR uy, 1, ad(u) & " • " & Y_IL_ADI(il) & ": veriler " & gun & " gündür güncellenmedi (son " & Format$(veri(0), "dd.mm.yyyy hh:nn") & ").", ad(u), "Güncellik"
+                ElseIf gun >= 1 Then
+                    ADM_UYAR uy, 2, ad(u) & " • " & Y_IL_ADI(il) & ": son güncelleme " & gun & " gün önce.", ad(u), "Güncellik"
+                End If
+                If veri(3)(2) > 0 Then ADM_UYAR uy, 1, ad(u) & " • " & Y_IL_ADI(il) & ": " & veri(3)(2) & " stok satırı EKSİ miktarda; SAP kayıtları kontrol edilmeli.", ad(u), "Eksi stok"
+                If veri(3)(3) > 0 Then ADM_UYAR uy, 2, ad(u) & " • " & Y_IL_ADI(il) & ": " & AKSORA_SAYI_METNI(veri(3)(3), "#,##0") & " stok satırının fiyatı yok; değer eksik hesaplanıyor.", ad(u), "Fiyat"
+            End If
+        Next p
+    Next u
+    For Each k In tekil.keys
+        tumToplam = tumToplam + tekil(k)(3)
+        For p = 0 To 4
+            If tekil(k)(5) = iller(p) Then ilTekil(p) = ilTekil(p) + tekil(k)(3)
+        Next p
+        If Len(secIl) = 0 Or tekil(k)(5) = secIl Then tekilSec(k) = tekil(k): tekilToplam = tekilToplam + tekil(k)(3)
+    Next k
+    If hurda(0) > 0 Then ADM_UYAR uy, 3, "Malzeme • " & ilMetin & ": HURDA partide " & AKSORA_SAYI_METNI(hurda(0), "#,##0") & " kalem (" & ADM_TL(hurdaTl(0)) & ") bekliyor; hurda satış / imha planlanabilir.", ad(0), "Hurda"
+    '--- demontaj (her il, ilce gecmisinden)
+    For p = 0 To 4
+        il = CStr(iller(p))
+        ADM_ILERLE 0.66 + 0.04 * p, Y_IL_ADI(il) & "  •  demontaj kontrolü..."
+        dem = ADM_DEMONTAJ(il)
+        ilDemT(p) = IIf(Len(dem(0)) > 0, Left$(dem(0), 16) & "  >  " & Left$(dem(1), 16), "")
+        For Each k In dem(2).keys
+            ilDemAz(p) = ilDemAz(p) + dem(2)(k)(1): ilDemG(p) = ilDemG(p) + dem(2)(k)(2)
+            ilDemK(p) = ilDemK(p) + dem(2)(k)(3): ilDemA(p) = ilDemA(p) + dem(2)(k)(4): ilDemTl(p) = ilDemTl(p) + dem(2)(k)(5)
+        Next k
+        If Len(secIl) = 0 Or il = secIl Then
+            For Each t In dem(3)
+                demEksik.Add t
+            Next t
+            demToplamK = demToplamK + ilDemK(p): demToplamA = demToplamA + ilDemA(p): demToplamTl = demToplamTl + ilDemTl(p)
+            If ilDemK(p) > 0 Then
+                ' en cok eksik kalemli 3 ilce
+                ReDim sira(1 To dem(2).Count)
+                n = 0
+                For Each k In dem(2).keys
+                    n = n + 1: sira(n) = Array(dem(2)(k)(0), dem(2)(k)(3))
+                Next k
+                t = vbNullString
+                For i = 1 To application.Min(3, n)
+                    For j = i + 1 To n
+                        If sira(j)(1) > sira(i)(1) Then enler = sira(i): sira(i) = sira(j): sira(j) = enler
+                    Next j
+                    If sira(i)(1) > 0 Then t = t & IIf(i > 1, ", ", "") & sira(i)(0) & " (" & sira(i)(1) & " kalem)"
+                Next i
+                ADM_UYAR uy, IIf(ilDemK(p) >= 10, 1, 2), Y_IL_ADI(il) & ": azalan " & ilDemK(p) & " kalem / " & ADM_ADET(ilDemA(p)) & _
+                    " adet malzemenin (" & ADM_TL_KISA(ilDemTl(p)) & ") DEMONTAJ GİRİŞİ YOK! En çok: " & t & ".", "İlçe | Demontaj", "Demontaj"
+            End If
+        End If
+    Next p
+    '--- aylik demontaj defteri (her il)
+    Set aylik = CreateObject("Scripting.Dictionary")
+    For p = 0 To 4
+        il = CStr(iller(p))
+        ADM_ILERLE 0.83 + 0.01 * p, Y_IL_ADI(il) & "  •  aylık demontaj kayıtları..."
+        I_DEFTER_GUNCELLE il
+        aylik.Add il, I_DEFTER_OKU(il)
+        For Each k In aylik(il).keys
+            If CLng(k) > ayCur Then ayCur = CLng(k)
+        Next k
+    Next p
+    '--- ISG (il bazinda tek uyari)
+    For p = 0 To 4
+        If Len(secIl) = 0 Or iller(p) = secIl Then
+            isgZ = isgZ + ilIsgZ(p)
+            If ilIsgZ(p) > 0 Then
+                ReDim sira(1 To application.Max(1, isgSatir.Count))
+                n = 0
+                For Each kx In isgSatir
+                    If kx(0) = iller(p) Then n = n + 1: sira(n) = Array(kx(2), kx(4))
+                Next kx
+                t = vbNullString
+                For i = 1 To application.Min(3, n)
+                    For j = i + 1 To n
+                        If sira(j)(1) > sira(i)(1) Then enler = sira(i): sira(i) = sira(j): sira(j) = enler
+                    Next j
+                    If sira(i)(1) > 0 Then t = t & IIf(i > 1, ", ", "") & sira(i)(0) & " (" & ADM_ADET(sira(i)(1)) & ")"
+                Next i
+                ADM_UYAR uy, IIf(ilIsgZ(p) >= 300, 1, 2), Y_IL_ADI(CStr(iller(p))) & ": ilçe depolarında " & ADM_ADET(ilIsgZ(p)) & " adet (" & ilIsgZK(p) & _
+                    " kalem) İSG malzemesi ZİMMETLENMEMİŞ!" & IIf(Len(t) > 0, " En yüksek: " & t & ".", ""), "İlçe | İSG", "İSG"
+            End If
+            If ilIsgS(p) > 0 Then ADM_UYAR uy, 3, Y_IL_ADI(CStr(iller(p))) & ": " & ADM_ADET(ilIsgS(p)) & " adet (" & ilIsgSK(p) & " kalem) İSG malzemesi manuel sarf bekliyor.", "İlçe | İSG", "İSG sarf"
+        End If
+    Next p
+    '--- yatirim teminat (ekrandaki il)
+    terIl = ADM_CANLI_IL(1)
+    Set sh = ADM_WS("Y_TEMİNAT")
+    If Not sh Is Nothing And (Len(secIl) = 0 Or terIl = secIl) Then
+        r = 10
+        Do While r < 200
+            If Len(ADM_METIN(sh.Cells(r, 1).Value2)) = 0 Then Exit Do
+            t = UCase$(Replace(Replace(ADM_METIN(sh.Cells(r, 9).Value2), "Ş", "S"), "İ", "I"))
+            If InStr(t, "ASIM") > 0 Then
+                tAsim = tAsim + 1
+                ADM_UYAR uy, 1, "Teminat aşımı • " & Y_IL_ADI(terIl) & ": " & ADM_METIN(sh.Cells(r, 2).Value2) & " (" & ADM_METIN(sh.Cells(r, 1).Value2) & ") teminat tutarını aşmış.", "Yatırım | Teminat", "Teminat"
+            ElseIf InStr(t, "DIKKAT") > 0 Then
+                tDikkat = tDikkat + 1
+                ADM_UYAR uy, 2, "Teminat sınırına yakın • " & Y_IL_ADI(terIl) & ": " & ADM_METIN(sh.Cells(r, 2).Value2) & " (" & ADM_METIN(sh.Cells(r, 1).Value2) & ").", "Yatırım | Teminat", "Teminat"
+            ElseIf InStr(t, "GIRILMEDI") > 0 Then
+                tGirilmedi = tGirilmedi + 1
+            End If
+            If ADM_SAYI(sh.Cells(r, 10).Value2) > 0 Then
+                t45 = t45 + 1
+                ADM_UYAR uy, 2, Y_IL_ADI(terIl) & " • " & ADM_METIN(sh.Cells(r, 2).Value2) & ": sahada 45 günü geçen " & ADM_ADET(ADM_SAYI(sh.Cells(r, 10).Value2)) & " kalem; hakediş bekliyor.", "Yatırım | Teminat", "Teminat"
+            End If
+            ter = ter + 1
+            r = r + 1
+        Loop
+        If tGirilmedi > 0 Then ADM_UYAR uy, 3, Y_IL_ADI(terIl) & ": " & tGirilmedi & " yüklenici deposunda teminat tutarı girilmemiş; teminat riski ölçülemiyor.", "Yatırım | Teminat", "Teminat"
+    End If
+    '--- malzeme gun bazli karsilastirma (ekrandaki il)
+    Set sh = ADM_WS("STOK_KARŞILAŞTIRMA")
+    If Not sh Is Nothing And (Len(secIl) = 0 Or ADM_CANLI_IL(0) = secIl) Then
+        If ADM_SAYI(sh.Range("J10").Value2) > 0 Then ADM_UYAR uy, 2, "Malzeme • " & Y_IL_ADI(ADM_CANLI_IL(0)) & ": son karşılaştırmada (" & ADM_METIN(sh.Range("B6").Value2) & " - " & _
+            ADM_METIN(sh.Range("I6").Value2) & ") " & ADM_SAYI(sh.Range("J10").Value2) & " malzemenin stoğu sıfırlandı.", "Malzeme | Karşılaştırma", "Karşılaştırma"
+        d = ADM_SAYI(sh.Range("G12").Value2)
+        If d < 0 Then ADM_UYAR uy, 3, "Malzeme • " & Y_IL_ADI(ADM_CANLI_IL(0)) & ": son karşılaştırmada stok değeri " & ADM_TL(-d) & " azaldı (" & _
+            ADM_SAYI(sh.Range("A10").Value2) & " azalan, " & ADM_SAYI(sh.Range("D10").Value2) & " artan kalem).", "Malzeme | Karşılaştırma", "Karşılaştırma"
+    End If
+    If Len(ADM_AD_OKU("_AKSORA_ADMIN_SON_TOPLU")) > 0 Then ADM_UYAR uy, 3, "Son tek tuş güncelleme: " & ADM_AD_OKU("_AKSORA_ADMIN_SON_TOPLU"), "Yönetim", "Yönetim"
+    ' Son basarili giristen once yapilan hatali sifre denemeleri
+    parca = Split(ADM_AD_OKU("_AKSORA_ADMIN_LOG"), ";")
+    n = 0
+    For i = 1 To UBound(parca)
+        If Right$(parca(i), 6) = "HATALI" Then
+            n = n + 1
+        ElseIf Right$(parca(i), 5) = "GİRİŞ" Then
+            Exit For
+        End If
+    Next i
+    If n > 0 Then ADM_UYAR uy, 2, "Güvenlik: bu girişten önce " & n & " hatalı yönetici şifresi denemesi yapıldı (" & Split(parca(1), "|")(0) & ", " & Split(parca(1), "|")(1) & ").", "Yönetim | Güvenlik", "Güvenlik"
+    '--- malzeme analizleri (veri yasi, fazla teslim, kritik stok, transfer)
+    ADM_ILERLE 0.9, "Malzeme analizleri (kritik stok, transfer)..."
+    ADM_ANALIZ_UYARI uy, secIl
+    '--- skor: her kategori bir kez (kritik -15, uyari -6)
+    Set kategori = CreateObject("Scripting.Dictionary")
+    For Each kx In uy
+        Select Case kx(0)
+            Case 1: krit = krit + 1
+            Case 2: uyari = uyari + 1
+            Case Else: bilgi = bilgi + 1
+        End Select
+        If Not kategori.Exists(kx(3)) Then
+            kategori(kx(3)) = kx(0)
+        ElseIf kx(0) < kategori(kx(3)) Then
+            kategori(kx(3)) = kx(0)
+        End If
+    Next kx
+    skor = 100
+    For Each k In kategori.keys
+        If kategori(k) = 1 Then
+            skor = skor - 15
+        ElseIf kategori(k) = 2 Then
+            skor = skor - 6
+        End If
+    Next k
+    If skor < 0 Then skor = 0
+    For u = 1 To 3
+        If deger(u) > deger(enBirim) Then enBirim = u
+    Next u
+    ozet = ilMetin & " için tekil stok değeri " & ADM_TL_KISA(tekilToplam) & " (birimler arası ortak depolar bir kez). En büyük birim " & ad(enBirim) & " (" & ADM_TL_KISA(deger(enBirim)) & ")."
+    If demToplamK > 0 Then ozet = ozet & " Demontaj girişi yapılmayan " & demToplamK & " kalem / " & ADM_ADET(demToplamA) & " adet (" & ADM_TL_KISA(demToplamTl) & ") malzeme var."
+    If isgZ > 0 Then ozet = ozet & " İlçelerde " & ADM_ADET(isgZ) & " adet İSG malzemesi zimmet bekliyor."
+    n = 0
+    For j = 1 To 2
+        For Each kx In uy
+            If kx(0) = j And n < 3 Then n = n + 1: oncelik = oncelik & vbLf & "  " & n & ")  " & kx(1)
+        Next kx
+    Next j
+    If Len(oncelik) > 0 Then ozet = ozet & vbLf & "Öncelikli aksiyonlar:" & oncelik Else ozet = ozet & " Kritik veya dikkat gerektiren konu yok."
+    '================== CIZIM ==================
+    ADM_ILERLE 0.9, "Rapor çiziliyor..."
+    application.ScreenUpdating = False
+    ws.Unprotect ""
+    ws.AutoFilterMode = False
+    ' Bekleme karti (ADMY_) silinmez; donma boyunca ekranda kalir, en sonda AKSORA_BEKLE_KAPAT kaldirir.
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 5) <> "ADMY_" Then ws.Shapes(i).Delete
+    Next i
+    ws.Cells.Clear
+    ws.Cells.Validation.Delete
+    ws.Cells.FormatConditions.Delete
+    ws.Rows.Hidden = False
+    ws.Cells.Font.Name = "Aptos": ws.Cells.Font.Size = 10: ws.Cells.Font.Color = RGB(30, 41, 59)
+    ws.Cells.Interior.Color = RGB(244, 248, 252)
+    ws.Cells.VerticalAlignment = xlCenter
+    ws.Columns("A").ColumnWidth = 2: ws.Columns("N").ColumnWidth = 2
+    ws.Columns("B:M").ColumnWidth = 14
+    ' Malzeme tanimi sutunu (G) genis: arama tablosu birlesik hucresiz ve filtrelenebilir olur.
+    ws.Columns("G").ColumnWidth = 30
+    ws.Rows.RowHeight = 20
+    ws.Tab.Color = RGB(12, 45, 79)
+    ws.Range("BX1").Value2 = "AKSORA_ADMIN_V4": ws.Range("BX3").Value2 = secIl: ws.Range("BX4").Value2 = aramaMetni
+    '--- baslik
+    ws.Rows("1:2").RowHeight = 26: ws.Rows(3).RowHeight = 20
+    ADM_BLOK ws, "A1:N2", "   AKSORA  |  YÖNETİM MERKEZİ", RGB(12, 45, 79), vbWhite, 22, True, xlLeft
+    ADM_BLOK ws, "A3:N3", "      Çoruh EDAŞ  •  " & ilMetin & "  •  Rapor: " & Format$(Now, "dd.mm.yyyy hh:nn") & _
+        "  •  Tekil stok değeri: " & ADM_TL(tekilToplam), RGB(23, 66, 107), RGB(198, 240, 97), 10, True, xlLeft
+    ADM_DUGME ws, "ADM_TUM", "TÜM BİRİMLERİ GÜNCELLE", ws.Range("H1").Left, RGB(0, 125, 110), "AKSORA_ADMIN_TUMUNU_GUNCELLE", 1.6
+    ADM_DUGME ws, "ADM_YENILE", "RAPORU YENİLE", ws.Range("J1").Left - 8, RGB(20, 103, 173), "AKSORA_ADMIN_YENILE", 1
+    ADM_DUGME ws, "ADM_CIKTI", "ÇIKTI AL", ws.Range("K1").Left, RGB(15, 118, 110), "AKSORA_ADMIN_CIKTI", 1
+    ADM_DUGME ws, "ADM_CIKIS", "BİRİM SEÇİMİNE DÖN", ws.Range("L1").Left + 8, RGB(30, 41, 59), "AKSORA_ADMIN_CIKIS", 1.4
+    '--- il secimi (dugmeler)
+    ws.Rows(4).RowHeight = 34: ws.Rows(5).RowHeight = 8
+    ws.Range("A4:N4").Interior.Color = RGB(226, 236, 247)
+    ADM_BLOK ws, "B4", "İL:", RGB(226, 236, 247), RGB(12, 45, 79), 11, True, xlRight
+    ADM_IL_DUGMELERI ws, secIl
+    ADM_BLOK ws, "J4", "Seçili: " & ilMetin, RGB(226, 236, 247), RGB(71, 85, 105), 8, False, xlRight
+    ws.Range("J4").Font.Italic = True: ws.Range("J4").ShrinkToFit = True
+    ' Satinalma kontrolu dugmeleri ust cubukta (sayfanin altindaki bolumde yakinlastirmada satira gore kayiyordu).
+    ADM_DUGME ws, "ADM_SA_OKU", "SATINALMA: SAP'DEN OKU", ws.Range("K4").Left + 2, RGB(20, 103, 173), "AKSORA_SATINALMA_OKU", 1.2, ws.Rows(4).top + 4, ws.Rows(4).Height - 8
+    ADM_DUGME ws, "ADM_SA_EXCEL", "SATINALMA: EXCEL'E AKTAR", ws.Range("L4").Left + 10, RGB(33, 115, 70), "AKSORA_SATINALMA_EXCEL", 1.6, ws.Rows(4).top + 4, ws.Rows(4).Height - 8
+    '--- arama (en ustte)
+    ADM_BOLUM ws, 6, "B6:M6", "MALZEME / SERİ NUMARASI ARAMA   •   " & ilMetin & "  •  tüm birimler"
+    ws.Rows(7).RowHeight = 30
+    ADM_BLOK ws, "B7", "ARANAN:", RGB(244, 248, 252), RGB(12, 45, 79), 10, True, xlRight
+    ADM_BLOK ws, "C7:H7", aramaMetni, vbWhite, RGB(12, 45, 79), 12, True, xlLeft
+    With ws.Range("C7:H7")
+        .Locked = False
+        .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(20, 103, 173): .Borders.Weight = xlMedium
+        .IndentLevel = 1
+    End With
+    ADM_DUGME ws, "ADM_ARA", "ARA", ws.Range("I7").Left + 6, RGB(12, 45, 79), "AKSORA_ADMIN_ARA", 0.9, ws.Range("I7").top + 3, ws.Range("I7").Height - 6
+    ADM_DUGME ws, "ADM_ARA_SIL", "TEMİZLE", ws.Range("J7").Left - 4, RGB(100, 116, 139), "AKSORA_ADMIN_ARA_TEMIZLE", 0.9, ws.Range("J7").top + 3, ws.Range("J7").Height - 6
+    ADM_BLOK ws, "K7:M7", "Kod, ad veya seri no. Birden çok kelime: hepsi aranır (örn. kablo 3x95). Enter'a basın.", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    ws.Range("K7").Font.Italic = True: ws.Range("K7").WrapText = True
+    ws.Rows(ADM_ARA_SATIR & ":" & ADM_ARA_SATIR + ADM_ARA_N + 1).Hidden = True
+    r = ADM_ARA_SATIR + ADM_ARA_N + 3
+    '--- bugun yapilacak 5 is (malzeme analizleri + kritik uyarilar)
+    r = ADM_YAPILACAK_CIZ(ws, r, uy, ilMetin)
+    r = AKSORA_KPI_YER_AYIR(ws, r)
+    r = r + 2
+    '--- demontaj kontrolu
+    ADM_ILERLE 0.91, "Demontaj tablosu çiziliyor..."
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "DEMONTAJ KONTROLÜ   •   " & ilMetin & "  (yalnız trafo, pano, armatür, kablo, direk, hücre; azalan malzeme - ÇIKMA/BDSZ girişi)"
+    r = r + 1: satirNo = r
+    If Len(secIl) = 0 Then
+        ADM_BASLIKLAR ws, r, 2, Array("İl", "Karşılaştırılan günler", "", "", "Azalan kalem", "Girişi yapılan", "Girişi YOK kalem", "Eksik adet", "Eksik değer", "Durum", "", "")
+        ws.Range(ADM_ADRES(r, 3, r, 5)).Merge: ws.Range(ADM_ADRES(r, 11, r, 13)).Merge
+        For p = 0 To 4
+            r = r + 1
+            ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+            ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(iller(p))): ws.Cells(r, 2).Font.bold = True
+            ws.Range(ADM_ADRES(r, 3, r, 5)).Merge: ws.Cells(r, 3).Value2 = IIf(Len(ilDemT(p)) > 0, ilDemT(p), "en az iki günlük ilçe stoğu gerekir")
+            ws.Cells(r, 6).Value2 = ilDemAz(p): ws.Cells(r, 7).Value2 = ilDemG(p): ws.Cells(r, 8).Value2 = ilDemK(p): ws.Cells(r, 9).Value2 = ilDemA(p)
+            ws.Cells(r, 10).Value2 = ilDemTl(p): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+            ADM_MIKTAR ws.Range(ADM_ADRES(r, 6, r, 9))
+            ws.Range(ADM_ADRES(r, 2, r, 10)).HorizontalAlignment = xlCenter
+            If Len(ilDemT(p)) = 0 Then
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), "KARŞILAŞTIRMA YOK", RGB(241, 245, 249), RGB(100, 116, 139), 9, True, xlCenter
+            ElseIf ilDemK(p) > 0 Then
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), "DEMONTAJ GİRİŞİ YAPILMALI", RGB(254, 226, 226), RGB(185, 28, 28), 9, True, xlCenter
+                ws.Cells(r, 8).Font.Color = RGB(185, 28, 28): ws.Cells(r, 8).Font.bold = True
+            Else
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), "TAMAM", RGB(220, 252, 231), RGB(21, 128, 61), 9, True, xlCenter
+            End If
+        Next p
+    Else
+        dem = ADM_DEMONTAJ(secIl)
+        ADM_BASLIKLAR ws, r, 2, Array("İlçe deposu", "", "", "Azalan kalem", "Girişi yapılan", "Girişi YOK kalem", "Eksik adet", "Eksik değer", "Durum", "", "", "")
+        ws.Range(ADM_ADRES(r, 2, r, 4)).Merge: ws.Range(ADM_ADRES(r, 10, r, 13)).Merge
+        If Len(dem(0)) = 0 Then
+            r = r + 1
+            ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), Y_IL_ADI(secIl) & " için karşılaştırma yok: ilçe stoğu en az iki farklı günde güncellenmiş olmalı.", vbWhite, RGB(100, 116, 139), 10, False, xlLeft
+        ElseIf dem(2).Count = 0 Then
+            r = r + 1
+            ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), dem(0) & "  >  " & dem(1) & " arasında azalan malzeme yok.", RGB(220, 252, 231), RGB(21, 128, 61), 10, True, xlLeft
+        Else
+            For Each k In dem(2).keys
+                r = r + 1
+                ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+                ADM_BLOK ws, ADM_ADRES(r, 2, r, 4), k & "  " & dem(2)(k)(0), vbWhite, RGB(30, 41, 59), 10, False, xlLeft
+                ws.Cells(r, 5).Value2 = dem(2)(k)(1): ws.Cells(r, 6).Value2 = dem(2)(k)(2): ws.Cells(r, 7).Value2 = dem(2)(k)(3): ws.Cells(r, 8).Value2 = dem(2)(k)(4)
+                ws.Cells(r, 9).Value2 = dem(2)(k)(5): ws.Cells(r, 9).NumberFormat = "#,##0.00 ""TL"""
+                ADM_MIKTAR ws.Range(ADM_ADRES(r, 5, r, 8))
+                ws.Range(ADM_ADRES(r, 5, r, 9)).HorizontalAlignment = xlCenter
+                If dem(2)(k)(3) > 0 Then
+                    ADM_BLOK ws, ADM_ADRES(r, 10, r, 13), "DEMONTAJ GİRİŞİ YAPILMALI", RGB(254, 226, 226), RGB(185, 28, 28), 9, True, xlCenter
+                    ws.Cells(r, 7).Font.Color = RGB(185, 28, 28): ws.Cells(r, 7).Font.bold = True
+                Else
+                    ADM_BLOK ws, ADM_ADRES(r, 10, r, 13), "TAMAM", RGB(220, 252, 231), RGB(21, 128, 61), 9, True, xlCenter
+                End If
+            Next k
+            r = r + 1
+            ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Karşılaştırılan: " & dem(0) & "  >  " & dem(1), RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+            ws.Cells(r, 2).Font.Italic = True
+        End If
+    End If
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+    ' girisi yapilmayan malzemeler (en buyuk eksik adet)
+    If demEksik.Count > 0 Then
+        r = r + 2: satirNo = r
+        ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "DEMONTAJ GİRİŞİ YAPILMAYAN MALZEMELER   •   " & ilMetin & "  (trafo, pano, armatür, kablo, direk, hücre; ilk 25 / toplam " & demEksik.Count & ")"
+        r = r + 1: satirNo = r
+        ADM_BASLIKLAR ws, r, 2, Array("İl", "Depo", "İlçe", "", "Malzeme", "Malzeme tanımı", "Eksik", "Ölçü", "Eksik değer", "Durum", "", "")
+        ws.Range(ADM_ADRES(r, 4, r, 5)).Merge: ws.Range(ADM_ADRES(r, 11, r, 13)).Merge
+        ReDim sira(1 To demEksik.Count)
+        i = 0
+        For Each t In demEksik
+            i = i + 1: sira(i) = t
+        Next t
+        For i = 1 To application.Min(25, demEksik.Count)
+            For j = i + 1 To demEksik.Count
+                If ADM_DEM_SKOR(sira(j)) > ADM_DEM_SKOR(sira(i)) Then t = sira(i): sira(i) = sira(j): sira(j) = t
+            Next j
+        Next i
+        For i = 1 To application.Min(25, demEksik.Count)
+            r = r + 1
+            ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+            ws.Range(ADM_ADRES(r, 2, r, 7)).NumberFormat = "@"
+            ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(sira(i)(0))): ws.Cells(r, 3).Value2 = sira(i)(1)
+            ws.Range(ADM_ADRES(r, 4, r, 5)).Merge: ws.Cells(r, 4).Value2 = sira(i)(2)
+            ws.Cells(r, 6).Value2 = sira(i)(3)
+            ws.Cells(r, 7).Value2 = sira(i)(4): ws.Cells(r, 7).HorizontalAlignment = xlLeft
+            ws.Cells(r, 8).Value2 = sira(i)(5): ws.Cells(r, 8).Font.bold = True: ws.Cells(r, 8).Font.Color = RGB(185, 28, 28)
+            ADM_MIKTAR ws.Cells(r, 8)
+            ws.Cells(r, 9).Value2 = sira(i)(6)
+            ws.Cells(r, 10).Value2 = sira(i)(8): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+            If sira(i)(7) = "EKSİK GİRİŞ" Then
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), ADM_DEM_DURUM(sira(i)), RGB(254, 243, 199), RGB(180, 83, 9), 8, True, xlCenter
+                ws.Cells(r, 8).Font.Color = RGB(180, 83, 9)
+            Else
+                ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), ADM_DEM_DURUM(sira(i)), RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+            End If
+            ws.Range(ADM_ADRES(r, 2, r, 6)).HorizontalAlignment = xlCenter: ws.Cells(r, 4).HorizontalAlignment = xlLeft
+            ws.Range(ADM_ADRES(r, 8, r, 9)).HorizontalAlignment = xlCenter
+        Next i
+        ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+    End If
+    '--- aylik demontaj raporu
+    ADM_ILERLE 0.93, "Aylık demontaj raporu çiziliyor..."
+    If ayCur > 0 Then ADM_AYLIK_CIZ ws, r, aylik, ayCur, secIl, ilMetin
+    '--- ozet + skor
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 8), "YÖNETİCİ ÖZETİ  •  " & ilMetin
+    ADM_BOLUM ws, r, ADM_ADRES(r, 10, r, 13), "AKSORA SAĞLIK SKORU"
+    ws.Range(ADM_ADRES(r + 1, 1, r + 4, 1)).EntireRow.RowHeight = 30
+    ADM_BLOK ws, ADM_ADRES(r + 1, 2, r + 4, 8), ozet, vbWhite, RGB(30, 41, 59), 10, False, xlLeft
+    ws.Cells(r + 1, 2).WrapText = True: ws.Cells(r + 1, 2).VerticalAlignment = xlTop
+    ADM_KENAR ws.Range(ADM_ADRES(r + 1, 2, r + 4, 8))
+    If skor >= 80 Then
+        renk = RGB(21, 128, 61)
+    ElseIf skor >= 55 Then
+        renk = RGB(180, 83, 9)
+    Else
+        renk = RGB(185, 28, 28)
+    End If
+    ADM_BLOK ws, ADM_ADRES(r + 1, 10, r + 3, 13), skor & " / 100", renk, vbWhite, 30, True, xlCenter
+    ADM_BLOK ws, ADM_ADRES(r + 4, 10, r + 4, 13), IIf(skor >= 80, "İYİ", IIf(skor >= 55, "DİKKAT", "KRİTİK")) & "   •   " & kategori.Count & " konu  •  " & krit & " kritik  •  " & uyari & " uyarı", _
+        vbWhite, renk, 10, True, xlCenter
+    ADM_KENAR ws.Range(ADM_ADRES(r + 1, 10, r + 4, 13))
+    r = r + 6
+    '--- birim kartlari
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "BİRİM ÖZETİ  •  " & ilMetin
+    ws.Rows(r + 4).RowHeight = 30
+    For u = 0 To 3
+        j = 2 + u * 3
+        ADM_BLOK ws, ADM_ADRES(r + 1, j, r + 1, j + 2), ad(u), CLng(b(u)(1)), vbWhite, 11, True, xlLeft
+        If Len(secIl) = 0 Then
+            t = "5 il  •  güncelleme: " & IIf(enEski(u) > 0, Format$(enEski(u), "dd.mm hh:nn") & " - " & Format$(enYeni(u), "dd.mm hh:nn"), "-")
+        Else
+            t = ilMetin & "  •  Son güncelleme: " & IIf(enYeni(u) > 0, Format$(enYeni(u), "dd.mm.yyyy hh:nn"), "-")
+        End If
+        ADM_BLOK ws, ADM_ADRES(r + 2, j, r + 2, j + 2), CStr(t), vbWhite, RGB(71, 85, 105), 9, False, xlLeft
+        If enEski(u) = 0 Then
+            ADM_BLOK ws, ADM_ADRES(r + 3, j, r + 3, j + 2), "VERİ YOK", vbWhite, RGB(185, 28, 28), 10, True, xlLeft
+        Else
+            gun = ADM_GUN(enEski(u))
+            ADM_BLOK ws, ADM_ADRES(r + 3, j, r + 3, j + 2), IIf(gun <= 0, "GÜNCEL", IIf(Len(secIl) = 0, "EN ESKİ İL ", "") & gun & " GÜN ÖNCE"), vbWhite, _
+                IIf(gun <= 0, RGB(21, 128, 61), IIf(gun < 3, RGB(180, 83, 9), RGB(185, 28, 28))), 10, True, xlLeft
+        End If
+        ADM_BLOK ws, ADM_ADRES(r + 4, j, r + 4, j + 2), ADM_TL(deger(u)), vbWhite, RGB(12, 45, 79), 16, True, xlLeft
+        ADM_BLOK ws, ADM_ADRES(r + 5, j, r + 5, j + 2), AKSORA_SAYI_METNI(satir(u), "#,##0") & " stok satırı  •  " & depoSay(u) & " depo", vbWhite, RGB(71, 85, 105), 9, False, xlLeft
+        Select Case u
+            Case 0: t = IIf(hurda(u) > 0, "HURDA partide " & AKSORA_SAYI_METNI(hurda(u), "#,##0") & " kalem", "Hurda bekleyen kalem yok")
+            Case 1: t = IIf(ter > 0, Y_IL_ADI(terIl) & ": " & tAsim & " aşım  •  " & tDikkat & " dikkat  •  " & t45 & " depoda 45+ gün", "Teminat verisi yok")
+            Case 2: t = IIf(fiyatsiz(u) > 0, AKSORA_SAYI_METNI(fiyatsiz(u), "#,##0") & " fiyatsız satır", "Fiyatsız satır yok")
+            Case Else: t = ADM_ADET(isgZ) & " zimmet bekliyor  •  " & demToplamK & " demontaj eksik"
+        End Select
+        ADM_BLOK ws, ADM_ADRES(r + 6, j, r + 6, j + 2), CStr(t), RGB(248, 250, 252), RGB(51, 65, 85), 9, True, xlLeft
+        ADM_KENAR ws.Range(ADM_ADRES(r + 1, j, r + 6, j + 2))
+    Next u
+    r = r + 8
+    '--- il karsilastirmasi (her zaman bes il)
+    ADM_ILERLE 0.95, "İl karşılaştırması çiziliyor..."
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "İL KARŞILAŞTIRMASI   (beş il • tekil değer: birimler arası ortak depolar bir kez)"
+    r = r + 1: satirNo = r
+    ADM_BASLIKLAR ws, r, 2, Array("İl", "Malzeme", "Yatırım", "Müşteri", "İlçe", "Tekil değer", "Pay", "İSG zimmet bekleyen", "Demontaj girişi yok", "Hurda kalem", "Eksi stok satırı", "En eski güncelleme")
+    For p = 0 To 4
+        r = r + 1
+        il = CStr(iller(p))
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(il = secIl, RGB(226, 236, 247), vbWhite)
+        ws.Cells(r, 2).Value2 = Y_IL_ADI(il): ws.Cells(r, 2).Font.bold = True
+        For u = 0 To 3
+            ws.Cells(r, 3 + u).Value2 = ilDeger(p, u)
+        Next u
+        ws.Cells(r, 7).Value2 = ilTekil(p)
+        ws.Cells(r, 8).Value2 = IIf(tumToplam > 0, ilTekil(p) / tumToplam, 0)
+        ws.Cells(r, 9).Value2 = ilIsgZ(p): ws.Cells(r, 10).Value2 = ilDemK(p)
+        ws.Cells(r, 11).Value2 = ilHurda(p): ws.Cells(r, 12).Value2 = ilEksi(p)
+        d = 0
+        For u = 0 To 3
+            If ilTarih(p, u) > 0 Then
+                If d = 0 Or CDbl(ilTarih(p, u)) < d Then d = CDbl(ilTarih(p, u))
+            End If
+        Next u
+        If d > 0 Then
+            gun = ADM_GUN(CDate(d))
+            ws.Cells(r, 13).Value2 = Format$(CDate(d), "dd.mm.yyyy hh:nn")
+            ws.Cells(r, 13).Interior.Color = IIf(gun <= 0, RGB(220, 252, 231), IIf(gun < 3, RGB(254, 243, 199), RGB(254, 226, 226)))
+        Else
+            ws.Cells(r, 13).Value2 = "veri yok": ws.Cells(r, 13).Interior.Color = RGB(254, 226, 226)
+        End If
+        For j = 9 To 12
+            If ws.Cells(r, j).Value2 > 0 Then ws.Cells(r, j).Font.Color = RGB(185, 28, 28): ws.Cells(r, j).Font.bold = True
+        Next j
+    Next p
+    r = r + 1
+    ws.Cells(r, 2).Value2 = "TOPLAM"
+    For j = 3 To 12
+        If j <> 8 Then ws.Cells(r, j).Formula = "=SUM(" & ADM_ADRES(satirNo + 1, j, r - 1, j) & ")"
+    Next j
+    ws.Cells(r, 8).Value2 = IIf(tumToplam > 0, 1, 0)
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
+    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).ShrinkToFit = True
+    ws.Range(ADM_ADRES(satirNo + 1, 8, r, 8)).NumberFormat = "0.0%"
+    ws.Range(ADM_ADRES(satirNo + 1, 9, r, 12)).NumberFormat = "#,##0"
+    ws.Range(ADM_ADRES(satirNo + 1, 2, r, 13)).HorizontalAlignment = xlCenter
+    ws.Range(ADM_ADRES(satirNo + 1, 3, r, 7)).HorizontalAlignment = xlRight
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+    On Error Resume Next
+    With ws.Range(ADM_ADRES(satirNo + 1, 7, r - 1, 7)).FormatConditions.AddDatabar
+        .BarColor.Color = RGB(147, 197, 253)
+        .BarFillType = xlDataBarFillSolid
+    End With
+    On Error GoTo 0
+    '--- atil stok (malzeme birimi atil stok kaydindan)
+    r = ADM_ATIL_CIZ(ws, r, secIl)
+    '--- satinalma kontrolu (ME5A / ME2N kaydindan)
+    r = ADM_SA_CIZ(ws, r, secIl)
+    '--- uyarilar
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 10), "YÖNETİCİ UYARILARI  •  " & ilMetin
+    ADM_BLOK ws, ADM_ADRES(r, 11, r, 13), krit & " kritik  •  " & uyari & " uyarı  •  " & bilgi & " bilgi", RGB(244, 248, 252), RGB(71, 85, 105), 9, True, xlRight
+    r = r + 1
+    If uy.Count = 0 Then
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Kritik bir durum bulunmadı. Birimler güncel ve kontrol altında.", RGB(220, 252, 231), RGB(21, 128, 61), 10, True, xlLeft
+        r = r + 1
+    Else
+        For j = 1 To 3
+            For Each kx In uy
+                If kx(0) = j Then
+                    Select Case j
+                        Case 1: ADM_BLOK ws, ADM_ADRES(r, 2, r, 2), "KRİTİK", RGB(185, 28, 28), vbWhite, 9, True, xlCenter
+                        Case 2: ADM_BLOK ws, ADM_ADRES(r, 2, r, 2), "UYARI", RGB(217, 119, 6), vbWhite, 9, True, xlCenter
+                        Case Else: ADM_BLOK ws, ADM_ADRES(r, 2, r, 2), "BİLGİ", RGB(20, 103, 173), vbWhite, 9, True, xlCenter
+                    End Select
+                    ADM_BLOK ws, ADM_ADRES(r, 3, r, 11), CStr(kx(1)), vbWhite, RGB(30, 41, 59), 10, (j = 1), xlLeft
+                    ws.Cells(r, 3).WrapText = True
+                    ADM_BLOK ws, ADM_ADRES(r, 12, r, 13), CStr(kx(2)), vbWhite, RGB(100, 116, 139), 9, False, xlCenter
+                    ws.Rows(r).RowHeight = IIf(Len(kx(1)) > 150, 34, 22)
+                    ADM_KENAR ws.Range(ADM_ADRES(r, 2, r, 13)), True
+                    r = r + 1
+                End If
+            Next kx
+        Next j
+    End If
+    '--- ISG tablosu + il ozet
+    ADM_ILERLE 0.97, "İSG ve depo tabloları çiziliyor..."
+    r = r + 1
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 8), IIf(Len(secIl) = 0, "İSG ZİMMET DURUMU  •  il bazında", "İLÇE İSG ZİMMET DURUMU  •  " & ilMetin)
+    ADM_BOLUM ws, r, ADM_ADRES(r, 10, r, 13), "EN ÇOK ZİMMET BEKLEYEN 5 DEPO"
+    r = r + 1: satirNo = r
+    ADM_BASLIKLAR ws, r, 2, Array(IIf(Len(secIl) = 0, "İl", "İlçe deposu"), "", "Zimmet kalem", "Zimmet adet", "Sarf kalem", "Sarf adet", "Durum")
+    ws.Range(ADM_ADRES(r, 2, r, 3)).Merge
+    If Len(secIl) = 0 Then
+        For p = 0 To 4
+            r = r + 1
+            ADM_BLOK ws, ADM_ADRES(r, 2, r, 3), Y_IL_ADI(CStr(iller(p))), vbWhite, RGB(30, 41, 59), 10, True, xlLeft
+            ws.Cells(r, 4).Value2 = ilIsgZK(p): ws.Cells(r, 5).Value2 = ilIsgZ(p): ws.Cells(r, 6).Value2 = ilIsgSK(p): ws.Cells(r, 7).Value2 = ilIsgS(p)
+            ADM_ISG_DURUM ws, r, ilIsgZ(p), ilIsgS(p)
+        Next p
+    Else
+        For Each t In isgSatir
+            r = r + 1
+            ADM_BLOK ws, ADM_ADRES(r, 2, r, 3), t(1) & "  " & t(2), vbWhite, RGB(30, 41, 59), 9, False, xlLeft
+            ws.Cells(r, 4).Value2 = t(3): ws.Cells(r, 5).Value2 = t(4): ws.Cells(r, 6).Value2 = t(5): ws.Cells(r, 7).Value2 = t(6)
+            ADM_ISG_DURUM ws, r, t(4), t(6)
+        Next t
+        If isgSatir.Count = 0 Then r = r + 1: ADM_BLOK ws, ADM_ADRES(r, 2, r, 8), "İSG verisi yok (bu il için ilçe stok güncellemesi gerekir).", vbWhite, RGB(100, 116, 139), 9, False, xlLeft
+    End If
+    If r > satirNo Then ADM_MIKTAR ws.Range(ADM_ADRES(satirNo + 1, 4, r, 7))
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 8)), True
+    ' en cok zimmet bekleyen 5 depo
+    n = satirNo
+    ADM_BASLIKLAR ws, n, 10, Array("Depo", "", "Zimmet adet", "Kalem")
+    ws.Range(ADM_ADRES(n, 10, n, 11)).Merge
+    If isgSatir.Count > 0 Then
+        ReDim sira(1 To isgSatir.Count)
+        i = 0
+        For Each t In isgSatir
+            i = i + 1: sira(i) = t
+        Next t
+        For i = 1 To application.Min(5, isgSatir.Count)
+            For j = i + 1 To isgSatir.Count
+                If sira(j)(4) > sira(i)(4) Then t = sira(i): sira(i) = sira(j): sira(j) = t
+            Next j
+        Next i
+        For i = 1 To application.Min(5, isgSatir.Count)
+            If sira(i)(4) > 0 Then
+                n = n + 1
+                ADM_BLOK ws, ADM_ADRES(n, 10, n, 11), Y_IL_ADI(CStr(sira(i)(0))) & " • " & sira(i)(2), vbWhite, RGB(30, 41, 59), 9, False, xlLeft
+                ws.Cells(n, 12).Value2 = sira(i)(4): ws.Cells(n, 13).Value2 = sira(i)(3)
+                ws.Range(ADM_ADRES(n, 12, n, 13)).Interior.Color = vbWhite: ws.Range(ADM_ADRES(n, 12, n, 13)).HorizontalAlignment = xlCenter
+                ws.Cells(n, 12).Font.Color = RGB(185, 28, 28): ws.Cells(n, 12).Font.bold = True
+            End If
+        Next i
+    End If
+    If n = satirNo Then n = n + 1: ADM_BLOK ws, ADM_ADRES(n, 10, n, 13), "Zimmet bekleyen yok.", RGB(220, 252, 231), RGB(21, 128, 61), 9, True, xlLeft
+    ADM_KENAR ws.Range(ADM_ADRES(satirNo, 10, n, 13)), True
+    If n > r Then r = n
+    '--- en degerli 10 depo ve 10 malzeme (ADM_KUR prosedur boyutu sinirinin altinda kalsin diye ayri)
+    r = ADM_EN_DEGERLI(ws, r, ilMetin, secIl, iller, tekil, tekilSec, tekilToplam)
+    r = r + 2
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Bu sayfa yalnızca yöneticiler içindir. Birim kartları birimin kendi görünümüdür; tekil değerde birimler arası ortak depolar bir kez sayılır. " & _
+        "Demontaj kontrolü ilçe biriminin günlük kayıtlarından hesaplanır. Tam güncel rapor için TÜM BİRİMLERİ GÜNCELLE kullanın.", RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    ws.Range(ADM_ADRES(r, 2, r, 2)).Font.Italic = True
+    parca = Split(ADM_AD_OKU("_AKSORA_ADMIN_LOG"), ";")
+    If UBound(parca) >= 0 Then
+        t = vbNullString
+        For i = 0 To application.Min(4, UBound(parca))
+            t = t & IIf(i > 0, "    •    ", "") & Replace(parca(i), "|", "  ")
+        Next i
+        r = r + 1
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Son yönetici girişleri:  " & t, RGB(244, 248, 252), RGB(100, 116, 139), 8, False, xlLeft
+    End If
+    AKSORA_KPI_TAMAMLA ws, secIl, ilMetin, tekilToplam, ilTekil, deger, skor, krit, uyari, demToplamTl, isgZ, uy
+    ws.Range("BX2").Value2 = r
+    On Error Resume Next
+    For Each s In ws.Shapes
+        s.DrawingObject.PrintObject = (Left$(s.Name, 7) = "ADM_IL_")
+    Next s
+    On Error GoTo 0
+    ws.ScrollArea = "A1:N" & (r + 2)
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+    ' Onceki arama yeni secimle tekrar calistirilir.
+    If Len(aramaMetni) > 0 Then AKSORA_ADMIN_ARA
+    application.StatusBar = False
+End Sub
+
+' Yonetim Merkezi: en degerli 10 depo ve 10 malzeme tablolari (tekil depolardan). Donus: son satir.
+Private Function ADM_EN_DEGERLI(ByVal ws As Worksheet, ByVal r As Long, ByVal ilMetin As String, ByVal secIl As String, _
+    ByVal iller As Variant, ByVal tekil As Object, ByVal tekilSec As Object, ByVal tekilToplam As Double) As Long
+    Dim satirNo As Long, sira() As Variant, i As Long, j As Long, t As Variant, parca() As String, malz As Object
+    Dim u As Long, p As Long, il As String, veri As Variant, kx As Variant, k As Variant
+    '--- en degerli 10 depo (tekil)
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "EN DEĞERLİ 10 DEPO   •   " & ilMetin & "  (tekil)"
+    r = r + 1: satirNo = r
+    ADM_BASLIKLAR ws, r, 2, Array("İl", "Birim(ler)", "", "ÜY", "Depo", "Depo adı", "", "Stok satırı", "Değer", "", "Pay", "")
+    ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Range(ADM_ADRES(r, 7, r, 8)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+    ReDim sira(1 To application.Max(1, tekilSec.Count))
+    i = 0
+    For Each k In tekilSec.keys
+        i = i + 1: sira(i) = tekilSec(k)
+    Next k
+    For i = 1 To application.Min(10, tekilSec.Count)
+        For j = i + 1 To tekilSec.Count
+            If sira(j)(3) > sira(i)(3) Then t = sira(i): sira(i) = sira(j): sira(j) = t
+        Next j
+    Next i
+    For i = 1 To application.Min(10, tekilSec.Count)
+        r = r + 1
+        parca = Split(sira(i)(6), "|")
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+        ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(sira(i)(5)))
+        ws.Range(ADM_ADRES(r, 3, r, 4)).Merge: ws.Cells(r, 3).Value2 = sira(i)(4)
+        ws.Range(ADM_ADRES(r, 5, r, 6)).NumberFormat = "@"
+        ws.Cells(r, 5).Value2 = parca(0): ws.Cells(r, 6).Value2 = parca(1)
+        ws.Range(ADM_ADRES(r, 7, r, 8)).Merge: ws.Cells(r, 7).Value2 = sira(i)(1): ws.Cells(r, 7).HorizontalAlignment = xlLeft
+        ws.Cells(r, 9).Value2 = sira(i)(2): ws.Cells(r, 9).NumberFormat = "#,##0"
+        ws.Range(ADM_ADRES(r, 10, r, 11)).Merge
+        ws.Cells(r, 10).Value2 = sira(i)(3): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+        ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+        ws.Cells(r, 12).Value2 = IIf(tekilToplam > 0, sira(i)(3) / tekilToplam, 0): ws.Cells(r, 12).NumberFormat = "0.0%"
+        ws.Range(ADM_ADRES(r, 2, r, 6)).HorizontalAlignment = xlCenter
+    Next i
+    If r > satirNo Then
+        ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+        On Error Resume Next
+        With ws.Range(ADM_ADRES(satirNo + 1, 12, r, 12)).FormatConditions.AddDatabar
+            .BarColor.Color = RGB(147, 197, 253)
+            .BarFillType = xlDataBarFillSolid
+        End With
+        On Error GoTo 0
+    End If
+    '--- en degerli 10 malzeme (tekil depolardan)
+    ADM_ILERLE 0.98, "Malzeme tabloları çiziliyor..."
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "EN DEĞERLİ 10 MALZEME   •   " & ilMetin & "  (tekil depolar, tüm partiler)"
+    r = r + 1: satirNo = r
+    ADM_BASLIKLAR ws, r, 2, Array("Malzeme", "Malzeme tanımı", "", "", "", "Miktar", "Ölçü", "Depo sayısı", "Değer", "", "Pay", "")
+    ws.Range(ADM_ADRES(r, 3, r, 6)).Merge: ws.Range(ADM_ADRES(r, 10, r, 11)).Merge: ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+    Set malz = CreateObject("Scripting.Dictionary"): malz.CompareMode = vbTextCompare
+    For u = 0 To 3
+        For p = 0 To 4
+            il = CStr(iller(p))
+            If Len(secIl) = 0 Or il = secIl Then
+                veri = ADM_VERI(u, il)
+                For i = 1 To veri(2)
+                    If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+                    parca = Split(veri(1)(i), vbTab)
+                    kx = il & "|" & parca(0) & "|" & parca(1)
+                    If tekil.Exists(kx) Then
+                        If tekil(kx)(0) = u Then
+                            If Not malz.Exists(parca(3)) Then malz(parca(3)) = Array(parca(4), 0#, parca(7), 0#, CreateObject("Scripting.Dictionary"))
+                            t = malz(parca(3))
+                            t(1) = t(1) + Val(parca(6)): t(3) = t(3) + Val(parca(8))
+                            t(4)(kx) = True
+                            malz(parca(3)) = t
+                        End If
+                    End If
+                Next i
+            End If
+        Next p
+    Next u
+    ReDim sira(1 To application.Max(1, malz.Count))
+    i = 0
+    For Each k In malz.keys
+        i = i + 1: sira(i) = Array(CStr(k), malz(k)(0), malz(k)(1), malz(k)(2), malz(k)(3), malz(k)(4).Count)
+    Next k
+    For i = 1 To application.Min(10, malz.Count)
+        For j = i + 1 To malz.Count
+            If sira(j)(4) > sira(i)(4) Then t = sira(i): sira(i) = sira(j): sira(j) = t
+        Next j
+    Next i
+    For i = 1 To application.Min(10, malz.Count)
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = vbWhite
+        ws.Cells(r, 2).NumberFormat = "@": ws.Cells(r, 2).Value2 = sira(i)(0)
+        ws.Range(ADM_ADRES(r, 3, r, 6)).Merge: ws.Cells(r, 3).Value2 = sira(i)(1): ws.Cells(r, 3).HorizontalAlignment = xlLeft
+        ws.Cells(r, 7).Value2 = sira(i)(2): ADM_MIKTAR ws.Cells(r, 7)
+        ws.Cells(r, 8).Value2 = sira(i)(3)
+        ws.Cells(r, 9).Value2 = sira(i)(5)
+        ws.Range(ADM_ADRES(r, 10, r, 11)).Merge
+        ws.Cells(r, 10).Value2 = sira(i)(4): ws.Cells(r, 10).NumberFormat = "#,##0.00 ""TL"""
+        ws.Range(ADM_ADRES(r, 12, r, 13)).Merge
+        ws.Cells(r, 12).Value2 = IIf(tekilToplam > 0, sira(i)(4) / tekilToplam, 0): ws.Cells(r, 12).NumberFormat = "0.0%"
+        ws.Cells(r, 2).HorizontalAlignment = xlCenter
+        ws.Range(ADM_ADRES(r, 8, r, 9)).HorizontalAlignment = xlCenter
+    Next i
+    If r > satirNo Then
+        ADM_KENAR ws.Range(ADM_ADRES(satirNo, 2, r, 13)), True
+        On Error Resume Next
+        With ws.Range(ADM_ADRES(satirNo + 1, 12, r, 12)).FormatConditions.AddDatabar
+            .BarColor.Color = RGB(134, 239, 172)
+            .BarFillType = xlDataBarFillSolid
+        End With
+        On Error GoTo 0
+    End If
+    ADM_EN_DEGERLI = r
+End Function
+
+' Yonetici giris kaydi (son 15): "tarih|kullanici|GIRIS/HATALI" ; ile ayrik, gizli ad _AKSORA_ADMIN_LOG.
+Private Sub ADM_LOG_YAZ(ByVal sonuc As String)
+    Dim eski As String, yeni As String, p() As String, i As Long, Kullanici As String
+    On Error Resume Next
+    Kullanici = Environ$("USERNAME")
+    If Len(Kullanici) = 0 Then Kullanici = application.UserName
+    AKSORA_GUNLUK_YAZ "YÖNETİCİ", "Yönetim merkezi: " & sonuc
+    eski = ADM_AD_OKU("_AKSORA_ADMIN_LOG")
+    yeni = Format$(Now, "dd.mm.yyyy hh:nn") & "|" & Replace(Replace(Kullanici, "|", " "), ";", " ") & "|" & sonuc
+    If Len(eski) > 0 Then
+        p = Split(eski, ";")
+        For i = 0 To application.Min(13, UBound(p))
+            If Len(yeni) + Len(p(i)) + 1 > 250 Then Exit For
+            yeni = yeni & ";" & p(i)
+        Next i
+    End If
+    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_LOG", RefersTo:="=""" & Replace(yeni, """", "'") & """", Visible:=False
+    On Error GoTo 0
+End Sub
+
+' Gecmis anahtarindan (depo|UY|malzeme|degerleme) malzeme kodu.
+Private Function ADM_KOD3(ByVal k As Variant) As String
+    Dim p() As String
+    p = Split(CStr(k), "|")
+    If UBound(p) >= 2 Then ADM_KOD3 = Trim$(p(2))
+End Function
+
+' Miktar bicimi: binlik ".", kusurat yalniz varsa "," (tam sayida sonda virgul kalmaz).
+Private Sub ADM_MIKTAR(ByVal alan As Range)
+    Dim c As Range
+    For Each c In alan.Columns
+        AKSORA_V13_MIKTAR_BICIMI c
+    Next c
+End Sub
+
+' Depo turu: 1 ana depo (D..), 2 ilce (K.., PB..), 3 yuklenici / diger
+Private Function ADM_DEPO_TUR(ByVal depo As String) As Long
+    If AKSORA_IL_DEPO_GECERLI(depo, "ILCE", "") Then ADM_DEPO_TUR = 2: Exit Function
+    Select Case UCase$(Left$(Trim$(depo), 1))
+        Case "D": ADM_DEPO_TUR = 1
+        Case "K": ADM_DEPO_TUR = 2
+        Case Else: ADM_DEPO_TUR = 3
+    End Select
+End Function
+
+Private Sub ADM_ISG_DURUM(ByVal ws As Worksheet, ByVal r As Long, ByVal z As Double, ByVal s As Double)
+    ws.Range(ADM_ADRES(r, 4, r, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ADM_ADRES(r, 2, r, 7)).Interior.Color = vbWhite
+    If z > 0 Then
+        ws.Cells(r, 5).Font.Color = RGB(185, 28, 28): ws.Cells(r, 5).Font.bold = True
+        ADM_BLOK ws, ADM_ADRES(r, 8, r, 8), "ZİMMET YAPILMALI", RGB(254, 226, 226), RGB(185, 28, 28), 8, True, xlCenter
+    ElseIf s > 0 Then
+        ADM_BLOK ws, ADM_ADRES(r, 8, r, 8), "SARF BEKLİYOR", RGB(224, 242, 254), RGB(20, 103, 173), 8, True, xlCenter
+    Else
+        ADM_BLOK ws, ADM_ADRES(r, 8, r, 8), "TEMİZ", RGB(220, 252, 231), RGB(21, 128, 61), 8, True, xlCenter
+    End If
+End Sub
+
+'---------- arama (secili il veya tum iller, tum birimler; birden cok kelime: hepsi) ----------
+' Ayni il+UY+depo+malzeme birden cok birimde varsa tek satir ("MALZEME + YATIRIM"), miktar bir kez.
+' Siralama: ana depolar (D..), ilce depolari (K..), yukleniciler; her grupta miktar buyukten kucuge. Tablo filtrelenebilir.
+Public Sub AKSORA_ADMIN_ARA()
+    Dim ws As Worksheet, ara As String, b As Variant, iller As Variant, secIl As String, u As Long, p As Long, il As String, veri As Variant
+    Dim i As Long, r As Long, n As Long, m As Long, parca() As String, seriEsles As Boolean, k As String, t As Variant, kx As Variant
+    Dim grup As Object, depolar As Object, birimler As Object, olcu As Object, ilSet As Object, kk As Variant
+    Dim satirlar As Long, toplamMk As Double, toplamTl As Double, ev As Boolean, kelime() As String, w As Long, uy As Boolean
+    Dim alanMetin As String, ilMk As Object, dagilim As String, tur As Long, turMk(1 To 3) As Double, turSay(1 To 3) As Long
+    Dim anah() As String, idx() As Long, cikti() As Variant, bas As Long, ilkS As Long, sonS As Long, Satir1 As Long
+    Dim sc As Boolean, ac As Boolean, desen() As String, araDesen As String
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    ara = Trim$(CStr(ws.Range(ADM_ARA_HUCRE).Value2))
+    application.EnableEvents = False: application.ScreenUpdating = False
+    ' Rapor kurulurken (ADM_KUR) kart zaten acik; tek basina aramada kart acilir.
+    If Len(ara) >= 2 And Not mAdmYukleme And Not mAdmMesgul Then ac = AKSORA_BEKLE_AC("AKSORA  |  YÖNETİM MERKEZİ", "Aranıyor: " & ara, 0.2)
+    application.Cursor = xlWait
+    ws.Unprotect ""
+    ws.AutoFilterMode = False
+    ws.Range("BX4").Value2 = ara
+    With ws.Range(ADM_ADRES(ADM_ARA_SATIR, 2, ADM_ARA_SATIR + ADM_ARA_N + 1, 13))
+        .UnMerge: .Clear: .Interior.Color = RGB(244, 248, 252)
+        .Font.Name = "Aptos": .Font.Size = 10: .VerticalAlignment = xlCenter
+    End With
+    ws.Rows(ADM_ARA_SATIR & ":" & ADM_ARA_SATIR + ADM_ARA_N + 1).Hidden = True
+    If Len(ara) < 2 Then GoTo Bitir
+    Do While InStr(ara, "  ") > 0: ara = Replace(ara, "  ", " "): Loop
+    kelime = Split(ara, " ")
+    ' Turkce harfler (i/I/İ/ı, ş/s ...) ve buyuk/kucuk harf ayni sayilir.
+    ReDim desen(0 To UBound(kelime))
+    For w = 0 To UBound(kelime): desen(w) = AKSORA_ARAMA_DESEN(CStr(kelime(w))): Next w
+    araDesen = AKSORA_ARAMA_DESEN(ara)
+    secIl = ADM_IL_KOD(CStr(ws.Range("BX3").Value2))
+    Set grup = CreateObject("Scripting.Dictionary"): grup.CompareMode = vbTextCompare
+    Set depolar = CreateObject("Scripting.Dictionary"): Set birimler = CreateObject("Scripting.Dictionary")
+    Set olcu = CreateObject("Scripting.Dictionary"): Set ilSet = CreateObject("Scripting.Dictionary"): Set ilMk = CreateObject("Scripting.Dictionary")
+    b = ADM_BIRIMLER(): iller = ADM_ILLER()
+    For u = 0 To 3
+        For p = 0 To 4
+            il = CStr(iller(p))
+            If Len(secIl) = 0 Or il = secIl Then
+                veri = ADM_VERI(u, il)
+                For i = 1 To veri(2)
+                    If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+                    If veri(1)(i) Like desen(0) Then
+                        parca = Split(veri(1)(i), vbTab)
+                        seriEsles = (UBound(kelime) = 0 And parca(9) Like araDesen)
+                        alanMetin = parca(3) & " " & parca(4)
+                        uy = True
+                        For w = 0 To UBound(kelime)
+                            If Not (alanMetin Like desen(w)) Then uy = False: Exit For
+                        Next w
+                        If Val(parca(6)) = 0 Then uy = False: seriEsles = False
+                        ' Metin eslesmesi ortak anahtarla gruplanir (birimler arasi ortak depolar tek sayilir).
+                        If uy Then seriEsles = False
+                        If seriEsles Or uy Then
+                            k = il & "|" & parca(0) & "|" & parca(1) & "|" & parca(3) & IIf(seriEsles, "|" & parca(9), "")
+                            If Not grup.Exists(k) Then
+                                tur = ADM_DEPO_TUR(parca(1))
+                                grup(k) = Array(CStr(b(u)(4)), Y_IL_ADI(il), parca(1), parca(2), parca(3), parca(4), _
+                                    IIf(seriEsles, parca(9), parca(5)), 0&, 0#, parca(7), 0#, u, tur)
+                            End If
+                            t = grup(k)
+                            If t(11) = u Then
+                                ' depo sahibi birim: miktar ve deger bir kez toplanir
+                                t(7) = t(7) + 1: t(8) = t(8) + Val(parca(6)): t(10) = t(10) + Val(parca(8))
+                                satirlar = satirlar + 1
+                                olcu(parca(7)) = True: ilSet(il) = True
+                                ilMk(Y_IL_ADI(il)) = ilMk(Y_IL_ADI(il)) + Val(parca(6))
+                                toplamMk = toplamMk + Val(parca(6)): toplamTl = toplamTl + Val(parca(8))
+                                turMk(t(12)) = turMk(t(12)) + Val(parca(6))
+                                depolar(il & "|" & parca(0) & "|" & parca(1)) = t(12)
+                            ElseIf InStr(t(0), CStr(b(u)(4))) = 0 Then
+                                t(0) = t(0) & " + " & CStr(b(u)(4))
+                            End If
+                            birimler(CStr(b(u)(4))) = True
+                            grup(k) = t
+                        End If
+                    End If
+                Next i
+            End If
+        Next p
+    Next u
+    r = ADM_ARA_SATIR
+    ws.Rows(r).Hidden = False
+    If grup.Count = 0 Then
+        ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "“" & ara & "” için " & IIf(Len(secIl) = 0, "beş ilde", Y_IL_ADI(secIl) & " ilinde") & " hiçbir birimde kayıt bulunamadı.", _
+            RGB(254, 243, 199), RGB(146, 64, 14), 10, True, xlLeft
+        GoTo Bitir
+    End If
+    For Each kx In depolar.keys
+        turSay(depolar(kx)) = turSay(depolar(kx)) + 1
+    Next kx
+    kk = olcu.keys
+    If olcu.Count = 1 And ilSet.Count > 1 Then
+        For Each kx In ilMk.keys
+            dagilim = dagilim & "  " & kx & " " & ADM_ADET(ilMk(kx))
+        Next kx
+        dagilim = vbLf & "İl dağılımı:" & dagilim
+    End If
+    t = "“" & ara & "”:  " & ilSet.Count & " il  •  " & birimler.Count & " birim  •  " & depolar.Count & " depo  •  " & _
+        AKSORA_SAYI_METNI(satirlar, "#,##0") & " satır" & IIf(olcu.Count = 1, "  •  toplam " & ADM_ADET(toplamMk) & " " & CStr(kk(0)), "") & "  •  " & ADM_TL(toplamTl) & _
+        vbLf & "ANA DEPO: " & turSay(1) & " depo" & IIf(olcu.Count = 1, " / " & ADM_ADET(turMk(1)), "") & _
+        "     İLÇE: " & turSay(2) & " depo" & IIf(olcu.Count = 1, " / " & ADM_ADET(turMk(2)), "") & _
+        "     YÜKLENİCİ: " & turSay(3) & " depo" & IIf(olcu.Count = 1, " / " & ADM_ADET(turMk(3)), "") & dagilim & _
+        IIf(grup.Count > ADM_ARA_N - 2, vbLf & "(ilk " & ADM_ARA_N - 2 & " / " & grup.Count & " satır gösteriliyor)", "")
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), CStr(t), RGB(220, 252, 231), RGB(21, 128, 61), 10, True, xlLeft
+    ws.Cells(r, 2).WrapText = True: ws.Cells(r, 2).VerticalAlignment = xlTop
+    ws.Rows(r).RowHeight = 16 * (2 + IIf(Len(dagilim) > 0, 1, 0) + IIf(grup.Count > ADM_ARA_N - 2, 1, 0)) + 6
+    ' siralama: depo turu, sonra miktar (buyukten kucuge)
+    n = grup.Count
+    ReDim anah(1 To n): ReDim idx(1 To n)
+    i = 0
+    For Each kx In grup.keys
+        i = i + 1: idx(i) = i
+        t = grup(kx)
+        anah(i) = CStr(t(12)) & Right$(String$(18, "0") & Format$(Int((1E+15 - t(8)) * 100), "0"), 18) & kx
+    Next kx
+    Y_SIRALA anah, idx, 1, n
+    m = application.Min(n, ADM_ARA_N - 2)
+    ReDim cikti(1 To m, 1 To 12)
+    For i = 1 To m
+        ' anahtarin sonundaki grup anahtari degil, sira numarasi kullanilir
+        t = grup(Mid$(anah(i), 20))
+        cikti(i, 1) = t(0): cikti(i, 2) = t(1): cikti(i, 3) = t(2): cikti(i, 4) = t(3)
+        cikti(i, 5) = t(4): cikti(i, 6) = t(5): cikti(i, 7) = t(6): cikti(i, 8) = t(7)
+        cikti(i, 9) = t(8): cikti(i, 10) = t(9): cikti(i, 11) = t(10)
+        cikti(i, 12) = Choose(t(12), "ANA DEPO", "İLÇE", "YÜKLENİCİ")
+    Next i
+    r = r + 1: bas = r
+    ws.Rows(r & ":" & r + m).Hidden = False
+    ADM_BASLIKLAR ws, r, 2, Array("Birim", "İl", "Depo", "Depo adı", "Malzeme", "Malzeme tanımı", "Seri no / Parti", "Satır", "Miktar", "Ölçü", "Değer", "Depo türü")
+    Satir1 = r + 1
+    ws.Range(ADM_ADRES(Satir1, 2, Satir1 + m - 1, 8)).NumberFormat = "@"
+    ws.Range(ADM_ADRES(Satir1, 11, Satir1 + m - 1, 11)).NumberFormat = "@"
+    ws.Range(ADM_ADRES(Satir1, 13, Satir1 + m - 1, 13)).NumberFormat = "@"
+    ws.Range(ADM_ADRES(Satir1, 2, Satir1 + m - 1, 13)).Value2 = cikti
+    r = Satir1 + m - 1
+    With ws.Range(ADM_ADRES(Satir1, 2, r, 13))
+        .Font.Name = "Aptos": .Font.Size = 10: .Font.Color = RGB(30, 41, 59)
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
+    ws.Range(ADM_ADRES(Satir1, 5, r, 5)).HorizontalAlignment = xlLeft
+    ws.Range(ADM_ADRES(Satir1, 7, r, 7)).HorizontalAlignment = xlLeft
+    ws.Range(ADM_ADRES(Satir1, 10, r, 10)).HorizontalAlignment = xlRight
+    ws.Range(ADM_ADRES(Satir1, 12, r, 12)).HorizontalAlignment = xlRight
+    ws.Range(ADM_ADRES(Satir1, 10, r, 10)).Font.bold = True
+    ws.Range(ADM_ADRES(Satir1, 9, r, 9)).NumberFormat = "#,##0"
+    ADM_MIKTAR ws.Range(ADM_ADRES(Satir1, 10, r, 10))
+    ws.Range(ADM_ADRES(Satir1, 12, r, 12)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(Satir1, 2, r, 2)).ShrinkToFit = True
+    ws.Range(ADM_ADRES(Satir1, 5, r, 5)).ShrinkToFit = True
+    ws.Range(ADM_ADRES(Satir1, 12, r, 12)).ShrinkToFit = True
+    ' depo turune gore renk (siralama tur bazinda oldugundan bloklar ardisik)
+    ilkS = Satir1
+    For i = 1 To m
+        If i = m Then
+            sonS = Satir1 + i - 1
+        ElseIf cikti(i + 1, 12) <> cikti(i, 12) Then
+            sonS = Satir1 + i - 1
+        Else
+            sonS = 0
+        End If
+        If sonS > 0 Then
+            Select Case cikti(i, 12)
+                Case "ANA DEPO": ws.Range(ADM_ADRES(ilkS, 2, sonS, 13)).Interior.Color = RGB(219, 234, 254)
+                Case "İLÇE": ws.Range(ADM_ADRES(ilkS, 2, sonS, 13)).Interior.Color = RGB(237, 233, 254)
+                Case Else: ws.Range(ADM_ADRES(ilkS, 2, sonS, 13)).Interior.Color = RGB(254, 243, 199)
+            End Select
+            Select Case cikti(i, 12)
+                Case "ANA DEPO": ws.Range(ADM_ADRES(ilkS, 13, sonS, 13)).Font.Color = RGB(29, 78, 216)
+                Case "İLÇE": ws.Range(ADM_ADRES(ilkS, 13, sonS, 13)).Font.Color = RGB(91, 33, 182)
+                Case Else: ws.Range(ADM_ADRES(ilkS, 13, sonS, 13)).Font.Color = RGB(146, 64, 14)
+            End Select
+            ws.Range(ADM_ADRES(ilkS, 13, sonS, 13)).Font.bold = True
+            ilkS = sonS + 1
+        End If
+    Next i
+    ADM_KENAR ws.Range(ADM_ADRES(bas, 2, r, 13)), True
+    ' baslik satirindan filtre (her sutun)
+    ws.Range(ADM_ADRES(bas, 2, r, 13)).AutoFilter
+Bitir:
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+    If ac Then AKSORA_BEKLE_KAPAT
+    ' Rapor kurulurken cagrildiysa ekran ve imlec ADM_AC'ye birakilir (yarim sayfa gorunmez).
+    If Not mAdmMesgul Then application.StatusBar = False: application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = IIf(mAdmMesgul, sc, True)
+    Exit Sub
+Hata:
+    t = Err.Description
+    On Error Resume Next
+    If ac Then AKSORA_BEKLE_KAPAT
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    If Not mAdmMesgul Then application.StatusBar = False: application.Cursor = xlDefault
+    application.EnableEvents = ev: application.ScreenUpdating = IIf(mAdmMesgul, sc, True)
+    If Not mAdmMesgul Then MsgBox "Arama yapılamadı: " & t, vbExclamation, "AKSORA | ADMİN"
+End Sub
+
+'---------- tek tus: tum birimler ----------
+Public Sub AKSORA_ADMIN_TUMUNU_GUNCELLE()
+    Dim bas As Double, sure As Double, sonuc As String, ws As Worksheet, sh As Worksheet
+    If AKSORA_V11_MESGUL Then Exit Sub
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    If MsgBox("Tüm birimler (Malzeme, Müşteri, Yatırım, İlçe) beş il için SAP'den sırayla güncellenecek." & vbCrLf & vbCrLf & _
+        "SAP oturumu açık olmalıdır; işlem uzun sürebilir. İlerleme bu ekranda kartta izlenir (birim, il ve geçen süre); " & _
+        "sonunda yönetim merkezi yenilenir." & vbCrLf & vbCrLf & "Devam edilsin mi?", vbYesNo + vbQuestion, "AKSORA | TÜM BİRİMLERİ GÜNCELLE") <> vbYes Then Exit Sub
+    ' SAP'ye giris yapilmamissa hic baslanmaz (birimler tek tek hata verip uzamasin).
+    Dim sapMesaj As String, sapYok As String
+    If SAP_SESSION_AL("CDP", sapMesaj) Is Nothing Then sapYok = sapYok & vbCrLf & "CDP: " & sapMesaj
+    sapMesaj = vbNullString
+    If SAP_SESSION_AL("EPP", sapMesaj) Is Nothing Then sapYok = sapYok & vbCrLf & "EPP: " & sapMesaj
+    If Len(sapYok) > 0 Then
+        MsgBox "SAP bağlantısı bulunamadı; güncelleme başlatılmadı." & vbCrLf & sapYok & vbCrLf & vbCrLf & _
+            "SAP'de CDP ve EPP sistemlerine giriş yapıp tekrar deneyin.", vbExclamation, "AKSORA | TÜM BİRİMLERİ GÜNCELLE"
+        Exit Sub
+    End If
+    AKSORA_ADMIN_SONUC = vbNullString
+    bas = Timer: mAdmTopluBas = bas: mAdmTopluSon = 0
+    ' Kart birimler calismadan once acilir; ekran yonetim merkezinde sabit kalir (birim panellerine gidilmez).
+    AKSORA_ADMIN_IPTAL = False
+    mAdmTopluKart = AKSORA_BEKLE_AC("AKSORA  |  TÜM BİRİMLER GÜNCELLENİYOR", "SAP bağlantısı hazırlanıyor...", 0.01, True)
+    AKSORA_ADMIN_TOPLU = True
+    ADM_EKRAN_KILIT True
+    ' Calisirken Excel'e tiklama / yazma / baska dosyaya gecme engellenir (kart ve SAP pencereleri etkilenmez).
+    application.Interactive = False
+    ' Esc / Ctrl+Break makroyu yarida kesip Excel'i kilitli birakmasin (durdurma karttaki DURDUR ile).
+    application.EnableCancelKey = xlDisabled
+    ' Yatirim ve Ilce, Malzemenin ayni SAP okumasini kullanir (hazirsa); Musteri ayri rapor (IQ09) oldugundan sonda.
+    ADM_BIRIM_CALISTIR 0, "MALZEME", "AKSORA_BUTUN_ILLERI_GUNCELLE"
+    AKSORA_ORTAK_AKTIF = AKSORA_ORTAK_HAZIR()
+    If AKSORA_ORTAK_AKTIF Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & "(Yatırım ve İlçe, Malzemenin SAP okumasıyla güncellendi; ek sorgu yapılmadı.)" & vbCrLf
+    ADM_BIRIM_CALISTIR 1, "YATIRIM", "AKSORA_YATIRIM_BUTUN_ILLER"
+    ADM_BIRIM_CALISTIR 2, "İLÇE", "AKSORA_ILCE_BUTUN_ILLER"
+    AKSORA_ORTAK_BIRAK
+    ADM_BIRIM_CALISTIR 3, "MÜŞTERİ", "AKSORA_MUSTERI_BUTUN_ILLERI_GUNCELLE"
+    On Error Resume Next
+    application.EnableCancelKey = xlInterrupt
+    application.Interactive = True
+    AKSORA_ARKA_PLAN_BITIR
+    AKSORA_ORTAK_BIRAK
+    AKSORA_ADMIN_TOPLU = False
+    ADM_EKRAN_KILIT False
+    If mAdmTopluKart Then AKSORA_BEKLE_KAPAT
+    mAdmTopluKart = False
+    sure = Timer - bas: If sure < 0 Then sure = sure + 86400#
+    sonuc = Format$(Now, "dd.mm.yyyy hh:nn") & "  •  süre " & AKSORA_SURE_METNI(sure)
+    ThisWorkbook.names.Add Name:="_AKSORA_ADMIN_SON_TOPLU", RefersTo:="=""" & Replace(sonuc, """", """""") & """", Visible:=False
+    AKSORA_GUNLUK_YAZ "GÜNCELLEME", "Tüm birimler (tek tuş)", sure
+    ' Birimlerin actigi paneller gizlenir; yalniz yonetim merkezi gorunur.
+    application.ScreenUpdating = False
+    Set ws = ThisWorkbook.Worksheets(ADM)
+    ws.Visible = xlSheetVisible
+    ws.Select Replace:=True
+    For Each sh In ThisWorkbook.Worksheets
+        If sh.Name <> ws.Name And sh.Visible = xlSheetVisible Then sh.Visible = xlSheetVeryHidden
+    Next sh
+    On Error GoTo 0
+    ADM_AC
+    If AKSORA_ADMIN_IPTAL Then
+        AKSORA_ADMIN_IPTAL = False
+        MsgBox "Güncelleme durduruldu (" & sonuc & ")." & vbCrLf & "Çalışan il tamamlandı, kalanlar atlandı." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC, vbExclamation, "AKSORA | TÜM BİRİMLER"
+    Else
+        MsgBox "Tüm birimler güncellendi (" & sonuc & ")." & vbCrLf & vbCrLf & AKSORA_ADMIN_SONUC & AKSORA_YAYINLA_SESSIZ(), vbInformation, "AKSORA | TÜM BİRİMLER"
+    End If
+End Sub
+
+Private Sub ADM_BIRIM_CALISTIR(ByVal sira As Long, ByVal ad As String, ByVal makro As String)
+    On Error Resume Next
+    If AKSORA_ADMIN_IPTAL Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & ad & ": durduruldu (çalıştırılmadı)." & vbCrLf: Exit Sub
+    mAdmTopluSira = sira: mAdmTopluAd = ad
+    Set mAdmTopluIl = CreateObject("Scripting.Dictionary")
+    AKSORA_ADMIN_DURUM "güncelleme başlıyor..."
+    Err.Clear
+    application.Run "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!" & makro
+    If Err.Number <> 0 Then AKSORA_ADMIN_SONUC = AKSORA_ADMIN_SONUC & ad & ": HATA - " & Err.Description & vbCrLf
+    Err.Clear
+    ' Birim calisirken ekran kilidi baska pencereye gecmis olabilir; yeniden uygulanir.
+    ADM_EKRAN_KILIT True
+    AKSORA_ADMIN_DURUM "tamamlandı."
+    DoEvents
+    On Error GoTo 0
+End Sub
+
+' Tum birimler guncellenirken kart: birim, il ve son islem; cubuk birim (4) ve il (5) ilerledikce dolar.
+' Birimlerin durum yazan yordamlari (CORE_DURUM, Y_DURUM, I_DURUM, musteri / malzeme toplu durum) burayi cagirir.
+Public Sub AKSORA_ADMIN_DURUM(ByVal metin As String)
+    Dim sure As Double, u As String, k As Variant, y As Double, s As String, sn As Long
+    If Not mAdmTopluKart Or Not mAdmYukleme Then Exit Sub
+    If Len(metin) = 0 And Abs(Timer - mAdmTopluSon) < 1 Then Exit Sub
+    If Len(metin) > 0 And metin = mAdmTopluMetin And Abs(Timer - mAdmTopluSon) < 0.5 Then Exit Sub
+    On Error Resume Next
+    If Len(metin) > 0 Then
+        mAdmTopluMetin = metin
+        u = Y_NORM(metin)
+        If Not mAdmTopluIl Is Nothing Then
+            For Each k In Array("ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+                If InStr(u, CStr(k)) > 0 Then mAdmTopluIl(CStr(k)) = True
+            Next k
+        End If
+    End If
+    mAdmTopluSon = Timer
+    sure = Timer - mAdmTopluBas: If sure < 0 Then sure = sure + 86400#
+    sn = CLng(Fix(sure))
+    If mAdmTopluIl Is Nothing Then y = 0 Else y = mAdmTopluIl.Count / 5
+    If metin = "tamamlandı." Then y = 1
+    y = (mAdmTopluSira + 0.05 + 0.9 * y) / 4
+    s = mAdmTopluAd & "  •  " & mAdmTopluMetin
+    ' SAP raporu calisirken Excel 10-20 sn bekler (SAP cagrisi bitene kadar kart guncellenemez): onceden yazilir.
+    If InStr(1, mAdmTopluMetin, "alınıyor", vbTextCompare) > 0 Or InStr(1, mAdmTopluMetin, "sorgu", vbTextCompare) > 0 Then _
+        s = s & "  (SAP yanıtı bekleniyor)"
+    If AKSORA_ADMIN_IPTAL Then s = "Durduruluyor: çalışan il bitince işlem duracak..."
+    If Len(s) > 90 Then s = Left$(s, 87) & "..."
+    frmSplash.lblDurum.Caption = s & vbLf & "Birim " & (mAdmTopluSira + 1) & " / 4   •   Geçen süre: " & (sn \ 60) & " dk " & Format$(sn Mod 60, "00") & " sn"
+    frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * application.Min(1, y))
+    frmSplash.Repaint
+    On Error GoTo 0
+End Sub
+
+' Excel penceresi cizimi durdurulur (birim sayfalari arkada degisir, ekranda yonetim merkezi kalir); kart ayri pencere oldugundan cizilir.
+Private Sub ADM_EKRAN_KILIT(ByVal kilit As Boolean)
+    On Error Resume Next
+    ' Pencere kilidi kullanilmaz (ekran griye donup SAP/Excel uyarilarini gizleyebiliyordu);
+    ' ekranin yonetim merkezinde kalmasini birimlerdeki AKSORA_ADMIN_TOPLU korumalari saglar.
+    If kilit Then
+        ' (kilit acilmaz; yalniz eski surumden kalan kilit kaldirilir)
+    ElseIf mAdmKilit Then
+        ADMW_LockWindowUpdate 0
+        mAdmKilit = False
+    End If
+    On Error GoTo 0
+End Sub
+
+'---------- yardimcilar ----------
+Private Function ADM_AD_OKU(ByVal ad As String) As String
+    Dim v As Variant
+    On Error Resume Next
+    v = application.Evaluate(ThisWorkbook.names(ad).RefersTo)
+    If Not IsError(v) Then ADM_AD_OKU = CStr(v)
+    On Error GoTo 0
+End Function
+
+' Atil stok ozeti (ATIL STOK sayfasiyla ayni hesap). SAP okumasi yoksa bolum cizilmez. Donus: son satir.
+Private Function ADM_ATIL_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secIl As String) As Long
+    Dim c As Collection, bilgi As Variant, x As Variant, iller As Variant, p As Long, j As Long, ilk As Long, n As Long
+    Dim v(0 To 4, 0 To 8) As Double, kapsam(0 To 4) As Double, ok As String, t As Double, enAz As Double, enCok As Double, t2 As Long
+    Dim islem As Object
+    ADM_ATIL_CIZ = r
+    If ADM_WS(ATIL_KAYIT) Is Nothing Then Exit Function
+    On Error GoTo Hata
+    ADM_ILERLE 0.96, "Atıl stok özeti hesaplanıyor..."
+    Set c = ATIL_HESAPLA(bilgi)
+    If bilgi(0) <= 0 And bilgi(1) <= 0 Then Exit Function
+    iller = ADM_ILLER()
+    For Each x In c
+        For p = 0 To 4
+            If x(0) = iller(p) Then Exit For
+        Next p
+        If p <= 4 Then
+            kapsam(p) = kapsam(p) + x(8)
+            If x(10) >= 1 Then
+                ' v: 0/1 atil kalem/deger, 2/3 3 ay, 4/5 6 ay, 6 transfer onerisi, 7 yuksek oncelik, 8 stogu dusen
+                For t2 = 1 To 3
+                    If x(20)(t2) > 0.0000001 Then j = (3 - t2) * 2: v(p, j) = v(p, j) + 1: v(p, j + 1) = v(p, j + 1) + x(19)(t2)
+                Next t2
+                If x(16) Then v(p, 8) = v(p, 8) + 1
+            End If
+        End If
+    Next x
+    ' 6: kullanilabilir (kendi ihtiyaci + transfer, TRANSFER LISTESI ile ayni), 7: satis / hurda / iade adayi (ATIL STOK > NE YAPILMALI)
+    AKSORA_KPI_ATIL v, kapsam
+    Set islem = ATIL_ISLEM_IL_OZET(c)
+    For p = 0 To 4
+        If islem.Exists(CStr(iller(p))) Then v(p, 6) = islem(CStr(iller(p)))(0): v(p, 7) = islem(CStr(iller(p)))(1)
+    Next p
+    ok = "SAP okuması: CDP " & IIf(bilgi(0) > 0, Format$(bilgi(0), "dd.mm.yyyy"), "-") & "  •  EPP " & IIf(bilgi(1) > 0, Format$(bilgi(1), "dd.mm.yyyy"), "-")
+    r = r + 2
+    ADM_BOLUM ws, r, ADM_ADRES(r, 2, r, 13), "ATIL STOK   (24 aydan eski stok • D, K ve yüklenici depoları • " & ok & ")"
+    r = r + 1: ilk = r
+    ADM_BASLIKLAR ws, r, 2, Array("İl", "ATIL kalem", "ATIL değeri", "3 AY kalem", "3 AY değeri", "6 AY kalem", "6 AY değeri", _
+        "Atıl oranı", "Kullanılabilir (kendi / transfer)", "Sat / hurda adayı", "Stoğu düşen", "Değerlendirme")
+    enAz = -1: enCok = -1
+    For p = 0 To 4
+        If kapsam(p) > 0 Then
+            t = v(p, 1) / kapsam(p)
+            If enAz < 0 Or t < enAz Then enAz = t
+            If t > enCok Then enCok = t
+        End If
+    Next p
+    For p = 0 To 4
+        r = r + 1
+        ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = IIf(CStr(iller(p)) = secIl, RGB(226, 236, 247), vbWhite)
+        ws.Cells(r, 2).Value2 = Y_IL_ADI(CStr(iller(p))): ws.Cells(r, 2).Font.bold = True
+        For j = 0 To 5
+            ws.Cells(r, 3 + j).Value2 = IIf(j Mod 2 = 1, Round(v(p, j), 2), v(p, j))
+        Next j
+        If kapsam(p) > 0 Then t = v(p, 1) / kapsam(p) Else t = 0
+        ws.Cells(r, 9).Value2 = t
+        ws.Cells(r, 10).Value2 = v(p, 6): ws.Cells(r, 11).Value2 = v(p, 7): ws.Cells(r, 12).Value2 = v(p, 8)
+        If kapsam(p) <= 0 Then
+            ws.Cells(r, 13).Value2 = "Veri yok"
+        ElseIf enCok > enAz + 0.0005 And t = enAz Then
+            ws.Cells(r, 13).Value2 = ChrW(9733) & " EN İYİ"
+        ElseIf enCok > enAz + 0.0005 And t = enCok Then
+            ws.Cells(r, 13).Value2 = ChrW(9660) & " EN KÖTÜ"
+        Else
+            ws.Cells(r, 13).Value2 = IIf(t < 0.05, "İYİ", IIf(t < 0.15, "ORTA", "ZAYIF"))
+        End If
+    Next p
+    r = r + 1
+    ws.Cells(r, 2).Value2 = "TOPLAM"
+    For j = 3 To 12
+        If j <> 9 Then ws.Cells(r, j).Formula = "=SUM(" & ADM_ADRES(ilk + 1, j, r - 1, j) & ")"
+    Next j
+    t = 0
+    For p = 0 To 4: t = t + kapsam(p): Next p
+    If t > 0 Then ws.Cells(r, 9).Value2 = (v(0, 1) + v(1, 1) + v(2, 1) + v(3, 1) + v(4, 1)) / t Else ws.Cells(r, 9).Value2 = 0
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Font.bold = True
+    ws.Range(ADM_ADRES(r, 2, r, 13)).Interior.Color = RGB(226, 236, 247)
+    ws.Range(ADM_ADRES(ilk + 1, 2, r, 13)).HorizontalAlignment = xlCenter
+    ws.Range(ADM_ADRES(ilk + 1, 4, r, 4)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 6, r, 6)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 8, r, 8)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ADM_ADRES(ilk + 1, 9, r, 9)).NumberFormat = "0.0%"
+    ws.Range(ADM_ADRES(ilk + 1, 3, r, 4)).Font.Color = RGB(185, 28, 28)
+    ws.Range(ADM_ADRES(ilk + 1, 4, r, 8)).ShrinkToFit = True
+    I_DURUM_RENK ws.Range(ADM_ADRES(ilk + 1, 13, r - 1, 13))
+    ADM_KENAR ws.Range(ADM_ADRES(ilk, 2, r, 13)), True
+    ADM_ATIL_CIZ = r
+    Exit Function
+Hata:
+    On Error Resume Next
+    r = r + 1
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Atıl stok özeti hesaplanamadı: " & Err.Description, RGB(254, 243, 199), RGB(146, 64, 14), 9, False, xlLeft
+    ADM_ATIL_CIZ = r
+End Function
+
+Public Function ADM_ADRES(ByVal r1 As Long, ByVal c1 As Long, ByVal r2 As Long, ByVal c2 As Long) As String
+    ADM_ADRES = Chr$(64 + c1) & r1 & ":" & Chr$(64 + c2) & r2
+End Function
+
+Public Sub ADM_BLOK(ByVal ws As Worksheet, ByVal adres As String, ByVal metin As String, ByVal dolgu As Long, _
+    ByVal yazi As Long, ByVal boyut As Single, ByVal kalin As Boolean, ByVal hiz As Long)
+    With ws.Range(adres)
+        If .Cells.Count > 1 Then .Merge
+        .Interior.Color = dolgu
+        .Font.Color = yazi: .Font.Size = boyut: .Font.bold = kalin: .Font.Name = "Aptos"
+        .HorizontalAlignment = hiz: .VerticalAlignment = xlCenter
+        .NumberFormat = "@"
+        .Cells(1, 1).Value2 = metin
+        If hiz = xlLeft Then .IndentLevel = 1
+    End With
+End Sub
+
+Public Sub ADM_BOLUM(ByVal ws As Worksheet, ByVal r As Long, ByVal adres As String, ByVal metin As String)
+    ws.Rows(r).RowHeight = 26
+    ADM_BLOK ws, adres, metin, RGB(244, 248, 252), RGB(12, 45, 79), 12, True, xlLeft
+    ws.Range(adres).IndentLevel = 0
+    With ws.Range(adres).Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous: .Weight = xlMedium: .Color = RGB(34, 185, 191)
+    End With
+End Sub
+
+Public Sub ADM_BASLIKLAR(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal basliklar As Variant)
+    Dim i As Long
+    For i = 0 To UBound(basliklar)
+        ws.Cells(r, c + i).Value2 = basliklar(i)
+    Next i
+    With ws.Range(ws.Cells(r, c), ws.Cells(r, c + UBound(basliklar)))
+        .Interior.Color = RGB(26, 75, 120): .Font.Color = vbWhite: .Font.bold = True: .Font.Size = 9
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .WrapText = True
+    End With
+    ws.Rows(r).RowHeight = 24
+End Sub
+
+Public Sub ADM_KENAR(ByVal alan As Range, Optional ByVal ic As Boolean = False)
+    With alan
+        .Borders(xlEdgeLeft).LineStyle = xlContinuous: .Borders(xlEdgeRight).LineStyle = xlContinuous
+        .Borders(xlEdgeTop).LineStyle = xlContinuous: .Borders(xlEdgeBottom).LineStyle = xlContinuous
+        .Borders(xlEdgeLeft).Color = RGB(203, 213, 225): .Borders(xlEdgeRight).Color = RGB(203, 213, 225)
+        .Borders(xlEdgeTop).Color = RGB(203, 213, 225): .Borders(xlEdgeBottom).Color = RGB(203, 213, 225)
+        If ic And .Rows.Count > 1 Then
+            .Borders(xlInsideHorizontal).LineStyle = xlContinuous
+            .Borders(xlInsideHorizontal).Color = RGB(226, 232, 240)
+        End If
+    End With
+End Sub
+
+Private Sub ADM_DUGME(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, _
+    ByVal renk As Long, ByVal makro As String, ByVal genislik As Double, Optional ByVal y As Double = -1, Optional ByVal h As Double = -1)
+    Dim s As Shape, w As Double
+    w = ws.Columns("B").Width * genislik
+    If y < 0 Then y = ws.Rows(1).top + 12
+    If h < 0 Then h = 28
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, w, h)
+    With s
+        .Name = ad
+        .Fill.ForeColor.RGB = renk: .line.ForeColor.RGB = RGB(116, 192, 226): .line.Weight = 1
+        .Adjustments.Item(1) = 0.18
+        .Placement = xlFreeFloating
+        .OnAction = BIRIM_MAKRO(makro)
+        With .TextFrame2
+            .MarginLeft = 4: .MarginRight = 4: .MarginTop = 0: .MarginBottom = 0
+            .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoTrue
+            .TextRange.Text = metin
+            .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 9: .TextRange.Font.bold = msoTrue
+            .TextRange.Font.Fill.ForeColor.RGB = vbWhite
+            .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        End With
+    End With
+End Sub
+
+' Tum kayitli aylarin toplami: ilce siralamasi (en iyiden en kotuye; uyum yuksek once, esitlikte fire degeri az once).
+' Donus: siralanmis Collection of Array(0 depo, 1 ilce, 2 toplam uyum %, 3 kullanim olan ay, 4 fireli ay, 5 kullanilan deger,
+'   6 fire degeri, 7 kritik kalem, 8 fireli kalem, 9 en cok fire kategorisi metni, 10 en cok fire malzemesi metni, 11 en kotu ay metni,
+'   12 degerlendirme)
+Private Function I_AY_TOPLAM(ByVal aylar As Object, ByVal depolar As Object) As Collection
+    Dim acc As Object, kat As Object, mal As Object, enKotu As Object, ay As Variant, h As Variant, dd As Object, dx As Object
+    Dim k As Variant, t As Variant, o As Variant, p() As String, u As Double, n As Long, i As Long, anah() As String, idx() As Long
+    Dim kod() As String, enK As String, enKt As Double, enM As String, enMt As Double, top As Double, ad As String, tn As String
+    Dim kk As Variant, sonuc As Collection, ek As Variant, ayAd As String
+    Set I_AY_TOPLAM = New Collection
+    If aylar Is Nothing Then Exit Function
+    If aylar.Count = 0 Then Exit Function
+    Set acc = CreateObject("Scripting.Dictionary"): acc.CompareMode = vbTextCompare
+    Set kat = CreateObject("Scripting.Dictionary"): kat.CompareMode = vbTextCompare
+    Set mal = CreateObject("Scripting.Dictionary"): mal.CompareMode = vbTextCompare
+    Set enKotu = CreateObject("Scripting.Dictionary"): enKotu.CompareMode = vbTextCompare
+    For Each ay In aylar.keys
+        AKSORA_BEKLE_NABIZ
+        h = I_AY_OZET(aylar, CLng(ay))
+        If IsArray(h) Then
+            Set dd = h(1): Set dx = h(3)
+            For Each k In dd.keys
+                t = dd(k)
+                If t(10) > 0 Then
+                    If acc.Exists(CStr(k)) Then o = acc(CStr(k)) Else o = Array(0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#, 0#)
+                    o(8) = o(8) + t(8): o(9) = o(9) + t(9): o(10) = o(10) + t(10): o(11) = o(11) + t(11)
+                    o(12) = o(12) + 1
+                    If t(11) > 0 Or t(9) > 0.005 Then o(13) = o(13) + 1
+                    acc(CStr(k)) = o
+                    u = I_UYUM_K(t)
+                    If enKotu.Exists(CStr(k)) Then
+                        ek = enKotu(CStr(k))
+                        If u < ek(1) - 0.0001 Or (Abs(u - ek(1)) <= 0.0001 And t(9) > ek(2)) Then enKotu(CStr(k)) = Array(CLng(ay), u, t(9))
+                    Else
+                        enKotu(CStr(k)) = Array(CLng(ay), u, t(9))
+                    End If
+                End If
+            Next k
+            For Each k In dx.keys
+                t = dx(k)
+                If t(3) > 0.005 Then
+                    p = Split(CStr(k), "|")
+                    tn = I_KATEGORI(p(1))
+                    If Len(tn) > 0 Then
+                        kat(p(0) & "|" & tn) = I_DS(kat, p(0) & "|" & tn) + t(3)
+                        mal(p(0) & "|" & p(1)) = I_DS(mal, p(0) & "|" & p(1)) + t(3)
+                    End If
+                End If
+            Next k
+        End If
+    Next ay
+    n = acc.Count
+    If n = 0 Then Exit Function
+    ReDim anah(1 To n): ReDim idx(1 To n): ReDim kod(1 To n)
+    For Each k In acc.keys
+        i = i + 1: idx(i) = i: kod(i) = CStr(k): o = acc(k)
+        anah(i) = I_SIRA_ANAHTAR(I_UYUM_K(o)) & Format$(Round(o(9), 2) * 100, "0000000000000000")
+    Next k
+    Y_SIRALA anah, idx, 1, n
+    For i = 1 To n
+        k = kod(idx(i)): o = acc(k)
+        enK = vbNullString: enKt = 0: enM = vbNullString: enMt = 0
+        For Each kk In kat.keys
+            If Left$(CStr(kk), Len(k) + 1) = k & "|" Then
+                If kat(kk) > enKt Then enKt = kat(kk): enK = Mid$(CStr(kk), Len(k) + 2)
+            End If
+        Next kk
+        For Each kk In mal.keys
+            If Left$(CStr(kk), Len(k) + 1) = k & "|" Then
+                If mal(kk) > enMt Then enMt = mal(kk): enM = Mid$(CStr(kk), Len(k) + 2)
+            End If
+        Next kk
+        ad = vbNullString
+        If depolar.Exists(k) Then ad = I_DEPO_KISA(CStr(depolar(k)))
+        If enKt > 0 Then
+            If o(9) > 0.005 Then enK = enK & "  •  %" & AKSORA_SAYI_METNI(enKt / o(9) * 100, "0") & " (" & AKSORA_SAYI_METNI(enKt, "#,##0.00") & " TL)"
+        Else
+            enK = "-"
+        End If
+        If enMt > 0 Then
+            enM = enM & "  " & CStr(I_MAL_BILGI(enM)(1)) & "  •  " & AKSORA_SAYI_METNI(enMt, "#,##0.00") & " TL"
+        ElseIf o(11) > 0 Then
+            enM = "Fireli kalem var (değersiz)"
+        Else
+            enM = "Fire yok: kritik demontaj tam"
+        End If
+        ayAd = "-"
+        If enKotu.Exists(k) Then
+            ek = enKotu(k)
+            If ek(1) < 99.95 Or ek(2) > 0.005 Then ayAd = I_AY_ADI(CLng(ek(0))) & "  •  %" & AKSORA_SAYI_METNI(ek(1), "0.0")
+        End If
+        I_AY_TOPLAM.Add Array(CStr(k), ad, Round(I_UYUM_K(o), 1), o(12), o(13), Round(o(8), 2), Round(o(9), 2), o(10), o(11), _
+            enK, enM, ayAd, I_DEGERLENDIR(I_UYUM_K(o)))
+    Next i
+End Function
+
+Private Function I_DS(ByVal d As Object, ByVal k As String) As Double
+    If d.Exists(k) Then I_DS = CDbl(d(k))
+End Function
+
+' Aylik demontaj sayfasi: tum aylar siralamasi tablosu. r: bolum basligi satiri; donus: son satir.
+Private Function I_AY_TOPLAM_CIZ(ByVal ws As Worksheet, ByVal r As Long, ByVal aylar As Object, ByVal depolar As Object) As Long
+    Dim c As Collection, x As Variant, a1 As Long, i As Long, n As Long, sonuc() As Variant, ilkAy As Long, sonAy As Long, k As Variant
+    Set c = I_AY_TOPLAM(aylar, depolar)
+    For Each k In aylar.keys
+        If ilkAy = 0 Or CLng(k) < ilkAy Then ilkAy = CLng(k)
+        If CLng(k) > sonAy Then sonAy = CLng(k)
+    Next k
+    Y_BOLUM ws, r, "TÜM AYLAR İLÇE SIRALAMASI  –  " & aylar.Count & " ay (" & I_AY_ADI(ilkAy) & IIf(sonAy <> ilkAy, " – " & I_AY_ADI(sonAy), "") & ")  (en iyiden en kötüye)", _
+        "Kayıtlı bütün ayların toplamı. Neden: en çok fire veren malzeme ve kategori; en kötü ay.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Sıra", "İlçe", "Depo", "Neden: en çok fire veren malzeme", _
+        "Toplam uyum", "Kullanım olan ay", "Fireli ay", "Kullanılan değer", "Fire değeri", "En çok fire kategorisi", "En kötü ay", "Değerlendirme")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    n = c.Count
+    ws.Range("BX34").Value2 = a1 & "|" & (a1 + n - 1)
+    If n = 0 Then
+        r = r + 1
+        ws.Cells(r, 2).Value2 = "Kayıtlı aylarda ilçe depolarında kritik malzeme kullanımı yok."
+        ws.Cells(r, 2).Font.Italic = True: ws.Cells(r, 2).Font.Color = RGB(100, 116, 139)
+        I_AY_TOPLAM_CIZ = r
+        Exit Function
+    End If
+    ReDim sonuc(1 To n, 1 To 12)
+    i = 0
+    For Each x In c
+        i = i + 1
+        sonuc(i, 1) = i: sonuc(i, 2) = x(1): sonuc(i, 3) = x(0): sonuc(i, 4) = x(10): sonuc(i, 5) = x(2)
+        sonuc(i, 6) = x(3): sonuc(i, 7) = x(4): sonuc(i, 8) = x(5): sonuc(i, 9) = x(6): sonuc(i, 10) = x(9)
+        sonuc(i, 11) = x(11): sonuc(i, 12) = x(12)
+        If n > 1 And i = 1 Then sonuc(i, 12) = ChrW(9733) & " EN İYİ"
+        If n > 1 And i = n Then sonuc(i, 12) = ChrW(9660) & " EN KÖTÜ"
+    Next x
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 4)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 10), ws.Cells(a1 + n - 1, 11)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 12)).Value2 = sonuc
+    r = a1 + n - 1
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(r, 12))
+    ws.Range(ws.Rows(a1), ws.Rows(r)).RowHeight = 22
+    If n > 1 Then
+        ws.Range(ws.Cells(a1, 1), ws.Cells(a1, 11)).Interior.Color = RGB(240, 253, 244)
+        ws.Range(ws.Cells(r, 1), ws.Cells(r, 11)).Interior.Color = RGB(254, 242, 242)
+    End If
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 1), ws.Cells(r, 2)).Font.bold = True
+    ws.Range(ws.Cells(a1, 2), ws.Cells(r, 2)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 3), ws.Cells(r, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).IndentLevel = 1
+    ws.Range(ws.Cells(a1, 4), ws.Cells(r, 4)).ShrinkToFit = True
+    ws.Range(ws.Cells(a1, 6), ws.Cells(r, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 6), ws.Cells(r, 7)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(a1, 8), ws.Cells(r, 9)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9)).Font.bold = True
+    ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 10), ws.Cells(r, 11)).ShrinkToFit = True
+    I_UYUM_CUBUK ws.Range(ws.Cells(a1, 5), ws.Cells(r, 5))
+    I_FIRE_ISI ws.Range(ws.Cells(a1, 9), ws.Cells(r, 9))
+    I_DURUM_RENK ws.Range(ws.Cells(a1, 12), ws.Cells(r, 12))
+    I_AY_TOPLAM_CIZ = r
+End Function
+
+' AYLIK DEMONTAJ: Excel (masaustu). Tum aylar siralamasi + secili ayin ilce karnesi, kritik malzemeleri ve fire listesi.
+Public Sub AKSORA_ILCE_AY_AKTAR()
+    Dim ws As Worksheet, wb As Workbook, c As Worksheet, il As String, secAy As Long, aylar As Object, depolar As Object
+    Dim liste As Collection, x As Variant, veri() As Variant, n As Long, i As Long, j As Long, ac As Boolean, ev As Boolean
+    Dim ust As String, sonuc As String, no As Long, metin As String, p() As String, a1 As Long, b1 As Long, v As Variant, hz As Range
+    Dim ayAd As String, j2 As Variant
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("I_AYLIK_DEMONTAJ")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    secAy = CLng(Val(CStr(ws.Range("BX30").Value2)))
+    If Len(il) = 0 Then MsgBox "Önce aylık demontaj sayfası oluşturulmalı (ilçe stoklarını güncelleyin).", vbInformation, "AKSORA": Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  AYLIK DEMONTAJ", "Excel hazırlanıyor...", 0.1)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set aylar = I_DEFTER_OKU(il)
+    Set depolar = I_DEPOLAR(il)
+    Set liste = I_AY_TOPLAM(aylar, depolar)
+    ayAd = I_AY_ADI(secAy)
+    AKSORA_DONUS_KAYDET
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    For i = 2 To 4: wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count): Next i
+    '--- 1. Tum aylar siralamasi
+    n = liste.Count
+    If n = 0 Then
+        ReDim veri(1 To 1, 1 To 13): veri(1, 2) = "Kayıt yok.": n = 1
+    Else
+        ReDim veri(1 To n, 1 To 13)
+        i = 0
+        For Each x In liste
+            i = i + 1
+            veri(i, 1) = i: veri(i, 2) = x(1): veri(i, 3) = x(0): veri(i, 4) = x(2): veri(i, 5) = x(3): veri(i, 6) = x(4)
+            veri(i, 7) = x(5): veri(i, 8) = x(6): veri(i, 9) = x(7): veri(i, 10) = x(8): veri(i, 11) = x(9): veri(i, 12) = x(10)
+            veri(i, 13) = x(11)
+        Next x
+    End If
+    ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Tüm aylar ilçe sıralaması (en iyiden en kötüye)"
+    Set c = wb.Worksheets(1)
+    AKSORA_EXCEL_SAYFA c, Array("Sıra", "İlçe", "Depo", "Toplam uyum (%)", "Kullanım olan ay", "Fireli ay", "Kullanılan değer (TL)", _
+        "Fire değeri (TL)", "Kritik kalem", "Fireli kalem", "En çok fire kategorisi", "Neden: en çok fire veren malzeme", "En kötü ay"), _
+        veri, n, Array(7, 18, 9, 12, 11, 9, 18, 17, 10, 10, 34, 60, 22), _
+        Array("General", "@", "@", "0.0", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "@", "@", "@"), _
+        Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlRight, xlCenter, xlCenter, xlLeft, xlLeft, xlCenter), ust, _
+        "Kayıtlı " & aylar.Count & " ayın toplamı  |  Sıra: kritik demontaj uyumu (değer ağırlıklı), eşitlikte fire değeri az olan önde", _
+        "Tüm Aylar Sıralama", Empty
+    If liste.Count > 1 Then
+        c.Range(c.Cells(5, 1), c.Cells(5, 13)).Interior.Color = RGB(220, 252, 231)
+        c.Range(c.Cells(n + 4, 1), c.Cells(n + 4, 13)).Interior.Color = RGB(254, 226, 226)
+    End If
+    c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.Color = RGB(185, 28, 28)
+    c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.bold = True
+    '--- 2-4. Secili ay: sayfadaki tablolar (degerler)
+    For i = 2 To 4
+        Set c = wb.Worksheets(i)
+        p = Split(CStr(ws.Range("BX" & (29 + i)).Value2), "|")
+        a1 = 0: b1 = -1
+        If UBound(p) >= 1 Then a1 = CLng(Val(p(0))): b1 = CLng(Val(p(1)))
+        If a1 > 0 And b1 >= a1 Then
+            v = ws.Range(ws.Cells(a1, 1), ws.Cells(b1, 12)).Value2
+            n = b1 - a1 + 1
+        Else
+            n = 0
+        End If
+        Select Case i
+            Case 2
+                If n = 0 Then ReDim veri(1 To 1, 1 To 12): veri(1, 2) = "Kayıt yok.": n = 1 Else ReDim veri(1 To n, 1 To 12)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        veri(j, 1) = v(j, 1): veri(j, 2) = v(j, 2): veri(j, 3) = v(j, 3): veri(j, 4) = v(j, 4)
+                        veri(j, 5) = v(j, 5): veri(j, 6) = v(j, 6): veri(j, 7) = v(j, 7): veri(j, 8) = v(j, 8)
+                        veri(j, 9) = v(j, 9): veri(j, 10) = v(j, 10): veri(j, 11) = v(j, 11): veri(j, 12) = v(j, 12)
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  İlçe karnesi  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Sıra", "İlçe", "Depo", "Kritik demontaj uyumu (%)", "Kablo eksik (m)", "Direk eksik (adet)", _
+                    "Pano eksik (adet)", "Hücre eksik (adet)", "Trafo eksik (adet)", "Armatür eksik (adet)", "Fire değeri (TL)", "Değerlendirme"), _
+                    veri, n, Array(7, 18, 9, 14, 13, 13, 13, 13, 13, 14, 17, 16), _
+                    Array("General", "@", "@", "0.0", "General", "General", "General", "General", "General", "General", "#,##0.00 ""TL""", "@"), _
+                    Array(xlCenter, xlLeft, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlCenter, xlRight, xlCenter), ust, _
+                    "Sıra: kritik demontaj uyumu; eşitlikte fire değeri az olan önde", "İlçe Karnesi " & ayAd, Empty
+                For Each j2 In Array(5, 6, 7, 8, 9, 10)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+            Case 3
+                If n = 0 Then ReDim veri(1 To 1, 1 To 11): veri(1, 1) = "Kayıt yok.": n = 1 Else ReDim veri(1 To n, 1 To 11)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        For Each j2 In Array(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+                            veri(j, j2 - 1) = v(j, j2)
+                        Next j2
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Kritik malzemeler  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Kategori", "Malzeme çeşidi", "Demontaj oranı (%)", "Kullanılan", "Demontajı girilen", _
+                    "Eksik (fire)", "Fire değeri (TL)", "Kullanılan değer (TL)", "Fireli çeşit", "Fireli ilçe", "Durum"), _
+                    veri, n, Array(34, 12, 14, 13, 14, 12, 17, 18, 11, 10, 15), _
+                    Array("@", "#,##0", "0.0", "General", "General", "General", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "@"), _
+                    Array(xlLeft, xlCenter, xlCenter, xlRight, xlRight, xlRight, xlRight, xlRight, xlCenter, xlCenter, xlCenter), ust, _
+                    "Kablo, direk, pano, hücre, trafo, armatür", "Kritik Malzemeler " & ayAd, Empty
+                For Each j2 In Array(4, 5, 6)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+            Case 4
+                If n = 0 Then ReDim veri(1 To 1, 1 To 13): veri(1, 4) = "Fire yok.": n = 1 Else ReDim veri(1 To n, 1 To 13)
+                If a1 > 0 And b1 >= a1 Then
+                    For j = 1 To n
+                        For Each j2 In Array(1, 2, 3, 4, 5, 6, 7, 8)
+                            veri(j, j2) = v(j, j2)
+                        Next j2
+                        veri(j, 9) = CStr(I_MAL_BILGI(CStr(v(j, 3)))(2))
+                        veri(j, 10) = v(j, 9): veri(j, 11) = v(j, 10): veri(j, 12) = v(j, 11): veri(j, 13) = v(j, 12)
+                    Next j
+                End If
+                ust = "AYLIK DEMONTAJ  |  " & Y_IL_ADI(il) & "  |  Kritik fire listesi  |  " & ayAd
+                AKSORA_EXCEL_SAYFA c, Array("Depo", "İlçe", "Malzeme", "Malzeme tanımı", "Kategori", "Kullanılan", "Demontajı girilen", _
+                    "Eksik (fire)", "Birim", "Fire değeri (TL)", "Kullanılan değer (TL)", "Demontaj oranı (%)", "Durum"), _
+                    veri, n, Array(8, 18, 13, 40, 11, 12, 14, 12, 8, 16, 18, 14, 14), _
+                    Array("@", "@", "0", "@", "@", "General", "General", "General", "@", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "0.0", "@"), _
+                    Array(xlCenter, xlLeft, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlCenter, xlRight, xlRight, xlCenter, xlCenter), ust, _
+                    "En yüksek fire değeri üstte", "Fire Listesi " & ayAd, Empty
+                For Each j2 In Array(6, 7, 8)
+                    AKSORA_V13_MIKTAR_BICIMI c.Range(c.Cells(5, j2), c.Cells(n + 4, j2))
+                Next j2
+                c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.Color = RGB(185, 28, 28)
+                c.Range(c.Cells(5, 8), c.Cells(n + 4, 8)).Font.bold = True
+        End Select
+        ' Durum / degerlendirme renkleri
+        For j = 1 To n
+            Set hz = c.Cells(j + 4, IIf(i = 2, 12, IIf(i = 3, 11, 13)))
+            Select Case CStr(hz.Value2)
+                Case "TAMAM", "ÇOK İYİ", "İYİ", ChrW(9733) & " EN İYİ": hz.Interior.Color = RGB(220, 252, 231): hz.Font.Color = RGB(21, 128, 61): hz.Font.bold = True
+                Case "KRİTİK EKSİK", "ZAYIF", "GİRİŞ YOK", ChrW(9660) & " EN KÖTÜ": hz.Interior.Color = RGB(254, 226, 226): hz.Font.Color = RGB(185, 28, 28): hz.Font.bold = True
+                Case "ORTA", "EKSİK GİRİŞ", "DİĞER EKSİK": hz.Interior.Color = RGB(254, 243, 199): hz.Font.Color = RGB(180, 83, 9): hz.Font.bold = True
+            End Select
+        Next j
+    Next i
+    wb.Worksheets(1).Activate
+    sonuc = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI(Y_IL_ADI(il) & " - Aylık Demontaj - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(sonuc) > 0 Then application.StatusBar = "Masaüstüne kaydedildi: " & sonuc
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Aylık demontaj Excel'e aktarılamadı." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+' ISG Excel 1. sayfa: ilce siralamasi ana tablonun altinda, ayni A:H sutunlarinda (ana tablo ve sutun genislikleri degismez).
+' Sira: depoda bekleyen ISG degeri az olan once; esitlikte bekleyen kalem az olan, sonra depo kodu.
+Private Sub I_ISG_SIRALAMA(ByVal c As Worksheet, ByRef veri() As Variant, ByVal n As Long, ByVal toplamDeger As Double)
+    Dim i As Long, j As Long, anah() As String, idx() As Long, s() As Variant, kalem As Double, mik As Double, deger As Double
+    Dim alan As Range, neden As String, x0 As Long, b0 As Long
+    If n < 1 Then Exit Sub
+    x0 = 1
+    ' Ana tablonun (TOPLAM dahil) 3 satir altina: baslik b0 - 1, sutun basliklari b0, veriler b0 + 1.
+    b0 = n + 5 + 5
+    ReDim anah(1 To n): ReDim idx(1 To n)
+    For i = 1 To n
+        idx(i) = i
+        kalem = I_SAYI(veri(i, 3)) + I_SAYI(veri(i, 5)): deger = I_SAYI(veri(i, 8))
+        ' Ilceye is kalmadiysa (yalniz bolge sarfi) temiz ilcelerle birlikte one alinir.
+        If kalem <= 0 Then deger = 0
+        anah(i) = Format$(Round(deger, 2) * 100, "0000000000000000") & Format$(kalem, "000000") & CStr(veri(i, 1))
+    Next i
+    Y_SIRALA anah, idx, 1, n
+    ReDim s(1 To n, 1 To 8)
+    For i = 1 To n
+        j = idx(i)
+        kalem = I_SAYI(veri(j, 3)) + I_SAYI(veri(j, 5)): mik = I_SAYI(veri(j, 4)) + I_SAYI(veri(j, 6)): deger = I_SAYI(veri(j, 8))
+        If kalem <= 0 And deger <= 0.005 Then
+            neden = "Depoda İSG malzemesi yok"
+        ElseIf kalem <= 0 Then
+            neden = "İlçeye iş yok  •  " & ADM_ADET(I_SAYI(veri(j, 7))) & " kalem bölge sarfı (birim fiyatı " & Format$(I_ISG_BOLGE_TL, "#,##0") & " TL ve üzeri)"
+        Else
+            neden = vbNullString
+            If I_SAYI(veri(j, 3)) > 0 Then neden = "Zimmet: " & ADM_ADET(I_SAYI(veri(j, 3))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 4))) & " adet"
+            If I_SAYI(veri(j, 5)) > 0 Then neden = neden & IIf(Len(neden) > 0, "  •  ", "") & "Sarf: " & ADM_ADET(I_SAYI(veri(j, 5))) & " kalem / " & ADM_ADET(I_SAYI(veri(j, 6))) & " adet"
+        End If
+        s(i, 1) = i: s(i, 2) = CStr(veri(j, 1)): s(i, 3) = CStr(veri(j, 2)): s(i, 4) = kalem: s(i, 5) = mik
+        s(i, 6) = Round(deger, 2)
+        If toplamDeger > 0.005 Then s(i, 7) = Round(deger / toplamDeger, 4) Else s(i, 7) = 0
+        s(i, 8) = neden
+    Next i
+    c.Cells(b0 - 1, x0).Value2 = "İLÇE SIRALAMASI  (en iyiden en kötüye)  •  depoda bekleyen İSG değeri az olan önde"
+    c.Cells(b0 - 1, x0).Font.bold = True: c.Cells(b0 - 1, x0).Font.Size = 11: c.Cells(b0 - 1, x0).Font.Color = RGB(12, 45, 79)
+    c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 7)).Value2 = Array("Sıra", "Depo", "Depo Adı", "Bekleyen Kalem", "Bekleyen Miktar", _
+        "İSG Stok Değeri", "Pay", "Neden")
+    c.Range(c.Cells(b0 + 1, x0 + 1), c.Cells(b0 + n, x0 + 2)).NumberFormat = "@"
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0 + 7)).Value2 = s
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0 + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0 + 3), c.Cells(b0 + n, x0 + 4)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0 + 3), c.Cells(b0 + n, x0 + 4)).NumberFormat = "#,##0"
+    c.Range(c.Cells(b0 + 1, x0 + 5), c.Cells(b0 + n, x0 + 5)).NumberFormat = "#,##0.00 ""TL"""
+    c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).NumberFormat = "0.0%"
+    c.Range(c.Cells(b0 + 1, x0 + 6), c.Cells(b0 + n, x0 + 6)).HorizontalAlignment = xlCenter
+    Set alan = c.Range(c.Cells(b0, x0), c.Cells(b0 + n, x0 + 8))
+    With alan
+        .Font.Name = "Aptos": .Font.Size = 10
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin: .Borders.Color = RGB(0, 0, 0)
+        .VerticalAlignment = xlCenter
+    End With
+    With c.Range(c.Cells(b0, x0), c.Cells(b0, x0 + 8))
+        .Interior.Color = RGB(217, 217, 217): .Font.bold = True
+        .HorizontalAlignment = xlCenter: .WrapText = True
+    End With
+    c.Rows(b0).RowHeight = 30
+    c.Range(c.Cells(b0 + 1, x0 + 1), c.Cells(b0 + n, x0 + 1)).HorizontalAlignment = xlCenter
+    c.Range(c.Cells(b0 + 1, x0), c.Cells(b0 + n, x0)).Font.bold = True
+    For i = 1 To n
+        If s(i, 4) <= 0 Then
+            ' Ilceye is kalmadi (yalniz bolge sarfi olsa da): ilce temiz sayilir, yesil.
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(220, 252, 231)
+        ElseIf i = n And n > 1 Then
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Interior.Color = RGB(254, 226, 226)
+            c.Range(c.Cells(b0 + i, x0), c.Cells(b0 + i, x0 + 8)).Font.Color = RGB(185, 28, 28)
+        End If
+    Next i
+    If n > 1 Then If s(n, 4) > 0 Then c.Cells(b0 + n, x0 + 7).Value2 = ChrW(9660) & " EN KÖTÜ  •  " & CStr(c.Cells(b0 + n, x0 + 7).Value2)
+    ' Neden: ust tablonun H sutunu buyumesin diye H:I birlesik (ust tablodaki Durum sutununun genisligi kullanilir).
+    For i = 0 To n
+        With c.Range(c.Cells(b0 + i, x0 + 7), c.Cells(b0 + i, x0 + 8))
+            .Merge
+            .HorizontalAlignment = IIf(i = 0, xlCenter, xlLeft)
+            .ShrinkToFit = True
+        End With
+    Next i
+End Sub
+
+'---------- PROJE MALZEME TAKIBI (Y_HAKEDİŞ sayfasi) ----------
+' Kaynaklar: _Y_KESIF (elle keşif: il, PYP, malzeme, miktar, tanim; "#il" satirlari proje adi),
+' _Y_PRJ_<IL> (SAP MB51 /AKSORA_PRJ: depo, PYP, karsi PYP, hareket turu, malzeme, tanim, birim, miktar, tutar,
+' tarih, belge basligi, belge, kalem, ozel stok, hareket metni), yatirim / yuklenici stok sayfalari (MB52).
+' Proje stogu: PYP'ye bagli hareketlerin toplami (2026 projeleri yil icinde acildigi icin birebir).
+' Havuz / serbest: depo stogu (MB52) - projelerde kalan. Sarf: 221/222, hakedis no belge basligindan.
+
+Private Function Y_PD(ByVal d As Object, ByVal k As String) As Double
+    If d.Exists(k) Then Y_PD = CDbl(d(k))
+End Function
+
+Private Sub Y_PEKLE(ByVal d As Object, ByVal k As String, ByVal x As Double)
+    If d.Exists(k) Then d(k) = CDbl(d(k)) + x Else d(k) = x
+End Sub
+
+Private Sub Y_PKUME(ByVal d As Object, ByVal k As String, ByVal eleman As String)
+    If Not d.Exists(k) Then d.Add k, CreateObject("Scripting.Dictionary")
+    If Not d(k).Exists(eleman) Then d(k).Add eleman, True
+End Sub
+
+Private Function Y_PRJ_HAVUZ(ByVal dp As String, ByVal mal As String) As Double
+    Y_PRJ_HAVUZ = application.Max(0, Y_PD(mDS, dp & "|" & mal) - Y_PD(mPDS, dp & "|" & mal))
+End Function
+
+Private Function Y_PRJ_PYP_MI(ByVal t As String) As Boolean
+    Static re As Object
+    If re Is Nothing Then
+        Set re = CreateObject("VBScript.RegExp")
+        re.Pattern = "^[A-Z][A-Z0-9]*\.[A-Z0-9]+(/[A-Z0-9]+)?$": re.IgnoreCase = True
+    End If
+    t = UCase$(Trim$(t))
+    If Len(t) < 4 Or Left$(t, 5) = "HAVUZ" Then Exit Function
+    Y_PRJ_PYP_MI = re.Test(t)
+End Function
+
+Private Function Y_PRJ_HAKNO(ByVal t As String) As Long
+    Dim i As Long
+    t = Trim$(t)
+    Do While i < Len(t)
+        If Mid$(t, i + 1, 1) Like "#" Then i = i + 1 Else Exit Do
+    Loop
+    If i > 0 And InStr(1, Y_NORM(t), "HAKEDIS") > 0 Then Y_PRJ_HAKNO = CLng(Left$(t, i))
+End Function
+
+' Butun veriler bellege: keşif, MB51 hareketleri, stoklar, fiyatlar.
+Private Sub Y_PRJ_VERI(ByVal il As String)
+    Dim g As Worksheet, v As Variant, r As Long, son As Long, k As String, m As String, w As String, dp As String
+    Dim q As Double, i As Long, sh As Worksheet, uy As String, sv As Variant, fs As Object, fq As Object, x As Variant
+    Dim hN As Long, a() As String, j As Long, tmp As String, nS As Long, nG As Long, td As Double, nT As String
+    mPrjIl = il
+    Set mPK = CreateObject("Scripting.Dictionary"): Set mPAd = CreateObject("Scripting.Dictionary")
+    Set mPT = CreateObject("Scripting.Dictionary"): Set mPS = CreateObject("Scripting.Dictionary")
+    Set mPH = CreateObject("Scripting.Dictionary"): Set mPHN = CreateObject("Scripting.Dictionary")
+    Set mPA = CreateObject("Scripting.Dictionary"): Set mPP = CreateObject("Scripting.Dictionary")
+    Set mPPD = CreateObject("Scripting.Dictionary"): Set mPDc = CreateObject("Scripting.Dictionary")
+    Set mDS = CreateObject("Scripting.Dictionary"): Set mPF = CreateObject("Scripting.Dictionary")
+    Set mPDS = CreateObject("Scripting.Dictionary"): Set mPM = CreateObject("Scripting.Dictionary")
+    Set mDA = CreateObject("Scripting.Dictionary"): Set mPDp = CreateObject("Scripting.Dictionary")
+    Set fs = CreateObject("Scripting.Dictionary"): Set fq = CreateObject("Scripting.Dictionary")
+    mKesBilgi = "Keşif yok": mPrjBilgi = "SAP okunmadı"
+    ' Keşif
+    Set g = Y_KAYIT_SAYFA("_Y_KESIF")
+    son = AKSORA_SON_SATIR(g, 1)
+    If son >= 1 And Len(CStr(g.Cells(1, 1).Value2)) > 0 Then
+        v = g.Range("A1:E" & son).Value2
+        For r = 1 To UBound(v, 1)
+            w = UCase$(Trim$(CStr(v(r, 2))))
+            If CStr(v(r, 1)) = il Then
+                m = Trim$(CStr(v(r, 3)))
+                q = 0
+                If VarType(v(r, 4)) <> vbString And IsNumeric(v(r, 4)) Then q = CDbl(v(r, 4))
+                Y_PEKLE mPK, w & "|" & m, q
+                Y_PKUME mPM, w, m
+                If Not mPT.Exists(m) Then mPT(m) = Array(CStr(v(r, 5)), "")
+            ElseIf CStr(v(r, 1)) = "#" & il Then
+                mPAd(w) = CStr(v(r, 3))
+                mKesBilgi = "Keşif: " & CStr(v(r, 4)) & " (" & CStr(v(r, 5)) & ")"
+            End If
+        Next r
+        If mPAd.Count > 0 Then mKesBilgi = mPAd.Count & " proje  •  " & mKesBilgi
+    End If
+    ' SAP MB51
+    Set g = Nothing
+    On Error Resume Next
+    Set g = ThisWorkbook.Worksheets("_Y_PRJ_" & il)
+    On Error GoTo 0
+    If Not g Is Nothing Then
+        son = AKSORA_SON_SATIR(g, 5)
+        If CStr(g.Range("A1").Value2) = "PRJ_V1" Then
+            mPrjBilgi = "SAP MB51: " & Format$(CDate(g.Range("C1").Value2), "dd.mm.yyyy hh:nn") & "  •  " & _
+                AKSORA_SAYI_METNI(CLng(Val(CStr(g.Range("D1").Value2))), "#,##0") & " hareket"
+        End If
+        If son >= 2 Then
+            v = g.Range("A2:O" & son).Value2
+            For r = 1 To UBound(v, 1)
+                m = CStr(v(r, 5)): dp = CStr(v(r, 1)): w = CStr(v(r, 2))
+                q = CDbl(Val(Replace(CStr(v(r, 8)), ",", ".")))
+                If IsNumeric(v(r, 8)) Then q = CDbl(v(r, 8))
+                Y_PRJ_TANIM m, CStr(v(r, 6)), CStr(v(r, 7))
+                If IsNumeric(v(r, 9)) And q <> 0 Then
+                    If CDbl(v(r, 9)) <> 0 Then Y_PEKLE fs, "M" & m, Abs(CDbl(v(r, 9))): Y_PEKLE fq, "M" & m, Abs(q)
+                End If
+                If Y_PRJ_PYP_MI(w) Then
+                    Y_PKUME mPM, w, m
+                    Y_PEKLE mPP, w & "|" & m, q
+                    Y_PEKLE mPPD, w & "|" & dp & "|" & m, q
+                    Y_PEKLE mPDS, dp & "|" & m, q
+                    Y_PEKLE mPDc, w & "|" & dp, 1
+                    Y_PKUME mPDp, w, dp
+                    If CStr(v(r, 4)) = "221" Or CStr(v(r, 4)) = "222" Then
+                        hN = Y_PRJ_HAKNO(CStr(v(r, 11)))
+                        Y_PEKLE mPS, w & "|" & m, -q
+                        Y_PEKLE mPH, w & "|" & m & "|" & hN, -q
+                        Y_PKUME mPHN, w, CStr(hN)
+                    Else
+                        Y_PEKLE mPA, w & "|" & m, q
+                    End If
+                End If
+            Next r
+        End If
+    End If
+    ' Stoklar (MB52): ilin EPP uretim yeri
+    uy = AKSORA_IL_TESIS(il, "EPP")
+    For i = 1 To 4
+        Set sh = ThisWorkbook.Worksheets(CStr(Y_STOK_ADLARI()(i - 1)))
+        son = AKSORA_M_SON(sh)
+        If son >= 7 Then
+            sv = sh.Range("A7:N" & son).Value2
+            For r = 1 To UBound(sv, 1)
+                If Not IsError(sv(r, 1)) And Not IsError(sv(r, 2)) And Not IsError(sv(r, 5)) Then
+                    m = Y_KOD_NORM(sv(r, 5))
+                    If Len(m) > 0 And IsNumeric(sv(r, 7)) Then
+                        dp = UCase$(Trim$(CStr(sv(r, 2))))
+                        If Trim$(CStr(sv(r, 1))) = uy Then
+                            Y_PEKLE mDS, dp & "|" & m, CDbl(sv(r, 7))
+                            If Not mDA.Exists(dp) Then mDA(dp) = Trim$(CStr(sv(r, 3)))
+                        End If
+                        Y_PRJ_TANIM m, Trim$(CStr(sv(r, 6))), Trim$(CStr(sv(r, 8)))
+                        If IsNumeric(sv(r, 11)) And VarType(sv(r, 11)) <> vbString Then
+                            If CDbl(sv(r, 7)) <> 0 And CDbl(sv(r, 11)) <> 0 Then Y_PEKLE fs, "S" & m, CDbl(sv(r, 11)): Y_PEKLE fq, "S" & m, CDbl(sv(r, 7))
+                        End If
+                    End If
+                End If
+            Next r
+        End If
+    Next i
+    For Each x In fq.keys
+        m = Mid$(CStr(x), 2)
+        If Left$(CStr(x), 1) = "S" Or Not mPF.Exists(m) Then
+            If fq(x) <> 0 Then mPF(m) = fs(x) / fq(x)
+        End If
+    Next x
+    ' Acik siparisler (ME2N): D002 (yatirim deposu) miktari ve en yakin teslim tarihi; diger depolar yalniz not icin.
+    Set mSD = CreateObject("Scripting.Dictionary"): Set mSDt = CreateObject("Scripting.Dictionary")
+    Set mSO = CreateObject("Scripting.Dictionary"): Set mSOd = CreateObject("Scripting.Dictionary")
+    Set mSN = CreateObject("Scripting.Dictionary"): Set mSDb = CreateObject("Scripting.Dictionary")
+    ' Saha tespiti (_Y_SAHA): proje + malzeme icin sahada kullanilan toplam miktar (elle girilir)
+    Set mSH = CreateObject("Scripting.Dictionary")
+    Set g = Nothing
+    On Error Resume Next
+    Set g = ThisWorkbook.Worksheets("_Y_SAHA")
+    On Error GoTo 0
+    If Not g Is Nothing Then
+        son = AKSORA_SON_SATIR(g, 1)
+        If son >= 2 Then
+            v = g.Range("A1:D" & son).Value2
+            For r = 2 To UBound(v, 1)
+                If CStr(v(r, 1)) = il And IsNumeric(v(r, 4)) Then mSH(CStr(v(r, 2)) & "|" & CStr(v(r, 3))) = CDbl(v(r, 4))
+            Next r
+        End If
+    End If
+    mSasBilgi = "Açık sipariş okunmadı"
+    Set g = Nothing
+    On Error Resume Next
+    Set g = ThisWorkbook.Worksheets("_Y_SAS_" & il)
+    On Error GoTo 0
+    If Not g Is Nothing Then
+        If CStr(g.Range("A1").Value2) = "SAS_V1" Then
+            son = AKSORA_SON_SATIR(g, 4)
+            If son >= 2 Then
+                v = g.Range("A2:L" & son).Value2
+                For r = 1 To UBound(v, 1)
+                    m = CStr(v(r, 4)): dp = UCase$(Trim$(CStr(v(r, 3))))
+                    q = 0
+                    If IsNumeric(v(r, 6)) Then q = CDbl(v(r, 6))
+                    If Len(m) > 0 And q > 0 Then
+                        If dp = "D002" Then
+                            nS = nS + 1
+                            Y_PEKLE mSD, m, q
+                            td = 0
+                            If IsNumeric(v(r, 8)) Then td = CDbl(v(r, 8))
+                            If td > 0 Then
+                                If td < CDbl(Date) Then nG = nG + 1
+                                If Not mSDt.Exists(m) Then
+                                    mSDt(m) = td
+                                ElseIf td < CDbl(mSDt(m)) Then
+                                    mSDt(m) = td
+                                End If
+                            End If
+                            ' Teslim tarihi yoksa en eski siparis (belge) tarihi
+                            If IsNumeric(v(r, 9)) Then
+                                If CDbl(v(r, 9)) > 0 Then
+                                    If Not mSDb.Exists(m) Then
+                                        mSDb(m) = CDbl(v(r, 9))
+                                    ElseIf CDbl(v(r, 9)) < CDbl(mSDb(m)) Then
+                                        mSDb(m) = CDbl(v(r, 9))
+                                    End If
+                                End If
+                            End If
+                            nT = Y_PRJ_METIN_NORM(CStr(v(r, 5)))
+                            If Len(nT) > 0 Then Y_PEKLE mSN, nT & "|" & m, q
+                        Else
+                            Y_PEKLE mSO, m, q
+                            If Not mSOd.Exists(m) Then
+                                mSOd(m) = dp
+                            ElseIf InStr(CStr(mSOd(m)), dp) = 0 Then
+                                mSOd(m) = CStr(mSOd(m)) & "/" & dp
+                            End If
+                        End If
+                        ' Stokta / MB51'de fiyati olmayan malzemede sipariş net fiyati (TL)
+                        If Not mPF.Exists(m) And IsNumeric(v(r, 11)) Then
+                            If CDbl(v(r, 11)) > 0 And (CStr(v(r, 12)) = "TRY" Or CStr(v(r, 12)) = "TL") Then mPF(m) = CDbl(v(r, 11))
+                        End If
+                        Y_PRJ_TANIM m, CStr(v(r, 5)), CStr(v(r, 7))
+                    End If
+                Next r
+            End If
+            mSasBilgi = "Açık sipariş (ME2N): " & Format$(CDate(g.Range("B1").Value2), "dd.mm.yyyy hh:nn") & _
+                "  •  D002: " & nS & " kalem" & IIf(nG > 0, ", " & nG & " gecikmiş", "")
+        End If
+    End If
+    ' Projeler (PYP sirasi) ve depo: en cok hareket gordugu yuklenici deposu
+    Set mPL = New Collection
+    If mPM.Count > 0 Then
+        ReDim a(1 To mPM.Count)
+        i = 0
+        For Each x In mPM.keys
+            i = i + 1: a(i) = CStr(x)
+        Next x
+        For i = 1 To UBound(a) - 1
+            For j = i + 1 To UBound(a)
+                If a(j) < a(i) Then tmp = a(i): a(i) = a(j): a(j) = tmp
+            Next j
+        Next i
+        For i = 1 To UBound(a): mPL.Add a(i): Next i
+    End If
+End Sub
+
+' Projenin yuklenici deposu: en cok hareket gordugu depo (D002 disinda); yalniz D002 varsa D002.
+Private Function Y_PRJ_DEPO(ByVal w As String) As String
+    Dim x As Variant, en As Double
+    If Not mPDp.Exists(w) Then Exit Function
+    For Each x In mPDp(w).keys
+        If CStr(x) <> "D002" And Y_PD(mPDc, w & "|" & CStr(x)) > en Then en = Y_PD(mPDc, w & "|" & CStr(x)): Y_PRJ_DEPO = CStr(x)
+    Next x
+    If Len(Y_PRJ_DEPO) = 0 And mPDp(w).Exists("D002") Then Y_PRJ_DEPO = "D002"
+End Function
+
+Private Sub Y_PRJ_TANIM(ByVal m As String, ByVal tanim As String, ByVal birim As String)
+    Dim t As Variant
+    If Not mPT.Exists(m) Then mPT(m) = Array(tanim, birim): Exit Sub
+    t = mPT(m)
+    If Len(CStr(t(0))) = 0 Then t(0) = tanim
+    If Len(CStr(t(1))) = 0 Then t(1) = birim
+    mPT(m) = t
+End Sub
+
+' Kod esleme icin tanim: harf ve rakam disindakiler atilir ("ARMATUR,LED,TEDAS MYD,SINIF 14" = "ARMATUR LED TEDAS MYD/SINIF 14").
+Private Function Y_PRJ_METIN_NORM(ByVal t As String) As String
+    Dim i As Long, ch As String
+    t = Y_NORM(t)
+    For i = 1 To Len(t)
+        ch = Mid$(t, i, 1)
+        If ch Like "[A-Z0-9]" Then Y_PRJ_METIN_NORM = Y_PRJ_METIN_NORM & ch
+    Next i
+    If Len(Y_PRJ_METIN_NORM) < 8 Then Y_PRJ_METIN_NORM = vbNullString
+End Function
+
+' En yakin teslim tarihi metni; tarihi gecmisse gecikme suresiyle.
+Private Function Y_PRJ_TESLIM(ByVal m As String) As String
+    Dim td As Double, g As Long
+    If Not mSDt.Exists(m) Then
+        If mSDb.Exists(m) Then
+            td = CDbl(mSDb(m)): g = CLng(CDbl(Date) - td)
+            Y_PRJ_TESLIM = " (sipariş " & Format$(CDate(td), "dd.mm.yyyy") & IIf(g > 0, ", " & Y_PRJ_GUN(g) & " önce", "") & ")"
+        End If
+        Exit Function
+    End If
+    td = CDbl(mSDt(m))
+    If td < CDbl(Date) Then
+        g = CLng(CDbl(Date) - td)
+        Y_PRJ_TESLIM = " (teslim " & Format$(CDate(td), "dd.mm.yyyy") & ", " & Y_PRJ_GUN(g) & " GECİKMİŞ)"
+    Else
+        Y_PRJ_TESLIM = " (teslim " & Format$(CDate(td), "dd.mm.yyyy") & ")"
+    End If
+End Function
+
+Private Function Y_PRJ_GUN(ByVal g As Long) As String
+    If g < 30 Then Y_PRJ_GUN = g & " gün": Exit Function
+    Y_PRJ_GUN = (g \ 30) & " ay" & IIf(g Mod 30 > 0, " " & (g Mod 30) & " gün", "")
+End Function
+
+' Ayni tanimla baska kodla D002'ye siparis (kesif eski kodu, siparis yeni kodu kullaniyor olabilir).
+Private Function Y_PRJ_BENZER(ByVal m As String) As String
+    Dim t As String, x As Variant, k As String
+    If Not mPT.Exists(m) Then Exit Function
+    t = Y_PRJ_METIN_NORM(CStr(mPT(m)(0)))
+    If Len(t) = 0 Then Exit Function
+    For Each x In mSN.keys
+        If Left$(CStr(x), Len(t) + 1) = t & "|" Then
+            k = Mid$(CStr(x), Len(t) + 2)
+            If k <> m Then Y_PRJ_BENZER = "  •  aynı malzeme başka kodla siparişte: " & k & " (" & Y_PRJ_MT(CDbl(mSN(x))) & ")": Exit Function
+        End If
+    Next x
+End Function
+
+' Tum projeler: ihtiyac (siparis oncesi) ve D002 acik siparisine gore tek eylem.
+Private Function Y_PRJ_NOT(ByVal m As String, ByVal ih0 As Double, ByVal sq As Double) As String
+    Dim ih As Double, t As String
+    ih = ih0 - sq
+    If ih0 > 0.0000001 Then
+        If sq <= 0.0000001 Then
+            t = "Satın al: " & Y_PRJ_MT(ih0)
+            t = t & Y_PRJ_BENZER(m)
+            If Y_PD(mSO, m) > 0 Then t = t & "  •  " & CStr(mSOd(m)) & " deposuna siparişte: " & Y_PRJ_MT(Y_PD(mSO, m))
+        ElseIf ih > 0.0000001 Then
+            t = "Satın al: " & Y_PRJ_MT(ih) & "  •  siparişte " & Y_PRJ_MT(sq) & Y_PRJ_TESLIM(m)
+        Else
+            t = "Siparişte: " & Y_PRJ_MT(sq) & Y_PRJ_TESLIM(m)
+            If -ih > 0.0000001 Then t = t & "  •  " & Y_PRJ_MT(-ih) & " fazla sipariş"
+        End If
+    ElseIf sq > 0.0000001 Then
+        If ih0 < -0.0000001 Then
+            t = "Sipariş gereksiz: " & Y_PRJ_MT(sq) & " (stokta zaten " & Y_PRJ_MT(-ih0) & " fazla)  •  iptal / azalt"
+        Else
+            t = "Sipariş gereksiz: " & Y_PRJ_MT(sq) & " (ihtiyaç karşılandı)  •  iptal / azalt"
+        End If
+    ElseIf ih0 < -0.0000001 Then
+        t = "Fazla: " & Y_PRJ_MT(-ih0) & " (stokta)"
+    Else
+        t = "Tamam"
+    End If
+    Y_PRJ_NOT = t
+End Function
+
+Private Function Y_PRJ_F(ByVal m As String) As Double
+    If mPF.Exists(m) Then Y_PRJ_F = CDbl(mPF(m))
+End Function
+
+' Proje ozeti: (keşif TL, sarf TL, projede kalan TL, eksik TL, fazla TL, asim TL, son hakedis, kalem)
+Private Function Y_PRJ_OZET(ByVal w As String) As Variant
+    Dim o(0 To 9) As Double, x As Variant, m As String, k As Double, s As Double, p As Double, f As Double, h As Variant
+    Dim u As Double, pf As Double
+    If mPM.Exists(w) Then
+        For Each x In mPM(w).keys
+            m = CStr(x): f = Y_PRJ_F(m)
+            k = Y_PD(mPK, w & "|" & m): s = Y_PD(mPS, w & "|" & m): p = Y_PD(mPP, w & "|" & m)
+            ' Saha tespiti varsa kullanilan = max(hakedis, saha); hakedise girmemis kisim projede kalandan dusulur.
+            u = s
+            If mSH.Exists(w & "|" & m) Then u = application.Max(s, CDbl(mSH(w & "|" & m)))
+            pf = application.Max(0, p - (u - s))
+            o(0) = o(0) + k * f: o(1) = o(1) + s * f: o(2) = o(2) + pf * f
+            If k - u - pf > 0.0000001 Then o(3) = o(3) + (k - u - pf) * f
+            o(4) = o(4) + application.Min(pf, application.Max(0, pf - application.Max(0, k - u))) * f
+            If u - k > 0.0000001 Then o(5) = o(5) + (u - k) * f
+            If k > 0 Then o(7) = o(7) + 1
+            o(8) = o(8) + u * f: o(9) = o(9) + (u - s) * f
+        Next x
+    End If
+    If mPHN.Exists(w) Then
+        For Each h In mPHN(w).keys
+            If CDbl(h) > o(6) Then o(6) = CDbl(h)
+        Next h
+    End If
+    Y_PRJ_OZET = o
+End Function
+
+' Secili projede bir malzemenin satiri: projede kalan (fiili), kalan ihtiyac, siralama anahtari ve "Ne Yapilmali".
+' Saha tespiti: kullanilan = max(hakedis, saha); hakedise girmemis kisim projede kalandan duser.
+Private Function Y_PRJ_SATIR(ByVal w As String, ByVal m As String, ByVal dp As String, ByRef pf As Double, ByRef ih As Double, ByRef sr As Double) As String
+    Dim k As Double, s As Double, p As Double, u As Double, f As Double, hv As Double, d2 As Double, nT As String
+    f = Y_PRJ_F(m)
+    k = Y_PD(mPK, w & "|" & m): s = Y_PD(mPS, w & "|" & m): p = Y_PD(mPP, w & "|" & m)
+    u = s
+    If mSH.Exists(w & "|" & m) Then u = application.Max(s, CDbl(mSH(w & "|" & m)))
+    pf = p - (u - s)
+    p = application.Max(0, pf)
+    ih = k - u - p
+    If ih > 0.0000001 Then
+        hv = 0
+        If Len(dp) > 0 Then hv = Y_PRJ_HAVUZ(dp, m)
+        d2 = Y_PD(mDS, "D002|" & m)
+        If hv >= ih - 0.0000001 Then
+            nT = "Havuzdan ayır (" & dp & ")"
+        ElseIf hv + d2 >= ih - 0.0000001 Then
+            nT = IIf(hv > 0, "Havuz + D002'den gönder", "D002'den gönder")
+        ElseIf hv + d2 > 0 Then
+            nT = "Stok yetmez: " & Y_PRJ_MT(ih - hv - d2) & " satın al"
+        Else
+            nT = "Satın al: " & Y_PRJ_MT(ih)
+        End If
+        If Left$(nT, 5) <> "Havuz" And Left$(nT, 4) <> "D002" And Y_PD(mSD, m) > 0 Then nT = nT & "  •  D002'ye siparişte " & Y_PRJ_MT(Y_PD(mSD, m)) & Y_PRJ_TESLIM(m)
+        sr = 3000000000# + ih * f
+    ElseIf ih < -0.0000001 Then
+        If p > 0.0000001 Then
+            nT = "Fazla: " & Y_PRJ_MT(application.Min(p, -ih)) & " havuza iade"
+        Else
+            nT = "Keşif aşıldı: +" & Y_PRJ_MT(u - k)
+        End If
+        sr = 1000000000# - ih * f
+    Else
+        nT = "Tamam": sr = 0
+    End If
+    If pf < -0.0000001 Then nT = nT & "  •  ayrılmadan kullanılmış: " & Y_PRJ_MT(-pf) & " (415 ile projeye ayır)"
+    If u - s > 0.0000001 Then nT = nT & "  •  hakedişe girmemiş: " & Y_PRJ_MT(u - s)
+    Y_PRJ_SATIR = nT
+End Function
+
+Private Sub Y_PRJ_MIK(ByVal rg As Range)
+    Dim c As Range
+    rg.NumberFormat = "#,##0;[Red]-#,##0"
+    For Each c In rg.Cells
+        If VarType(c.Value2) = vbDouble Then
+            If c.Value2 <> Int(c.Value2) Then c.NumberFormat = "#,##0.###;[Red]-#,##0.###"
+        End If
+    Next c
+End Sub
+
+Private Function Y_PRJ_MT(ByVal x As Double) As String
+    If Abs(x - Round(x, 0)) < 0.0000001 Then Y_PRJ_MT = AKSORA_SAYI_METNI(Round(x, 0), "#,##0") Else Y_PRJ_MT = AKSORA_SAYI_METNI(x, "#,##0.###")
+End Function
+
+' Sayfa: kartlar, dugmeler, proje secimi, yuklenici durumu, projeler, malzeme detayi.
+Private Sub Y_HAKEDIS_KUR(ByVal il As String)
+    Dim ws As Worksheet, w As Double, kw As Double, y As Double, s As Shape, liste As Shape, secim As String
+    Dim i As Long, p As Long, x As Variant, o As Variant, top(0 To 9) As Double, r As Long, j As Long, np As Long
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    il = UCase$(Trim$(il))
+    Y_KAYIT_SAYFA "_Y_KESIF"
+    ws.Unprotect ""
+    ' Saha giris araligi once silinir: sayfa temizlenirken degisim olayi kayitlara dokunmaz.
+    ws.Range("BX26:BX28").ClearContents
+    secim = UCase$(Trim$(CStr(ws.Range("BX24").Value2)))
+    If CStr(ws.Range("BX22").Value2) <> il Then secim = vbNullString
+    Y_SAYFA_SIFIRLA ws
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    Y_KOLONLAR ws, Array(104, application.Max(170, w - 1272), 64, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92)
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 40: ws.Rows(9).RowHeight = 18: ws.Rows(10).RowHeight = 10
+    Y_PRJ_VERI il
+    If Len(secim) > 0 And Not mPM.Exists(secim) Then secim = vbNullString
+    ws.Range("BX22").Value2 = il: ws.Range("BX20").Value2 = il: ws.Range("BX24").Value2 = secim
+    ' Dugmeler ve proje secimi
+    Y_DUGME ws, "Y_PRJ_SAP", "SAP'DEN OKU  (MB51)", 0, ws.Rows(8).top + 4, 210, 32, RGB(0, 125, 110), "AKSORA_YATIRIM_PRJ_SAP"
+    Y_DUGME ws, "Y_PRJ_KESIF", "KEŞİF İÇE AKTAR", 222, ws.Rows(8).top + 4, 190, 32, RGB(16, 57, 94), "AKSORA_YATIRIM_KESIF_YUKLE"
+    Y_DUGME ws, "Y_PRJ_EXCEL", "EXCEL'E AKTAR", 424, ws.Rows(8).top + 4, 170, 32, RGB(39, 160, 94), "AKSORA_YATIRIM_PRJ_EXCEL"
+    Y_METIN ws, "Y_PRJ_SEC_ETIKET", "Proje:", w - 520, ws.Rows(8).top + 4, 90, 32, 10, RGB(28, 54, 83), True, msoAlignRight
+    Set liste = ws.Shapes.AddFormControl(xlDropDown, w - 420, ws.Rows(8).top + 10, 420, 20)
+    liste.Name = "Y_PRJ_SECIM": liste.Placement = xlFreeFloating
+    liste.ControlFormat.AddItem "TÜM PROJELER"
+    p = 1: i = 1
+    For Each x In mPL
+        i = i + 1
+        liste.ControlFormat.AddItem CStr(x) & IIf(mPAd.Exists(CStr(x)), "  -  " & CStr(mPAd(CStr(x))), "")
+        If CStr(x) = secim Then p = i
+    Next x
+    liste.ControlFormat.Value = p
+    liste.ControlFormat.DropDownLines = application.Min(30, i)
+    liste.OnAction = BIRIM_MAKRO("AKSORA_YATIRIM_PRJ_SEC")
+    ws.Range("A9").Value2 = mPrjBilgi & "     |     " & mKesBilgi & "     |     " & mSasBilgi & "     |     Stok: yatırım ve yüklenici stokları (MB52)"
+    With ws.Range("A9").Font
+        .Name = "Aptos": .Size = 9: .Italic = True: .Color = RGB(100, 116, 139)
+    End With
+    ' Ozet toplamlari (secili proje ya da tumu)
+    For Each x In mPL
+        If Len(secim) = 0 Or CStr(x) = secim Then
+            o = Y_PRJ_OZET(CStr(x)): np = np + 1
+            For j = 0 To 9
+                If j = 6 Then
+                    If o(6) > top(6) Then top(6) = o(6)
+                Else
+                    top(j) = top(j) + o(j)
+                End If
+            Next j
+        End If
+    Next x
+    ws.Range("BZ1:BZ4").NumberFormat = "@"
+    ws.Range("BZ1").Value2 = np & " proje  •  " & AKSORA_SAYI_METNI(top(7), "#,##0") & " keşif kalemi"
+    ws.Range("BZ2").Value2 = Y_TL(top(0))
+    ws.Range("BZ3").Value2 = Y_TL(top(1))
+    If top(0) > 0 Then ws.Range("BZ3").Value2 = ws.Range("BZ3").Value2 & "  •  %" & AKSORA_SAYI_METNI(100 * top(1) / top(0), "0")
+    If top(0) > 0 And top(9) > 0.005 Then ws.Range("BZ3").Value2 = ws.Range("BZ3").Value2 & "  (sahada %" & AKSORA_SAYI_METNI(100 * top(8) / top(0), "0") & ")"
+    ws.Range("BZ4").Value2 = "Eksik " & ADM_TL_KISA(top(3)) & "  •  Fazla " & ADM_TL_KISA(top(4))
+    y = ws.Rows(3).top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, IIf(Len(secim) > 0, "PROJE  " & secim, "PROJELER"), "$BZ$1", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "KEŞİF TUTARI", "$BZ$2", RGB(16, 57, 94)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "SARF (HAKEDİŞLER)", "$BZ$3", RGB(39, 160, 94)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "EKSİK / FAZLA", "$BZ$4", RGB(220, 38, 38)
+    For i = 1 To 4
+        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    Next i
+    r = 11
+    If mPL.Count = 0 Then
+        ws.Cells(r, 1).Value2 = "Veri yok. 1) KEŞİF İÇE AKTAR ile projelerin keşfini yükleyin  2) SAP'DEN OKU ile MB51 hareketlerini alın."
+        ws.Cells(r, 1).Font.Italic = True: ws.Cells(r, 1).Font.Color = RGB(100, 116, 139)
+    Else
+        r = Y_PRJ_KARAR_YAZ(ws, r) + 2
+        r = Y_PRJ_YUKLENICI_YAZ(ws, r, il)
+        r = Y_PRJ_PROJE_YAZ(ws, r + 2, secim)
+        r = Y_PRJ_DETAY_YAZ(ws, r + 2, secim)
+    End If
+    Y_FILIGRAN ws
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | PROJE MALZEME TAKİBİ  |  " & Y_IL_ADI(il)
+    On Error Resume Next
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.Zoom = False: ws.PageSetup.FitToPagesWide = 1: ws.PageSetup.FitToPagesTall = False
+    ws.PageSetup.PrintArea = "$A$1:$O$" & r
+    On Error GoTo 0
+    ws.Range("BX25").Value2 = "PRJ_V4"
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+' Proje detayi "Sahada Kullanilan" girisi: _Y_SAHA kaydina yazilir, sayfa yeniden hesaplanir, ayni yerde kalinir.
+Private Sub Y_SAHA_DEGISIM(ByVal sh As Worksheet, ByVal hedef As Range)
+    Dim kol As Long, a As Long, b As Long, alan As Range, c As Range, pyp As String, il As String, m As String, x As Double
+    Dim sr As Long, sc As Long, Hata As String, ev As Boolean, sonMal As String, r As Long
+    kol = CLng(Val(CStr(sh.Range("BX26").Value2))): a = CLng(Val(CStr(sh.Range("BX27").Value2))): b = CLng(Val(CStr(sh.Range("BX28").Value2)))
+    If kol = 0 Or a = 0 Or b < a Then Exit Sub
+    If hedef.Columns.Count > 1 Or hedef.Rows.Count > b - a + 1 Then Exit Sub
+    Set alan = Intersect(hedef, sh.Range(sh.Cells(a, kol), sh.Cells(b, kol)))
+    If alan Is Nothing Then Exit Sub
+    pyp = UCase$(Trim$(CStr(sh.Range("BX24").Value2))): il = UCase$(Trim$(CStr(sh.Range("BX22").Value2)))
+    If Len(pyp) = 0 Or Len(il) = 0 Then Exit Sub
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    If mPK Is Nothing Or mPrjIl <> il Then Y_PRJ_VERI il
+    For Each c In alan.Cells
+        m = Trim$(CStr(sh.Cells(c.Row, 1).Value2))
+        If Len(m) > 0 Then
+            If IsEmpty(c.Value2) Then
+                Y_SAHA_YAZ il, pyp, m, -1: sonMal = m
+                If mSH.Exists(pyp & "|" & m) Then mSH.Remove pyp & "|" & m
+            ElseIf Len(Trim$(CStr(c.Value2))) = 0 Then
+                Y_SAHA_YAZ il, pyp, m, -1: sonMal = m
+                If mSH.Exists(pyp & "|" & m) Then mSH.Remove pyp & "|" & m
+            ElseIf IsNumeric(c.Value2) Then
+                x = CDbl(c.Value2)
+                If x < 0 Then
+                    Hata = "Negatif miktar girilemez."
+                    c.ClearContents
+                Else
+                    Y_SAHA_YAZ il, pyp, m, x: sonMal = m: mSH(pyp & "|" & m) = x
+                End If
+            Else
+                Hata = "Sayı girin (örnek: 12 veya 12,5)."
+                c.ClearContents
+            End If
+        End If
+    Next c
+    ' Yerinde guncelleme: satirlar yer degistirmez, sayfa yeniden kurulmaz.
+    sh.Unprotect ""
+    For Each c In alan.Cells
+        m = Trim$(CStr(sh.Cells(c.Row, 1).Value2))
+        If Len(m) > 0 Then Y_SAHA_SATIR_YAZ sh, c.Row, kol, pyp, m
+    Next c
+    Y_SAHA_PROJE_YAZ sh, pyp
+    sh.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    sh.EnableSelection = xlNoRestrictions
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Len(Hata) > 0 Then MsgBox Hata, vbExclamation, "AKSORA | SAHA TESPİTİ"
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    Y_KORU sh
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox "Saha girişi kaydedilemedi: " & hM, vbExclamation, "AKSORA | SAHA TESPİTİ"
+End Sub
+
+' Detay satiri: projede kalan (fiili), kalan ihtiyac, ne yapilmali (giris sutununun sagindaki 3 sutun).
+Private Sub Y_SAHA_SATIR_YAZ(ByVal sh As Worksheet, ByVal r As Long, ByVal kol As Long, ByVal pyp As String, ByVal m As String)
+    Dim pf As Double, ih As Double, sr As Double, i As Long
+    sh.Cells(r, kol + 3).Value2 = Y_PRJ_SATIR(pyp, m, Y_PRJ_DEPO(pyp), pf, ih, sr)
+    sh.Cells(r, kol + 1).Value2 = pf: sh.Cells(r, kol + 2).Value2 = ih
+    For i = 1 To 2
+        If Abs(sh.Cells(r, kol + i).Value2 - Int(sh.Cells(r, kol + i).Value2)) > 0.0000001 Then
+            sh.Cells(r, kol + i).NumberFormat = "#,##0.###;[Red]-#,##0.###"
+        Else
+            sh.Cells(r, kol + i).NumberFormat = "#,##0;[Red]-#,##0"
+        End If
+    Next i
+End Sub
+
+' Projeler tablosundaki secili proje satiri ve ust kartlar (tamamlanma, eksik / fazla) yerinde.
+Private Sub Y_SAHA_PROJE_YAZ(ByVal sh As Worksheet, ByVal pyp As String)
+    Dim o As Variant, r As Long, son As Long, t As String
+    o = Y_PRJ_OZET(pyp)
+    son = CLng(Val(CStr(sh.Range("BX27").Value2)))
+    For r = 11 To son
+        If CStr(sh.Cells(r, 1).Value2) = pyp And VarType(sh.Cells(r, 4).Value2) = vbDouble Then
+            If o(0) > 0 Then sh.Cells(r, 6).Value2 = o(8) / o(0)
+            If o(6) > 0 Then t = CLng(o(6)) & ". hakediş" Else t = "-"
+            If o(9) > 0.005 Then t = t & "  •  saha +" & ADM_TL_KISA(o(9))
+            sh.Cells(r, 7).Value2 = t
+            sh.Cells(r, 8).Value2 = Round(o(2), 2): sh.Cells(r, 9).Value2 = Round(o(3), 2): sh.Cells(r, 10).Value2 = Round(o(4), 2)
+            If o(8) < 0.005 And o(2) < 0.005 Then
+                sh.Cells(r, 11).Value2 = "BAŞLAMADI"
+            ElseIf o(3) > 0.005 Then
+                sh.Cells(r, 11).Value2 = "EKSİK"
+            ElseIf o(4) > 0.005 Then
+                sh.Cells(r, 11).Value2 = "FAZLA"
+            Else
+                sh.Cells(r, 11).Value2 = "TAMAM"
+            End If
+            Exit For
+        End If
+    Next r
+    t = Y_TL(o(1))
+    If o(0) > 0 Then t = t & "  •  %" & AKSORA_SAYI_METNI(100 * o(1) / o(0), "0")
+    If o(0) > 0 And o(9) > 0.005 Then t = t & "  (sahada %" & AKSORA_SAYI_METNI(100 * o(8) / o(0), "0") & ")"
+    sh.Range("BZ3").Value2 = t
+    sh.Range("BZ4").Value2 = "Eksik " & ADM_TL_KISA(o(3)) & "  •  Fazla " & ADM_TL_KISA(o(4))
+End Sub
+
+' _Y_SAHA kaydi: il, PYP, malzeme, sahada kullanilan, tarih, kullanici. x < 0: kayit silinir.
+Private Sub Y_SAHA_YAZ(ByVal il As String, ByVal pyp As String, ByVal m As String, ByVal x As Double)
+    Dim g As Worksheet, son As Long, r As Long, v As Variant, bul As Long
+    Set g = Y_KAYIT_SAYFA("_Y_SAHA")
+    If Len(CStr(g.Range("A1").Value2)) = 0 Then g.Range("A1:F1").Value2 = Array("Il", "PYP", "Malzeme", "Sahada kullanilan", "Tarih", "Kullanici")
+    son = AKSORA_SON_SATIR(g, 1)
+    If son >= 2 Then
+        v = g.Range("A1:C" & son).Value2
+        For r = 2 To son
+            If CStr(v(r, 1)) = il And CStr(v(r, 2)) = pyp And CStr(v(r, 3)) = m Then bul = r: Exit For
+        Next r
+    End If
+    If x < 0 Then
+        If bul > 0 Then g.Rows(bul).Delete
+        Exit Sub
+    End If
+    If bul = 0 Then bul = application.Max(2, son + 1)
+    g.Range("A" & bul & ":C" & bul).NumberFormat = "@"
+    g.Range("A" & bul & ":F" & bul).Value2 = Array(il, pyp, m, x, CDbl(Now), Environ$("USERNAME"))
+End Sub
+
+' Yonetici ozeti: tum projelerde malzeme bazli karar listesi (ne, kac kalem, kac TL, ne yapilmali).
+Private Function Y_PRJ_KARAR_YAZ(ByVal ws As Worksheet, ByVal r As Long) As Long
+    Dim mats As Object, yuk As Object, x As Variant, w As Variant, m As String, f As Double, o As Variant, dg As Long
+    Dim k As Double, s As Double, p As Double, hv As Double, d2 As Double, sq As Double, ih As Double, yas As Double
+    Dim c(1 To 8) As Long, t(1 To 8) As Double, i As Long, a1 As Long, blok() As Variant, nT As String
+    Set mats = CreateObject("Scripting.Dictionary"): Set yuk = CreateObject("Scripting.Dictionary")
+    For Each w In mPL
+        For Each x In mPM(CStr(w)).keys: mats(CStr(x)) = True: Next x
+    Next w
+    For Each x In mDS.keys
+        dg = InStr(CStr(x), "|")
+        If Left$(CStr(x), dg - 1) <> "D002" Then yuk(Left$(CStr(x), dg - 1)) = True
+    Next x
+    For Each x In mats.keys
+        m = CStr(x): f = Y_PRJ_F(m)
+        k = 0: s = 0: p = 0: hv = 0
+        For Each w In mPL
+            k = k + Y_PD(mPK, CStr(w) & "|" & m): s = s + Y_PD(mPS, CStr(w) & "|" & m): p = p + Y_PD(mPP, CStr(w) & "|" & m)
+        Next w
+        For Each w In yuk.keys: hv = hv + Y_PRJ_HAVUZ(CStr(w), m): Next w
+        d2 = Y_PD(mDS, "D002|" & m): sq = Y_PD(mSD, m)
+        ih = k - s - p - hv - d2
+        If ih - sq > 0.0000001 Then c(1) = c(1) + 1: t(1) = t(1) + (ih - sq) * f
+        If sq > 0.0000001 Then
+            If ih > 0.0000001 Then c(2) = c(2) + 1: t(2) = t(2) + application.Min(sq, ih) * f
+            If sq - application.Max(0, ih) > 0.0000001 Then c(3) = c(3) + 1: t(3) = t(3) + (sq - application.Max(0, ih)) * f
+            If mSDb.Exists(m) Then
+                If yas = 0 Or CDbl(mSDb(m)) < yas Then yas = CDbl(mSDb(m))
+            End If
+        ElseIf ih > 0.0000001 Then
+            If Len(Y_PRJ_BENZER(m)) > 0 Then c(7) = c(7) + 1
+        End If
+        If ih < -0.0000001 Then c(4) = c(4) + 1: t(4) = t(4) + (-ih) * f
+        If f = 0 And Abs(ih) > 0.0000001 Then c(6) = c(6) + 1
+    Next x
+    For Each w In mPL
+        o = Y_PRJ_OZET(CStr(w))
+        If o(8) < 0.005 And o(2) < 0.005 Then c(5) = c(5) + 1: t(5) = t(5) + o(0)
+        If o(9) > 0.005 Then c(8) = c(8) + 1: t(8) = t(8) + o(9)
+    Next w
+    Y_BOLUM ws, r, "YÖNETİCİ ÖZETİ  –  TÜM PROJELER", "Tutarlar stok / sipariş birim fiyatıyla. Ayrıntı: aşağıdaki MALZEME İHTİYACI tablosu.", 15
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 15)), Array("#", "Konu", "Kalem", "Tutar", "Ne Yapılmalı")
+    ws.Range(ws.Cells(r + 1, 5), ws.Cells(r + 1, 15)).HorizontalAlignment = xlCenterAcrossSelection
+    ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 28
+    a1 = r + 2
+    ReDim blok(1 To 8, 1 To 5)
+    blok(1, 2) = "Satın alınacak": blok(1, 5) = "Siparişi ve stoğu olmayan eksik: satınalma talebi açılmalı."
+    blok(2, 2) = "Siparişte bekleyen": blok(2, 5) = "İhtiyacı karşılayan açık sipariş" & _
+        IIf(yas > 0, "; en eski " & Format$(CDate(yas), "dd.mm.yyyy") & " (" & Y_PRJ_GUN(CLng(application.Max(0, CDbl(Date) - yas))) & " önce): tedarikçi takip edilmeli.", ": tedarikçi takip edilmeli.")
+    blok(3, 2) = "İptal / azaltılabilir sipariş": blok(3, 5) = "İhtiyacın üstündeki sipariş miktarı: satınalma ile iptal / azaltma görüşülmeli."
+    blok(4, 2) = "Fazla stok": blok(4, 5) = "Havuz / D002'de projelerin ihtiyacı dışında: yeni projelere ya da diğer illere kullandırılmalı."
+    blok(5, 2) = "Başlamayan proje": blok(5, 5) = "Hiç sarf ve ayrılan malzeme yok (tutar = keşif): iş programı ve malzeme planı kontrol edilmeli."
+    blok(6, 2) = "Fiyatı bilinmeyen malzeme": blok(6, 5) = "Stokta, MB51'de ve siparişte fiyatı yok: TL tutarlarına katılmadı."
+    blok(7, 2) = "Başka kodla siparişte": blok(7, 5) = "Keşifteki kod ile sipariş kodu farklı (aynı tanım): çift alım riski, keşif kodu kontrol edilmeli."
+    blok(8, 2) = "Hakedişe girmemiş (saha)": blok(8, 5) = "Sahada kullanılmış, hakedişe girmemiş malzeme olan proje: yükleniciye hakediş yaptırılmalı."
+    For i = 1 To 8
+        blok(i, 1) = i: blok(i, 3) = c(i)
+        If i <= 5 Or i = 8 Then blok(i, 4) = Round(t(i), 2) Else blok(i, 4) = "-"
+        If c(i) = 0 Then blok(i, 5) = "Yok."
+    Next i
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 7, 5)).Value2 = blok
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 7, 15))
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + 7, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + 7, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + 7, 3)).NumberFormat = "#,##0"
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + 7, 4)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + 7, 4)).HorizontalAlignment = xlRight
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + 7, 2)).Font.bold = True
+    ws.Range(ws.Cells(a1, 5), ws.Cells(a1 + 7, 5)).IndentLevel = 1
+    For i = 1 To 8
+        If c(i) > 0 Then ws.Cells(a1 + i - 1, 2).Font.Color = Choose(i, RGB(185, 28, 28), RGB(29, 78, 216), RGB(126, 34, 206), _
+            RGB(180, 83, 9), RGB(71, 85, 105), RGB(161, 98, 7), RGB(161, 98, 7), RGB(13, 148, 136)) Else ws.Cells(a1 + i - 1, 2).Font.Color = RGB(148, 163, 184)
+    Next i
+    ws.Range(ws.Rows(a1), ws.Rows(a1 + 7)).RowHeight = 21
+    Y_PRJ_KARAR_YAZ = a1 + 7
+End Function
+
+' Sayfanin Excel ciktisi (masaustu): ozet, yuklenici, projeler, malzeme tablolari; AKSORA imzali.
+Public Sub AKSORA_YATIRIM_PRJ_EXCEL()
+    Dim ws As Worksheet, wb As Workbook, h As Worksheet, son As Long, il As String, yol As String, sc As Boolean, ev As Boolean, i As Long
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
+    son = application.Max(AKSORA_SON_SATIR(ws, 1), AKSORA_SON_SATIR(ws, 2))
+    If son < 12 Then MsgBox "Aktarılacak veri yok.", vbInformation, "AKSORA": Exit Sub
+    sc = application.ScreenUpdating: ev = application.EnableEvents
+    application.ScreenUpdating = False: application.EnableEvents = False
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Set h = wb.Worksheets(1)
+    h.Name = "PROJE TAKIBI"
+    ActiveWindow.DisplayGridlines = False
+    For i = 1 To 15: h.Columns(i).ColumnWidth = ws.Columns(i).ColumnWidth: Next i
+    ws.Range("A9:O" & son).Copy
+    h.Range("A5").PasteSpecial xlPasteValuesAndNumberFormats
+    h.Range("A5").PasteSpecial xlPasteFormats
+    application.CutCopyMode = False
+    For i = 9 To son: h.Rows(i - 4).RowHeight = ws.Rows(i).RowHeight: Next i
+    h.Range("A1").Value2 = "AKSORA | PROJE MALZEME TAKİBİ  |  " & Y_IL_ADI(il)
+    With h.Range("A1").Font
+        .Name = "Aptos": .Size = 16: .bold = True: .Color = RGB(12, 45, 79)
+    End With
+    h.Range("A2").Value2 = "Rapor tarihi: " & Format$(Now, "dd.mm.yyyy hh:nn")
+    h.Range("A3").Value2 = CStr(ws.Range("BZ1").Value2) & "     |     Keşif: " & CStr(ws.Range("BZ2").Value2) & _
+        "     |     Sarf: " & CStr(ws.Range("BZ3").Value2) & "     |     " & CStr(ws.Range("BZ4").Value2)
+    h.Range("A2:A3").Font.Name = "Aptos": h.Range("A2:A3").Font.Size = 10
+    h.Range("A3").Font.bold = True
+    With h.PageSetup
+        .Orientation = xlLandscape: .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
+    End With
+    h.Activate
+    h.Range("A1").Select
+    AKSORA_IMZA_UYGULA wb
+    yol = AKSORA_MASAUSTU() & application.PathSeparator & "AKSORA_Proje_Takibi_" & il & "_" & Format$(Now, "yyyymmdd_hhnn") & ".xlsx"
+    application.DisplayAlerts = False
+    On Error Resume Next
+    wb.SaveAs Filename:=yol, FileFormat:=51
+    If Err.Number <> 0 Then yol = vbNullString
+    On Error GoTo Hata
+    application.DisplayAlerts = True
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If Len(yol) > 0 Then
+        MsgBox "Masaüstüne kaydedildi:" & vbCrLf & yol, vbInformation, "AKSORA | PROJE MALZEME TAKİBİ"
+    Else
+        MsgBox "Liste açıldı ancak kaydedilemedi; Farklı Kaydet ile kaydedin.", vbExclamation, "AKSORA"
+    End If
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    application.CutCopyMode = False
+    application.DisplayAlerts = True
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox "Excel'e aktarılamadı: " & hM, vbExclamation, "AKSORA"
+End Sub
+
+' Yuklenici durumu: depodaki proje + havuz stogu ile projelerinin kalan ihtiyaci.
+Private Function Y_PRJ_YUKLENICI_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal il As String) As Long
+    Dim dps As Object, x As Variant, w As Variant, dp As String, mats As Object, m As Variant, n As Long, a1 As Long
+    Dim f As Double, ned As Double, hv As Double, kIh As Double, pT As Double, ht As Double, eks As Double, faz As Double
+    Dim kq As Double, sq As Double, pq As Double, blok() As Variant, i As Long, np As Long, rr As Range
+    Set dps = CreateObject("Scripting.Dictionary")
+    For Each x In AKSORA_IL_YUKLENICI(il)
+        If Left$(CStr(x), 1) <> "Z" Then dps(CStr(x)) = True
+    Next x
+    For Each w In mPL
+        dp = Y_PRJ_DEPO(CStr(w))
+        If Len(dp) > 0 And dp <> "D002" Then dps(dp) = True
+    Next w
+    Y_BOLUM ws, r, "YÜKLENİCİ DURUMU", "Kalan ihtiyaç = projelerin keşfi - sarf. Havuz / serbest = depo stoğu - projelerde kalan.", 10
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 10)), Array("Depo", "Yüklenici", "Proje", "Kalan İhtiyaç", _
+        "Projelerde Kalan", "Havuz / Serbest", "Havuzdan Karşılanır", "Eksik", "Fazla", "Durum")
+    ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 32
+    a1 = r + 2
+    ReDim blok(1 To dps.Count, 1 To 10)
+    For Each x In dps.keys
+        dp = CStr(x)
+        Set mats = CreateObject("Scripting.Dictionary")
+        np = 0: kIh = 0: pT = 0: ht = 0: eks = 0: faz = 0
+        For Each w In mPL
+            If Y_PRJ_DEPO(CStr(w)) = dp Then
+                np = np + 1
+                For Each m In mPM(CStr(w)).keys
+                    mats(CStr(m)) = True
+                    f = Y_PRJ_F(CStr(m))
+                    kq = Y_PD(mPK, CStr(w) & "|" & m): sq = Y_PD(mPS, CStr(w) & "|" & m): pq = Y_PD(mPP, CStr(w) & "|" & m)
+                    kIh = kIh + application.Max(0, kq - sq) * f
+                    faz = faz + application.Min(pq, application.Max(0, pq - application.Max(0, kq - sq))) * f
+                Next m
+            End If
+        Next w
+        For Each m In mDS.keys
+            If Left$(CStr(m), Len(dp) + 1) = dp & "|" Then mats(Mid$(CStr(m), Len(dp) + 2)) = True
+        Next m
+        For Each m In mats.keys
+            f = Y_PRJ_F(CStr(m))
+            pT = pT + Y_PD(mPDS, dp & "|" & m) * f
+            hv = Y_PRJ_HAVUZ(dp, CStr(m)): ht = ht + hv * f
+            ned = 0
+            For Each w In mPL
+                If Y_PRJ_DEPO(CStr(w)) = dp Then
+                    ned = ned + application.Max(0, Y_PD(mPK, CStr(w) & "|" & m) - Y_PD(mPS, CStr(w) & "|" & m) - Y_PD(mPP, CStr(w) & "|" & m))
+                End If
+            Next w
+            eks = eks + application.Max(0, ned - hv) * f
+            faz = faz + application.Max(0, hv - ned) * f
+        Next m
+        If np > 0 Or ht > 0.005 Or pT > 0.005 Then
+            n = n + 1
+            blok(n, 1) = dp: blok(n, 2) = IIf(mDA.Exists(dp), mDA(dp), "")
+            blok(n, 3) = np: blok(n, 4) = Round(kIh, 2): blok(n, 5) = Round(pT, 2): blok(n, 6) = Round(ht, 2)
+            blok(n, 7) = Round(application.Min(ht, application.Max(0, kIh - pT)), 2)
+            blok(n, 8) = Round(eks, 2): blok(n, 9) = Round(faz, 2)
+            If eks > 0.005 And faz > 0.005 Then
+                blok(n, 10) = "EKSİK + FAZLA"
+            ElseIf eks > 0.005 Then
+                blok(n, 10) = "EKSİK"
+            ElseIf faz > 0.005 Then
+                blok(n, 10) = "FAZLA VAR"
+            Else
+                blok(n, 10) = "DENGEDE"
+            End If
+        End If
+    Next x
+    If n = 0 Then
+        ws.Cells(a1, 1).Value2 = "Yüklenici deposu verisi yok (yüklenici stoklarını güncelleyin)."
+        Y_PRJ_YUKLENICI_YAZ = a1: Exit Function
+    End If
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 10)).Value2 = blok
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 10))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, 9)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 10), ws.Cells(a1 + n - 1, 10)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Rows(a1), ws.Rows(a1 + n - 1)).RowHeight = 20
+    Set rr = ws.Range(ws.Cells(a1, 10), ws.Cells(a1 + n - 1, 10))
+    Y_DURUM_KF rr, "EKSİK", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "EKSİK + FAZLA", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF rr, "FAZLA VAR", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF rr, "DENGEDE", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_PRJ_YUKLENICI_YAZ = a1 + n - 1
+End Function
+
+' Projeler: her PYP bir satir; secili proje vurgulu.
+Private Function Y_PRJ_PROJE_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secim As String) As Long
+    Dim x As Variant, o As Variant, n As Long, a1 As Long, blok() As Variant, t(0 To 9) As Double, j As Long, rr As Range, dp As String
+    Y_BOLUM ws, r, "PROJELER", "Tamamlanma ve eksik, saha tespiti girilen projelerde sahada kullanılana göre.  Fazla = projede ihtiyacın üstünde kalan.", 11
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 11)), Array("PYP", "Proje Adı", "Depo", "Keşif", _
+        "Sarf (Hakedişler)", "Tamamlanma", "Son Hakediş", "Projede Kalan", "Eksik", "Fazla", "Durum")
+    ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 32
+    a1 = r + 2
+    ReDim blok(1 To mPL.Count, 1 To 11)
+    For Each x In mPL
+        o = Y_PRJ_OZET(CStr(x)): n = n + 1
+        dp = Y_PRJ_DEPO(CStr(x))
+        blok(n, 1) = CStr(x): blok(n, 2) = IIf(mPAd.Exists(CStr(x)), mPAd(CStr(x)), ""): blok(n, 3) = IIf(Len(dp) > 0, dp, "-")
+        blok(n, 4) = Round(o(0), 2): blok(n, 5) = Round(o(1), 2)
+        If o(0) > 0 Then blok(n, 6) = o(8) / o(0) Else blok(n, 6) = Empty
+        If o(6) > 0 Then blok(n, 7) = CLng(o(6)) & ". hakediş" Else blok(n, 7) = "-"
+        If o(9) > 0.005 Then blok(n, 7) = blok(n, 7) & "  •  saha +" & ADM_TL_KISA(o(9))
+        blok(n, 8) = Round(o(2), 2): blok(n, 9) = Round(o(3), 2): blok(n, 10) = Round(o(4), 2)
+        If o(8) < 0.005 And o(2) < 0.005 Then
+            blok(n, 11) = "BAŞLAMADI"
+        ElseIf o(3) > 0.005 Then
+            blok(n, 11) = "EKSİK"
+        ElseIf o(4) > 0.005 Then
+            blok(n, 11) = "FAZLA"
+        Else
+            blok(n, 11) = "TAMAM"
+        End If
+        For j = 0 To 5: t(j) = t(j) + o(j): Next j
+        t(8) = t(8) + o(8): t(9) = t(9) + o(9)
+    Next x
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 11)).Value2 = blok
+    ws.Cells(a1 + n, 2).Value2 = "TOPLAM"
+    ws.Cells(a1 + n, 4).Value2 = Round(t(0), 2): ws.Cells(a1 + n, 5).Value2 = Round(t(1), 2)
+    If t(0) > 0 Then ws.Cells(a1 + n, 6).Value2 = t(8) / t(0)
+    ws.Cells(a1 + n, 8).Value2 = Round(t(2), 2): ws.Cells(a1 + n, 9).Value2 = Round(t(3), 2): ws.Cells(a1 + n, 10).Value2 = Round(t(4), 2)
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 11))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
+    Y_TOPLAM_SATIRI ws.Range(ws.Cells(a1 + n, 1), ws.Cells(a1 + n, 11))
+    ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n, 5)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 8), ws.Cells(a1 + n, 10)).NumberFormat = "#,##0.00 ""TL"""
+    ws.Range(ws.Cells(a1, 6), ws.Cells(a1 + n, 6)).NumberFormat = "0%"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 6), ws.Cells(a1 + n, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 11), ws.Cells(a1 + n - 1, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Rows(a1), ws.Rows(a1 + n)).RowHeight = 20
+    Set rr = ws.Range(ws.Cells(a1, 11), ws.Cells(a1 + n - 1, 11))
+    Y_DURUM_KF rr, "EKSİK", RGB(254, 226, 226), RGB(185, 28, 28)
+    Y_DURUM_KF rr, "FAZLA", RGB(254, 243, 199), RGB(180, 83, 9)
+    Y_DURUM_KF rr, "TAMAM", RGB(220, 252, 231), RGB(21, 128, 61)
+    Y_DURUM_KF rr, "BAŞLAMADI", RGB(226, 232, 240), RGB(71, 85, 105)
+    Set rr = ws.Range(ws.Cells(a1, 6), ws.Cells(a1 + n - 1, 6))
+    On Error Resume Next
+    With rr.FormatConditions.AddDatabar
+        .MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+        .MaxPoint.Modify newtype:=xlConditionValueNumber, newvalue:=1
+        .BarColor.Color = RGB(134, 239, 172)
+    End With
+    On Error GoTo 0
+    If Len(secim) > 0 Then
+        For j = 1 To n
+            If CStr(blok(j, 1)) = secim Then ws.Range(ws.Cells(a1 + j - 1, 1), ws.Cells(a1 + j - 1, 10)).Font.bold = True
+        Next j
+    End If
+    Y_PRJ_PROJE_YAZ = a1 + n
+End Function
+
+' Malzeme detayi: secili projede hakedis hakedis; tum projelerde malzeme ihtiyaci (satin al / fazla).
+Private Function Y_PRJ_DETAY_YAZ(ByVal ws As Worksheet, ByVal r As Long, ByVal secim As String) As Long
+    Dim mats As Object, x As Variant, m As String, w As Variant, n As Long, a1 As Long, blok() As Variant, hk() As Long, nh As Long
+    Dim i As Long, j As Long, c As Long, k As Double, s As Double, p As Double, f As Double, ih As Double, bas As Variant
+    Dim yuk As Object, hv As Double, d2 As Double, an() As Double, sira() As Long, tmp As Long, tt As Double, nc As Long
+    Dim dp As String, ad As String, dg As Double, rr As Range, nT As String, tn As Variant, sq As Double
+    Dim u As Double, pf As Double, ks As Long
+    Set mats = CreateObject("Scripting.Dictionary")
+    If Len(secim) > 0 Then
+        For Each x In mPM(secim).keys: mats(CStr(x)) = True: Next x
+        ' Hakedis sutunlari (en fazla 5; fazlasi "5+" sutununda)
+        If mPHN.Exists(secim) Then
+            ReDim hk(1 To mPHN(secim).Count)
+            For Each x In mPHN(secim).keys
+                nh = nh + 1: hk(nh) = CLng(x)
+            Next x
+            For i = 1 To nh - 1
+                For j = i + 1 To nh
+                    If (hk(j) < hk(i) And hk(j) <> 0) Or hk(i) = 0 Then tmp = hk(i): hk(i) = hk(j): hk(j) = tmp
+                Next j
+            Next i
+        End If
+        If nh > 5 Then nh = 5
+        nc = 10 + nh
+        ReDim bas(0 To nc - 1)
+        bas(0) = "Malzeme": bas(1) = "Malzeme Tanımı": bas(2) = "Birim": bas(3) = "Keşif": bas(4) = "Ayrılan"
+        For i = 1 To nh
+            If hk(i) = 0 Then
+                bas(4 + i) = "Diğer Sarf"
+            ElseIf i = 5 And UBound(hk) > 5 Then
+                bas(4 + i) = hk(i) & "+. Hakediş"
+            Else
+                bas(4 + i) = hk(i) & ". Hakediş"
+            End If
+        Next i
+        bas(5 + nh) = "Sarf Toplam (SAP)": bas(6 + nh) = "Sahada Kullanılan": bas(7 + nh) = "Projede Kalan"
+        bas(8 + nh) = "Kalan İhtiyaç": bas(9 + nh) = "Ne Yapılmalı"
+        ks = 7 + nh
+        dp = Y_PRJ_DEPO(secim)
+        ad = secim & IIf(mPAd.Exists(secim), "  –  " & mPAd(secim), "")
+        Y_BOLUM ws, r, "MALZEME DETAYI  –  " & ad, "Sarı sütun: sahada tespit edilen toplam kullanım (boş = hakediş kadar).  Kalan ihtiyaç = keşif - kullanılan - projede kalan.  Depo: " & IIf(Len(dp) > 0, dp, "-"), 15
+    Else
+        For Each w In mPL
+            For Each x In mPM(CStr(w)).keys: mats(CStr(x)) = True: Next x
+        Next w
+        nc = 12
+        bas = Array("Malzeme", "Malzeme Tanımı", "Birim", "Keşif", "Sarf", "Projelerde Kalan", "Yüklenici Havuz", "D002 Stok", _
+            "Açık Sipariş (D002)", "İhtiyaç (+/-)", "İhtiyaç Tutarı", "Ne Yapılmalı")
+        Y_BOLUM ws, r, "MALZEME İHTİYACI  –  TÜM PROJELER", "İhtiyaç = keşif - sarf - projelerde - yüklenici havuzu - D002 - açık sipariş.  Artı: satın al, eksi: fazla.", 15
+        Set yuk = CreateObject("Scripting.Dictionary")
+        For Each x In mDS.keys
+            dg = InStr(CStr(x), "|")
+            If Left$(CStr(x), dg - 1) <> "D002" Then yuk(Left$(CStr(x), dg - 1)) = True
+        Next x
+    End If
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r + 1, 1), ws.Cells(r + 1, 15)), bas
+    If nc < 15 Then ws.Range(ws.Cells(r + 1, nc), ws.Cells(r + 1, 15)).HorizontalAlignment = xlCenterAcrossSelection
+    ws.Rows(r).RowHeight = 30: ws.Rows(r + 1).RowHeight = 32
+    a1 = r + 2
+    If mats.Count = 0 Then Y_PRJ_DETAY_YAZ = a1: Exit Function
+    ReDim blok(1 To mats.Count, 1 To nc): ReDim an(1 To mats.Count): ReDim sira(1 To mats.Count)
+    For Each x In mats.keys
+        m = CStr(x): f = Y_PRJ_F(m): n = n + 1: sira(n) = n
+        blok(n, 1) = m
+        If mPT.Exists(m) Then tn = mPT(m): blok(n, 2) = tn(0): blok(n, 3) = tn(1)
+        If Len(secim) > 0 Then
+            k = Y_PD(mPK, secim & "|" & m): s = Y_PD(mPS, secim & "|" & m): p = Y_PD(mPP, secim & "|" & m)
+            blok(n, 4) = k: blok(n, 5) = Y_PD(mPA, secim & "|" & m)
+            For i = 1 To nh
+                tt = Y_PD(mPH, secim & "|" & m & "|" & hk(i))
+                If i = 5 And UBound(hk) > 5 Then
+                    For j = 6 To UBound(hk): tt = tt + Y_PD(mPH, secim & "|" & m & "|" & hk(j)): Next j
+                End If
+                If tt <> 0 Then blok(n, 5 + i) = tt
+            Next i
+            nT = Y_PRJ_SATIR(secim, m, dp, pf, ih, an(n))
+            If mSH.Exists(secim & "|" & m) Then blok(n, 7 + nh) = CDbl(mSH(secim & "|" & m))
+            blok(n, 6 + nh) = s: blok(n, 8 + nh) = pf: blok(n, 9 + nh) = ih
+            blok(n, nc) = nT
+        Else
+            k = 0: s = 0: p = 0
+            For Each w In mPL
+                k = k + Y_PD(mPK, CStr(w) & "|" & m): s = s + Y_PD(mPS, CStr(w) & "|" & m): p = p + Y_PD(mPP, CStr(w) & "|" & m)
+            Next w
+            hv = 0
+            For Each w In yuk.keys: hv = hv + Y_PRJ_HAVUZ(CStr(w), m): Next w
+            d2 = Y_PD(mDS, "D002|" & m)
+            sq = Y_PD(mSD, m)
+            ih = k - s - p - hv - d2
+            blok(n, 4) = k: blok(n, 5) = s: blok(n, 6) = p: blok(n, 7) = hv: blok(n, 8) = d2: blok(n, 9) = sq: blok(n, 10) = ih - sq
+            blok(n, 11) = Round((ih - sq) * f, 2)
+            blok(n, 12) = Y_PRJ_NOT(m, ih, sq)
+            ' Sira: satin al (tutar), sipariste, gereksiz siparis, fazla, tamam
+            If ih - sq > 0.0000001 Then
+                an(n) = 4000000000# + (ih - sq) * f
+            ElseIf ih > 0.0000001 Then
+                an(n) = 3000000000# + ih * f
+            ElseIf sq > 0.0000001 Then
+                an(n) = 2000000000# + sq * f
+            ElseIf ih < -0.0000001 Then
+                an(n) = 1000000000# - ih * f
+            Else
+                an(n) = 0
+            End If
+        End If
+    Next x
+    ' Sira: once eksikler (tutara gore), sonra fazlalar, sonra tamam
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If an(sira(j)) > an(sira(i)) Then tmp = sira(i): sira(i) = sira(j): sira(j) = tmp
+        Next j
+    Next i
+    Dim cikti() As Variant
+    ReDim cikti(1 To n, 1 To nc)
+    For i = 1 To n
+        For c = 1 To nc: cikti(i, c) = blok(sira(i), c): Next c
+    Next i
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).NumberFormat = "@"
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, nc)).Value2 = cikti
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 15))
+    ws.Range(ws.Cells(a1, 2), ws.Cells(a1 + n - 1, 2)).ShrinkToFit = True
+    If nc = 15 Then ws.Range(ws.Cells(a1, nc), ws.Cells(a1 + n - 1, nc)).ShrinkToFit = True
+    ' Saha giris sutunu (sari, kilitsiz): degisince kaydedilir ve sayfa yeniden hesaplanir (Y_SAHA_DEGISIM).
+    If ks > 0 Then
+        Y_GIRIS_HUCRE ws.Range(ws.Cells(a1, ks), ws.Cells(a1 + n - 1, ks))
+        ws.Range("BX26").Value2 = ks: ws.Range("BX27").Value2 = a1: ws.Range("BX28").Value2 = a1 + n - 1
+    End If
+    If Len(secim) > 0 Then
+        Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, nc - 1))
+    Else
+        Y_PRJ_MIK ws.Range(ws.Cells(a1, 4), ws.Cells(a1 + n - 1, 10))
+        ws.Range(ws.Cells(a1, 11), ws.Cells(a1 + n - 1, 11)).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
+    End If
+    ws.Range(ws.Cells(a1, 1), ws.Cells(a1 + n - 1, 1)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 3), ws.Cells(a1 + n - 1, 3)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, nc), ws.Cells(a1 + n - 1, nc)).IndentLevel = 1
+    ws.Range(ws.Rows(a1), ws.Rows(a1 + n - 1)).RowHeight = 19
+    Set rr = ws.Range(ws.Cells(a1, nc), ws.Cells(a1 + n - 1, nc))
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Satın al", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(185, 28, 28): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Stok yetmez", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(185, 28, 28): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Fazla", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(180, 83, 9): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Keşif aşıldı", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(126, 34, 206): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Tamam", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(21, 128, 61)
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Havuz", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="D002", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Siparişte", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(29, 78, 216): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="Sipariş gereksiz", TextOperator:=xlBeginsWith)
+        .Font.Color = RGB(126, 34, 206): .Font.bold = True
+    End With
+    With rr.FormatConditions.Add(Type:=xlTextString, String:="GECİKMİŞ", TextOperator:=xlContains)
+        .Interior.Color = RGB(254, 243, 199)
+    End With
+    ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(a1 + n - 1, nc)).AutoFilter
+    Y_PRJ_DETAY_YAZ = a1 + n - 1
+End Function
+
+Public Sub AKSORA_YATIRIM_PRJ_SEC()
+    Dim ws As Worksheet, s As Shape, t As String, ev As Boolean, sc As Boolean
+    On Error GoTo Hata
+    Set ws = ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    Set s = ws.Shapes("Y_PRJ_SECIM")
+    If s.ControlFormat.Value <= 1 Then t = "" Else t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False: application.ScreenUpdating = False
+    ws.Unprotect ""
+    ws.Range("BX24").Value2 = t
+    Y_HAKEDIS_KUR CStr(ws.Range("BX22").Value2)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then Y_KORU ws
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    MsgBox hM, vbExclamation, "AKSORA"
+End Sub
+
+' SAP MB51 (/AKSORA_PRJ) okunur, _Y_PRJ_<IL> kaydina yazilir, sayfa yenilenir.
+Public Sub AKSORA_YATIRIM_PRJ_SAP()
+    Dim il As String, v As Variant, bilgi As String, kart As Boolean, g As Worksheet, n As Long, ev As Boolean
+    Dim sv As Variant, sBilgi As String, hN As Long, hS As String
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    If AKSORA_V11_MESGUL Then Exit Sub
+    il = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_HAKEDİŞ").Range("BX22").Value2)))
+    If Len(il) = 0 Then il = Y_AKTIF_IL()
+    If MsgBox(Y_IL_ADI(il) & " projeleri için SAP MB51 okunacak:" & vbCrLf & vbCrLf & _
+        "Üretim yeri " & AKSORA_IL_TESIS(il, "EPP") & "  •  D002 ve yüklenici depoları  •  " & Format$(DateSerial(Year(Date), 1, 1), "dd.mm.yyyy") & _
+        " - bugün  •  bütün hareketler  •  düzen /AKSORA_PRJ" & vbCrLf & _
+        "Ardından açık siparişler (ME2N, teslim alınmamış) okunur." & vbCrLf & vbCrLf & "SAP EPP oturumu açık olmalı. Devam edilsin mi?", _
+        vbQuestion + vbYesNo, "AKSORA | PROJE MALZEME TAKİBİ") <> vbYes Then Exit Sub
+    ev = application.EnableEvents
+    kart = AKSORA_BEKLE_AC("AKSORA  |  PROJE MALZEME TAKİBİ", "SAP MB51 okunuyor...", 0.15)
+    On Error GoTo Hata
+    v = AKSORA_PRJ_MB51_OKU(il, bilgi)
+    ' Acik siparisler: okunamazsa onceki kayit korunur, MB51 sonucu yine kaydedilir.
+    If kart Then AKSORA_BEKLE_ILERLE 0.6, "Açık siparişler okunuyor (ME2N)..."
+    On Error Resume Next
+    sv = AKSORA_PRJ_ME2N_OKU(il, sBilgi)
+    hN = Err.Number: hS = Err.Description
+    Err.Clear
+    On Error GoTo Hata
+    If hN <> 0 Then sBilgi = "ME2N okunamadı, önceki kayıt korundu: " & hS
+    If kart Then AKSORA_BEKLE_ILERLE 0.8, "Kaydediliyor ve hesaplanıyor..."
+    If IsArray(v) Then n = UBound(v, 1)
+    If n = 0 Then
+        If kart Then AKSORA_BEKLE_KAPAT
+        kart = False
+        MsgBox "SAP MB51 listesinden hareket satırı alınamadı (" & bilgi & ")." & vbCrLf & vbCrLf & _
+            "Önceki proje kaydı korundu, sayfa değişmedi." & vbCrLf & _
+            "Tekrar deneyin; yine olursa AKSORA_SAP_TESHİS.txt dosyasını gönderin:" & vbCrLf & AKSORA_KAYIT_KLASORU(), _
+            vbExclamation, "AKSORA | PROJE MALZEME TAKİBİ"
+    End If
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set g = Y_KAYIT_SAYFA("_Y_PRJ_" & il)
+    If n > 0 Then g.Cells.Clear
+    If n > 0 Then g.Range("A1:F1").Value2 = Array("PRJ_V1", il, CDbl(Now), n, CDbl(DateSerial(Year(Date), 1, 1)), CDbl(Date))
+    If n > 0 Then
+        g.Range("A2:G" & n + 1).NumberFormat = "@"
+        g.Range("K2:O" & n + 1).NumberFormat = "@"
+        g.Range("A2").Resize(n, 15).Value2 = v
+    End If
+    If hN = 0 Then
+        Set g = Y_KAYIT_SAYFA("_Y_SAS_" & il)
+        g.Cells.Clear
+        n = 0
+        If IsArray(sv) Then n = UBound(sv, 1)
+        g.Range("A1:C1").Value2 = Array("SAS_V1", CDbl(Now), n)
+        If n > 0 Then
+            g.Range("A2:E" & n + 1).NumberFormat = "@"
+            g.Range("G2:G" & n + 1).NumberFormat = "@"
+            g.Range("J2:J" & n + 1).NumberFormat = "@"
+            g.Range("L2:L" & n + 1).NumberFormat = "@"
+            g.Range("A2").Resize(n, 12).Value2 = sv
+        End If
+    End If
+    Y_HAKEDIS_KUR il
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If kart Then AKSORA_BEKLE_KAPAT
+    If n > 0 Then MsgBox "Proje hareketleri okundu." & vbCrLf & vbCrLf & bilgi & vbCrLf & sBilgi, vbInformation, "AKSORA | PROJE MALZEME TAKİBİ"
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    If kart Then AKSORA_BEKLE_KAPAT
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Y_KORU ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    On Error GoTo 0
+    MsgBox "SAP okunamadı: " & hM, vbExclamation, "AKSORA | PROJE MALZEME TAKİBİ"
+End Sub
+
+' Keşif matrisi: bir satirda PYP kodlari (Y2608.II/06 gibi), altinda (varsa) proje adlari, solda malzeme kodu.
+' Donus: okunan (PYP, malzeme) sayisi. d: "PYP|malzeme" -> Array(miktar, tanim); adlar: PYP -> proje adi.
+Private Function Y_KESIF_MATRIS(ByVal v As Variant, ByVal d As Object, ByVal adlar As Object, ByRef bilgi As String) As Long
+    Dim nr As Long, nc As Long, r As Long, c As Long, hr As Long, en As Long, say As Long, mc As Long, tc As Long, kod As String
+    Dim pc() As Long, np As Long, x As Double, adR As Long, a As Variant, j As Long, k As String
+    If Not IsArray(v) Then Exit Function
+    nr = UBound(v, 1): nc = UBound(v, 2)
+    For r = 1 To application.Min(10, nr)
+        say = 0
+        For c = 1 To nc
+            If Not IsError(v(r, c)) Then If Y_PRJ_PYP_MI(CStr(v(r, c))) Then say = say + 1
+        Next c
+        If say > en Then en = say: hr = r
+    Next r
+    If hr = 0 Then Exit Function
+    ReDim pc(1 To en)
+    For c = 1 To nc
+        If Not IsError(v(hr, c)) Then If Y_PRJ_PYP_MI(CStr(v(hr, c))) Then np = np + 1: pc(np) = c
+    Next c
+    en = 0
+    For c = 1 To application.Min(6, pc(1) - 1)
+        say = 0
+        For r = hr + 1 To application.Min(nr, hr + 400)
+            kod = Y_KOD_NORM(v(r, c))
+            If Len(kod) >= 7 And Len(kod) <= 12 And kod Like String$(Len(kod), "#") Then say = say + 1
+        Next r
+        If say > en Then en = say: mc = c
+    Next c
+    If mc = 0 Or en < 3 Then Exit Function
+    If mc + 1 < pc(1) Then tc = mc + 1
+    ' Ad satiri: PYP satirinin alti metinse
+    If hr < nr Then
+        If Not IsError(v(hr + 1, pc(1))) Then
+            kod = Y_KOD_NORM(v(hr + 1, mc))
+            If VarType(v(hr + 1, pc(1))) = vbString And Not (Len(kod) >= 7 And kod Like String$(Len(kod), "#")) Then adR = hr + 1
+        End If
+    End If
+    For j = 1 To np
+        k = UCase$(Trim$(CStr(v(hr, pc(j)))))
+        If adR > 0 Then If Not IsError(v(adR, pc(j))) Then adlar(k) = Trim$(CStr(v(adR, pc(j))))
+        If Not adlar.Exists(k) Then adlar(k) = ""
+    Next j
+    For r = hr + 1 To nr
+        kod = Y_KOD_NORM(v(r, mc))
+        If Len(kod) >= 7 And Len(kod) <= 12 And kod Like String$(Len(kod), "#") Then
+            For j = 1 To np
+                If Y_SAYI_DENE(v(r, pc(j)), x) Then
+                    If x <> 0 Then
+                        k = UCase$(Trim$(CStr(v(hr, pc(j))))) & "|" & kod
+                        If d.Exists(k) Then
+                            a = d(k): a(0) = a(0) + x: d(k) = a
+                        Else
+                            d(k) = Array(x, IIf(tc > 0, Trim$(CStr(v(r, tc))), ""))
+                            Y_KESIF_MATRIS = Y_KESIF_MATRIS + 1
+                        End If
+                    End If
+                End If
+            Next j
+        End If
+    Next r
+    bilgi = np & " proje sütunu (satır " & hr & "), malzeme " & Y_SUTUN(mc) & " sütunu"
+End Function
+
+' Keşif Excel'i: proje sutunlu matris (PROJE ENVANTER) ya da tek proje listesi (malzeme + miktar).
+' Dosyadaki projelerin eski keşfi silinir, yenisi yazilir; diger projeler korunur.
+Public Sub AKSORA_YATIRIM_KESIF_YUKLE()
+    Dim f As Variant, wb As Workbook, sh As Worksheet, d As Object, adlar As Object, en As Object, enA As Object, bilgi As String
+    Dim n As Long, enN As Long, enB As String, il As String, g As Worksheet, v As Variant, r As Long, son As Long, k As Variant
+    Dim yeni() As Variant, m As Long, guv As Long, sc As Boolean, ev As Boolean, da As Boolean, p As String, a As Variant
+    Dim tek As Object, pyp As String, ad As String, dosya As String, cnt As Long
+    If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
+    On Error GoTo Hata
+    il = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_HAKEDİŞ").Range("BX22").Value2)))
+    If Len(il) = 0 Then il = Y_AKTIF_IL()
+    f = application.GetOpenFilename("Excel (*.xlsx;*.xlsm;*.xls;*.xlsb),*.xlsx;*.xlsm;*.xls;*.xlsb", , "Keşif dosyasını seçin (proje sütunlu ya da tek proje)")
+    If VarType(f) = vbBoolean Then Exit Sub
+    dosya = Mid$(CStr(f), InStrRev(CStr(f), application.PathSeparator) + 1)
+    sc = application.ScreenUpdating: ev = application.EnableEvents: da = application.DisplayAlerts
+    application.ScreenUpdating = False: application.EnableEvents = False: application.DisplayAlerts = False
+    application.StatusBar = "AKSORA | Keşif okunuyor..."
+    guv = application.AutomationSecurity
+    application.AutomationSecurity = msoAutomationSecurityForceDisable
+    Set wb = Workbooks.Open(Filename:=CStr(f), ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+    application.AutomationSecurity = guv: guv = 0
+    For Each sh In wb.Worksheets
+        Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+        Set adlar = CreateObject("Scripting.Dictionary"): adlar.CompareMode = vbTextCompare
+        bilgi = vbNullString
+        n = Y_KESIF_MATRIS(sh.UsedRange.Value2, d, adlar, bilgi)
+        If n > enN Then enN = n: Set en = d: Set enA = adlar: enB = sh.Name & ": " & bilgi
+    Next sh
+    If enN = 0 Then
+        ' Tek proje listesi
+        For Each sh In wb.Worksheets
+            Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+            n = Y_PROJE_TARA(sh.UsedRange.Value2, d, bilgi)
+            If n > enN Then enN = n: Set tek = d: enB = sh.Name & ": " & bilgi
+        Next sh
+    End If
+    wb.Close SaveChanges:=False: Set wb = Nothing
+    application.StatusBar = False
+    application.ScreenUpdating = sc: application.EnableEvents = ev: application.DisplayAlerts = da
+    If enN = 0 Then
+        MsgBox "Dosyada keşif bulunamadı." & vbCrLf & vbCrLf & _
+            "Proje sütunlu düzen: bir satırda PYP kodları (Y2608.II/06 gibi), solda malzeme kodu." & vbCrLf & _
+            "Tek proje: 'Malzeme' ve 'Miktar' başlıklı liste.", vbExclamation, "AKSORA | KEŞİF"
+        Exit Sub
+    End If
+    If Not tek Is Nothing Then
+        pyp = UCase$(Trim$(InputBox("Bu keşif hangi projeye ait?" & vbCrLf & "PYP kodunu yazın (örnek: Y2608.II/06):", "AKSORA | KEŞİF")))
+        If Not Y_PRJ_PYP_MI(pyp) Then MsgBox "Geçerli bir PYP kodu girilmedi; keşif yüklenmedi.", vbExclamation, "AKSORA | KEŞİF": Exit Sub
+        ad = Trim$(InputBox("Proje adı (isteğe bağlı):", "AKSORA | KEŞİF"))
+        Set en = CreateObject("Scripting.Dictionary"): Set enA = CreateObject("Scripting.Dictionary")
+        For Each k In tek.keys
+            a = tek(k): en(pyp & "|" & CStr(k)) = Array(CDbl(a(2)), CStr(a(0)))
+        Next k
+        enA(pyp) = ad
+    End If
+    If MsgBox(enA.Count & " projenin keşfi yüklenecek (" & en.Count & " proje-malzeme satırı)." & vbCrLf & _
+        "Bu projelerin önceki keşfi silinip yenisi yazılacak; diğer projeler korunur." & vbCrLf & vbCrLf & enB & vbCrLf & vbCrLf & _
+        "Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | KEŞİF") <> vbYes Then Exit Sub
+    application.ScreenUpdating = False: application.EnableEvents = False
+    ' Kayit yeniden yazilir: diger iller / projeler korunur
+    Set g = Y_KAYIT_SAYFA("_Y_KESIF")
+    son = AKSORA_SON_SATIR(g, 1)
+    ReDim yeni(1 To application.Max(1, son) + en.Count + enA.Count, 1 To 5)
+    If son >= 1 And Len(CStr(g.Cells(1, 1).Value2)) > 0 Then
+        v = g.Range("A1:E" & son).Value2
+        For r = 1 To UBound(v, 1)
+            p = UCase$(Trim$(CStr(v(r, 2))))
+            If Not ((CStr(v(r, 1)) = il Or CStr(v(r, 1)) = "#" & il) And enA.Exists(p)) Then
+                m = m + 1
+                yeni(m, 1) = v(r, 1): yeni(m, 2) = v(r, 2): yeni(m, 3) = v(r, 3): yeni(m, 4) = v(r, 4): yeni(m, 5) = v(r, 5)
+            End If
+        Next r
+    End If
+    For Each k In enA.keys
+        m = m + 1
+        yeni(m, 1) = "#" & il: yeni(m, 2) = CStr(k): yeni(m, 3) = CStr(enA(k)): yeni(m, 4) = dosya: yeni(m, 5) = Format$(Now, "dd.mm.yyyy hh:nn")
+    Next k
+    For Each k In en.keys
+        m = m + 1: a = en(k)
+        yeni(m, 1) = il: yeni(m, 2) = Split(CStr(k), "|")(0): yeni(m, 3) = Split(CStr(k), "|")(1): yeni(m, 4) = a(0): yeni(m, 5) = a(1)
+        cnt = cnt + 1
+    Next k
+    g.Cells.Clear
+    g.Range("A1:C" & m).NumberFormat = "@"
+    g.Range("A1").Resize(m, 5).Value2 = yeni
+    Y_HAKEDIS_KUR il
+    application.ScreenUpdating = True: application.EnableEvents = ev
+    MsgBox "Keşif yüklendi: " & enA.Count & " proje, " & cnt & " proje-malzeme satırı." & vbCrLf & dosya, vbInformation, "AKSORA | KEŞİF"
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    If guv <> 0 Then application.AutomationSecurity = guv
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    application.StatusBar = False
+    application.ScreenUpdating = True: application.EnableEvents = True: application.DisplayAlerts = True
+    Y_KORU ThisWorkbook.Worksheets("Y_HAKEDİŞ")
+    On Error GoTo 0
+    MsgBox "Keşif okunamadı: " & hM, vbExclamation, "AKSORA | KEŞİF"
+End Sub
+
