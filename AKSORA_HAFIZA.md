@@ -832,6 +832,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-13: Ekran görüntüleri birim sırasıyla (T_EkranSira: giriş, Malzeme, Yatırım, Müşteri, İlçe, Admin; il seçimi → ana panel → sekmeler), dosya adında birim. Olay kapalı olduğundan sayfa düzeni elle çağrılır: Y_/I_ → AKSORA_YATIRIM_GORUNUM (rapor DM bölümü toparlanır), diğer → AKSORA_EKRAN_SIGDIR. Malzeme stok sayfalarında "Üretim Yeri"/"Değerleme Türü" başlıkları kesilmesin: A=15, F=19, H=44 (T_StokYap + XML).
 
+- 2026-11-13: Akıllı arama (modAKSORA_SISTEM AKSORA_AKILLI_SOZCUK/HAZIRLA/ESLES): sözcükler sırasız, harf/rakam ayrılır (0050kVA → 50 KVA), baştaki sıfırlar atılır, sayı tam eşleşir, yazı sözcük başı; TRAFO=TRF. Eski Like eşleşmesi korunur, akıllı ek olarak denenir. Malzeme arama (IL_ARAMA) ve Müşteri/Yatırım/İlçe arama (M_AKILLI).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

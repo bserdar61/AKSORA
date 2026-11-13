@@ -914,6 +914,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     Dim ev As Boolean, sc As Boolean, hataMetni As String, il As Variant, i As Long, ekran As String
     Dim yat As Boolean, sayfalar As Variant, etiketler As Variant, k As Long, gec As Long, dahil As Boolean, ilc As Boolean
     Dim ac As Boolean, aranan As String, adimNo As Long, adimSay As Long, kapsam As String, iller As Variant
+    Dim akilli As Variant, esles As Boolean
     ev = application.EnableEvents: sc = application.ScreenUpdating
     On Error GoTo Hata
     Set ws = AKSORA_ARAMA_SAYFASI()
@@ -934,6 +935,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ' Turkce harfler (i/I/Ý/ý, þ/s ...) ayni sayilir: "iletken" SAP'deki "ILETKEN"i bulur.
     aranan = q
     q = AKSORA_ARAMA_DESEN(q)
+    akilli = AKSORA_AKILLI_HAZIRLA(aranan)
     ' Bes il ve arsivler taranir (seri numarali stoklarda uzun surebilir): bekleme karti.
     ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME ARAMA", "Aranýyor: " & aranan, 0.05)
     application.EnableEvents = False: application.ScreenUpdating = False
@@ -981,7 +983,9 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
         If IsArray(veri) Then
             For r = 1 To UBound(veri, 1)
                 If (r And 4095) = 0 Then AKSORA_BEKLE_NABIZ
-                If M_ESLESIR(veri(r, 5), q) Or M_ESLESIR(veri(r, 6), q) Or M_ESLESIR(veri(r, 10), q) Then
+                esles = M_ESLESIR(veri(r, 5), q) Or M_ESLESIR(veri(r, 6), q) Or M_ESLESIR(veri(r, 10), q)
+                If Not esles Then esles = M_AKILLI(veri(r, 5), veri(r, 6), akilli)
+                If esles Then
                     n = n + 1
                     If n > UBound(buffer, 2) Then ReDim Preserve buffer(1 To 14, 1 To UBound(buffer, 2) + 500)
                     For c = 1 To 11: buffer(c, n) = veri(r, c): Next c
@@ -1048,6 +1052,13 @@ Hata:
     hataMetni = Err.Description
     Resume Cikis
 End Sub
+
+Private Function M_AKILLI(ByVal kod As Variant, ByVal tanim As Variant, ByVal akilli As Variant) As Boolean
+    Dim t As String
+    If Not IsError(kod) And Not IsEmpty(kod) Then t = CStr(kod)
+    If Not IsError(tanim) And Not IsEmpty(tanim) Then t = t & " " & CStr(tanim)
+    If Len(t) > 0 Then M_AKILLI = AKSORA_AKILLI_ESLES(t, akilli)
+End Function
 
 Private Function M_ESLESIR(ByVal v As Variant, ByVal q As String) As Boolean
     If IsError(v) Or IsEmpty(v) Then Exit Function

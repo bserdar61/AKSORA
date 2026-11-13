@@ -226,7 +226,7 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     Dim hataMetni As String, adim As String, bas As Double
     Dim iptal As XlEnableCancelKey, imlec As XlMousePointer
     Dim depolar As Object, mevcutIller As Object
-    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation, desen As String, ac As Boolean
+    Dim scr As Boolean, ev As Boolean, hesap As XlCalculation, desen As String, ac As Boolean, akilli As Variant, esles As Boolean
     If mAramaCalisiyor Then Exit Sub
     Set hedef = ThisWorkbook.Worksheets(sayfa)
     terim = Trim$(CStr(hedef.Range("B6").Value2))
@@ -241,6 +241,8 @@ Public Sub AKSORA_IL_ARAMA_YAP()
     iptal = application.EnableCancelKey: imlec = application.Cursor
     ' Turkce harfler (i/I/İ/ı, ş/s ...) ve buyuk/kucuk harf ayni sayilir.
     desen = AKSORA_ARAMA_DESEN(terim)
+    ' Akilli arama: "50 kva trafo" gibi sozcukler sirasiz ve 0050 = 50 kabul edilerek de aranir.
+    akilli = AKSORA_AKILLI_HAZIRLA(terim)
     ac = AKSORA_BEKLE_AC("AKSORA  |  MALZEME ARAMA", "Aranıyor: " & terim, 0.05)
     bas = Timer
     On Error GoTo Hata
@@ -269,7 +271,9 @@ Public Sub AKSORA_IL_ARAMA_YAP()
                         For i = 1 To UBound(veri, 1)
                             If (i And 4095) = 0 Then AKSORA_BEKLE_NABIZ
                             kod = CStr(veri(i, 7))
-                            If kod Like desen Or CStr(veri(i, 8)) Like desen Then
+                            esles = (kod Like desen) Or (CStr(veri(i, 8)) Like desen)
+                            If Not esles Then esles = AKSORA_AKILLI_ESLES(kod & " " & CStr(veri(i, 8)), akilli)
+                            If esles Then
                                 n = n + 1
                                 If n > kapasite Then
                                     kapasite = kapasite * 2

@@ -430,6 +430,66 @@ Public Sub AKSORA_SAYI_BICIMLERINI_YENILE()
 End Sub
 
 ' Arama deseni: Turkce harf esdegerleri (i/I/Ý/ý, s/þ, g/ð, u/ü, o/ö, c/ç) ve buyuk/kucuk harf ayni sayilir.
+' AKILLI ARAMA: "50 kva trafo" -> "TRAFO OG/AG 0050kVA 33/0,4kV" bulunur. Metin sozcuklere ayrilir (harf / rakam
+' gecislerinde de: 0050kVA -> 50 KVA), Turkce harfler sadelesir (agac = AÐAÇ), sayilarin bastaki sifirlari atilir (0050 = 50).
+' Aranan her sozcuk metinde olmali, sira onemsiz: sayi tam sayi olarak (50, 500'u bulmaz), yazi sozcuk basi olarak (TRAF -> TRAFO).
+Public Function AKSORA_AKILLI_SOZCUK(ByVal t As String) As String
+    Dim i As Long, ch As String, tur As Long, onceki As Long, cur As String, sonuc As String
+    t = UCase$(t)
+    t = Replace(t, "Ý", "I"): t = Replace(t, "ý", "I"): t = Replace(t, "Þ", "S"): t = Replace(t, "Ð", "G")
+    t = Replace(t, "Ü", "U"): t = Replace(t, "Ö", "O"): t = Replace(t, "Ç", "C")
+    t = Replace(t, "þ", "S"): t = Replace(t, "ð", "G"): t = Replace(t, "ü", "U"): t = Replace(t, "ö", "O"): t = Replace(t, "ç", "C")
+    For i = 1 To Len(t) + 1
+        If i <= Len(t) Then ch = Mid$(t, i, 1) Else ch = " "
+        If ch Like "[A-Z]" Then
+            tur = 1
+        ElseIf ch Like "#" Then
+            tur = 2
+        Else
+            tur = 0
+        End If
+        If tur <> onceki And Len(cur) > 0 Then
+            If onceki = 2 Then
+                Do While Len(cur) > 1 And Left$(cur, 1) = "0": cur = Mid$(cur, 2): Loop
+            End If
+            sonuc = sonuc & " " & cur
+            cur = vbNullString
+        End If
+        If tur > 0 Then cur = cur & ch
+        onceki = tur
+    Next i
+    AKSORA_AKILLI_SOZCUK = sonuc & " "
+End Function
+
+' Aranan metnin sozcukleri (bir kez hazirlanir).
+Public Function AKSORA_AKILLI_HAZIRLA(ByVal q As String) As Variant
+    AKSORA_AKILLI_HAZIRLA = Split(Trim$(AKSORA_AKILLI_SOZCUK(q)), " ")
+End Function
+
+Public Function AKSORA_AKILLI_ESLES(ByVal metin As String, ByVal sozcukler As Variant) As Boolean
+    Dim m As String, x As Variant
+    If Not IsArray(sozcukler) Then Exit Function
+    If UBound(sozcukler) < 0 Then Exit Function
+    m = AKSORA_AKILLI_SOZCUK(metin)
+    For Each x In sozcukler
+        If Len(x) > 0 Then
+            If x Like "#*" Then
+                If InStr(1, m, " " & x & " ", vbBinaryCompare) = 0 Then Exit Function
+            ElseIf InStr(1, m, " " & x, vbBinaryCompare) = 0 Then
+                ' SAP kisaltmasi: TRAFO = TRF
+                If x = "TRAFO" Then
+                    If InStr(1, m, " TRF ", vbBinaryCompare) = 0 Then Exit Function
+                ElseIf x = "TRF" Then
+                    If InStr(1, m, " TRAFO", vbBinaryCompare) = 0 Then Exit Function
+                Else
+                    Exit Function
+                End If
+            End If
+        End If
+    Next x
+    AKSORA_AKILLI_ESLES = True
+End Function
+
 ' Kullanim: metin Like AKSORA_ARAMA_DESEN(aranan)  (aranan metnin herhangi bir yerde gecmesi).
 Public Function AKSORA_ARAMA_DESEN(ByVal q As String) As String
     Dim i As Long, ch As String, d As String
