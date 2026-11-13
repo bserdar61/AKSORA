@@ -307,7 +307,9 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     ' Veri baslangici 7. satirda kalir. Gizlenen 3-5 satirlardaki kaynaklar korunur.
     ' Tablo pencereye tam oturur (son sutun pencere kenarina kadar uzar).
     ' "Uretim Yeri" basligi filtre okunun altinda kesilmesin.
-    If ws.Columns(1).ColumnWidth < 12 Then ws.Columns(1).ColumnWidth = 12
+    If ws.Columns(1).ColumnWidth < 15 Then ws.Columns(1).ColumnWidth = 15
+    If ws.Columns(6).ColumnWidth < 19 Then ws.Columns(6).ColumnWidth = 19
+    If ws.Columns(8).ColumnWidth > 46 Then ws.Columns(8).ColumnWidth = 44
     T_TamGenislik ws, 12
     ws.Rows(1).RowHeight = 32: ws.Rows(2).RowHeight = 46
     ws.Rows("3:5").Hidden = True: ws.Rows(6).RowHeight = 25
@@ -2816,58 +2818,79 @@ End Function
 ' masaustunde tek klasore kaydedilir. Gizli sayfalar gecici gosterilir, sonra eski haline doner; kayit sayfalari (_) alinmaz.
 ' Calistirma: Alt+F8 > AKSORA_EKRAN_GORUNTULERI.
 Public Sub AKSORA_EKRAN_GORUNTULERI()
-    Dim ws As Worksheet, bas As Worksheet, klasor As String, n As Long, top As Long, i As Long, hata As String
+    Dim ws As Worksheet, bas As Worksheet, klasor As String, n As Long, top As Long, i As Long, j As Long, hata As String
     Dim rg As Range, tmp As Workbook, ch As ChartObject, yol As String, gor As XlSheetVisibility, ev As Boolean, ac As Boolean
-    If MsgBox("AKSORA'nýn bütün sayfalarýnýn ekran görüntüsü alýnacak (her sayfa ekranda göründüðü gibi, JPG, küçük boyut)." & vbCrLf & _
+    Dim ad() As String, an() As Double, tmpS As String, tmpD As Double, grup As String
+    If MsgBox("AKSORA'nýn bütün sayfalarýnýn ekran görüntüsü alýnacak (birim birim sýrayla, JPG)." & vbCrLf & _
         "Dosyalar masaüstünde tek klasöre kaydedilir. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | EKRAN GÖRÜNTÜLERÝ") <> vbYes Then Exit Sub
     Set bas = ActiveSheet
     klasor = AKSORA_MASAUSTU() & application.PathSeparator & AKSORA_DOSYA_ADI("AKSORA Ekran Goruntuleri " & Format$(Now, "yyyy-mm-dd hh.nn"))
     If Not AKSORA_KLASOR_HAZIRLA(klasor) Then MsgBox "Klasör oluþturulamadý: " & klasor, vbExclamation, "AKSORA": Exit Sub
+    ' Sira: birim secimi, Malzeme, Yatirim, Musteri, Ilce, Admin; her birimde il secimi, ana panel, sonra sekme sirasi.
     For Each ws In ThisWorkbook.Worksheets
-        If T_EkranAlinir(ws) Then top = top + 1
+        If T_EkranAlinir(ws) Then
+            top = top + 1
+            ReDim Preserve ad(1 To top): ReDim Preserve an(1 To top)
+            ad(top) = ws.Name: an(top) = T_EkranSira(ws.Name) * 1000# + ws.Index
+        End If
     Next ws
+    If top = 0 Then Exit Sub
+    For i = 1 To top - 1
+        For j = i + 1 To top
+            If an(j) < an(i) Then
+                tmpD = an(i): an(i) = an(j): an(j) = tmpD
+                tmpS = ad(i): ad(i) = ad(j): ad(j) = tmpS
+            End If
+        Next j
+    Next i
     ev = application.EnableEvents
     application.EnableEvents = False
     ac = AKSORA_BEKLE_AC("AKSORA  |  EKRAN GÖRÜNTÜLERÝ", "Sayfalar hazýrlanýyor...", 0.02)
     Set tmp = Workbooks.Add(xlWBATWorksheet)
     ThisWorkbook.Activate
-    For Each ws In ThisWorkbook.Worksheets
-        If T_EkranAlinir(ws) Then
-            i = i + 1
-            If ac Then AKSORA_BEKLE_ILERLE 0.02 + 0.96 * i / top, i & " / " & top & "  •  " & ws.Name
-            yol = vbNullString
-            On Error Resume Next
-            Err.Clear
-            gor = ws.Visible
-            If gor <> xlSheetVisible Then ws.Visible = xlSheetVisible
-            ws.Activate
-            application.ScreenUpdating = True
-            DoEvents
-            ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
-            Set rg = T_EkranAlan(ws)
-            rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
-            If Err.Number = 0 Then
-                yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".jpg"
-                tmp.Activate
-                Set ch = tmp.Worksheets(1).ChartObjects.Add(0, 0, rg.Width, rg.Height)
-                ch.Activate
-                ch.Chart.Paste
-                ch.Chart.Export Filename:=yol, FilterName:="JPG"
-                ch.Delete
-                ThisWorkbook.Activate
-            End If
-            If Err.Number <> 0 Or Len(yol) = 0 Then
-                hata = hata & IIf(Len(hata) > 0, ", ", "") & ws.Name
-            ElseIf Len(Dir$(yol)) = 0 Then
-                hata = hata & IIf(Len(hata) > 0, ", ", "") & ws.Name
-            Else
-                n = n + 1
-            End If
-            If gor <> xlSheetVisible Then ws.Visible = gor
-            Err.Clear
-            On Error GoTo 0
+    For i = 1 To top
+        Set ws = ThisWorkbook.Worksheets(ad(i))
+        grup = Choose(Int(an(i) / 10000#) + 1, "0 GIRIS", "1 MALZEME", "2 YATIRIM", "3 MUSTERI", "4 ILCE", "5 ADMIN")
+        If ac Then AKSORA_BEKLE_ILERLE 0.02 + 0.96 * i / top, i & " / " & top & "  •  " & ws.Name
+        yol = vbNullString
+        On Error Resume Next
+        Err.Clear
+        gor = ws.Visible
+        If gor <> xlSheetVisible Then ws.Visible = xlSheetVisible
+        ws.Activate
+        application.ScreenUpdating = True
+        ' Sayfa acilisindaki duzen (yakinlastirma, rapor bolumlerinin yerlesimi) olay kapali oldugu icin burada calistirilir.
+        If Left$(ws.Name, 2) = "Y_" Or Left$(ws.Name, 2) = "I_" Then
+            AKSORA_YATIRIM_GORUNUM ws
+        ElseIf Left$(ws.Name, 2) <> "M_" Then
+            AKSORA_EKRAN_SIGDIR ws
         End If
-    Next ws
+        Err.Clear
+        DoEvents
+        ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
+        Set rg = T_EkranAlan(ws)
+        rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
+        If Err.Number = 0 Then
+            yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & grup & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".jpg"
+            tmp.Activate
+            Set ch = tmp.Worksheets(1).ChartObjects.Add(0, 0, rg.Width, rg.Height)
+            ch.Activate
+            ch.Chart.Paste
+            ch.Chart.Export Filename:=yol, FilterName:="JPG"
+            ch.Delete
+            ThisWorkbook.Activate
+        End If
+        If Err.Number <> 0 Or Len(yol) = 0 Then
+            hata = hata & IIf(Len(hata) > 0, ", ", "") & ws.Name
+        ElseIf Len(Dir$(yol)) = 0 Then
+            hata = hata & IIf(Len(hata) > 0, ", ", "") & ws.Name
+        Else
+            n = n + 1
+        End If
+        If gor <> xlSheetVisible Then ws.Visible = gor
+        Err.Clear
+        On Error GoTo 0
+    Next i
     On Error Resume Next
     application.CutCopyMode = False
     tmp.Close SaveChanges:=False
@@ -2879,6 +2902,26 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
     MsgBox n & " sayfanýn ekran görüntüsü kaydedildi:" & vbCrLf & klasor & _
         IIf(Len(hata) > 0, vbCrLf & vbCrLf & "Alýnamayan: " & Left$(hata, 500), ""), vbInformation, "AKSORA | EKRAN GÖRÜNTÜLERÝ"
 End Sub
+
+' Ekran goruntusu sirasi: grup x 10 + birim ici sira (il secimi 0, ana panel 1, diger sayfalar 2).
+Private Function T_EkranSira(ByVal ad As String) As Long
+    Dim g As Long, k As Long
+    k = 2
+    Select Case True
+        Case ad = "BIRIM SECIM": g = 0: k = 0
+        Case ad = "ADMIN PANEL": g = 5
+        Case ad = "YATIRIM IL SECIM": g = 2: k = 0
+        Case ad = "MUSTERI IL SECIM": g = 3: k = 0
+        Case ad = "ILCE IL SECIM": g = 4: k = 0
+        Case Left$(ad, 2) = "Y_": g = 2
+        Case Left$(ad, 2) = "M_": g = 3
+        Case Left$(ad, 2) = "I_": g = 4
+        Case ad = "KAPAK": g = 1: k = 0
+        Case Else: g = 1
+    End Select
+    If k = 2 And InStr(1, ad, "ANA PANEL", vbTextCompare) > 0 Then k = 1
+    T_EkranSira = g * 10 + k
+End Function
 
 ' Ekran goruntusu alinacak sayfa: kayit sayfalari (_) ve "Islem ekranlari hazirlaniyor" yer tutucu birim sayfalari haric.
 Private Function T_EkranAlinir(ByVal ws As Worksheet) As Boolean
