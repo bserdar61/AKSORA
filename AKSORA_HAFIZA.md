@@ -826,6 +826,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-13: "Ana panel açılamadı / Hatalı stok hücresi EPP_STOK satır 48": EPP_STOK ve STOKLAR'da yalnız yatırım depolarının (D002/D011) satırları bozulmuştu (satır kopyaları, 7055 dolu satırlar, #N/A; C3/C4 formülleri sabit). Sebep: filtreli canlı stok sayfasına dizi yazımı (IL_GECIS AKG_KOPYALA) — Excel yalnız görünen satırlara yazar. Düzeltme: AKG_KOPYALA yazmadan önce ShowAllData. Veri onarımı: tools/stok_onar.py (aynı güncelleme saatli önceki dosyadan satır satır, biçimler korunur). Taban onar57.
 
+- 2026-11-13: DEMONTAJ EKSİKLERİ EXCEL'E AKTAR (I_DEM_EKSIK) ekranla aynı kurala alındı (nakil + ikame). Kural: demontaj hesabı üç yerde (ekran, defter, Excel) — birini değiştirince üçünü birden değiştir. Taban up58 (kullanıcının güncel dosyası).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

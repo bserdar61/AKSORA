@@ -6758,15 +6758,18 @@ Hata:
     MsgBox "ÝSG listesi Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
 
-' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla ayni kural, yalniz kritik malzemeler
+' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla birebir ayni kural (nakil + ikame dahil), yalniz kritik malzemeler
 ' (trafo, pano, armatur, kablo, direk, hucre). Grup: depo + uretim yeri + malzeme.
 ' Donus: Collection of Array(depo, ilce, malzeme, tanim, kategori, kullanilan, girilen, eksik, birim, eksik TL, durum, uretim yeri)
 Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal yeniT As String) As Collection
     Dim dE As Object, dY As Object, anahtar As Object, grup As Object, bilgi As Object, disi As Object, isgL As Object
     Dim depolar As Object, k As Variant, x As Variant, p() As String, gk As String, g As Variant, t As Variant
     Dim mEs As Double, mYe As Double, vEs As Double, i As Long, eksik As Double, b As Variant, ad As String
+    Dim nak As Object, dq As Double
     Set I_DEM_EKSIK = New Collection
     Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
+    ' Ekranla ayni kural: ilceler arasi nakil kullanim sayilmaz, ekipman ikamesi (I_ARMATUR_DAGIT) uygulanir.
+    Set nak = I_NAKIL(dE, dY)
     Set isgL = I_ISG_LISTE()
     Set depolar = I_DEPOLAR(il)
     Set anahtar = CreateObject("Scripting.Dictionary"): anahtar.CompareMode = vbTextCompare
@@ -6796,13 +6799,15 @@ Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal ye
                 If I_DEMONTAJ_MI(p(3)) Then
                     If mYe > mEs Then g(1) = g(1) + (mYe - mEs)
                 ElseIf mYe + 0.0005 < mEs Then
-                    g(0) = g(0) + (mEs - mYe)
-                    If mEs > 0 Then g(2) = g(2) + (mEs - mYe) * vEs / mEs
+                    dq = application.Max(0, (mEs - mYe) - I_NAKIL_D(nak, CStr(k), 0))
+                    g(0) = g(0) + dq
+                    If mEs > 0 Then g(2) = g(2) + dq * vEs / mEs
                 End If
                 grup(gk) = g
             End If
         End If
     Next k
+    I_ARMATUR_DAGIT grup
     For Each k In grup.keys
         g = grup(k)
         If g(0) > 0.0005 And g(1) + 0.0005 < g(0) Then
