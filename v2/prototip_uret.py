@@ -8,6 +8,7 @@ yani VBA'nın gerçek AKSORA sayfalarında birebir çizebileceği öğelerdir.
 Kullanım:  python3 v2/prototip_uret.py v2/AKSORA_v2_Prototip.xlsx
 Gereken :  pip install xlsxwriter
 """
+import os
 import re
 import shutil
 import sys
@@ -30,6 +31,7 @@ IC = dict(home="", search="", cart="", swap="", clock="", box="�
           doc="", down="", right="", back="", settings="", list="",
           compare="")
 
+LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aksora_logo.png")
 SW, TOP, X0, CW = 220, 64, 244, 1240          # kenar menü, üst bant, içerik sol kenarı ve genişliği (piksel)
 
 
@@ -47,13 +49,17 @@ class Sayfa:
 
     # -- şekil: etiket = köşe yarıçapı / gölge / iç boşluk bilgisi (kayıt sonrası XML'e işlenir)
     def kutu(self, x, y, w, h, metin="", dolgu=None, cizgi=None, renk=INK, boyut=10, kalin=False, yatay="left",
-             dikey="middle", font=FONT, url=None, r=0, golge=False, ic=8, ipucu=None):
+             dikey="middle", font=FONT, url=None, r=0, golge=False, ic=8, ipucu=None, alfa=0, calfa=0, yumusak=0,
+             elips=False, gecis=None, kalinlik=0.75):
         o = {"x_offset": x, "y_offset": y, "width": w, "height": h, "object_position": 3,
              "fill": {"color": dolgu} if dolgu else {"none": True},
-             "line": {"color": cizgi, "width": 0.75} if cizgi else {"none": True},
+             "line": {"color": cizgi, "width": kalinlik} if cizgi else {"none": True},
              "font": {"name": font, "size": boyut, "bold": kalin, "color": renk},
              "align": {"vertical": dikey, "horizontal": yatay},
-             "description": f"r={r};g={int(golge)};i={ic}"}
+             "description": f"r={r};g={int(golge)};i={ic};a={alfa};c={calfa};y={yumusak};e={int(elips)}"}
+        if gecis:
+            del o["fill"]
+            o["gradient"] = {"colors": gecis[0], "angle": gecis[1]}
         if url:
             o["url"] = url
         if ipucu:
@@ -65,6 +71,10 @@ class Sayfa:
 
     def kart(self, x, y, w, h):
         self.kutu(x, y, w, h, dolgu=WHITE, cizgi=LINE, r=10, golge=True)
+
+    def resim(self, yol, x, y, boyut, kaynak_boyut=360):
+        olcek = boyut / kaynak_boyut
+        self.ws.insert_image(0, 0, yol, {"x_offset": x, "y_offset": y, "x_scale": olcek, "y_scale": olcek, "object_position": 3})
 
     def grafik(self, ch, x, y, w, h):
         ch.set_size({"width": w, "height": h})
@@ -83,6 +93,7 @@ def bicimler(wb):
     ekle("top", bg_color=WHITE)
     ekle("topb", bg_color=WHITE, bottom=1, bottom_color=LINE)
     ekle("navy", bg_color=NAVY)
+    ekle("koyu", bg_color="#061426")
     ekle("th", bg_color=HEAD, font_color=INK2, bold=True, font_size=9, bottom=1, bottom_color=LINE, top=1, top_color=LINE, indent=1)
     ekle("thr", bg_color=HEAD, font_color=INK2, bold=True, font_size=9, bottom=1, bottom_color=LINE, top=1, top_color=LINE, align="right", indent=1)
     ekle("td", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", indent=1)
@@ -96,6 +107,8 @@ def bicimler(wb):
     ekle("ak", bg_color=WHITE)
     ekle("etiket", bg_color=WHITE, font_color=INK2, bold=True, font_size=9, indent=1)
     ekle("tdq", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", align="right", indent=1)
+    ekle("iki", bg_color=WHITE, text_wrap=True, bottom=1, bottom_color="#F0F3F7", indent=1)
+    ekle("pay", bg_color=WHITE, font_color=INK2, font_size=9, bottom=1, bottom_color="#F0F3F7", align="right", num_format="0.0%", indent=1)
     ekle("giris", bg_color=WHITE, font_color=INK, font_size=13, bold=True, border=1, border_color="#CBD5E1", indent=1)
     return f
 
@@ -126,7 +139,7 @@ def kabuk(s, etkin, baslik, yol, ana_eylem=None, ikincil=None, satir=60, sutunla
         ws.write_blank(r, 0, None, f["side"])
     ws.freeze_panes(3, 1)
     # --- kenar menü
-    s.kutu(18, 16, 34, 34, "A", dolgu=TEAL, renk=WHITE, boyut=15, kalin=True, yatay="center", r=9, ic=0)
+    s.resim(LOGO, 14, 12, 40)
     s.kutu(60, 12, 150, 24, "AKSORA", renk=WHITE, boyut=13, kalin=True, ic=0)
     s.kutu(60, 32, 150, 18, "Malzeme Stok Birimi", renk="#8FA3BC", boyut=8, ic=0)
     y = 70
@@ -307,36 +320,65 @@ def cizgi(wb, ilk, n, sutun_no, renk):
 
 
 def giris(wb, f):
+    """Giriş: geçişli zemin, ışıltı, büyük logo, canlı sayılar ve dört birim kartı."""
     s = Sayfa(wb, "Giriş", f)
     ws = s.ws
-    ws.set_column_pixels(0, 30, 64, f["navy"])
-    for r in range(0, 40):
-        ws.set_row_pixels(r, 24, f["navy"])
-    s.kutu(60, 40, 40, 40, "A", dolgu=TEAL, renk=WHITE, boyut=17, kalin=True, yatay="center", r=10, ic=0)
-    s.kutu(110, 36, 300, 28, "AKSORA", renk=WHITE, boyut=15, kalin=True, ic=0)
-    s.kutu(110, 60, 300, 20, "Çoruh Elektrik Dağıtım A.Ş.", renk="#9FB3CB", boyut=8.5, ic=0)
-    s.kutu(1260, 44, 170, 34, "       Yönetim merkezi", cizgi="#3B5878", renk=WHITE, boyut=9.5, kalin=True, r=8, ic=6,
-           url="internal:'Yönetim Merkezi'!A1")
-    s.simge(1266, 48, "shield", renk=WHITE, boyut=10)
-    s.kutu(60, 150, 600, 44, "Hoş geldiniz", renk=WHITE, boyut=22, kalin=True, ic=0)
-    s.kutu(60, 196, 900, 24, "Hangi birim için çalışacaksınız?   •   Son güncelleme 13.11.2026 08:44   •   5 il güncel",
-           renk="#9FB3CB", boyut=10, ic=0)
-    birimler = [("box", "Malzeme Stok", "Stok takibi, satın alma, transfer ve atıl stok kararları", "3 iş bekliyor", True),
-                ("list", "Yatırım", "Hakediş, teminat ve yüklenici stok takibi", "1 teminat uyarısı", False),
-                ("people", "Müşteri", "Seri numaralı malzeme, ilçe ve yüklenici kontrolleri", "Güncel", False),
-                ("pin", "İlçe Yönetim", "İlçe depoları, demontaj kontrolü ve İSG zimmet", "834 zimmet bekliyor", False)]
-    for i, (sim, ad, acik, durum, sec) in enumerate(birimler):
-        x = 60 + i * 346
+    ws.set_column_pixels(0, 26, 64, f["koyu"])
+    for r in range(0, 36):
+        ws.set_row_pixels(r, 24, f["koyu"])
+    W, H = 1508, 800
+    # zemin: lacivertten maviye geçiş + iki yumuşak ışıltı (marka mavisi ve yeşili)
+    s.kutu(0, 0, 1728, 864, gecis=(["#061426", "#0A2A4F", "#0B3A6B"], 35))
+    s.kutu(-140, 360, 620, 620, dolgu="#1E6FD9", elips=True, alfa=72, yumusak=90)
+    s.kutu(1010, -220, 640, 640, dolgu="#19C2A8", elips=True, alfa=80, yumusak=90)
+    s.kutu(560, 520, 520, 420, dolgu="#7BD63C", elips=True, alfa=88, yumusak=90)
+    # ince üst şerit: kurum ve yönetim merkezi
+    s.kutu(64, 34, 600, 24, "ÇORUH ELEKTRİK DAĞITIM A.Ş.   \u2022   BİRİM İŞLEM MERKEZİ", renk="#9FC2E8", boyut=9, kalin=True, ic=0)
+    s.kutu(W - 64 - 190, 26, 190, 38, "        Yönetim merkezi", dolgu=WHITE, alfa=90, cizgi=WHITE, calfa=70, renk=WHITE, boyut=9.5,
+           kalin=True, r=19, ic=6, url="internal:'Yönetim Merkezi'!A1")
+    s.simge(W - 64 - 180, 32, "shield", renk="#7BE0CF", boyut=11)
+    # sol: logo, slogan, canlı sayılar
+    s.kutu(54, 110, 260, 260, dolgu="#19C2A8", elips=True, alfa=70, yumusak=40)
+    s.resim(LOGO, 74, 130, 220)
+    s.kutu(64, 384, 620, 64, "Stok ve Verimlilik.", renk=WHITE, boyut=34, kalin=True, ic=0)
+    s.kutu(64, 448, 600, 30, "Beş ilin malzeme stoğu, satın alma ve saha kararları tek ekranda.", renk="#B8CDE6", boyut=11.5, ic=0)
+    sayilar = [("1,39 mr TL", "tekil stok değeri"), ("5 / 5", "il güncel"), ("08:44", "son güncelleme  \u2022  13.11.2026")]
+    s.kutu(64, 506, 600, 96, dolgu=WHITE, alfa=92, cizgi=WHITE, calfa=80, r=16)
+    for i, (deger, etiket) in enumerate(sayilar):
+        x = 88 + i * 196
+        if i:
+            s.kutu(x - 16, 526, 1, 56, dolgu=WHITE, alfa=80, ic=0)
+        s.kutu(x, 520, 180, 40, deger, renk=WHITE, boyut=20, kalin=True, ic=0)
+        s.kutu(x, 560, 180, 24, etiket, renk="#9FC2E8", boyut=8.5, ic=0)
+    x = 64
+    for il in ["Artvin", "Rize", "Trabzon", "Gümüşhane", "Giresun"]:
+        w = 38 + 7 * len(il)
+        s.kutu(x, 626, w, 28, "      " + il, dolgu=WHITE, alfa=92, cizgi=WHITE, calfa=82, renk="#DCE8F6", boyut=8.5, kalin=True, r=14, ic=4)
+        s.kutu(x + 12, 636, 8, 8, dolgu="#4ADE80", elips=True, ic=0)
+        x += w + 8
+    # sağ: dört birim kartı (2 x 2)
+    birimler = [("01", "box", "Malzeme Stok", "Stok takibi, satın alma, transfer ve atıl stok kararları", "3 iş bekliyor", ["#1E6FD9", "#19C2A8"], True),
+                ("02", "list", "Yatırım", "Hakediş, teminat ve yüklenici stok takibi", "1 teminat uyarısı", ["#2563EB", "#7C3AED"], False),
+                ("03", "people", "Müşteri", "Seri numaralı malzeme, ilçe ve yüklenici kontrolleri", "Güncel", ["#0EA5A4", "#22C55E"], False),
+                ("04", "pin", "İlçe Yönetim", "İlçe depoları, demontaj kontrolü ve İSG zimmet", "834 zimmet bekliyor", ["#F59E0B", "#EF4444"], False)]
+    kw, kh, x0, y0 = 356, 236, 744, 118
+    s.kutu(x0, y0 - 40, 500, 28, "Hangi birim için çalışacaksınız?", renk=WHITE, boyut=13, kalin=True, ic=0)
+    for i, (no, sim, ad, acik, durum, renkler, sec) in enumerate(birimler):
+        x, y = x0 + (i % 2) * (kw + 20), y0 + (i // 2) * (kh + 20)
         url = "internal:'Ana Panel'!A1"
-        s.kutu(x, 250, 330, 190, dolgu=WHITE if sec else "#14365C", cizgi=None if sec else "#2A4A70", r=12, golge=sec, url=url)
-        s.simge(x + 20, 270, sim, renk=TEAL_D if sec else "#5EEAD4", boyut=14, w=42, h=42, dolgu="#E6FAF6" if sec else "#1B4470", r=11)
-        s.kutu(x + 20, 322, 290, 28, ad, renk=INK if sec else WHITE, boyut=12.5, kalin=True, ic=0)
-        s.kutu(x + 20, 350, 290, 40, acik, renk=INK2 if sec else "#9FB3CB", boyut=9, dikey="top", ic=0)
-        s.kutu(x + 20, 398, 180, 26, durum, renk=INK3 if sec else "#7C92AD", boyut=8.5, ic=0)
-        s.kutu(x + 240, 396, 70, 30, "Aç  →", dolgu=TEAL_D if sec else None, renk=WHITE if sec else "#5EEAD4", boyut=9.5,
-               kalin=True, yatay="center", r=7, url=url, ic=0)
-    s.kutu(60, 520, 600, 22, "Artvin  ·  Rize  ·  Trabzon  ·  Gümüşhane  ·  Giresun", renk="#7C92AD", boyut=8.5, ic=0)
-    s.kutu(1330, 520, 100, 22, "v2 prototip", renk="#7C92AD", boyut=8.5, yatay="right", ic=0)
+        if sec:
+            s.kutu(x, y, kw, kh, dolgu=WHITE, r=18, golge=True, url=url)
+        else:
+            s.kutu(x, y, kw, kh, dolgu=WHITE, alfa=91, cizgi=WHITE, calfa=78, r=18, url=url)
+        s.kutu(x + kw - 96, y + 14, 80, 56, no, renk="#E2E8F0" if sec else "#35557E", boyut=30, kalin=True, yatay="right", ic=0)
+        s.kutu(x + 24, y + 24, 52, 52, IC[sim], gecis=(renkler, 45), renk=WHITE, boyut=17, yatay="center", font=ICON, r=14, ic=0)
+        s.kutu(x + 24, y + 90, kw - 48, 32, ad, renk=INK if sec else WHITE, boyut=15, kalin=True, ic=0)
+        s.kutu(x + 24, y + 122, kw - 48, 44, acik, renk=INK2 if sec else "#B8CDE6", boyut=9.5, dikey="top", ic=0)
+        s.kutu(x + 24, y + kh - 54, 190, 30, "\u25CF  " + durum, renk=(TEAL_D if sec else "#7BE0CF") if durum == "Güncel" or sec else "#FCD34D",
+               boyut=9, kalin=True, ic=0)
+        s.kutu(x + kw - 110, y + kh - 58, 86, 36, "Aç   \u2192", gecis=(["#1E6FD9", "#19C2A8"], 0) if sec else None,
+               dolgu=None if sec else WHITE, alfa=0 if sec else 86, renk=WHITE, boyut=10, kalin=True, yatay="center", r=18, url=url, ic=0)
+    s.kutu(64, H - 56, 600, 22, "AKSORA v2 görünüm prototipi   \u2022   rakamlar örnektir", renk="#6F8FB5", boyut=8.5, ic=0)
     ws.activate()
 
 
@@ -398,19 +440,60 @@ STOK = [("7155", "D007", "Demontaj Ambarı", "ELEKTRİK MALZEMELERİ", "ÇIKMA/B
 
 
 def stoklar(wb, f):
+    """Stok sayfası: önce depolar (kart), sonra sade liste. On sütun yerine beş; her satır iki satırlı."""
     s = Sayfa(wb, "Stoklar", f)
-    kabuk(s, "Tüm stoklar", "Tüm stoklar", "Malzeme Stok  ›  Stoklar", "Stokları güncelle", ["Excel", "Çıktı al"], sutunlar=[96, 70, 140, 176, 120, 108, 310, 70, 60, 90])
-    y = kpi_satiri(s, TOP + 16, [
-        ("clock", "#E0ECFB", "#1E6FD9", "Son güncelleme", "13.11.2026 08:44", None, None, "39 sn sürdü", None),
-        ("list", SLBG, INK2, "Stok satırı", "734", None, None, "CDP 480  •  EPP 254", None),
-        ("box", GRNBG, GRN, "Stok değeri", "72,7 mn TL", None, None, "72.683.606,98 TL", 0)])
-    y += 14
-    sekmeler(s, X0, y, ["Tümü · 734", "CDP · 480", "EPP · 254", "İlçe · 1.622", "Yüklenici · 474"])
-    ust = y_satir(y + 34 + 10)
-    tablo(s, ust, ["Üretim yeri", "Depo", "Depo adı", "Mal grubu", "Değerleme", "Malzeme", "Malzeme tanımı", "Miktar", "Birim", "Değer (TL)"],
-          [(a, b, c, d, (e, "g" if e == "YENİ" else "s"), g, h, i, j, k) for a, b, c, d, e, g, h, i, j, k in STOK],
-          [96, 70, 140, 176, 120, 108, 310, 70, 60, 90],
-          ["tdm", "tdb", "td", "tdm", "st", "td", "td", "tdi", "tdm", "tdn"], suz=True)
+    kabuk(s, "Tüm stoklar", "Tüm stoklar", "Malzeme Stok  \u203A  Stoklar", "Stokları güncelle", ["Excel"],
+          sutunlar=[480, 220, 130, 130, 160, 120])
+    ws = s.ws
+    y = TOP + 16
+    # --- depolar: her depo bir kart; tıklanınca liste o depoya süzülür
+    depolar = [("Tümü", "9 depo", "20,0 mn TL", "480 kalem", 1.0, True), ("D003", "Müş.Bağ.Ambarı", "11,49 mn TL", "28 kalem", 0.574, False),
+               ("D001", "İşletme Ambarı", "8,08 mn TL", "320 kalem", 0.404, False), ("D005", "Sayaç Dm Ambar", "292,1 bin TL", "24 kalem", 0.015, False),
+               ("D010", "İSG - Hırdavat", "91,8 bin TL", "14 kalem", 0.005, False), ("D011", "Planlı Bakım", "44,9 bin TL", "7 kalem", 0.002, False)]
+    n = len(depolar)
+    w = (CW - 12 * (n - 1)) // n
+    for i, (kod, ad, deger, kalem, pay, sec) in enumerate(depolar):
+        x = X0 + i * (w + 12)
+        if sec:
+            s.kutu(x, y, w, 112, gecis=(["#0B2541", "#12497A"], 45), r=12, golge=True)
+        else:
+            s.kart(x, y, w, 112)
+        s.kutu(x + 14, y + 12, 52, 20, kod, dolgu="#19C2A8" if sec else SLBG, renk=WHITE if sec else INK2, boyut=8, kalin=True,
+               yatay="center", r=10, ic=0)
+        s.kutu(x + 72, y + 12, w - 84, 20, ad, renk="#B8CDE6" if sec else INK3, boyut=8.5, ic=0)
+        s.kutu(x + 14, y + 38, w - 28, 32, deger, renk=WHITE if sec else INK, boyut=14, kalin=True, ic=0)
+        s.kutu(x + 14, y + 70, w - 28, 18, kalem + ("" if sec else f"  \u2022  %{pay * 100:.1f}".replace(".", ",")), renk="#9FC2E8" if sec else INK3, boyut=8, ic=0)
+        s.kutu(x + 14, y + 94, w - 28, 5, dolgu="#2B5B8C" if sec else SLBG, r=3, ic=0)
+        s.kutu(x + 14, y + 94, max(5, int((w - 28) * pay)), 5, dolgu="#19C2A8" if sec else "#1E6FD9", r=3, ic=0)
+    y += 112 + 16
+    # --- liste başlığı: sayı, sıralama ve süzme çipleri
+    s.kutu(X0, y, 400, 32, "480 kalem  \u2022  20,0 mn TL", renk=INK, boyut=11.5, kalin=True, ic=0)
+    x = X0 + CW
+    for ad, sec in (("Değere göre  \u2193", True), ("Yalnız YENİ", False), ("Yalnız ÇIKMA", False)):
+        cw = 34 + 7 * len(ad)
+        x -= cw
+        s.kutu(x, y + 2, cw, 28, ad, dolgu=NAVY if sec else WHITE, cizgi=None if sec else LINE, renk=WHITE if sec else INK2, boyut=8.5,
+               kalin=True, yatay="center", r=14)
+        x -= 8
+    ust = y_satir(y + 32 + 8)
+    ws.set_row_pixels(ust, 30)
+    for j, b in enumerate(["MALZEME", "DEPO", "DURUM", "MİKTAR", "DEĞER (TL)", "PAY"]):
+        ws.write(ust, 2 + j, b, f["thr" if j in (3, 4) else "th"])
+    ad_f = wb.add_format({"font_name": FONT, "font_size": 10, "bold": True, "font_color": INK})
+    alt_f = wb.add_format({"font_name": FONT, "font_size": 8.5, "font_color": INK3})
+    toplam = sum(r[9] for r in STOK)
+    sirali = sorted(STOK, key=lambda r: -r[9])[:10]
+    for i, (uy, depo, depo_ad, grup, deg, mal, tanim, miktar, birim, deger) in enumerate(sirali):
+        r = ust + 1 + i
+        ws.set_row_pixels(r, 44)
+        ws.write_rich_string(r, 2, ad_f, tanim, alt_f, "\n" + mal + "   \u2022   " + grup.title(), f["iki"])
+        ws.write_rich_string(r, 3, ad_f, depo_ad, alt_f, "\n" + uy + "  \u00B7  " + depo, f["iki"])
+        ws.write(r, 4, "\u25CF  " + deg.title(), f["stg" if deg == "YENİ" else "sts"])
+        ws.write(r, 5, f"{miktar} {birim}", f["tdq"])
+        ws.write(r, 6, deger, f["tdn"])
+        ws.write(r, 7, deger / toplam, f["pay"])
+    ws.conditional_format(ust + 1, 7, ust + len(sirali), 7, {"type": "data_bar", "bar_color": "#19C2A8", "bar_solid": True,
+                                                              "min_type": "num", "min_value": 0, "max_type": "num", "max_value": 0.3})
 
 
 def raporlar(wb, f, ngun):
@@ -626,31 +709,44 @@ def sekilleri_isle(yol):
 def _drawing(xml):
     def sp(m):
         blok = m.group(0)
-        e = re.search(r'descr="r=(\d+);g=(\d);i=(\d+)"', blok)
+        e = re.search(r'descr="((?:\w=\d+;?)+)"', blok)
         if not e:
             return blok
-        r, g, i = int(e.group(1)), e.group(2) == "1", int(e.group(3))
+        t = {k: int(v) for k, v in (x.split("=") for x in e.group(1).split(";") if x)}
+        r, g, i = t.get("r", 0), t.get("g", 0), t.get("i", 8)
         en = re.search(r'<a:ext cx="(\d+)" cy="(\d+)"', blok)
-        if r and en:
+        if t.get("e"):
+            blok = blok.replace('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>')
+        elif r and en:
             kisa = min(int(en.group(1)), int(en.group(2))) / 9525.0
             oran = max(0, min(50000, int(100000 * r / max(kisa, 1))))
             blok = blok.replace('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>',
                                 f'<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val {oran}"/></a:avLst></a:prstGeom>')
-        if g:
-            blok = blok.replace("</xdr:spPr>", GOLGE + "</xdr:spPr>")
+        # dolgu ve çizgi saydamlığı (yüzde): spPr içinde çizgiden önceki ilk renk dolgu, <a:ln> içindeki renk çizgidir
+        bas, ayrac, son = blok.partition("<a:ln")
+        if t.get("a"):
+            bas = re.sub(r'<a:srgbClr val="(\w+)"/>', lambda q: f'<a:srgbClr val="{q.group(1)}"><a:alpha val="{(100 - t["a"]) * 1000}"/></a:srgbClr>', bas, count=1)
+        if t.get("c") and ayrac:
+            ln, kapanis, kalan = son.partition("</a:ln>")
+            ln = re.sub(r'<a:srgbClr val="(\w+)"/>', lambda q: f'<a:srgbClr val="{q.group(1)}"><a:alpha val="{(100 - t["c"]) * 1000}"/></a:srgbClr>', ln, count=1)
+            son = ln + kapanis + kalan
+        blok = bas + ayrac + son
+        efekt = (GOLGE[len("<a:effectLst>"):-len("</a:effectLst>")] if g else "") + (f'<a:softEdge rad="{t["y"] * 12700}"/>' if t.get("y") else "")
+        if efekt:
+            blok = blok.replace("</xdr:spPr>", "<a:effectLst>" + efekt + "</a:effectLst></xdr:spPr>", 1)
         ins = i * 9525
         blok = re.sub(r"<a:bodyPr ", f'<a:bodyPr lIns="{ins}" rIns="{ins}" tIns="0" bIns="0" ', blok, count=1)
         return blok.replace(e.group(0), 'descr=""')
     xml = re.sub(r"<xdr:sp .*?</xdr:sp>", sp, xml, flags=re.S)
-    # Katman sırası: XlsxWriter grafikleri en alta yazar; kartların üstünde görünmeleri için sona taşınır.
+    # Katman sırası: XlsxWriter grafik ve resimleri en alta yazar; şekillerin üstünde görünmeleri için sona taşınır.
     capa = re.compile(r"<xdr:(twoCellAnchor|oneCellAnchor|absoluteAnchor)\b.*?</xdr:\1>", re.S)
     parcalar = [m.group(0) for m in capa.finditer(xml)]
     if parcalar:
-        bas = xml[:capa.search(xml).start()]
-        son = xml[xml.rfind("</xdr:" + re.search(r"<xdr:(\w+Anchor)", parcalar[-1]).group(1) + ">") + len("</xdr:" + re.search(r"<xdr:(\w+Anchor)", parcalar[-1]).group(1) + ">"):]
-        sekil = [x for x in parcalar if "<xdr:graphicFrame" not in x]
-        grafik = [x for x in parcalar if "<xdr:graphicFrame" in x]
-        xml = bas + "".join(sekil) + "".join(grafik) + son
+        ilk = capa.search(xml).start()
+        bitis = max(m.end() for m in capa.finditer(xml))
+        ust = lambda x: "<xdr:graphicFrame" in x or "<xdr:pic>" in x or "<xdr:pic " in x
+        xml = xml[:ilk] + "".join(x for x in parcalar if not ust(x)) + "".join(x for x in parcalar if "<xdr:pic" in x) + \
+            "".join(x for x in parcalar if "<xdr:graphicFrame" in x) + xml[bitis:]
     return xml
 
 
