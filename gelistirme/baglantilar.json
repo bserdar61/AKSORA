@@ -78,5 +78,13 @@
     "eslesme": "tam",
     "konum": "once",
     "satir": "    AKSORA_AKICI_DURDUR"
+  },
+  {
+    "modul": "modAKSORA_ANALIZ",
+    "aciklama": "Transfer önerileri öneri takibine kaydedilir (bekleme süresi, kapanan tutar)",
+    "capa": "If nT > 0 Then ADM_UYAR uy, 3,",
+    "eslesme": "onek",
+    "konum": "sonra",
+    "satir": "    AKSORA_ONERI_KAYDET liste, secIl"
   }
 ]

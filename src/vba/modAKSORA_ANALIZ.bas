@@ -4128,6 +4128,7 @@ Public Sub ADM_ANALIZ_UYARI(ByVal uy As Collection, ByVal secIl As String)
     Next x
     If nT > 0 Then mAdmIsler.Add Array(20, nT & " stok naklini / atıl kullanımını uygula (satın alma yerine)", tt, "Malzeme > TRANSFER LİSTESİ")
     If nT > 0 Then ADM_UYAR uy, 3, "Transfer • " & ilAd & ": " & nT & " transfer / atıl kullanım önerisi bekliyor; uygulanırsa " & ADM_TL(tt) & " satın alma yapılmaz (TRANSFER LİSTESİ).", "Malzeme | Transfer", "Transfer"
+    AKSORA_ONERI_KAYDET liste, secIl
     AKSORA_KPI_ANALIZ nK, tK, nT, tt, nIp, tip, nF, tF
 son:
 End Sub

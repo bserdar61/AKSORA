@@ -72,6 +72,8 @@ footer{color:var(--ink3);font-size:12px;padding:6px 16px 24px}
 <div class="card"><h2>Bugün yapılacak işler</h2><ol class="jobs" id="jobs"></ol></div>
 <div class="card"><h2>Öncelikli uyarılar</h2><ul class="al" id="alerts"></ul></div>
 </div>
+<div class="card sec" id="onk" style="display:none"><h2>Öneri takibi</h2>
+<div class="grid tiles" id="ont"></div><div class="tbl sec"><table id="onl"></table></div><div class="note" id="onn"></div></div>
 <div class="card sec"><h2 id="trh">Eğilim</h2><div class="seg" id="seg"></div><div class="chart" id="trend"><div class="tip" id="tip"></div></div><div class="note" id="trn"></div></div>
 <div class="grid half sec">
 <div class="card"><h2>İllere göre tekil stok değeri</h2><div class="bars" id="bil"></div></div>
@@ -123,6 +125,14 @@ $("jobs").innerHTML=J.length?J.map(function(j,i){return '<li><span class="no">'+
 // --- uyarilar ---
 var U=D.uyarilar||[];
 $("alerts").innerHTML=U.length?U.map(function(u){var kr=u.sev=="KRİTİK";return '<li><span class="pill"><span class="dot" style="background:'+(kr?"var(--crit)":"var(--warn)")+'"></span>'+(kr?"! Kritik":"\u25B3 Uyarı")+"</span><div>"+esc(u.metin)+"</div></li>"}).join(""):'<li class="empty" style="display:block">Kritik veya dikkat gerektiren uyarı yok.</li>';
+// --- oneri takibi ---
+var O=D.oneri;
+if(O){$("onk").style.display="";
+ var ot=function(l,v,x){return '<div><div class="tl">'+l+'</div><div class="tv" style="font-size:22px">'+v+'</div><div class="td">'+x+"</div></div>"};
+ $("ont").innerHTML=ot("Açık öneri",nf(O.acik,0),tl(O.acikTl)+" kazanç bekliyor")+ot("7 günden uzun bekleyen",nf(O.bekleyen7,0),tl(O.bekleyen7Tl))+ot("Son 30 günde kapanan",nf(O.kapanan30,0),tl(O.kapanan30Tl))+ot("Bugüne kadar kapanan",tl(O.kapananToplamTl),nf(O.kapananToplam,0)+" öneri"+(O.ilk?"  \u2022  "+O.ilk+" tarihinden beri":""));
+ var L=O.liste||[];
+ $("onl").innerHTML=L.length?"<tr><th>En uzun bekleyen öneriler</th><th>Nereden \u2192 Nereye</th><th>Miktar</th><th>Kazanç</th><th>Bekleme</th></tr>"+L.map(function(r){return "<tr><td>"+esc(r.tanim)+"</td><td>"+esc(r.nereden)+(r.nereden!=r.nereye?" \u2192 "+esc(r.nereye):" (kendi atıl stoğu)")+"</td><td>"+nf(r.miktar,r.miktar%1?2:0)+" "+esc(r.birim)+"</td><td><b>"+tl(r.tl)+"</b></td><td>"+nf(r.gun,0)+" gün</td></tr>"}).join(""):"";
+ $("onn").textContent="Kapanan: öneri listeden çıktı (uygulandı ya da ihtiyaç ortadan kalktı). Tutar, önerinin son görüldüğü andaki kazançtır."}
 // --- egilim ---
 var T=D.seriTarih||[],sel=0,tip=$("tip"),box=$("trend");
 function trend(){

@@ -16,7 +16,7 @@ Paket Excel'de henüz derlenip denenmedi; **ilk kurulumu `AKSORA.xlsm`'in bir ko
 
 1. Excel'de bir kez: Dosya > Seçenekler > Güven Merkezi > Güven Merkezi Ayarları > Makro Ayarları > **"VBA proje nesne modeline erişime güven"** işaretli olsun.
 2. AKSORA kapalıyken `gelistirme\KUR.cmd` dosyasına çift tıklayın ve `.xlsm` dosyasını seçin.
-3. Betik yedek alır, modülleri ve on bağlantı satırını ekler, derleme sınamasını çalıştırır; yalnız sınama `OK` dönerse kaydeder. Aksi halde dosyaya dokunmadan kapanır.
+3. Betik yedek alır, modülleri ve on bir bağlantı satırını ekler, derleme sınamasını çalıştırır; yalnız sınama `OK` dönerse kaydeder. Aksi halde dosyaya dokunmadan kapanır.
 
 Kurulumdan sonra: ADMİN GİRİŞİ > Yönetim Merkezi'nde **Yönetim Karnesi — Trend** tablosu ve üstte **YÖNETİCİ PANOSU (WEB)**, **YÖNETİCİ ÖZETİ (PDF)**, **İŞLEM GÜNLÜĞÜ**, **SAĞLIK KONTROLÜ** düğmeleri görünür. Bekleme kartında (ör. TÜM BİRİMLERİ GÜNCELLE) çubuğun üzerinde kayan bir şerit ve saniye saniye ilerleyen süre görünür.
 

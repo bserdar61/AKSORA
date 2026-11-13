@@ -82,7 +82,7 @@ Olumlu tespitler: tüm modüllerde `Option Explicit` var; `.Select/.Activate` ku
 
 ## 4. v3.1 ile eklenenler
 
-Var olan hiçbir ekran ya da hesap değiştirilmedi. Beş yeni modül ve mevcut kodda **on tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
+Var olan hiçbir ekran ya da hesap değiştirilmedi. Altı yeni modül ve mevcut kodda **on bir tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
 
 ### Yönetim karnesi — trend (`modAKSORA_KPI`)
 Yönetim Merkezi'nde "Bugün Yapılacak 5 İş"in altına yeni tablo. Her rapor yenilemesinde sekiz gösterge günde bir satır olarak kaydedilir (`_AKSORA_KPI`, çok gizli sayfa) ve önceki kayıtla / 30 gün öncesiyle karşılaştırılır:
@@ -96,6 +96,9 @@ Yönetim Merkezi üstündeki **YÖNETİCİ ÖZETİ (PDF)** düğmesi: göstergel
 
 ### Yönetici panosu — web (`modAKSORA_PANO`)
 **YÖNETİCİ PANOSU (WEB)** düğmesi karneyi, yapılacak işleri, uyarıları, il ve birim karşılaştırmasını ve seçilebilir eğilim grafiğini tek bir HTML dosyasına yazar ve tarayıcıda açar. Dosya tek başına çalışır (internet gerekmez): e-postayla gönderilebilir, telefonda açılabilir, açık ve koyu temayı destekler. Sayfanın kendisi tarayıcıda örnek veriyle (masaüstü, telefon, koyu tema, geçmişi boş ilk gün) denendi.
+
+### Öneri takibi (`modAKSORA_ONERI`)
+Her "Tüm iller" raporunda transfer / atıl kullanım önerileri kayıtla eşleştirilir (`_AKSORA_ONERI`, çok gizli sayfa): listede duran öneri AÇIK kalır ve bekleme günü sayılır; listeden çıkan öneri kapanış tarihi ve tutarıyla KAPANDI olur. Yönetim Merkezi'nde tek satır özet, web panosunda ayrı bölüm: açık öneri, 7 günden uzun bekleyen, son 30 günde kapanan ve en uzun bekleyen beş öneri. "Kapandı", önerinin listeden çıktığı anlamına gelir (uygulandı ya da ihtiyaç kalktı); kesin "uygulandı" bilgisi için SAP hareketleriyle eşleştirme sonraki adımdır.
 
 ### İşlem günlüğü (`modAKSORA_GUNLUK`)
 Her SAP güncellemesi (süresiyle), kullanıcıya gösterilen her hata, her yönetici girişi (başarılı / hatalı) ve tek tuş güncelleme; kullanıcı ve bilgisayar adıyla kaydedilir (`_AKSORA_GUNLUK`, en fazla 5.000 satır). **İŞLEM GÜNLÜĞÜ** düğmesi Excel'e aktarır.
@@ -112,7 +115,7 @@ Kart yalnız VBA "ilerle" dediği anda çiziliyordu; SAP sorgusu sürerken (10-2
 - `gelistirme/` — kurulum paketi.
 
 ### Doğrulama durumu (açık söylemek gerekirse)
-- On bağlantının çapa satırı gerçek kodda tam olarak bir kez bulundu.
+- On bir bağlantının çapa satırı gerçek kodda tam olarak bir kez bulundu.
 - Yeni modüller mevcut kodla ad çakışması, tanımsız değişken ve parametre sayısı açısından tarandı; saf hesap işlevleri LibreOffice Basic'te (VBA kipi) çalıştırılıp sınamadan geçti.
 - **Excel'de derlenmedi ve çalıştırılmadı; kurulum betiği (PowerShell) de bu ortamda çalıştırılamadı.** Bu yüzden kurulum önce yedek alır, kodu ekler, derleme sınamasını çalıştırır ve yalnız "OK" gelirse kaydeder. İlk kurulumu dosyanın bir kopyasında yapın.
 

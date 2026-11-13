@@ -64,7 +64,7 @@ Private mOzHam(1 To 8, 1 To 3) As Variant   ' gosterge: bugun, onceki, 30 gun on
 
 ' Yonetim Merkezi'nde "BUGUN YAPILACAK ISLER" tablosunun altinda karne icin yer ayirir. Donus: ayrilan son satir.
 Public Function AKSORA_KPI_YER_AYIR(ByVal ws As Worksheet, ByVal r As Long) As Long
-    AKSORA_KPI_YER_AYIR = r + KPI_ADET + 4
+    AKSORA_KPI_YER_AYIR = r + KPI_ADET + 5
     On Error Resume Next
     mYerSatir = r + 2
     ws.Cells.SparklineGroups.Clear
@@ -364,7 +364,7 @@ End Function
 Private Sub KPI_CIZ(ByVal ws As Worksheet, ByVal r0 As Long, ByVal ilMetin As String, ByRef kayit As Variant, ByVal gecmis As Variant)
     Dim n As Long, d As Variant, iOnce As Long, iOtuz As Long, bugun As Long, k As Long, r As Long, t As Variant
     Dim simdi As Variant, once As Variant, otuz As Variant, yon As Long, yorum As String, tOnce As String, tOtuz As String
-    Dim dolgu As Long, yazi As Long, ilk As String
+    Dim dolgu As Long, yazi As Long, ilk As String, oneri As String
 
     n = gecmis(0)
     If n > 0 Then d = gecmis(1)
@@ -429,7 +429,16 @@ Private Sub KPI_CIZ(ByVal ws As Worksheet, ByVal r0 As Long, ByVal ilMetin As St
     Next k
     ADM_KENAR ws.Range(ADM_ADRES(r0 + 1, 2, r0 + 1 + KPI_ADET, 13)), True
 
+    ' Oneri takibi ozeti (kayit yoksa ilk gun aciklamasi)
     r = r0 + KPI_ADET + 2
+    oneri = AKSORA_ONERI_SATIR()
+    If Len(oneri) = 0 Then oneri = "ÖNERİ TAKİBİ   •   Transfer önerilerinin bekleme süresi ve kapanan öneri tutarı ilk ""Tüm iller"" raporundan itibaren izlenir."
+    ws.Rows(r).RowHeight = 24
+    ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), oneri, RGB(226, 236, 247), RGB(12, 45, 79), 10, True, xlLeft
+    ws.Cells(r, 2).ShrinkToFit = True
+    ADM_KENAR ws.Range(ADM_ADRES(r, 2, r, 13))
+
+    r = r0 + KPI_ADET + 3
     ADM_BLOK ws, ADM_ADRES(r, 2, r, 13), "Her rapor yenilemesinde günde bir kayıt tutulur (" & n & " kayıt" & _
         IIf(Len(ilk) > 0, ", ilk kayıt " & ilk, "") & "). Yeşil: iyileşme, kırmızı: kötüleşme. " & _
         "Bekleyen tasarruf fırsatı = uygulanmamış transfer önerileri + iptal edilebilir talep / siparişler. " & _
@@ -785,7 +794,7 @@ Public Function AKSORA_KPI_PANO_JSON() As String
         parca = Split(mOzUyari(i), vbTab)
         s = s & IIf(i > 1, ",", "") & "{""sev"":" & AKSORA_PANO_METIN(parca(0)) & ",""metin"":" & AKSORA_PANO_METIN(parca(1)) & "}"
     Next i
-    AKSORA_KPI_PANO_JSON = s & "]}"
+    AKSORA_KPI_PANO_JSON = s & "],""oneri"":" & AKSORA_ONERI_JSON() & "}"
 End Function
 
 '==========================================================

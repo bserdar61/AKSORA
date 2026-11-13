@@ -89,17 +89,19 @@ Private Function PS_02() As String
     s = s & "<div class=""card""><h2>Bugün yapılacak işler</h2><ol class=""jobs"" id=""jobs""></ol></div>" & vbLf
     s = s & "<div class=""card""><h2>Öncelikli uyarılar</h2><ul class=""al"" id=""alerts""></ul></div>" & vbLf
     s = s & "</div>" & vbLf
+    s = s & "<div class=""card sec"" id=""onk"" style=""display:none""><h2>Öneri takibi</h2>" & vbLf
+    s = s & "<div class=""grid tiles"" id=""ont""></div><div class=""tbl sec""><table id=""onl""></table></div><div class=""note"" id=""onn""></div></div>" & vbLf
     s = s & "<div class=""card sec""><h2 id=""trh"">Eğilim</h2><div class=""seg"" id=""seg""></div><div class=""chart"" id=""trend""><div class=""tip"" id=""tip""></div></div><div class=""note"" id=""trn""></div></div>" & vbLf
     s = s & "<div class=""grid half sec"">" & vbLf
     s = s & "<div class=""card""><h2>İllere göre tekil stok değeri</h2><div class=""bars"" id=""bil""></div></div>" & vbLf
     s = s & "<div class=""card""><h2>İllere göre atıl stok oranı</h2><div class=""bars"" id=""bat""></div><div class=""note"" id=""batn""></div></div>" & vbLf
-    s = s & "</div>" & vbLf
-    s = s & "<div class=""grid half sec"">" & vbLf
     PS_02 = s
 End Function
 
 Private Function PS_03() As String
     Dim s As String
+    s = s & "</div>" & vbLf
+    s = s & "<div class=""grid half sec"">" & vbLf
     s = s & "<div class=""card""><h2>Birimlere göre stok değeri</h2><div class=""bars"" id=""bbr""></div><div class=""note"">Birimler ortak depoları paylaşır; değerler toplanmaz.</div></div>" & vbLf
     s = s & "<div class=""card""><h2>Gösterge tablosu</h2><div class=""tbl""><table id=""tb""></table></div></div>" & vbLf
     s = s & "</div>" & vbLf
@@ -138,18 +140,26 @@ Private Function PS_03() As String
     s = s & "// --- gostergeler (ust kartlar: ilk dort) ---" & vbLf
     s = s & "var K=D.kpi||[];" & vbLf
     s = s & "$(""tiles"").innerHTML=[0,1,2,4].map(function(i){var k=K[i];if(!k)return """";var dl=delta(k,k.onceki);" & vbLf
-    s = s & " return '<div class=""card""><div class=""tl"">'+esc(k.ad)+'</div><div class=""tv"">'+fmt(k.bugun,k.tur)+'</div><div class=""td""><span>'+dl.txt+""</span>""+pill(dl)+""</div>""+spark(k.seri||[])+""</div>""}).join("""");" & vbLf
-    s = s & "// --- isler ---" & vbLf
     PS_03 = s
 End Function
 
 Private Function PS_04() As String
     Dim s As String
+    s = s & " return '<div class=""card""><div class=""tl"">'+esc(k.ad)+'</div><div class=""tv"">'+fmt(k.bugun,k.tur)+'</div><div class=""td""><span>'+dl.txt+""</span>""+pill(dl)+""</div>""+spark(k.seri||[])+""</div>""}).join("""");" & vbLf
+    s = s & "// --- isler ---" & vbLf
     s = s & "var J=D.isler||[];" & vbLf
     s = s & "$(""jobs"").innerHTML=J.length?J.map(function(j,i){return '<li><span class=""no"">'+(i+1)+'</span><div><div>'+esc(j.is)+'</div><div class=""where"">'+esc(j.nerede)+'</div></div><div class=""amt"">'+(j.tutar?tl(j.tutar):"""")+""</div></li>""}).join(""""):'<li class=""empty"" style=""display:block"">Bekleyen önemli iş yok.</li>';" & vbLf
     s = s & "// --- uyarilar ---" & vbLf
     s = s & "var U=D.uyarilar||[];" & vbLf
     s = s & "$(""alerts"").innerHTML=U.length?U.map(function(u){var kr=u.sev==""KRİTİK"";return '<li><span class=""pill""><span class=""dot"" style=""background:'+(kr?""var(--crit)"":""var(--warn)"")+'""></span>'+(kr?""! Kritik"":""\u25B3 Uyarı"")+""</span><div>""+esc(u.metin)+""</div></li>""}).join(""""):'<li class=""empty"" style=""display:block"">Kritik veya dikkat gerektiren uyarı yok.</li>';" & vbLf
+    s = s & "// --- oneri takibi ---" & vbLf
+    s = s & "var O=D.oneri;" & vbLf
+    s = s & "if(O){$(""onk"").style.display="""";" & vbLf
+    s = s & " var ot=function(l,v,x){return '<div><div class=""tl"">'+l+'</div><div class=""tv"" style=""font-size:22px"">'+v+'</div><div class=""td"">'+x+""</div></div>""};" & vbLf
+    s = s & " $(""ont"").innerHTML=ot(""Açık öneri"",nf(O.acik,0),tl(O.acikTl)+"" kazanç bekliyor"")+ot(""7 günden uzun bekleyen"",nf(O.bekleyen7,0),tl(O.bekleyen7Tl))+ot(""Son 30 günde kapanan"",nf(O.kapanan30,0),tl(O.kapanan30Tl))+ot(""Bugüne kadar kapanan"",tl(O.kapananToplamTl),nf(O.kapananToplam,0)+"" öneri""+(O.ilk?""  \u2022  ""+O.ilk+"" tarihinden beri"":""""));" & vbLf
+    s = s & " var L=O.liste||[];" & vbLf
+    s = s & " $(""onl"").innerHTML=L.length?""<tr><th>En uzun bekleyen öneriler</th><th>Nereden \u2192 Nereye</th><th>Miktar</th><th>Kazanç</th><th>Bekleme</th></tr>""+L.map(function(r){return ""<tr><td>""+esc(r.tanim)+""</td><td>""+esc(r.nereden)+(r.nereden!=r.nereye?"" \u2192 ""+esc(r.nereye):"" (kendi atıl stoğu)"")+""</td><td>""+nf(r.miktar,r.miktar%1?2:0)+"" ""+esc(r.birim)+""</td><td><b>""+tl(r.tl)+""</b></td><td>""+nf(r.gun,0)+"" gün</td></tr>""}).join(""""):"""";" & vbLf
+    s = s & " $(""onn"").textContent=""Kapanan: öneri listeden çıktı (uygulandı ya da ihtiyaç ortadan kalktı). Tutar, önerinin son görüldüğü andaki kazançtır.""}" & vbLf
     s = s & "// --- egilim ---" & vbLf
     s = s & "var T=D.seriTarih||[],sel=0,tip=$(""tip""),box=$(""trend"");" & vbLf
     s = s & "function trend(){" & vbLf
@@ -175,6 +185,11 @@ Private Function PS_04() As String
     s = s & "  var x=X(b[0]),y=Y(b[1]);ch.setAttribute(""x1"",x);ch.setAttribute(""x2"",x);ch.style.display="""";cd.setAttribute(""cx"",x);cd.setAttribute(""cy"",y);cd.style.display="""";" & vbLf
     s = s & "  tip.textContent=T[b[0]]+""  •  ""+fmt(b[1],k.tur);tip.style.display=""block"";" & vbLf
     s = s & "  var px=x*r.width/W;tip.style.left=Math.max(70,Math.min(r.width-70,px))+""px"";tip.style.top=(y*r.height/H)+""px""}" & vbLf
+    PS_04 = s
+End Function
+
+Private Function PS_05() As String
+    Dim s As String
     s = s & " function out(){ch.style.display=""none"";cd.style.display=""none"";tip.style.display=""none""}" & vbLf
     s = s & " svg.addEventListener(""mousemove"",mv);svg.addEventListener(""touchstart"",mv,{passive:true});svg.addEventListener(""touchmove"",mv,{passive:true});svg.addEventListener(""mouseleave"",out);svg.addEventListener(""touchend"",out);" & vbLf
     s = s & "}" & vbLf
@@ -185,11 +200,6 @@ Private Function PS_04() As String
     s = s & "// --- cubuklar ---" & vbLf
     s = s & "var bt=$(""btip"");" & vbLf
     s = s & "function bars(id,rows,f){" & vbLf
-    PS_04 = s
-End Function
-
-Private Function PS_05() As String
-    Dim s As String
     s = s & " var mx=0;rows.forEach(function(r){if(r.v!=null)mx=Math.max(mx,r.v)});" & vbLf
     s = s & " $(id).innerHTML=rows.length?rows.map(function(r){return '<div class=""bl"">'+esc(r.ad)+'</div><div class=""bt"" data-t=""'+esc(r.ad+""  •  ""+(r.v==null?""veri yok"":f(r.v))+(r.x?""  •  ""+r.x:""""))+'""><div class=""bf"" style=""width:'+(r.v==null||mx<=0?0:Math.max(0.5,100*r.v/mx))+'%""></div></div><div class=""bv"">'+(r.v==null?""–"":f(r.v))+""</div>""}).join(""""):'<div class=""empty"">Veri yok.</div>';" & vbLf
     s = s & " [].forEach.call($(id).querySelectorAll("".bt""),function(el){" & vbLf
