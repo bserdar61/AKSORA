@@ -2812,19 +2812,19 @@ End Function
 
 ' AKSORA imzasi (butun Excel'e aktar ciktilari): baslik ve "AKSORA" satiri (1-2) kilitli, sayfa altinda AKSORA,
 ' dosya ozelliklerinde ve gizli imza sayfasinda uretim kaydi. Veriler serbest: filtre, siralama, bicim, satir ekle/sil calisir.
-' Butun AKSORA sayfalarinin ekran goruntusu (katalog / destek icin): her sayfa ekranda gorundugu alanla PNG olarak
+' Butun AKSORA sayfalarinin ekran goruntusu (katalog / destek icin): her sayfa ekranda gorundugu alanla JPG olarak
 ' masaustunde tek klasore kaydedilir. Gizli sayfalar gecici gosterilir, sonra eski haline doner; kayit sayfalari (_) alinmaz.
 ' Calistirma: Alt+F8 > AKSORA_EKRAN_GORUNTULERI.
 Public Sub AKSORA_EKRAN_GORUNTULERI()
     Dim ws As Worksheet, bas As Worksheet, klasor As String, n As Long, top As Long, i As Long, hata As String
     Dim rg As Range, tmp As Workbook, ch As ChartObject, yol As String, gor As XlSheetVisibility, ev As Boolean, ac As Boolean
-    If MsgBox("AKSORA'nýn bütün sayfalarýnýn ekran görüntüsü alýnacak (her sayfa ekranda göründüðü gibi, PNG)." & vbCrLf & _
+    If MsgBox("AKSORA'nýn bütün sayfalarýnýn ekran görüntüsü alýnacak (her sayfa ekranda göründüðü gibi, JPG, küçük boyut)." & vbCrLf & _
         "Dosyalar masaüstünde tek klasöre kaydedilir. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | EKRAN GÖRÜNTÜLERÝ") <> vbYes Then Exit Sub
     Set bas = ActiveSheet
     klasor = AKSORA_MASAUSTU() & application.PathSeparator & AKSORA_DOSYA_ADI("AKSORA Ekran Goruntuleri " & Format$(Now, "yyyy-mm-dd hh.nn"))
     If Not AKSORA_KLASOR_HAZIRLA(klasor) Then MsgBox "Klasör oluþturulamadý: " & klasor, vbExclamation, "AKSORA": Exit Sub
     For Each ws In ThisWorkbook.Worksheets
-        If Left$(ws.Name, 1) <> "_" Then top = top + 1
+        If T_EkranAlinir(ws) Then top = top + 1
     Next ws
     ev = application.EnableEvents
     application.EnableEvents = False
@@ -2832,7 +2832,7 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
     Set tmp = Workbooks.Add(xlWBATWorksheet)
     ThisWorkbook.Activate
     For Each ws In ThisWorkbook.Worksheets
-        If Left$(ws.Name, 1) <> "_" Then
+        If T_EkranAlinir(ws) Then
             i = i + 1
             If ac Then AKSORA_BEKLE_ILERLE 0.02 + 0.96 * i / top, i & " / " & top & "  •  " & ws.Name
             yol = vbNullString
@@ -2844,15 +2844,17 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
             application.ScreenUpdating = True
             DoEvents
             ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
+            ' Sabitlenmis bolmede VisibleRange yalniz kayan bolmeyi verir: alan A1'den baslatilir (baslik ve kartlar dahil).
             Set rg = ActiveWindow.VisibleRange
+            Set rg = ws.Range(ws.Cells(1, 1), rg.Cells(rg.Cells.Count))
             rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
             If Err.Number = 0 Then
-                yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".png"
+                yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".jpg"
                 tmp.Activate
                 Set ch = tmp.Worksheets(1).ChartObjects.Add(0, 0, rg.Width, rg.Height)
                 ch.Activate
                 ch.Chart.Paste
-                ch.Chart.Export Filename:=yol, FilterName:="PNG"
+                ch.Chart.Export Filename:=yol, FilterName:="JPG"
                 ch.Delete
                 ThisWorkbook.Activate
             End If
@@ -2879,6 +2881,16 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
     MsgBox n & " sayfanýn ekran görüntüsü kaydedildi:" & vbCrLf & klasor & _
         IIf(Len(hata) > 0, vbCrLf & vbCrLf & "Alýnamayan: " & Left$(hata, 500), ""), vbInformation, "AKSORA | EKRAN GÖRÜNTÜLERÝ"
 End Sub
+
+' Ekran goruntusu alinacak sayfa: kayit sayfalari (_) ve "Islem ekranlari hazirlaniyor" yer tutucu birim sayfalari haric.
+Private Function T_EkranAlinir(ByVal ws As Worksheet) As Boolean
+    Dim s As Shape
+    If Left$(ws.Name, 1) = "_" Then Exit Function
+    On Error Resume Next
+    Set s = ws.Shapes("PANEL_DURUM")
+    On Error GoTo 0
+    T_EkranAlinir = (s Is Nothing)
+End Function
 
 ' Diger birimlerin Excel ciktilari icin ayni AKSORA imzasi.
 Public Sub AKSORA_IMZA_UYGULA(ByVal wb As Workbook)
