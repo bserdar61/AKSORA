@@ -1586,6 +1586,15 @@ Public Sub AKSORA_MUSTERI_BANT(ByVal ws As Worksheet)
             End If
         Next r
     End If
+    ' Yatirim aramasi malzeme stok aramasi gibi: D depolari mavi, digerleri beyaz (bant yok).
+    If ws.Name = "Y_MALZEME_ARA" Then
+        eski = ws.Range(ws.Cells(ilk, 2), ws.Cells(son, 2)).Value2
+        If IsArray(eski) Then
+            For r = 1 To son - ilk + 1
+                If Left$(UCase$(Trim$(CStr(eski(r, 1)))), 1) = "D" Then v(r, 1) = 1 Else v(r, 1) = 0
+            Next r
+        End If
+    End If
     eski = ws.Range(ws.Cells(ilk, 75), ws.Cells(son, 75)).Value2
     If Not IsArray(eski) Then
         farkli = True
