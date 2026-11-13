@@ -2844,9 +2844,7 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
             application.ScreenUpdating = True
             DoEvents
             ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
-            ' Sabitlenmis bolmede VisibleRange yalniz kayan bolmeyi verir: alan A1'den baslatilir (baslik ve kartlar dahil).
-            Set rg = ActiveWindow.VisibleRange
-            Set rg = ws.Range(ws.Cells(1, 1), rg.Cells(rg.Cells.Count))
+            Set rg = T_EkranAlan(ws)
             rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
             If Err.Number = 0 Then
                 yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".jpg"
@@ -2886,10 +2884,36 @@ End Sub
 Private Function T_EkranAlinir(ByVal ws As Worksheet) As Boolean
     Dim s As Shape
     If Left$(ws.Name, 1) = "_" Then Exit Function
+    If ws.Name = "YATIRIM PANEL" Or ws.Name = "MUSTERI PANEL" Then Exit Function
     On Error Resume Next
     Set s = ws.Shapes("PANEL_DURUM")
     On Error GoTo 0
     T_EkranAlinir = (s Is Nothing)
+End Function
+
+' Goruntu alani: A1'den ekran genisligine kadar (sagdaki gizli veri sutunlari alinmaz). Stok listelerinde ilk ekran;
+' panel, rapor ve analiz sayfalarinda sayfanin sonuna kadar (yazi ve sekiller), en fazla 250 satir.
+Private Function T_EkranAlan(ByVal ws As Worksheet) As Range
+    Dim vr As Range, sonC As Long, sonR As Long, f As Range, s As Shape, r As Long, sinirX As Double
+    Set vr = ActiveWindow.VisibleRange
+    sonC = vr.Column + vr.Columns.Count - 1
+    sonR = vr.Row + vr.Rows.Count - 1
+    If InStr(1, ws.Name, "_STOK", vbTextCompare) = 0 And ws.Name <> "STOKLAR" Then
+        Set f = ws.Range(ws.Cells(1, 1), ws.Cells(ws.Rows.Count, sonC)).Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
+            SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
+        If Not f Is Nothing Then
+            If f.Row > sonR Then sonR = f.Row
+        End If
+        sinirX = ws.Cells(1, sonC + 1).Left
+        For Each s In ws.Shapes
+            If s.Visible And s.Left < sinirX Then
+                r = s.BottomRightCell.Row
+                If r > sonR Then sonR = r
+            End If
+        Next s
+        If sonR > 250 Then sonR = application.Max(250, vr.Row + vr.Rows.Count - 1)
+    End If
+    Set T_EkranAlan = ws.Range(ws.Cells(1, 1), ws.Cells(sonR, sonC))
 End Function
 
 ' Diger birimlerin Excel ciktilari icin ayni AKSORA imzasi.
