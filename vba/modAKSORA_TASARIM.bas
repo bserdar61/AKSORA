@@ -2866,10 +2866,20 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
             AKSORA_EKRAN_SIGDIR ws
         End If
         Err.Clear
+        ' Duzen yordami baska sayfaya gecirdiyse (panel yenileme vb.) sayfaya geri donulur.
+        If Not (ActiveSheet Is ws) Then ws.Activate
         DoEvents
         ActiveWindow.ScrollRow = 1: ActiveWindow.ScrollColumn = 1
+        Set rg = Nothing
         Set rg = T_EkranAlan(ws)
+        If rg Is Nothing Then Set rg = ws.Range(ws.Cells(1, 1), ws.Cells(ActiveWindow.VisibleRange.Row + ActiveWindow.VisibleRange.Rows.Count - 1, ActiveWindow.VisibleRange.Column + ActiveWindow.VisibleRange.Columns.Count - 1))
+        Err.Clear
         rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
+        If Err.Number <> 0 Then
+            Err.Clear
+            Set rg = ws.Range(ws.Cells(1, 1), ws.Cells(ActiveWindow.VisibleRange.Row + ActiveWindow.VisibleRange.Rows.Count - 1, ActiveWindow.VisibleRange.Column + ActiveWindow.VisibleRange.Columns.Count - 1))
+            rg.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
+        End If
         If Err.Number = 0 Then
             yol = klasor & application.PathSeparator & Format$(i, "000") & " - " & grup & " - " & AKSORA_DOSYA_ADI(ws.Name) & ".jpg"
             tmp.Activate
@@ -2934,27 +2944,32 @@ Private Function T_EkranAlinir(ByVal ws As Worksheet) As Boolean
     T_EkranAlinir = (s Is Nothing)
 End Function
 
-' Goruntu alani: A1'den ekran genisligine kadar (sagdaki gizli veri sutunlari alinmaz). Stok listelerinde ilk ekran;
-' panel, rapor ve analiz sayfalarinda sayfanin sonuna kadar (yazi ve sekiller), en fazla 250 satir.
+' Goruntu alani: A1'den ekran genisligine kadar (sagdaki gizli veri sutunlari alinmaz). Stok listeleri ve arama sayfalarinda
+' ilk ekran; ADMIN PANEL sonuna kadar (en fazla 400 satir); diger panel, rapor ve analiz sayfalari en fazla 150 satir.
+' Korumali sayfada Find calismadigi icin son dolu satir satir satir sayilir; bir seklin hatasi alani bozmaz.
 Private Function T_EkranAlan(ByVal ws As Worksheet) As Range
-    Dim vr As Range, sonC As Long, sonR As Long, f As Range, s As Shape, r As Long, sinirX As Double
+    Dim vr As Range, sonC As Long, sonR As Long, ilkR As Long, s As Shape, r As Long, sinirX As Double, ust As Long, sinir As Long
     Set vr = ActiveWindow.VisibleRange
     sonC = vr.Column + vr.Columns.Count - 1
     sonR = vr.Row + vr.Rows.Count - 1
-    If InStr(1, ws.Name, "_STOK", vbTextCompare) = 0 And ws.Name <> "STOKLAR" Then
-        Set f = ws.Range(ws.Cells(1, 1), ws.Cells(ws.Rows.Count, sonC)).Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
-            SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
-        If Not f Is Nothing Then
-            If f.Row > sonR Then sonR = f.Row
-        End If
+    ilkR = sonR
+    If InStr(1, ws.Name, "_STOK", vbTextCompare) = 0 And ws.Name <> "STOKLAR" And InStr(1, ws.Name, "MALZEME_ARA", vbTextCompare) = 0 Then
+        If ws.Name = "ADMIN PANEL" Then sinir = 400 Else sinir = 150
+        On Error Resume Next
+        ust = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+        If ust > sinir Then ust = sinir
+        For r = ust To sonR + 1 Step -1
+            If application.WorksheetFunction.CountA(ws.Range(ws.Cells(r, 1), ws.Cells(r, sonC))) > 0 Then sonR = r: Exit For
+        Next r
         sinirX = ws.Cells(1, sonC + 1).Left
         For Each s In ws.Shapes
-            If s.Visible And s.Left < sinirX Then
-                r = s.BottomRightCell.Row
-                If r > sonR Then sonR = r
-            End If
+            r = 0
+            If s.Visible And s.Left < sinirX Then r = s.BottomRightCell.Row
+            If r > sonR Then sonR = r
         Next s
-        If sonR > 250 Then sonR = application.Max(250, vr.Row + vr.Rows.Count - 1)
+        Err.Clear
+        On Error GoTo 0
+        If sonR > sinir Then sonR = application.Max(sinir, ilkR)
     End If
     Set T_EkranAlan = ws.Range(ws.Cells(1, 1), ws.Cells(sonR, sonC))
 End Function
