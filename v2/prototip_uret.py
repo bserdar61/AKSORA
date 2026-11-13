@@ -487,7 +487,7 @@ def stoklar(wb, f):
     for ad, sec in (("Değere göre  \u2193", True), ("Yalnız YENİ", False), ("Yalnız ÇIKMA", False)):
         cw = 34 + 7 * len(ad)
         x -= cw
-        s.kutu(x, y + 2, cw, 28, ad, dolgu=NAVY if sec else WHITE, cizgi=None if sec else LINE, renk=WHITE if sec else INK2, boyut=8.5,
+        s.kutu(x, y + 2, cw, 28, ad, dolgu=NAVY if sec else CARD, cizgi=None if sec else LINE, renk=WHITE if sec else INK2, boyut=8.5,
                kalin=True, yatay="center", r=14)
         x -= 8
     ust = y_satir(y + 32 + 8)
@@ -616,7 +616,7 @@ def arama(wb, f):
     x = X0
     for i, il in enumerate(["Tümü", "Giresun", "Trabzon", "Rize", "Gümüşhane", "Artvin"]):
         w = 30 + 8 * len(il)
-        s.kutu(x, y, w, 30, il, dolgu=NAVY if i == 5 else WHITE, cizgi=None if i == 5 else LINE, renk=WHITE if i == 5 else INK2,
+        s.kutu(x, y, w, 30, il, dolgu=NAVY if i == 5 else CARD, cizgi=None if i == 5 else LINE, renk=WHITE if i == 5 else INK2,
                boyut=9, kalin=True, yatay="center", r=15)
         x += w + 8
     s.kutu(X0 + CW - 520, y, 520, 30, "15 satır  •  10 depo  •  22 adet  •  477.109,92 TL", renk=INK, boyut=10, kalin=True, yatay="right", ic=0)
