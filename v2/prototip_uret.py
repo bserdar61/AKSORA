@@ -17,12 +17,15 @@ import zipfile
 import xlsxwriter
 
 # ---------------------------------------------------------------- renkler
-NAVY, SIDE, SIDE_ON = "#0B2541", "#0A1F38", "#12385F"
-TEAL, TEAL_D = "#00A38D", "#007D6E"
-INK, INK2, INK3 = "#0F172A", "#475569", "#94A3B8"
-LINE, BG, WHITE, HEAD = "#E5EAF0", "#F3F6FA", "#FFFFFF", "#F8FAFC"
-RED, AMB, GRN, BLU, VIO = "#DC2626", "#D97706", "#16A34A", "#2563EB", "#8B5CF6"
-REDBG, AMBBG, GRNBG, BLUBG, SLBG = "#FEE2E2", "#FEF3C7", "#DCFCE7", "#DBEAFE", "#EEF2F6"
+# Koyu "metalik mavi" tema: zemin koyu lacivert, kartlar geçişli mavi, yazılar açık.
+NAVY, SIDE, SIDE_ON = "#1E6FD9", "#061426", "#12385F"      # NAVY: seçili çip / vurgu mavisi
+TEAL, TEAL_D = "#19C2A8", "#0FA796"
+INK, INK2, INK3 = "#EAF2FB", "#A9C0DB", "#6F8FB5"           # ana yazı, ikincil, soluk
+LINE, BG, WHITE, HEAD = "#1E3D61", "#081A2E", "#FFFFFF", "#0A2038"
+CARD, CARD2, AYRAC, UST = "#0F2A47", "#0C2340", "#17324F", "#0A1F38"   # kart, tablo hücresi, satır çizgisi, üst bant
+RED, AMB, GRN, BLU, VIO = "#F87171", "#FBBF24", "#4ADE80", "#60A5FA", "#A78BFA"
+REDBG, AMBBG, GRNBG, BLUBG, SLBG = "#4A1D24", "#4A3413", "#12402E", "#16335E", "#17365A"
+KOYU_INK, KOYU_INK2 = "#0F172A", "#475569"                  # beyaz kart üzerindeki yazı (giriş ekranı)
 FONT, ICON = "Segoe UI", "Segoe MDL2 Assets"
 
 # Windows simge yazı tipi (Segoe MDL2 Assets) karakterleri
@@ -70,7 +73,7 @@ class Sayfa:
         self.kutu(x, y, w, h, IC[ad], dolgu=dolgu, renk=renk, boyut=boyut, yatay="center", font=ICON, r=r, ic=0, url=url)
 
     def kart(self, x, y, w, h):
-        self.kutu(x, y, w, h, dolgu=WHITE, cizgi=LINE, r=10, golge=True)
+        self.kutu(x, y, w, h, gecis=(["#143357", "#0C2340"], 90), cizgi="#23486F", r=12, golge=True)
 
     def resim(self, yol, x, y, boyut, kaynak_boyut=360):
         olcek = boyut / kaynak_boyut
@@ -90,26 +93,28 @@ def bicimler(wb):
         f[ad] = wb.add_format(k)
     ekle("bg", bg_color=BG)
     ekle("side", bg_color=SIDE)
-    ekle("top", bg_color=WHITE)
-    ekle("topb", bg_color=WHITE, bottom=1, bottom_color=LINE)
+    ekle("top", bg_color=UST)
+    ekle("topb", bg_color=UST, bottom=1, bottom_color=LINE)
     ekle("navy", bg_color=NAVY)
     ekle("koyu", bg_color="#061426")
     ekle("th", bg_color=HEAD, font_color=INK2, bold=True, font_size=9, bottom=1, bottom_color=LINE, top=1, top_color=LINE, indent=1)
     ekle("thr", bg_color=HEAD, font_color=INK2, bold=True, font_size=9, bottom=1, bottom_color=LINE, top=1, top_color=LINE, align="right", indent=1)
-    ekle("td", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", indent=1)
-    ekle("tdb", bg_color=WHITE, font_color=INK, bold=True, bottom=1, bottom_color="#F0F3F7", indent=1)
-    ekle("tdm", bg_color=WHITE, font_color=INK3, bottom=1, bottom_color="#F0F3F7", indent=1)
-    ekle("tdn", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", align="right", num_format="#,##0.00", indent=1)
-    ekle("tdi", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", align="right", num_format="#,##0", indent=1)
-    ekle("tdp", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", align="right", num_format="0.0%", indent=1)
+    ekle("td", bg_color=CARD2, font_color=INK, bottom=1, bottom_color=AYRAC, indent=1)
+    ekle("tdb", bg_color=CARD2, font_color=INK, bold=True, bottom=1, bottom_color=AYRAC, indent=1)
+    ekle("tdm", bg_color=CARD2, font_color=INK3, bottom=1, bottom_color=AYRAC, indent=1)
+    ekle("tdn", bg_color=CARD2, font_color=INK, bottom=1, bottom_color=AYRAC, align="right", num_format="#,##0.00", indent=1)
+    ekle("tdi", bg_color=CARD2, font_color=INK, bottom=1, bottom_color=AYRAC, align="right", num_format="#,##0", indent=1)
+    ekle("tdp", bg_color=CARD2, font_color=INK, bottom=1, bottom_color=AYRAC, align="right", num_format="0.0%", indent=1)
     for ad, renk in (("r", RED), ("a", AMB), ("g", GRN), ("b", BLU), ("s", INK2)):
-        ekle("st" + ad, bg_color=WHITE, font_color=renk, bold=True, bottom=1, bottom_color="#F0F3F7", indent=1)
-    ekle("ak", bg_color=WHITE)
-    ekle("etiket", bg_color=WHITE, font_color=INK2, bold=True, font_size=9, indent=1)
-    ekle("tdq", bg_color=WHITE, font_color=INK, bottom=1, bottom_color="#F0F3F7", align="right", indent=1)
-    ekle("iki", bg_color=WHITE, text_wrap=True, bottom=1, bottom_color="#F0F3F7", indent=1)
-    ekle("pay", bg_color=WHITE, font_color=INK2, font_size=9, bottom=1, bottom_color="#F0F3F7", align="right", num_format="0.0%", indent=1)
-    ekle("giris", bg_color=WHITE, font_color=INK, font_size=13, bold=True, border=1, border_color="#CBD5E1", indent=1)
+        ekle("st" + ad, bg_color=CARD2, font_color=renk, bold=True, bottom=1, bottom_color=AYRAC, indent=1)
+    ekle("ak", bg_color=CARD2)
+    ekle("etiket", bg_color=CARD2, font_color=INK2, bold=True, font_size=9, indent=1)
+    ekle("tdq", bg_color=CARD2, font_color=INK, bottom=1, bottom_color=AYRAC, align="right", indent=1)
+    ekle("iki", bg_color=CARD2, text_wrap=True, bottom=1, bottom_color=AYRAC, indent=1)
+    ekle("pay", bg_color=CARD2, font_color=INK2, font_size=9, bottom=1, bottom_color=AYRAC, align="right", num_format="0.0%", indent=1)
+    f["_ad"] = wb.add_format({"font_name": FONT, "font_size": 10, "bold": True, "font_color": INK})
+    f["_alt"] = wb.add_format({"font_name": FONT, "font_size": 8.5, "font_color": INK3})
+    ekle("giris", bg_color=UST, font_color=INK, font_size=13, bold=True, border=1, border_color="#2B5B8C", indent=1)
     return f
 
 
@@ -138,6 +143,9 @@ def kabuk(s, etkin, baslik, yol, ana_eylem=None, ikincil=None, satir=60, sutunla
         ws.set_row_pixels(r, 30, f["bg"])
         ws.write_blank(r, 0, None, f["side"])
     ws.freeze_panes(3, 1)
+    # --- ışıltı: üst bandın ve gösterge kartlarının arkasında (tablo hücrelerinin üstüne gelmez)
+    s.kutu(X0 + CW - 520, -90, 620, 300, dolgu="#1E6FD9", elips=True, alfa=80, yumusak=80)
+    s.kutu(X0 + 180, -120, 520, 260, dolgu="#19C2A8", elips=True, alfa=88, yumusak=80)
     # --- kenar menü
     s.resim(LOGO, 14, 12, 40)
     s.kutu(60, 12, 150, 24, "AKSORA", renk=WHITE, boyut=13, kalin=True, ic=0)
@@ -165,7 +173,7 @@ def kabuk(s, etkin, baslik, yol, ana_eylem=None, ikincil=None, satir=60, sutunla
     s.kutu(X0, 6, 500, 18, yol, renk=INK3, boyut=8.5, ic=0)
     s.kutu(X0, 24, 500, 30, baslik, renk=INK, boyut=15, kalin=True, ic=0)
     x = X0 + CW
-    s.simge(x - 34, 16, "bell", renk=INK2, boyut=11, w=34, h=32, dolgu=WHITE, r=8)
+    s.simge(x - 34, 16, "bell", renk=INK2, boyut=11, w=34, h=32, dolgu=CARD, r=8)
     x -= 44
     if ana_eylem:
         w = 60 + 7 * len(ana_eylem)
@@ -176,10 +184,10 @@ def kabuk(s, etkin, baslik, yol, ana_eylem=None, ikincil=None, satir=60, sutunla
     for ad in (ikincil or []):
         w = 30 + 7 * len(ad)
         x -= w
-        s.kutu(x, 16, w, 32, ad, dolgu=WHITE, cizgi=LINE, renk=INK, boyut=9.5, kalin=True, yatay="center", r=8)
+        s.kutu(x, 16, w, 32, ad, dolgu=CARD, cizgi=LINE, renk=INK, boyut=9.5, kalin=True, yatay="center", r=8)
         x -= 10
     x -= 110
-    s.kutu(x, 16, 110, 32, "       Artvin", dolgu=WHITE, cizgi=LINE, renk=INK, boyut=9.5, kalin=True, r=8, ic=6)
+    s.kutu(x, 16, 110, 32, "       Artvin", dolgu=CARD, cizgi=LINE, renk=INK, boyut=9.5, kalin=True, r=8, ic=6)
     s.simge(x + 4, 19, "pin", renk=INK2, boyut=10)
     s.simge(x + 82, 19, "down", renk=INK3, boyut=8)
     x -= 230
@@ -221,16 +229,18 @@ def kpi_satiri(s, y, ogeler, veri_satir=None):
     return y + 104
 
 
-def tablo(s, ust_satir, basliklar, satirlar, genislikler, bicim, ilk_sutun=2, suz=False):
+def tablo(s, ust_satir, basliklar, satirlar, genislikler, bicim, ilk_sutun=2, suz=False, yukseklik=30):
     ws, f = s.ws, s.fm
     ws.set_row_pixels(ust_satir, 30)
     for j, b in enumerate(basliklar):
         ws.write(ust_satir, ilk_sutun + j, b.upper().replace("İ", "İ"), f["thr" if bicim[j] in ("tdn", "tdi", "tdp", "tdq") else "th"])
     for i, satir in enumerate(satirlar):
-        ws.set_row_pixels(ust_satir + 1 + i, 30)
+        ws.set_row_pixels(ust_satir + 1 + i, yukseklik)
         for j, v in enumerate(satir):
             b = bicim[j]
-            if b == "st":
+            if b == "iki":
+                ws.write_rich_string(ust_satir + 1 + i, ilk_sutun + j, f["_ad"], v[0], f["_alt"], "\n" + v[1], f["iki"])
+            elif b == "st":
                 metin, tur = v
                 ws.write(ust_satir + 1 + i, ilk_sutun + j, "●  " + metin, f["st" + tur])
             else:
@@ -247,11 +257,16 @@ def sekmeler(s, x, y, ogeler, etkin=0):
     for i, o in enumerate(ogeler):
         ow = 24 + 7 * len(o)
         if i == etkin:
-            s.kutu(cx, y + 4, ow, 26, o, dolgu=WHITE, renk=INK, boyut=9, kalin=True, yatay="center", r=7, golge=True, ic=0)
+            s.kutu(cx, y + 4, ow, 26, o, dolgu=NAVY, renk=WHITE, boyut=9, kalin=True, yatay="center", r=7, golge=True, ic=0)
         else:
             s.kutu(cx, y + 4, ow, 26, o, renk=INK2, boyut=9, kalin=True, yatay="center", ic=0)
         cx += ow
     return x + w
+
+
+def sayi(x):
+    """Miktar metni: 478.01 -> "478,01"; 4.0 -> "4"."""
+    return (f"{x:,.2f}".rstrip("0").rstrip(".") if x != int(x) else f"{int(x):,}").replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def y_satir(y):
@@ -285,7 +300,7 @@ def veri_sayfasi(wb):
 def pasta(wb, ilk, n, renkler, delik=62):
     ch = wb.add_chart({"type": "doughnut"})
     ch.add_series({"categories": ["_veri", ilk, 0, ilk + n - 1, 0], "values": ["_veri", ilk, 1, ilk + n - 1, 1],
-                   "points": [{"fill": {"color": c}, "border": {"color": WHITE, "width": 1.5}} for c in renkler]})
+                   "points": [{"fill": {"color": c}, "border": {"color": CARD, "width": 1.5}} for c in renkler]})
     ch.set_hole_size(delik)
     ch.set_legend({"position": "right", "font": {"name": FONT, "size": 9, "color": INK2}})
     ch.set_chartarea({"border": {"none": True}, "fill": {"none": True}})
@@ -300,7 +315,7 @@ def sutun(wb, ilk, n, sutun_no, renk, bicim="0", tur="column"):
     ch.set_legend({"none": True})
     eksen = {"num_font": {"name": FONT, "size": 8, "color": INK3}, "line": {"none": True}, "major_tick_mark": "none"}
     ch.set_x_axis(dict(eksen))
-    ch.set_y_axis(dict(eksen, visible=False, major_gridlines={"visible": True, "line": {"color": "#EEF2F6", "width": 0.75}}))
+    ch.set_y_axis(dict(eksen, visible=False, major_gridlines={"visible": True, "line": {"color": AYRAC, "width": 0.75}}))
     ch.set_chartarea({"border": {"none": True}, "fill": {"none": True}})
     ch.set_plotarea({"border": {"none": True}, "fill": {"none": True}})
     return ch
@@ -313,7 +328,7 @@ def cizgi(wb, ilk, n, sutun_no, renk):
     ch.set_legend({"none": True})
     eksen = {"num_font": {"name": FONT, "size": 8, "color": INK3}, "line": {"none": True}, "major_tick_mark": "none"}
     ch.set_x_axis(dict(eksen, interval_unit=3))
-    ch.set_y_axis(dict(eksen, major_gridlines={"visible": True, "line": {"color": "#EEF2F6", "width": 0.75}}))
+    ch.set_y_axis(dict(eksen, major_gridlines={"visible": True, "line": {"color": AYRAC, "width": 0.75}}))
     ch.set_chartarea({"border": {"none": True}, "fill": {"none": True}})
     ch.set_plotarea({"border": {"none": True}, "fill": {"none": True}})
     return ch
@@ -372,8 +387,8 @@ def giris(wb, f):
             s.kutu(x, y, kw, kh, dolgu=WHITE, alfa=91, cizgi=WHITE, calfa=78, r=18, url=url)
         s.kutu(x + kw - 96, y + 14, 80, 56, no, renk="#E2E8F0" if sec else "#35557E", boyut=30, kalin=True, yatay="right", ic=0)
         s.kutu(x + 24, y + 24, 52, 52, IC[sim], gecis=(renkler, 45), renk=WHITE, boyut=17, yatay="center", font=ICON, r=14, ic=0)
-        s.kutu(x + 24, y + 90, kw - 48, 32, ad, renk=INK if sec else WHITE, boyut=15, kalin=True, ic=0)
-        s.kutu(x + 24, y + 122, kw - 48, 44, acik, renk=INK2 if sec else "#B8CDE6", boyut=9.5, dikey="top", ic=0)
+        s.kutu(x + 24, y + 90, kw - 48, 32, ad, renk=KOYU_INK if sec else WHITE, boyut=15, kalin=True, ic=0)
+        s.kutu(x + 24, y + 122, kw - 48, 44, acik, renk=KOYU_INK2 if sec else "#B8CDE6", boyut=9.5, dikey="top", ic=0)
         s.kutu(x + 24, y + kh - 54, 190, 30, "\u25CF  " + durum, renk=(TEAL_D if sec else "#7BE0CF") if durum == "Güncel" or sec else "#FCD34D",
                boyut=9, kalin=True, ic=0)
         s.kutu(x + kw - 110, y + kh - 58, 86, 36, "Aç   \u2192", gecis=(["#1E6FD9", "#19C2A8"], 0) if sec else None,
@@ -386,9 +401,9 @@ def ana_panel(wb, f):
     s = Sayfa(wb, "Ana Panel", f)
     kabuk(s, "Ana panel", "Ana panel", "Malzeme Stok  ›  Genel", "Tüm stokları güncelle")
     y = kpi_satiri(s, TOP + 16, [
-        ("box", "#E0ECFB", "#1E6FD9", "Toplam stok değeri", "172,5 mn TL", "▼ %0,4", (SLBG, INK2), "düne göre", 0),
-        ("cart", REDBG, RED, "Kritik stok", "37 kalem", "▼ 4", (GRNBG, "#166534"), "15,5 mn TL alım", 1),
-        ("clock", AMBBG, AMB, "Atıl stok", "3,1 mn TL", "▲ %1,2", (REDBG, "#B91C1C"), "stokun %1,8'i", 2),
+        ("box", "#16335E", "#1E6FD9", "Toplam stok değeri", "172,5 mn TL", "▼ %0,4", (SLBG, INK2), "düne göre", 0),
+        ("cart", REDBG, RED, "Kritik stok", "37 kalem", "▼ 4", (GRNBG, GRN), "15,5 mn TL alım", 1),
+        ("clock", AMBBG, AMB, "Atıl stok", "3,1 mn TL", "▲ %1,2", (REDBG, RED), "stokun %1,8'i", 2),
         ("swap", GRNBG, GRN, "Transfer fırsatı", "1,16 mn TL", "69 öneri", (SLBG, INK2), "bekliyor", 3)])
     y += 14
     lw = 740
@@ -403,8 +418,8 @@ def ana_panel(wb, f):
         yy = y + 48 + i * 60
         url = f"internal:'{hedef}'!A1" if hedef else None
         if i:
-            s.kutu(X0 + 16, yy - 4, lw - 32, 1, dolgu="#EEF2F6", ic=0)
-        s.kutu(X0 + 16, yy + 10, 26, 26, str(i + 1), dolgu=REDBG if i == 0 else SLBG, renk="#B91C1C" if i == 0 else INK2,
+            s.kutu(X0 + 16, yy - 4, lw - 32, 1, dolgu=AYRAC, ic=0)
+        s.kutu(X0 + 16, yy + 10, 26, 26, str(i + 1), dolgu=REDBG if i == 0 else SLBG, renk=RED if i == 0 else INK2,
                boyut=9, kalin=True, yatay="center", r=7, ic=0)
         s.kutu(X0 + 54, yy + 4, lw - 200, 22, is_, renk=INK, boyut=9.5, kalin=True, ic=0, url=url)
         s.kutu(X0 + 54, yy + 26, lw - 200, 18, nerede, renk=INK3, boyut=8.5, ic=0)
@@ -455,16 +470,16 @@ def stoklar(wb, f):
     for i, (kod, ad, deger, kalem, pay, sec) in enumerate(depolar):
         x = X0 + i * (w + 12)
         if sec:
-            s.kutu(x, y, w, 112, gecis=(["#0B2541", "#12497A"], 45), r=12, golge=True)
+            s.kutu(x, y, w, 112, gecis=(["#1E6FD9", "#0FA796"], 45), r=12, golge=True)
         else:
             s.kart(x, y, w, 112)
-        s.kutu(x + 14, y + 12, 52, 20, kod, dolgu="#19C2A8" if sec else SLBG, renk=WHITE if sec else INK2, boyut=8, kalin=True,
+        s.kutu(x + 14, y + 12, 52, 20, kod, dolgu="#0B2541" if sec else SLBG, renk=WHITE if sec else INK2, boyut=8, kalin=True,
                yatay="center", r=10, ic=0)
-        s.kutu(x + 72, y + 12, w - 84, 20, ad, renk="#B8CDE6" if sec else INK3, boyut=8.5, ic=0)
+        s.kutu(x + 72, y + 12, w - 84, 20, ad, renk=WHITE if sec else INK3, boyut=8.5, ic=0)
         s.kutu(x + 14, y + 38, w - 28, 32, deger, renk=WHITE if sec else INK, boyut=14, kalin=True, ic=0)
-        s.kutu(x + 14, y + 70, w - 28, 18, kalem + ("" if sec else f"  \u2022  %{pay * 100:.1f}".replace(".", ",")), renk="#9FC2E8" if sec else INK3, boyut=8, ic=0)
-        s.kutu(x + 14, y + 94, w - 28, 5, dolgu="#2B5B8C" if sec else SLBG, r=3, ic=0)
-        s.kutu(x + 14, y + 94, max(5, int((w - 28) * pay)), 5, dolgu="#19C2A8" if sec else "#1E6FD9", r=3, ic=0)
+        s.kutu(x + 14, y + 70, w - 28, 18, kalem + ("" if sec else f"  \u2022  %{pay * 100:.1f}".replace(".", ",")), renk="#DDF7F2" if sec else INK3, boyut=8, ic=0)
+        s.kutu(x + 14, y + 94, w - 28, 5, dolgu="#0B2541" if sec else SLBG, r=3, ic=0)
+        s.kutu(x + 14, y + 94, max(5, int((w - 28) * pay)), 5, dolgu=WHITE if sec else "#1E6FD9", r=3, ic=0)
     y += 112 + 16
     # --- liste başlığı: sayı, sıralama ve süzme çipleri
     s.kutu(X0, y, 400, 32, "480 kalem  \u2022  20,0 mn TL", renk=INK, boyut=11.5, kalin=True, ic=0)
@@ -479,8 +494,7 @@ def stoklar(wb, f):
     ws.set_row_pixels(ust, 30)
     for j, b in enumerate(["MALZEME", "DEPO", "DURUM", "MİKTAR", "DEĞER (TL)", "PAY"]):
         ws.write(ust, 2 + j, b, f["thr" if j in (3, 4) else "th"])
-    ad_f = wb.add_format({"font_name": FONT, "font_size": 10, "bold": True, "font_color": INK})
-    alt_f = wb.add_format({"font_name": FONT, "font_size": 8.5, "font_color": INK3})
+    ad_f, alt_f = f["_ad"], f["_alt"]
     toplam = sum(r[9] for r in STOK)
     sirali = sorted(STOK, key=lambda r: -r[9])[:10]
     for i, (uy, depo, depo_ad, grup, deg, mal, tanim, miktar, birim, deger) in enumerate(sirali):
@@ -492,7 +506,7 @@ def stoklar(wb, f):
         ws.write(r, 5, f"{miktar} {birim}", f["tdq"])
         ws.write(r, 6, deger, f["tdn"])
         ws.write(r, 7, deger / toplam, f["pay"])
-    ws.conditional_format(ust + 1, 7, ust + len(sirali), 7, {"type": "data_bar", "bar_color": "#19C2A8", "bar_solid": True,
+    ws.conditional_format(ust + 1, 7, ust + len(sirali), 7, {"type": "data_bar", "bar_color": "#0F8F82", "bar_solid": True,
                                                               "min_type": "num", "min_value": 0, "max_type": "num", "max_value": 0.3})
 
 
@@ -500,9 +514,9 @@ def raporlar(wb, f, ngun):
     s = Sayfa(wb, "Raporlar", f)
     kabuk(s, "Raporlar", "Raporlar", "Malzeme Stok  ›  Rapor", None, ["Excel", "Çıktı al"], sutunlar=[120, 520, 180, 240, 180])
     y = kpi_satiri(s, TOP + 16, [
-        ("box", "#E0ECFB", "#1E6FD9", "CDP stok değeri", "20,0 mn TL", None, None, "480 satır  •  9 depo", None),
-        ("box", "#E6FAF6", TEAL_D, "EPP stok değeri", "52,7 mn TL", None, None, "254 satır  •  5 depo", None),
-        ("pin", "#EDE9FE", VIO, "İlçe stok değeri", "6,3 mn TL", None, None, "1.622 satır  •  16 depo", None),
+        ("box", "#16335E", "#1E6FD9", "CDP stok değeri", "20,0 mn TL", None, None, "480 satır  •  9 depo", None),
+        ("box", "#12403B", TEAL_D, "EPP stok değeri", "52,7 mn TL", None, None, "254 satır  •  5 depo", None),
+        ("pin", "#2E2760", VIO, "İlçe stok değeri", "6,3 mn TL", None, None, "1.622 satır  •  16 depo", None),
         ("people", AMBBG, AMB, "Yüklenici stok değeri", "93,5 mn TL", None, None, "474 satır  •  4 depo", None)])
     y += 14
     w3 = (CW - 28) // 3
@@ -521,7 +535,7 @@ def raporlar(wb, f, ngun):
                ("D010", "İSG-HIRDAVAT-MÜŞ", 14, 91812.01, 0.005), ("D011", "PLANLI BAKIM S3", 7, 44862.51, 0.002)]
     tablo(s, ust, ["Depo", "Depo adı", "Stok satırı", "Stok değeri (TL)", "Pay"], depolar, [120, 520, 180, 240, 180],
           ["tdb", "td", "tdi", "tdn", "tdp"])
-    s.ws.conditional_format(ust + 1, 6, ust + len(depolar), 6, {"type": "data_bar", "bar_color": "#9CC3F5", "bar_solid": True})
+    s.ws.conditional_format(ust + 1, 6, ust + len(depolar), 6, {"type": "data_bar", "bar_color": "#1E5FB8", "bar_solid": True})
 
 
 ATIL = [("Trabzon", "KABLO YE3SV 1X240/25MM2 36KV CU", "D002", 478.01, "M", 719485.06, ("Kendi ihtiyacında kullan", "r"), "30.06.2024"),
@@ -540,7 +554,7 @@ ATIL = [("Trabzon", "KABLO YE3SV 1X240/25MM2 36KV CU", "D002", 478.01, "M", 7194
 
 def atil(wb, f):
     s = Sayfa(wb, "Atıl Stok", f)
-    kabuk(s, "Atıl stok", "Atıl stok", "Malzeme Stok  ›  Karar", "SAP'den oku", ["Excel", "Transfer listesi"], sutunlar=[130, 400, 80, 100, 70, 130, 220, 110])
+    kabuk(s, "Atıl stok", "Atıl stok", "Malzeme Stok  ›  Karar", "SAP'den oku", ["Excel", "Transfer listesi"], sutunlar=[130, 480, 140, 160, 220, 110])
     y = kpi_satiri(s, TOP + 16, [
         ("clock", REDBG, RED, "Atıl (24 ay+)", "31,9 mn TL", "1.506 kalem", (SLBG, INK2), None, 4),
         ("clock", AMBBG, AMB, "3 ay içinde atıl", "2,9 mn TL", "336 kalem", (SLBG, INK2), None, 5),
@@ -550,18 +564,19 @@ def atil(wb, f):
     x = sekmeler(s, X0, y, ["Ne yapılmalı · 2.130", "Özet", "Atıl listesi · 1.798"])
     s.kutu(X0 + CW - 420, y + 4, 420, 26, "SAP okuması 04.11.2026  •  7 gün önce: yeniden okuyun", renk=RED, boyut=9, kalin=True, yatay="right", ic=0)
     ust = y_satir(y + 34 + 10)
-    tablo(s, ust, ["İl", "Malzeme", "Depo", "Miktar", "Birim", "Değer (TL)", "Ne yapılmalı", "En eski giriş"], ATIL,
-          [130, 400, 80, 100, 70, 130, 220, 110], ["tdb", "td", "tdm", "tdq", "tdm", "tdn", "st", "tdm"], suz=True)
+    tablo(s, ust, ["İl", "Malzeme", "Miktar", "Değer (TL)", "Ne yapılmalı", "En eski giriş"],
+          [(il, (mal, "Depo " + depo), f"{sayi(mik)} {birim}", deger, yap, tarih) for il, mal, depo, mik, birim, deger, yap, tarih in ATIL],
+          None, ["tdb", "iki", "tdq", "tdn", "st", "tdm"], yukseklik=44)
 
 
 def satinalma(wb, f):
     s = Sayfa(wb, "Satın Alma", f)
-    kabuk(s, "Satın alma", "Satın alma", "Malzeme Stok  ›  Karar", "SAP'den oku", ["Excel", "Transfer listesi"], sutunlar=[130, 400, 130, 100, 100, 70, 150, 160])
+    kabuk(s, "Satın alma", "Satın alma", "Malzeme Stok  ›  Karar", "SAP'den oku", ["Excel", "Transfer listesi"], sutunlar=[140, 460, 150, 170, 130, 190])
     y = kpi_satiri(s, TOP + 16, [
-        ("cart", REDBG, RED, "Satın alınması gereken", "15,5 mn TL", "37 kalem", (REDBG, "#B91C1C"), "kritik stok", 1),
+        ("cart", REDBG, RED, "Satın alınması gereken", "15,5 mn TL", "37 kalem", (REDBG, RED), "kritik stok", 1),
         ("doc", AMBBG, AMB, "Gereksiz talep / sipariş", "50,5 bin TL", "9 kalem", (SLBG, INK2), "atıl stokta var", None),
         ("swap", GRNBG, GRN, "Transferle çözülen", "1,16 mn TL", "69 kalem", (SLBG, INK2), None, 3),
-        ("box", "#EDE9FE", VIO, "Fazla teslim alınan", "6 kalem", None, None, "iade / fatura kontrolü", None)])
+        ("box", "#2E2760", VIO, "Fazla teslim alınan", "6 kalem", None, None, "iade / fatura kontrolü", None)])
     y += 14
     sekmeler(s, X0, y, ["Satın alınacaklar · 37", "İptal / azalt · 9", "Fazla teslim · 6"])
     ust = y_satir(y + 34 + 10)
@@ -577,23 +592,25 @@ def satinalma(wb, f):
             ("Artvin EPP", "DIREK DEMIR GAL KAY G-K2", 38, 39, 37, "ADT", 1054924.61, ("1 ay 8 gün yeter", "a")),
             ("Artvin CDP", "KABLO ALPEK 2X16+25MM2", 41, 790.61, 935.87, "M", 41096.12, ("1 ay 11 gün yeter", "a")),
             ("Artvin CDP", "TRAVERS DEMIR GAL OG GN-250", 63, 48, 21, "ADT", 58954.40, ("2 ay 3 gün yeter", "a"))]
-    tablo(s, ust, ["İl / sistem", "Malzeme", "Yeter (gün)", "Stok", "Alınacak", "Birim", "Tahmini tutar (TL)", "Durum"], veri,
-          [130, 400, 130, 100, 100, 70, 150, 160], ["tdb", "td", "tdi", "tdq", "tdq", "tdm", "tdn", "st"], suz=True)
-    s.ws.conditional_format(ust + 1, 4, ust + len(veri), 4, {"type": "data_bar", "bar_color": "#FCA5A5", "bar_solid": True, "min_type": "num", "min_value": 0, "max_type": "num", "max_value": 90})
+    tablo(s, ust, ["İl / sistem", "Malzeme", "Alınacak", "Tahmini tutar (TL)", "Yeter (gün)", "Durum"],
+          [(il, (mal, f"Stokta {sayi(stok)} {birim}"), f"{sayi(al)} {birim}", tutar, gun, durum) for il, mal, gun, stok, al, birim, tutar, durum in veri],
+          None, ["tdb", "iki", "tdq", "tdn", "tdi", "st"], yukseklik=44)
+    s.ws.conditional_format(ust + 1, 6, ust + len(veri), 6, {"type": "data_bar", "bar_color": "#8A2F3A", "bar_solid": True,
+                                                              "min_type": "num", "min_value": 0, "max_type": "num", "max_value": 90})
 
 
 def arama(wb, f):
     s = Sayfa(wb, "Malzeme Arama", f)
-    kabuk(s, "Malzeme arama", "Malzeme arama", "Malzeme Stok  ›  Genel", "Bütün illeri güncelle", sutunlar=[70, 70, 160, 110, 310, 130, 70, 60, 110, 80, 70])
+    kabuk(s, "Malzeme arama", "Malzeme arama", "Malzeme Stok  ›  Genel", "Bütün illeri güncelle", sutunlar=[230, 470, 150, 110, 150, 130])
     # Arama bloğu hücrelerden oluşur (şekil hücrenin üstünü kapatacağı için kart şekli kullanılmaz):
     # beyaz satırlar + yazılabilir arama hücresi + "Ara" düğmesi.
     ws = s.ws
     for r in (4, 5, 6):
         ws.set_row_pixels(r, 30)
-        for c in range(2, 13):
+        for c in range(2, 8):
             ws.write_blank(r, c, None, f["ak"])
     ws.write(4, 2, "Malzeme kodu ya da açıklaması", f["etiket"])
-    ws.merge_range(5, 2, 5, 9, "Trafo 50kva", f["giris"])
+    ws.merge_range(5, 2, 5, 5, "Trafo 50kva", f["giris"])
     s.kutu(X0 + CW - 150, 94 + 26, 134, 38, "Ara", dolgu=NAVY, renk=WHITE, boyut=10.5, kalin=True, yatay="center", r=8)
     y = 94 + 90 + 12
     x = X0
@@ -612,19 +629,20 @@ def arama(wb, f):
             ("7155", "K010", "Yusufeli KA", "1000007403", "TRAFO OG/AG 0050kVA 33/0,4kV(HERM)", ("ÇIKMA/BDSZ", "s"), 1, "ADT", 0.01, "İlçe", "Artvin"),
             ("7055", "M123", "26.GR.02 ENGİNDE", "1000007403", "TRAFO OG/AG 0050kVA 33/0,4kV(HERM)", ("YENİ", "g"), 1, "ADT", 79518.29, "Yüklenici", "Artvin"),
             ("7055", "M124", "26.KET.01 ENER", "1000007403", "TRAFO OG/AG 0050kVA 33/0,4kV(HERM)", ("YENİ", "g"), 1, "ADT", 79518.29, "Yüklenici", "Artvin")]
-    tablo(s, ust, ["ÜY", "Depo", "Depo tanımı", "Malzeme", "Malzeme açıklaması", "Parti", "Miktar", "Birim", "Değer (TL)", "Kaynak", "İl"], veri,
-          [70, 70, 160, 110, 310, 130, 70, 60, 110, 80, 70], ["tdm", "tdb", "td", "td", "td", "st", "tdi", "tdm", "tdn", "tdm", "tdb"], suz=True)
-
+    tablo(s, ust, ["Depo", "Malzeme", "Parti", "Miktar", "Değer (TL)", "Kaynak"],
+          [((tanim, uy + "  \u00B7  " + depo), (acik, mal), parti, f"{sayi(mik)} {birim}", deger, (kaynak, il))
+           for uy, depo, tanim, mal, acik, parti, mik, birim, deger, kaynak, il in veri],
+          None, ["iki", "iki", "st", "tdq", "tdn", "iki"], yukseklik=44)
 
 
 def yonetim(wb, f, ngun):
     s = Sayfa(wb, "Yönetim Merkezi", f)
     kabuk(s, "Yönetim merkezi", "Yönetim merkezi", "Çoruh EDAŞ  ›  Tüm iller", "Tüm birimleri güncelle", ["PDF özeti", "Web panosu"], sutunlar=[200, 240, 200, 160, 220, 220])
     y = kpi_satiri(s, TOP + 16, [
-        ("shield", GRNBG, GRN, "Sağlık skoru", "64 / 100", "▲ 3 puan", (GRNBG, "#166534"), "düne göre", None),
-        ("box", "#E0ECFB", "#1E6FD9", "Tekil stok değeri", "1,39 mr TL", "▼ 2,3 mn", (SLBG, INK2), None, 0),
-        ("clock", AMBBG, AMB, "Atıl stok", "31,9 mn TL", "▼ %0,6", (GRNBG, "#166534"), "stokun %2,3'ü", 4),
-        ("cart", REDBG, RED, "Kritik stok", "179 kalem", "44 stoksuz", (REDBG, "#B91C1C"), "79,5 mn TL alım", 1)])
+        ("shield", GRNBG, GRN, "Sağlık skoru", "64 / 100", "▲ 3 puan", (GRNBG, GRN), "düne göre", None),
+        ("box", "#16335E", "#1E6FD9", "Tekil stok değeri", "1,39 mr TL", "▼ 2,3 mn", (SLBG, INK2), None, 0),
+        ("clock", AMBBG, AMB, "Atıl stok", "31,9 mn TL", "▼ %0,6", (GRNBG, GRN), "stokun %2,3'ü", 4),
+        ("cart", REDBG, RED, "Kritik stok", "179 kalem", "44 stoksuz", (REDBG, RED), "79,5 mn TL alım", 1)])
     y += 14
     lw = 600
     s.kart(X0, y, lw, 320)
@@ -637,8 +655,8 @@ def yonetim(wb, f, ngun):
     for i, (is_, tutar) in enumerate(isler):
         yy = y + 46 + i * 52
         if i:
-            s.kutu(X0 + 16, yy - 3, lw - 32, 1, dolgu="#EEF2F6", ic=0)
-        s.kutu(X0 + 16, yy + 8, 26, 26, str(i + 1), dolgu=REDBG if i == 0 else SLBG, renk="#B91C1C" if i == 0 else INK2,
+            s.kutu(X0 + 16, yy - 3, lw - 32, 1, dolgu=AYRAC, ic=0)
+        s.kutu(X0 + 16, yy + 8, 26, 26, str(i + 1), dolgu=REDBG if i == 0 else SLBG, renk=RED if i == 0 else INK2,
                boyut=9, kalin=True, yatay="center", r=7, ic=0)
         s.kutu(X0 + 54, yy + 8, lw - 190, 26, is_, renk=INK, boyut=9.5, kalin=True, ic=0)
         s.kutu(X0 + lw - 126, yy + 8, 110, 26, tutar, renk=INK, boyut=10, kalin=True, yatay="right", ic=0)
@@ -661,12 +679,15 @@ def yonetim(wb, f, ngun):
 def kapsam(wb, f):
     ws = wb.add_worksheet("Kapsam")
     ws.hide_gridlines(2)
-    ws.set_column_pixels(0, 0, 24)
-    ws.set_column_pixels(1, 1, 220)
-    ws.set_column_pixels(2, 2, 760)
-    ws.set_column_pixels(3, 3, 420)
-    b = wb.add_format({"font_name": FONT, "font_size": 14, "bold": True, "font_color": INK})
-    n = wb.add_format({"font_name": FONT, "font_size": 10, "font_color": INK2, "text_wrap": True, "valign": "top"})
+    ws.set_column_pixels(0, 0, 24, f["bg"])
+    ws.set_column_pixels(1, 1, 220, f["bg"])
+    ws.set_column_pixels(2, 2, 760, f["bg"])
+    ws.set_column_pixels(3, 3, 420, f["bg"])
+    ws.set_column_pixels(4, 30, 64, f["bg"])
+    for r in range(0, 40):
+        ws.set_row_pixels(r, 24, f["bg"])
+    b = wb.add_format({"font_name": FONT, "font_size": 14, "bold": True, "font_color": INK, "bg_color": BG})
+    n = wb.add_format({"font_name": FONT, "font_size": 10, "font_color": INK2, "text_wrap": True, "valign": "top", "bg_color": BG})
     ws.write(1, 1, "AKSORA v2  —  hangi şablon hangi sayfaları kapsar", b)
     ws.merge_range(2, 1, 2, 3, "Bu dosya makrosuz bir görünüm prototipidir; rakamlar örnektir. Soldaki menü ve üst banttaki düğmeler "
                    "sayfalar arasında gezinir. Dosyadaki her öğe hücre, şekil, grafik ya da köprüdür.", n)
@@ -682,7 +703,7 @@ def kapsam(wb, f):
         ("Malzeme Arama", "MALZEME_ARA, M_MALZEME_ARA, Y_MALZEME_ARA, I_MALZEME_ARA", "Arama kutusu gerçek, yazılabilir bir hücredir."),
         ("Yönetim Merkezi", "ADMIN PANEL", "Karne, işler ve il karşılaştırması aynı kabukta."),
     ]
-    td = wb.add_format({"font_name": FONT, "font_size": 10, "font_color": INK, "text_wrap": True, "valign": "top", "bottom": 1, "bottom_color": "#F0F3F7"})
+    td = wb.add_format({"font_name": FONT, "font_size": 10, "font_color": INK, "text_wrap": True, "valign": "top", "bottom": 1, "bottom_color": AYRAC, "bg_color": CARD2})
     for i, (a, c, d) in enumerate(satirlar):
         ws.set_row_pixels(5 + i, 40)
         ws.write_url(5 + i, 1, f"internal:'{a}'!A1", td, a)
