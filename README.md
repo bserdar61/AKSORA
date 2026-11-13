@@ -18,7 +18,7 @@ Paket Excel'de henüz derlenip denenmedi; **ilk kurulumu `AKSORA.xlsm`'in bir ko
 2. AKSORA kapalıyken `gelistirme\KUR.cmd` dosyasına çift tıklayın ve `.xlsm` dosyasını seçin.
 3. Betik yedek alır, modülleri ve on bağlantı satırını ekler, derleme sınamasını çalıştırır; yalnız sınama `OK` dönerse kaydeder. Aksi halde dosyaya dokunmadan kapanır.
 
-Kurulumdan sonra: ADMİN GİRİŞİ > Yönetim Merkezi'nde **Yönetim Karnesi — Trend** tablosu ve üstte **YÖNETİCİ ÖZETİ (PDF)**, **İŞLEM GÜNLÜĞÜ**, **SAĞLIK KONTROLÜ** düğmeleri görünür. Bekleme kartında (ör. TÜM BİRİMLERİ GÜNCELLE) çubuğun üzerinde kayan bir şerit ve saniye saniye ilerleyen süre görünür.
+Kurulumdan sonra: ADMİN GİRİŞİ > Yönetim Merkezi'nde **Yönetim Karnesi — Trend** tablosu ve üstte **YÖNETİCİ PANOSU (WEB)**, **YÖNETİCİ ÖZETİ (PDF)**, **İŞLEM GÜNLÜĞÜ**, **SAĞLIK KONTROLÜ** düğmeleri görünür. Bekleme kartında (ör. TÜM BİRİMLERİ GÜNCELLE) çubuğun üzerinde kayan bir şerit ve saniye saniye ilerleyen süre görünür.
 
 Betik çalışmazsa (kurumsal kısıt): `KUR.cmd -Elle` komutu `gelistirme\elle_kurulum\` klasörüne içe aktarılacak modülleri ve elle eklenecek satırların listesini yazar.
 

@@ -412,6 +412,8 @@ Public Function AKSORA_GELISTIRME_SINAMA() As String
     On Error GoTo Hata
     s = AKSORA_KPI_SINAMA()
     If s <> "OK" Then AKSORA_GELISTIRME_SINAMA = "HATA: " & s: Exit Function
+    s = AKSORA_PANO_SINAMA()                ' modAKSORA_PANO ve modAKSORA_PANO_SABLON derlenir
+    If s <> "OK" Then AKSORA_GELISTIRME_SINAMA = "HATA: pano " & s: Exit Function
     x = ADM_ILLER()                         ' modAKSORA_BIRIM derlenir
     If UBound(x) <> 4 Then AKSORA_GELISTIRME_SINAMA = "HATA: il listesi beklenen gibi değil": Exit Function
     s = ATIL_TESIS_IL("0000")               ' modAKSORA_ANALIZ derlenir

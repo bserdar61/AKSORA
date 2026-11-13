@@ -54,6 +54,9 @@ Private mOzAtilVar As Boolean
 Private mOzUyari() As String
 Private mOzUyariSay As Long
 Private mOzIsler As Collection
+Private mOzKapsam As String
+Private mOzBirim(0 To 3) As Double
+Private mOzHam(1 To 8, 1 To 3) As Variant   ' gosterge: bugun, onceki, 30 gun once (ham deger)
 
 '==========================================================
 ' BAGLANTI NOKTALARI
@@ -150,6 +153,10 @@ Public Sub AKSORA_KPI_TAMAMLA(ByVal ws As Worksheet, ByVal secIl As String, ByVa
         Next sev
     End If
     mOzIl = ilMetin
+    mOzKapsam = kapsam
+    For p = 0 To 3
+        mOzBirim(p) = deger(p)
+    Next p
 
     KPI_CIZ ws, mYerSatir, ilMetin, kayit, gecmis
     Set mOzIsler = KPI_ISLERI_OKU(ws)
@@ -418,6 +425,7 @@ Private Sub KPI_CIZ(ByVal ws As Worksheet, ByVal r0 As Long, ByVal ilMetin As St
         mOzTablo(k, 6) = KPI_FARK(simdi, otuz, CLng(t(1)))
         mOzTablo(k, 7) = yorum
         mOzYon(k) = yon
+        mOzHam(k, 1) = simdi: mOzHam(k, 2) = once: mOzHam(k, 3) = otuz
     Next k
     ADM_KENAR ws.Range(ADM_ADRES(r0 + 1, 2, r0 + 1 + KPI_ADET, 13)), True
 
@@ -469,16 +477,17 @@ Private Sub KPI_EGILIM(ByVal ws As Worksheet, ByVal r As Long, ByVal k As Long, 
     End If
 End Sub
 
-' Ust bolumde (3. satir seridinin saginda) uc dugme: yonetici ozeti, islem gunlugu, saglik kontrolu.
+' Ust bolumde (3. satir seridinin saginda) dort dugme: web panosu, PDF ozeti, islem gunlugu, saglik kontrolu.
 Private Sub KPI_DUGMELER(ByVal ws As Worksheet)
     Dim x As Double, y As Double, h As Double, w As Double
     On Error Resume Next
     y = ws.Rows(3).Top + 2: h = ws.Rows(3).Height - 4
-    w = ws.Columns("B").Width * 1.45
-    x = ws.Range("I1").Left
-    KPI_DUGME ws, "ADM_KPI_PDF", "YÖNETİCİ ÖZETİ (PDF)", x, y, w, h, RGB(185, 28, 28), "AKSORA_KPI_OZET_PDF"
-    KPI_DUGME ws, "ADM_KPI_GUNLUK", "İŞLEM GÜNLÜĞÜ", x + w + 6, y, w * 0.85, h, RGB(51, 65, 85), "AKSORA_GUNLUK_EXCEL"
-    KPI_DUGME ws, "ADM_KPI_SAGLIK", "SAĞLIK KONTROLÜ", x + w * 1.85 + 12, y, w * 0.9, h, RGB(51, 65, 85), "AKSORA_SAGLIK_KONTROL"
+    w = ws.Columns("B").Width
+    x = ws.Range("H1").Left + 20
+    KPI_DUGME ws, "ADM_KPI_PANO", "YÖNETİCİ PANOSU (WEB)", x, y, w * 1.5, h, RGB(0, 125, 110), "AKSORA_PANO_AC"
+    KPI_DUGME ws, "ADM_KPI_PDF", "YÖNETİCİ ÖZETİ (PDF)", x + w * 1.5 + 6, y, w * 1.4, h, RGB(185, 28, 28), "AKSORA_KPI_OZET_PDF"
+    KPI_DUGME ws, "ADM_KPI_GUNLUK", "İŞLEM GÜNLÜĞÜ", x + w * 2.9 + 12, y, w, h, RGB(51, 65, 85), "AKSORA_GUNLUK_EXCEL"
+    KPI_DUGME ws, "ADM_KPI_SAGLIK", "SAĞLIK KONTROLÜ", x + w * 3.9 + 18, y, w * 1.1, h, RGB(51, 65, 85), "AKSORA_SAGLIK_KONTROL"
 End Sub
 
 Private Sub KPI_DUGME(ByVal ws As Worksheet, ByVal ad As String, ByVal metin As String, ByVal x As Double, ByVal y As Double, _
@@ -721,6 +730,63 @@ Hata:
     On Error GoTo 0
     MsgBox "Yönetici özeti oluşturulamadı." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
+
+'==========================================================
+' YONETICI PANOSU (WEB) icin veri: son cizilen karne + gecmis, JSON metni olarak.
+' Rapor henuz kurulmadiysa bos metin doner. (Sayfayi modAKSORA_PANO yazar.)
+'==========================================================
+Public Function AKSORA_KPI_PANO_JSON() As String
+    Dim s As String, k As Long, t As Variant, g As Variant, n As Long, d As Variant, i As Long, ilk As Long
+    Dim iller As Variant, x As Variant, parca() As String, adlar As Variant
+    If Not mOzVar Then Exit Function
+    g = KPI_GECMIS(mOzKapsam)
+    n = g(0)
+    If n > 0 Then d = g(1)
+    ilk = 1
+    If n > 120 Then ilk = n - 119
+    s = "{""ornek"":false,""il"":" & AKSORA_PANO_METIN(mOzIl) & ",""tarih"":" & AKSORA_PANO_METIN(Format$(Now, "dd.mm.yyyy hh:nn")) & _
+        ",""hazirlayan"":" & AKSORA_PANO_METIN(AKSORA_KULLANICI()) & ",""onceki"":" & AKSORA_PANO_METIN(mOzOnceki) & ",""seriTarih"":["
+    For i = ilk To n
+        s = s & IIf(i > ilk, ",", "") & AKSORA_PANO_METIN(Format$(CDate(d(i, K_TARIH)), "dd.mm.yyyy"))
+    Next i
+    s = s & "],""kpi"":["
+    For k = 1 To KPI_ADET
+        t = KPI_TANIM(k)
+        s = s & IIf(k > 1, ",", "") & "{""ad"":" & AKSORA_PANO_METIN(CStr(t(0))) & ",""tur"":" & CStr(CLng(t(1))) & ",""yon"":" & CStr(CLng(t(2))) & _
+            ",""bugun"":" & AKSORA_PANO_SAYI(mOzHam(k, 1)) & ",""onceki"":" & AKSORA_PANO_SAYI(mOzHam(k, 2)) & _
+            ",""otuz"":" & AKSORA_PANO_SAYI(mOzHam(k, 3)) & ",""seri"":["
+        For i = ilk To n
+            s = s & IIf(i > ilk, ",", "") & AKSORA_PANO_SAYI(KPI_DEGER(d, i, k))
+        Next i
+        s = s & "]}"
+    Next k
+    s = s & "],""atilVar"":" & IIf(mOzAtilVar, "true", "false") & ",""iller"":["
+    iller = ADM_ILLER()
+    For i = 0 To 4
+        s = s & IIf(i > 0, ",", "") & "{""ad"":" & AKSORA_PANO_METIN(Y_IL_ADI(CStr(iller(i)))) & ",""tekil"":" & AKSORA_PANO_SAYI(mOzIller(i, 0)) & _
+            ",""atil"":" & AKSORA_PANO_SAYI(mOzIller(i, 2)) & ",""kapsam"":" & AKSORA_PANO_SAYI(mOzIller(i, 3)) & "}"
+    Next i
+    s = s & "],""birimler"":["
+    adlar = Array("Malzeme Stok", "Yatırım", "Müşteri", "İlçe Yönetim")
+    For i = 0 To 3
+        s = s & IIf(i > 0, ",", "") & "{""ad"":" & AKSORA_PANO_METIN(CStr(adlar(i))) & ",""deger"":" & AKSORA_PANO_SAYI(mOzBirim(i)) & "}"
+    Next i
+    s = s & "],""isler"":["
+    i = 0
+    If Not mOzIsler Is Nothing Then
+        For Each x In mOzIsler
+            s = s & IIf(i > 0, ",", "") & "{""is"":" & AKSORA_PANO_METIN(CStr(x(0))) & ",""tutar"":" & AKSORA_PANO_SAYI(x(1)) & _
+                ",""nerede"":" & AKSORA_PANO_METIN(CStr(x(2))) & "}"
+            i = i + 1
+        Next x
+    End If
+    s = s & "],""uyarilar"":["
+    For i = 1 To mOzUyariSay
+        parca = Split(mOzUyari(i), vbTab)
+        s = s & IIf(i > 1, ",", "") & "{""sev"":" & AKSORA_PANO_METIN(parca(0)) & ",""metin"":" & AKSORA_PANO_METIN(parca(1)) & "}"
+    Next i
+    AKSORA_KPI_PANO_JSON = s & "]}"
+End Function
 
 '==========================================================
 ' SINAMA: saf hesap islevleri (kurulum betigi ve AKSORA_GELISTIRME_SINAMA cagirir).

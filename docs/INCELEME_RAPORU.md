@@ -82,7 +82,7 @@ Olumlu tespitler: tüm modüllerde `Option Explicit` var; `.Select/.Activate` ku
 
 ## 4. v3.1 ile eklenenler
 
-Var olan hiçbir ekran ya da hesap değiştirilmedi. Üç yeni modül ve mevcut kodda **on tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
+Var olan hiçbir ekran ya da hesap değiştirilmedi. Beş yeni modül ve mevcut kodda **on tek satırlık bağlantı** var (`gelistirme/baglantilar.json`).
 
 ### Yönetim karnesi — trend (`modAKSORA_KPI`)
 Yönetim Merkezi'nde "Bugün Yapılacak 5 İş"in altına yeni tablo. Her rapor yenilemesinde sekiz gösterge günde bir satır olarak kaydedilir (`_AKSORA_KPI`, çok gizli sayfa) ve önceki kayıtla / 30 gün öncesiyle karşılaştırılır:
@@ -93,6 +93,9 @@ Her satırda değişim (▲/▼, TL ve %), eğilim çizgisi (son 12 kayıt) ve d
 
 ### Yönetici özeti — tek sayfa PDF
 Yönetim Merkezi üstündeki **YÖNETİCİ ÖZETİ (PDF)** düğmesi: göstergeler, bugün yapılacak işler, il karşılaştırması (stok payı, atıl oranı) ve öncelikli uyarılar tek A4 sayfada masaüstüne kaydedilir ve açılır.
+
+### Yönetici panosu — web (`modAKSORA_PANO`)
+**YÖNETİCİ PANOSU (WEB)** düğmesi karneyi, yapılacak işleri, uyarıları, il ve birim karşılaştırmasını ve seçilebilir eğilim grafiğini tek bir HTML dosyasına yazar ve tarayıcıda açar. Dosya tek başına çalışır (internet gerekmez): e-postayla gönderilebilir, telefonda açılabilir, açık ve koyu temayı destekler. Sayfanın kendisi tarayıcıda örnek veriyle (masaüstü, telefon, koyu tema, geçmişi boş ilk gün) denendi.
 
 ### İşlem günlüğü (`modAKSORA_GUNLUK`)
 Her SAP güncellemesi (süresiyle), kullanıcıya gösterilen her hata, her yönetici girişi (başarılı / hatalı) ve tek tuş güncelleme; kullanıcı ve bilgisayar adıyla kaydedilir (`_AKSORA_GUNLUK`, en fazla 5.000 satır). **İŞLEM GÜNLÜĞÜ** düğmesi Excel'e aktarır.

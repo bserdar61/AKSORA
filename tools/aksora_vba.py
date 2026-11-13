@@ -9,6 +9,9 @@
           Geliştirme paketinin bağlantı satırlarını kaynak üzerinde dener.
           Her çapa tam olarak bir kez bulunmalıdır. --yaz: dosyaları günceller.
 
+  sablon  <pano_sablon.html> <modAKSORA_PANO_SABLON.bas>
+          Web panosu şablonunu VBA metin modülüne çevirir ve geri okuyarak doğrular.
+
   denetle <kaynak_klasor>
           Statik denetim özeti (satır sayıları, riskli kalıplar, düz metin şifreler).
 
@@ -126,11 +129,56 @@ def denetle(klasor):
         print(f"  {ad:34s} {sayac[ad]}")
 
 
+def sablon(html_yolu, bas_yolu):
+    with open(html_yolu, encoding="utf-8") as f:
+        metin = f.read().replace("\r\n", "\n")
+    metin.encode("cp1254")  # VBA düzenleyicisi Windows-1254 bekler; uymayan karakter varsa burada durur
+    satirlar = metin.split("\n")
+    if satirlar and satirlar[-1] == "":
+        satirlar.pop()
+    parca_boyu, satir_boyu = 40, 700
+    govde, cagri = [], []
+    for no, bas in enumerate(range(0, len(satirlar), parca_boyu), 1):
+        cagri.append(f"PS_{no:02d}()")
+        govde.append(f"Private Function PS_{no:02d}() As String")
+        govde.append("    Dim s As String")
+        for satir in satirlar[bas:bas + parca_boyu]:
+            dilimler = [satir[i:i + satir_boyu] for i in range(0, len(satir), satir_boyu)] or [""]
+            for i, d in enumerate(dilimler):
+                son = " & vbLf" if i == len(dilimler) - 1 else ""
+                govde.append('    s = s & "' + d.replace('"', '""') + '"' + son)
+        govde.append(f"    PS_{no:02d} = s")
+        govde.append("End Function")
+        govde.append("")
+    bas_metin = ['Attribute VB_Name = "modAKSORA_PANO_SABLON"', "Option Explicit", "",
+                 "' OTOMATIK URETILIR - ELLE DUZENLEMEYIN.",
+                 "' Kaynak: gelistirme/pano/pano_sablon.html  |  Uretim: python3 tools/aksora_vba.py sablon ...", "",
+                 "Public Function AKSORA_PANO_SABLON() As String"]
+    for i in range(0, len(cagri), 6):
+        bas_metin.append("    AKSORA_PANO_SABLON = AKSORA_PANO_SABLON & " + " & ".join(cagri[i:i + 6]))
+    bas_metin += ["End Function", ""]
+    cikti = "\n".join(bas_metin + govde)
+    with open(bas_yolu, "w", encoding="utf-8", newline="\n") as f:
+        f.write(cikti)
+    # Geri okuma: VBA metin sabitleri birleştirilince şablonun aynısı çıkmalı.
+    geri = ""
+    for m in re.finditer(r'^    s = s & "((?:[^"]|"")*)"( & vbLf)?$', cikti, re.M):
+        geri += m.group(1).replace('""', '"') + ("\n" if m.group(2) else "")
+    if geri != "\n".join(satirlar) + "\n":
+        print("HATA: geri okunan metin şablonla aynı değil")
+        return 1
+    en_uzun = max(len(s) for s in cikti.split("\n"))
+    print(f"{len(satirlar)} satır, {len(cagri)} parça, en uzun VBA satırı {en_uzun} -> {bas_yolu} (geri okuma doğrulandı)")
+    return 0
+
+
 def main(a):
     if len(a) >= 3 and a[0] == "cikar":
         cikar(a[1], a[2], "--maskele" in a)
     elif len(a) >= 3 and a[0] == "bagla":
         sys.exit(1 if bagla(a[1], a[2], "--yaz" in a) else 0)
+    elif len(a) >= 3 and a[0] == "sablon":
+        sys.exit(sablon(a[1], a[2]))
     elif len(a) >= 2 and a[0] == "denetle":
         denetle(a[1])
     else:
