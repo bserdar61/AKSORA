@@ -328,6 +328,15 @@ Private Sub AKG_KOPYALA(ByVal src As Worksheet, ByVal dst As Worksheet)
                   "Kaynak boþ; stoklar deðiþtirilmedi: " & src.Name
     End If
 
+    ' Filtreli sayfaya dizi yazilirsa Excel yalniz gorunen satirlara yazar (satirlar kopyalanir, #YOK olur).
+    ' Yazmadan once filtre temizlenir; filtre dugmeleri kalir.
+    On Error Resume Next
+    If dst.FilterMode Then dst.ShowAllData
+    If src.FilterMode Then src.ShowAllData
+    On Error GoTo 0
+    If dst.FilterMode Then
+        Err.Raise vbObjectError + 752, "AKG_KOPYALA", "Filtre kaldýrýlamadý: " & dst.Name
+    End If
     If hedefSon >= FIRST_DATA Then
         dst.Range("A" & FIRST_DATA & ":L" & hedefSon).ClearContents
     End If
