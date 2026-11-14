@@ -834,6 +834,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-13: Akıllı arama (modAKSORA_SISTEM AKSORA_AKILLI_SOZCUK/HAZIRLA/ESLES): sözcükler sırasız, harf/rakam ayrılır (0050kVA → 50 KVA), baştaki sıfırlar atılır, sayı tam eşleşir, yazı sözcük başı; TRAFO=TRF. Eski Like eşleşmesi korunur, akıllı ek olarak denenir. Malzeme arama (IL_ARAMA) ve Müşteri/Yatırım/İlçe arama (M_AKILLI).
 
+- 2026-11-14: AKSORA v2 BÖLGE KOMUTA MERKEZİ: birim seçim ekranında "AKSORA v2 • BÖLGE KOMUTA" düğmesi (BX2=15) → AKSORA_V2_AC (modAKSORA_TASARIM): 5 ilin Malzeme/İlçe/Yüklenici stokları (canlı il canlı sayfalardan, diğerleri _AKLIVE_ arşivlerinden) JSON olarak tek dosya HTML'e gömülür → masaüstü "AKSORA v2.html", tarayıcıda açılır. Sayfa: Genel Bakış, Akıllı Arama (Excel ile aynı kural), Bölge Dengesi, Depolar; açık/koyu tema. Şablon v2/AKSORA_v2_sablon.html → VBA V2_S1..V2_S2 (üretici betik oturum notunda; şablon değişince yeniden üret).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.

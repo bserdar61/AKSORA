@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AKSORA v2 · Bölge Komuta Merkezi</title>
+<style>
+:root{
+  --lacivert:#0c2d4f; --lacivert2:#16416b; --teal:#007d6e; --teal2:#0fa391; --mavi:#1e63a8; --acik:#eef5fb;
+  --zemin:#f3f7fb; --kart:#ffffff; --cizgi:#dbe5ef; --yazi:#1c2b3a; --soluk:#64748b;
+  --kirmizi:#dc2626; --turuncu:#ea8a0c; --yesil:#16a34a; --mor:#7c3aed; --dmavi:#e1effa;
+  --golge:0 1px 2px rgba(12,45,79,.06),0 6px 18px rgba(12,45,79,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-tema="acik"]){
+    --zemin:#0b1622; --kart:#122233; --cizgi:#22384d; --yazi:#e6eef6; --soluk:#94a8bb; --acik:#16293c; --dmavi:#163452;
+    --golge:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+  }
+}
+:root[data-tema="koyu"]{
+  --zemin:#0b1622; --kart:#122233; --cizgi:#22384d; --yazi:#e6eef6; --soluk:#94a8bb; --acik:#16293c; --dmavi:#163452;
+  --golge:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--zemin);color:var(--yazi);font-family:"Aptos","Segoe UI Variable","Segoe UI",system-ui,sans-serif;font-size:14px}
+button{font-family:inherit}
+.ust{background:linear-gradient(120deg,#0a2742 0%,#0c2d4f 45%,#0d4d63 100%);color:#fff;padding:18px 28px 0;position:relative;overflow:hidden}
+.ust:after{content:"";position:absolute;right:-120px;top:-160px;width:520px;height:520px;border-radius:50%;
+  background:radial-gradient(circle,rgba(15,163,145,.35),rgba(15,163,145,0) 65%)}
+.ust-ic{display:flex;align-items:center;gap:18px;position:relative;z-index:1;flex-wrap:wrap}
+.logo{font-weight:800;font-size:28px;letter-spacing:3px}
+.logo b{color:#3fd6c2}
+.rozet{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:1px}
+.alt-baslik{opacity:.85;font-size:13px}
+.ust-sag{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;opacity:.95}
+.tema{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+.sekmeler{display:flex;gap:4px;margin-top:16px;position:relative;z-index:1;overflow-x:auto}
+.sekme{background:transparent;border:0;color:#cfe3f3;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;border-radius:10px 10px 0 0;white-space:nowrap}
+.sekme.aktif{background:var(--zemin);color:var(--yazi)}
+.filtre{display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:14px 28px;border-bottom:1px solid var(--cizgi);background:var(--kart)}
+.grup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.grup span.et{font-size:11px;font-weight:700;color:var(--soluk);letter-spacing:.8px;margin-right:4px}
+.cip{border:1px solid var(--cizgi);background:var(--kart);color:var(--yazi);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
+.cip.aktif{background:var(--lacivert);border-color:var(--lacivert);color:#fff}
+:root[data-tema="koyu"] .cip.aktif{background:var(--teal);border-color:var(--teal)}
+.icerik{padding:22px 28px 40px;max-width:1500px;margin:0 auto}
+.gorunum{display:none}.gorunum.aktif{display:block}
+.kpiler{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--kart);border:1px solid var(--cizgi);border-radius:14px;padding:16px 18px;box-shadow:var(--golge);position:relative;overflow:hidden}
+.kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--renk,var(--mavi))}
+.kpi .ad{font-size:11px;font-weight:700;color:var(--soluk);letter-spacing:.8px}
+.kpi .deger{font-size:24px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .not{font-size:12px;color:var(--soluk);margin-top:4px}
+.izgara{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-top:14px}
+.izgara2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.kart{background:var(--kart);border:1px solid var(--cizgi);border-radius:14px;padding:18px;box-shadow:var(--golge);min-width:0}
+.kart h3{margin:0 0 4px;font-size:15px}
+.kart .acik{font-size:12px;color:var(--soluk);margin-bottom:12px}
+.cubuk-satir{display:grid;grid-template-columns:110px 1fr 150px;gap:10px;align-items:center;margin:9px 0}
+.cubuk-satir .il{font-weight:700;font-size:13px}
+.cubuk{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--acik)}
+.cubuk div{height:100%}
+.cubuk-satir .tl{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px}
+.lejant{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--soluk);margin-top:10px}
+.lejant i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.halka-kutu{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.tazelik{width:100%;border-collapse:separate;border-spacing:0 6px}
+.tazelik th{font-size:11px;color:var(--soluk);text-align:left;font-weight:700;letter-spacing:.6px;padding:0 8px}
+.tazelik td{background:var(--acik);padding:9px 8px;font-size:12.5px}
+.tazelik td:first-child{border-radius:8px 0 0 8px;font-weight:700}
+.tazelik td:last-child{border-radius:0 8px 8px 0}
+.led{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.arama-kutu{display:flex;gap:10px;align-items:center;background:var(--kart);border:2px solid var(--cizgi);border-radius:14px;padding:6px 6px 6px 16px;box-shadow:var(--golge)}
+.arama-kutu:focus-within{border-color:var(--teal2)}
+.arama-kutu input{flex:1;border:0;outline:0;background:transparent;color:var(--yazi);font-size:18px;padding:10px 0;font-family:inherit;min-width:0}
+.ipucu{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.ipucu button{border:1px dashed var(--cizgi);background:transparent;color:var(--soluk);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer}
+.ozet-cipler{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.ozet-cip{background:var(--kart);border:1px solid var(--cizgi);border-radius:10px;padding:8px 12px;font-size:12px}
+.ozet-cip b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.tablo-kap{overflow:auto;border:1px solid var(--cizgi);border-radius:12px;background:var(--kart);max-height:620px}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{position:sticky;top:0;background:var(--lacivert);color:#fff;text-align:left;padding:10px;font-size:11.5px;letter-spacing:.4px;white-space:nowrap;z-index:1}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--cizgi);white-space:nowrap}
+table.t td.sag,table.t th.sag{text-align:right;font-variant-numeric:tabular-nums}
+table.t tr.d td{background:var(--dmavi)}
+table.t td.tanim{white-space:normal;min-width:260px}
+.isi{display:inline-block;min-width:52px;text-align:right;padding:3px 7px;border-radius:6px;font-variant-numeric:tabular-nums}
+.mini{display:inline-block;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--teal),var(--teal2));vertical-align:middle}
+.etiket{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.bos{padding:30px;text-align:center;color:var(--soluk)}
+.alt{color:var(--soluk);font-size:12px;text-align:center;padding:10px 0 30px}
+@media (max-width:1000px){.kpiler{grid-template-columns:repeat(2,1fr)}.izgara,.izgara2{grid-template-columns:1fr}}
+@media (max-width:560px){.icerik,.filtre,.ust{padding-left:16px;padding-right:16px}.kpiler{grid-template-columns:1fr}.cubuk-satir{grid-template-columns:80px 1fr 110px}}
+</style>
+</head>
+<body>
+<div class="ust">
+  <div class="ust-ic">
+    <div class="logo">AKS<b>O</b>RA</div>
+    <span class="rozet">v2</span>
+    <div>
+      <div style="font-weight:700;font-size:16px">Bölge Komuta Merkezi</div>
+      <div class="alt-baslik">Çoruh Elektrik Dağıtım A.Ş. · Artvin · Rize · Trabzon · Gümüşhane · Giresun</div>
+    </div>
+    <div class="ust-sag"><span id="veriTarih"></span><button class="tema" id="temaBtn" title="Açık / koyu tema">&#9680; Tema</button></div>
+  </div>
+  <div class="sekmeler" id="sekmeler">
+    <button class="sekme aktif" data-g="genel">Genel Bakış</button>
+    <button class="sekme" data-g="arama">Akıllı Arama</button>
+    <button class="sekme" data-g="denge">Bölge Dengesi</button>
+    <button class="sekme" data-g="depolar">Depolar</button>
+  </div>
+</div>
+<div class="filtre">
+  <div class="grup" id="ilFiltre"><span class="et">İL</span></div>
+  <div class="grup" id="birimFiltre"><span class="et">BİRİM</span></div>
+</div>
+<div class="icerik">
+  <section class="gorunum aktif" id="g-genel">
+    <div class="kpiler" id="kpiler"></div>
+    <div class="izgara">
+      <div class="kart"><h3>İllere göre stok değeri</h3><div class="acik">Birim kırılımıyla, en yüksekten en düşüğe.</div><div id="ilCubuk"></div><div class="lejant" id="ilLejant"></div></div>
+      <div class="kart"><h3>Birimlere göre dağılım</h3><div class="acik">Stok değerinin birimlere göre payı.</div><div class="halka-kutu" id="halka"></div></div>
+    </div>
+    <div class="izgara2">
+      <div class="kart"><h3>En değerli 10 malzeme</h3><div class="acik">Seçili il ve birimlerde toplam stok değeri.</div><div id="enDeger"></div></div>
+      <div class="kart"><h3>Veri güncelliği</h3><div class="acik">Her il ve birimin son SAP güncellemesi.</div><div id="tazelik"></div></div>
+    </div>
+  </section>
+  <section class="gorunum" id="g-arama">
+    <div class="arama-kutu"><span style="font-size:20px">&#8981;</span><input id="ara" placeholder="Malzeme ara: 50 kva trafo, ağaç direk 9, 1000006855 ..." autocomplete="off"></div>
+    <div class="ipucu" id="ipucu"></div>
+    <div class="ozet-cipler" id="araOzet"></div>
+    <div id="araSonuc"><div class="bos">Yazmaya başlayın: sonuçlar beş ilde ve bütün birimlerde anında gelir. Sözcük sırası önemsiz, 50 = 0050.</div></div>
+  </section>
+  <section class="gorunum" id="g-denge">
+    <div class="kart" style="margin-bottom:14px"><h3>Bölge dengesi: aynı malzeme hangi ilde birikmiş?</h3>
+      <div class="acik">Yeni stokta birden fazla ilde bulunan malzemeler, toplam değere göre. Koyu hücre: o il bölge stoğunun büyük kısmını tutuyor; satın almadan önce oradan transfer düşünülebilir.</div>
+      <div class="arama-kutu" style="box-shadow:none;border-width:1px"><span>&#8981;</span><input id="dengeAra" placeholder="Malzemeyi daralt (ör. kablo, armatür)" style="font-size:15px"></div>
+    </div>
+    <div id="dengeTablo"></div>
+  </section>
+  <section class="gorunum" id="g-depolar">
+    <div id="depoTablo"></div>
+  </section>
+  <div class="alt">AKSORA v2 · Veri kaynağı: AKSORA Excel (SAP MB52 / IQ09) · Excel'de <b>AKSORA v2</b> düğmesi bu sayfayı en güncel veriyle açar.</div>
+</div>
+<script>/*VERI*/</script>
+<script>
+(function(){
+const D = window.AKSORA_DATA || window.AKSORA_SNAPSHOT || {rows:[],tarih:{}};
+const IL = ["ARTVIN","RIZE","TRABZON","GUMUSHANE","GIRESUN"];
+const ILAD = {ARTVIN:"Artvin",RIZE:"Rize",TRABZON:"Trabzon",GUMUSHANE:"Gümüşhane",GIRESUN:"Giresun"};
+const BIRIM = ["MALZEME","ILCE","YUKLENICI"];
+const BAD = {MALZEME:"Malzeme Stok",ILCE:"İlçe",YUKLENICI:"Yüklenici"};
+const BRENK = {MALZEME:"#1e63a8",ILCE:"#0fa391",YUKLENICI:"#ea8a0c"};
+const tl = new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const sayi = new Intl.NumberFormat("tr-TR",{maximumFractionDigits:3});
+const TL = x => tl.format(x||0)+" TL";
+const KISA = x => { const a=Math.abs(x); if(a>=1e9) return tl.format(x/1e9)+" mr TL"; if(a>=1e6) return tl.format(x/1e6)+" mn TL"; if(a>=1e3) return tl.format(x/1e3)+" bin TL"; return TL(x); };
+const MK = x => sayi.format(Math.round((x||0)*1000)/1000);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// satir: [il, birim, uy, depo, depoAdi, mg, degerleme, malzeme, tanim, miktar, birim, deger]
+const R = D.rows.map(r=>({il:r[0],b:r[1],uy:r[2],dp:r[3],da:r[4],mg:r[5],dg:r[6],mal:r[7],tn:r[8],mk:+r[9]||0,br:r[10],tl:+r[11]||0}));
+let secIl = new Set(IL), secB = new Set(BIRIM);
+// Tema
+const kok=document.documentElement;
+try{const t=localStorage.getItem("aksora_v2_tema"); if(t) kok.dataset.tema=t;}catch(e){}
+document.getElementById("temaBtn").onclick=()=>{const k=kok.dataset.tema==="koyu"||(!kok.dataset.tema&&matchMedia("(prefers-color-scheme: dark)").matches);kok.dataset.tema=k?"acik":"koyu";try{localStorage.setItem("aksora_v2_tema",kok.dataset.tema)}catch(e){}};
+// Veri tarihi
+const tarihler = Object.values(D.tarih||{}); document.getElementById("veriTarih").textContent = tarihler.length? "Veri: "+tarihler.sort().slice(-1)[0] : "";
+// Filtreler
+function cipler(kap, liste, adlar, set, tum){
+  const el=document.getElementById(kap);
+  const ciz=()=>{ el.querySelectorAll("button").forEach(b=>b.remove());
+    const hepsi=document.createElement("button"); hepsi.className="cip"+(set.size===liste.length?" aktif":""); hepsi.textContent=tum;
+    hepsi.onclick=()=>{liste.forEach(x=>set.add(x)); ciz(); yenile();}; el.appendChild(hepsi);
+    liste.forEach(x=>{const b=document.createElement("button"); b.className="cip"+(set.size!==liste.length&&set.has(x)?" aktif":""); b.textContent=adlar[x];
+      b.onclick=()=>{ if(set.size===liste.length){set.clear();set.add(x);} else if(set.has(x)){ if(set.size>1) set.delete(x);} else set.add(x); ciz(); yenile();}; el.appendChild(b);});
+  }; ciz();
+}
+cipler("ilFiltre",IL,ILAD,secIl,"Tüm iller"); cipler("birimFiltre",BIRIM,BAD,secB,"Tüm birimler");
+const F = () => R.filter(r=>secIl.has(r.il)&&secB.has(r.b));
+// Sekmeler
+document.querySelectorAll(".sekme").forEach(b=>b.onclick=()=>{document.querySelectorAll(".sekme").forEach(x=>x.classList.toggle("aktif",x===b));
+  document.querySelectorAll(".gorunum").forEach(g=>g.classList.toggle("aktif",g.id==="g-"+b.dataset.g)); if(b.dataset.g==="arama") document.getElementById("ara").focus();});
+function degTur(dg){const t=(dg||"").toUpperCase().replace(/[^A-Z]/g,""); if(t.includes("HURDA")) return "HURDA"; if(t.includes("CIKMA")||t.includes("BDSZ")) return "ÇIKMA"; return "YENİ";}
+// GENEL
+function genel(){
+  const f=F(); let top=0; const mal=new Set(), dep=new Set();
+  f.forEach(r=>{top+=r.tl; mal.add(r.mal); dep.add(r.il+r.uy+r.dp);});
+  document.getElementById("kpiler").innerHTML=[
+    ["TOPLAM STOK DEĞERİ",KISA(top),TL(top),"#1e63a8"],["STOK SATIRI",MK(f.length),secIl.size+" il · "+secB.size+" birim","#0fa391"],
+    ["MALZEME ÇEŞİDİ",MK(mal.size),"farklı malzeme kodu","#7c3aed"],["DEPO",MK(dep.size),"stok bulunan depo","#ea8a0c"]]
+    .map(k=>`<div class="kpi" style="--renk:${k[3]}"><div class="ad">${k[0]}</div><div class="deger">${k[1]}</div><div class="not">${k[2]}</div></div>`).join("");
+  const ilT={}; IL.forEach(i=>{ilT[i]={t:0}; BIRIM.forEach(b=>ilT[i][b]=0);});
+  f.forEach(r=>{ilT[r.il][r.b]+=r.tl; ilT[r.il].t+=r.tl;});
+  const sira=IL.filter(i=>secIl.has(i)).sort((a,b)=>ilT[b].t-ilT[a].t); const mx=Math.max(1,...sira.map(i=>ilT[i].t));
+  document.getElementById("ilCubuk").innerHTML=sira.map(i=>`<div class="cubuk-satir"><div class="il">${ILAD[i]}</div><div class="cubuk" style="width:${Math.max(2,ilT[i].t/mx*100)}%">${BIRIM.filter(b=>secB.has(b)).map(b=>`<div title="${BAD[b]}: ${TL(ilT[i][b])}" style="width:${ilT[i].t?ilT[i][b]/ilT[i].t*100:0}%;background:${BRENK[b]}"></div>`).join("")}</div><div class="tl">${KISA(ilT[i].t)}</div></div>`).join("");
+  document.getElementById("ilLejant").innerHTML=BIRIM.filter(b=>secB.has(b)).map(b=>`<span><i style="background:${BRENK[b]}"></i>${BAD[b]}</span>`).join("");
+  // halka: birim payi
+  const dt={}; BIRIM.filter(b=>secB.has(b)).forEach(b=>dt[b]=0); f.forEach(r=>{if(r.b in dt) dt[r.b]+=r.tl;});
+  const cik=f.filter(r=>degTur(r.dg)!=="YENİ").length;
+  const renk=BRENK; const tt=Object.values(dt).reduce((a,b)=>a+b,0)||1;
+  let ac=-Math.PI/2, yol=""; const cx=90,cy=90,r1=80,r2=54;
+  Object.keys(dt).forEach(k=>{const a=dt[k]/tt*Math.PI*2; if(a<=0) return; const b=ac+Math.min(a,Math.PI*2-1e-4);
+    const p=(rr,an)=>[cx+rr*Math.cos(an),cy+rr*Math.sin(an)]; const [x1,y1]=p(r1,ac),[x2,y2]=p(r1,b),[x3,y3]=p(r2,b),[x4,y4]=p(r2,ac); const buyuk=(b-ac)>Math.PI?1:0;
+    yol+=`<path d="M${x1},${y1} A${r1},${r1} 0 ${buyuk} 1 ${x2},${y2} L${x3},${y3} A${r2},${r2} 0 ${buyuk} 0 ${x4},${y4} Z" fill="${renk[k]}" stroke="var(--kart)" stroke-width="2"><title>${BAD[k]}: ${TL(dt[k])}</title></path>`; ac=b;});
+  const yuzde=x=>"%"+new Intl.NumberFormat("tr-TR",{maximumFractionDigits:1}).format(x);
+  document.getElementById("halka").innerHTML=`<svg width="180" height="180" viewBox="0 0 180 180">${yol}<text x="90" y="86" text-anchor="middle" font-size="11" fill="var(--soluk)" font-weight="700">TOPLAM</text><text x="90" y="104" text-anchor="middle" font-size="13" fill="var(--yazi)" font-weight="800">${KISA(tt===1?0:tt)}</text></svg>
+   <div style="flex:1;min-width:170px">${Object.keys(dt).map(k=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--cizgi)"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${renk[k]};margin-right:8px"></i>${BAD[k]}</span><b style="font-variant-numeric:tabular-nums">${KISA(dt[k])} <span style="color:var(--soluk);font-weight:600">· ${yuzde(dt[k]/tt*100)}</span></b></div>`).join("")}
+   <div style="color:var(--soluk);font-size:12px;margin-top:10px">Çıkma / hurda (bedelsiz) satır: <b>${MK(cik)}</b></div></div>`;
+  // en degerli
+  const m={}; f.forEach(r=>{const k=r.mal; if(!m[k]) m[k]={tn:r.tn,tl:0,mk:0,br:r.br}; m[k].tl+=r.tl; m[k].mk+=r.mk;});
+  const en=Object.entries(m).sort((a,b)=>b[1].tl-a[1].tl).slice(0,10); const emx=en.length?en[0][1].tl:1;
+  document.getElementById("enDeger").innerHTML=en.length?`<table class="t"><tbody>${en.map(([k,v],i)=>`<tr><td style="color:var(--soluk)">${i+1}</td><td class="tanim"><b>${esc(v.tn)}</b><div style="color:var(--soluk);font-size:11.5px">${k} · ${MK(v.mk)} ${esc(v.br)}</div></td><td class="sag"><span class="mini" style="width:${Math.max(4,v.tl/emx*90)}px"></span> ${KISA(v.tl)}</td></tr>`).join("")}</tbody></table>`:`<div class="bos">Veri yok.</div>`;
+  // tazelik
+  const simdi=new Date();
+  const yas=s=>{const m=/(\d\d)\.(\d\d)\.(\d{4})\s+(\d\d):(\d\d)/.exec(s||""); if(!m) return null; const d=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5]); return (simdi-d)/864e5;};
+  const led=g=>g==null?"#94a3b8":g<1?"#16a34a":g<2?"#ea8a0c":"#dc2626";
+  document.getElementById("tazelik").innerHTML=`<table class="tazelik"><thead><tr><th>İL</th>${BIRIM.map(b=>`<th>${BAD[b].toUpperCase()}</th>`).join("")}</tr></thead><tbody>${IL.map(i=>`<tr><td>${ILAD[i]}</td>${BIRIM.map(b=>{const s=(D.tarih||{})[i+"|"+b]; const g=yas(s); return `<td><span class="led" style="background:${led(g)}"></span>${esc(s||"-")}</td>`;}).join("")}</tr>`).join("")}</tbody></table>`;
+}
+// AKILLI ARAMA (AKSORA Excel ile ayni kural)
+function sozcuk(t){t=String(t||"").toLocaleUpperCase("tr-TR").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ğ/g,"G").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C");
+  const out=[]; const re=/[A-Z]+|[0-9]+/g; let m; while((m=re.exec(t))){let x=m[0]; if(/^[0-9]/.test(x)) x=x.replace(/^0+(?=.)/,""); out.push(x);} return out;}
+const IDX = R.map(r=>" "+sozcuk(r.mal+" "+r.tn).join(" ")+" ");
+function esles(i,q){const m=IDX[i]; for(const x of q){ if(/^[0-9]/.test(x)){ if(m.indexOf(" "+x+" ")<0) return false;} else if(m.indexOf(" "+x)<0){ if(x==="TRAFO"&&m.indexOf(" TRF ")>=0) continue; if(x==="TRF"&&m.indexOf(" TRAFO")>=0) continue; return false;} } return true;}
+const ipucu=["50 kva trafo","ağaç direk 9","kablo alpek 3x35","armatür led","sayaç monofaze","400w"];
+document.getElementById("ipucu").innerHTML=ipucu.map(x=>`<button>${x}</button>`).join("");
+document.querySelectorAll("#ipucu button").forEach(b=>b.onclick=()=>{const a=document.getElementById("ara"); a.value=b.textContent; ara();});
+let zaman; document.getElementById("ara").addEventListener("input",()=>{clearTimeout(zaman); zaman=setTimeout(ara,120);});
+function ara(){
+  const q=sozcuk(document.getElementById("ara").value); const ozet=document.getElementById("araOzet"), son=document.getElementById("araSonuc");
+  if(!q.length){ozet.innerHTML=""; son.innerHTML=`<div class="bos">Yazmaya başlayın: sonuçlar beş ilde ve bütün birimlerde anında gelir.</div>`; return;}
+  const s=[]; for(let i=0;i<R.length;i++){const r=R[i]; if(secIl.has(r.il)&&secB.has(r.b)&&esles(i,q)) s.push(r);}
+  s.sort((a,b)=>(IL.indexOf(a.il)-IL.indexOf(b.il))||((a.dp[0]==="D"?0:1)-(b.dp[0]==="D"?0:1))||(b.tl-a.tl));
+  const ilO={}; let tmk=0,ttl=0; s.forEach(r=>{ilO[r.il]=(ilO[r.il]||0)+r.mk; tmk+=r.mk; ttl+=r.tl;});
+  ozet.innerHTML=`<div class="ozet-cip">Bulunan satır<b>${MK(s.length)}</b></div><div class="ozet-cip">Toplam değer<b>${KISA(ttl)}</b></div>`+IL.filter(i=>ilO[i]).map(i=>`<div class="ozet-cip">${ILAD[i]}<b>${MK(ilO[i])}</b></div>`).join("");
+  if(!s.length){son.innerHTML=`<div class="bos">Eşleşen stok bulunamadı.</div>`; return;}
+  const gos=s.slice(0,400);
+  son.innerHTML=`<div class="tablo-kap"><table class="t"><thead><tr><th>İl</th><th>Birim</th><th>ÜY</th><th>Depo</th><th>Depo adı</th><th>Malzeme</th><th>Tanım</th><th>Değerleme</th><th class="sag">Miktar</th><th>Birim</th><th class="sag">Değer</th></tr></thead><tbody>${gos.map(r=>`<tr class="${r.dp[0]==="D"?"d":""}"><td>${ILAD[r.il]}</td><td>${BAD[r.b]}</td><td>${esc(r.uy)}</td><td><b>${esc(r.dp)}</b></td><td>${esc(r.da)}</td><td>${esc(r.mal)}</td><td class="tanim">${esc(r.tn)}</td><td>${esc(r.dg)}</td><td class="sag">${MK(r.mk)}</td><td>${esc(r.br)}</td><td class="sag">${TL(r.tl)}</td></tr>`).join("")}</tbody></table></div>${s.length>400?`<div class="alt">İlk 400 satır gösteriliyor (toplam ${MK(s.length)}). Aramayı daraltın.</div>`:""}`;
+}
+// BOLGE DENGESI
+function denge(){
+  const q=sozcuk(document.getElementById("dengeAra").value); const m={};
+  R.forEach((r,i)=>{ if(!secB.has(r.b)||degTur(r.dg)!=="YENİ"||r.mk<=0) return; if(q.length&&!esles(i,q)) return;
+    if(!m[r.mal]) m[r.mal]={tn:r.tn,br:r.br,tl:0,il:{}}; const x=m[r.mal]; x.tl+=r.tl; x.il[r.il]=(x.il[r.il]||0)+r.mk;});
+  const l=Object.entries(m).filter(([k,v])=>Object.keys(v.il).length>=2).sort((a,b)=>b[1].tl-a[1].tl).slice(0,150);
+  const el=document.getElementById("dengeTablo");
+  if(!l.length){el.innerHTML=`<div class="bos">Birden fazla ilde bulunan malzeme yok.</div>`; return;}
+  el.innerHTML=`<div class="tablo-kap"><table class="t"><thead><tr><th>Malzeme</th><th>Tanım</th>${IL.map(i=>`<th class="sag">${ILAD[i]}</th>`).join("")}<th class="sag">Toplam değer</th><th>Yoğunlaşma</th></tr></thead><tbody>${l.map(([k,v])=>{
+    const top=IL.reduce((a,i)=>a+(v.il[i]||0),0); let enI=IL[0]; IL.forEach(i=>{if((v.il[i]||0)>(v.il[enI]||0)) enI=i;}); const pay=top?(v.il[enI]||0)/top:0;
+    return `<tr><td>${esc(k)}</td><td class="tanim">${esc(v.tn)}</td>${IL.map(i=>{const x=v.il[i]||0; const p=top?x/top:0; return `<td class="sag"><span class="isi" style="background:rgba(15,163,145,${(p*0.85).toFixed(2)});color:${p>0.55?"#fff":"inherit"}">${x?MK(x):"–"}</span></td>`;}).join("")}<td class="sag"><b>${KISA(v.tl)}</b></td><td>${pay>=0.7?`<span class="etiket" style="background:#fde7c7;color:#9a4b00">%${Math.round(pay*100)} ${ILAD[enI]}</span>`:`<span style="color:var(--soluk)">dengeli</span>`}</td></tr>`;}).join("")}</tbody></table></div>`;
+}
+document.getElementById("dengeAra").addEventListener("input",()=>{clearTimeout(zaman); zaman=setTimeout(denge,150);});
+// DEPOLAR
+function depolar(){
+  const m={}; F().forEach(r=>{const k=r.il+"|"+r.b+"|"+r.uy+"|"+r.dp; if(!m[k]) m[k]={il:r.il,b:r.b,uy:r.uy,dp:r.dp,da:r.da,n:0,tl:0,mal:new Set()}; m[k].n++; m[k].tl+=r.tl; m[k].mal.add(r.mal);});
+  const l=Object.values(m).sort((a,b)=>b.tl-a.tl); const mx=l.length?l[0].tl:1;
+  document.getElementById("depoTablo").innerHTML=l.length?`<div class="tablo-kap"><table class="t"><thead><tr><th>#</th><th>İl</th><th>Birim</th><th>ÜY</th><th>Depo</th><th>Depo adı</th><th class="sag">Satır</th><th class="sag">Çeşit</th><th class="sag">Stok değeri</th><th style="width:220px"></th></tr></thead><tbody>${l.map((d,i)=>`<tr class="${d.dp[0]==="D"?"d":""}"><td style="color:var(--soluk)">${i+1}</td><td>${ILAD[d.il]}</td><td>${BAD[d.b]}</td><td>${esc(d.uy)}</td><td><b>${esc(d.dp)}</b></td><td>${esc(d.da)}</td><td class="sag">${MK(d.n)}</td><td class="sag">${MK(d.mal.size)}</td><td class="sag"><b>${TL(d.tl)}</b></td><td><span class="mini" style="width:${Math.max(3,d.tl/mx*200)}px"></span></td></tr>`).join("")}</tbody></table></div>`:`<div class="bos">Veri yok.</div>`;
+}
+function yenile(){genel(); depolar(); denge(); if(document.getElementById("ara").value) ara();}
+yenile();
+})();
+</script>
+</body>
+</html>
