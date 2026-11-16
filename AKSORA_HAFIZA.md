@@ -838,6 +838,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-16: Çıktı Al dönüşü: AKSORA_CIKTI_AL sonunda ThisWorkbook/ws.Activate + UYGULAMA_MODU_AC + AKSORA_BIRIM_AKTIF_GORUNUM (geçici kitap olaylar kapalıyken kapanıyordu). AKSORA_GIRIS_DURUM(): değişken sıfırlansa da Malzeme sayfasındaysa giriş açık (kapağa atma yok). Taban up61.
 
+- 2026-11-16: AKSORA v2 Bölge Komuta (web sayfası) kullanıcı isteğiyle tamamen kaldırıldı: düğme, AKSORA_V2_AC ve şablon kodu silindi (BX2=16 ile birim seçim ekranı yeniden çizilir). Web sayfası açan özellik istenmiyor.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
