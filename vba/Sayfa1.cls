@@ -1,12 +1,11 @@
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
 Attribute VB_Name = "Sayfa1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
 Option Explicit
 
 Private Sub Worksheet_Activate()
@@ -19,4 +18,8 @@ Private Sub Worksheet_Calculate()
     AKFIX_FILTRE_KONTROL Me
 End Sub
 
-
+' Akilli arama kutusu: her harfte tablo suzulur.
+Private Sub AKSORA_ARA_TB_Change()
+    On Error Resume Next
+    AKSORA_STOK_CANLI_ARA Me
+End Sub

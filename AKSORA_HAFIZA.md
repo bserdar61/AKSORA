@@ -842,6 +842,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-16: Malzeme stok sayfaları V2 (T_StokV2, T_StokYap sonunda): güncellik ışığı (C2 yaşı), Değerleme rozetleri (F, xlTextString CF), Değer veri çubuğu (K, AddDatabar), 5. satır görünür (40 pt) arama bandı: arama kutusu (tıkla → InputBox) + ARA + × + depo çipleri (değere göre, sığdığı kadar; STOKLAR'da yok). Arama: eşleşen satırların Malzeme Tanımı değerleriyle AutoFilter Field 8 xlFilterValues (depo filtresi Field 3 ile birlikte). AKFIX_STOK_SECIM TÜMÜ artık yalnız Field 3'ü temizler. Sıradaki: "Dünden Bu Yana" kartı ve Dünden sütunu (günlük stok geçmişi gerekiyor).
 
+- 2026-11-16: Stok V2 revizyon: kart satırı (2. satır) gizli, kart şekilleri gizli (C2:C4/H2 kaynakları yerinde). Son güncelleme + ışık üst bantta (butonların solunda). 5. satır: ActiveX TextBox "AKSORA_ARA_TB" (yazdıkça süzer; sayfa modülleri Sayfa2/4/1/7/9 AKSORA_ARA_TB_Change → AKSORA_STOK_CANLI_ARA), ActiveX yoksa tıkla-pencere. Çipler: TÜMÜ (satır + toplam TL) + bütün depolar değer sırasıyla, sığmazsa alt satıra (satır yüksekliği dinamik). Aktif çip AutoFilter alan 3'ten okunur; STOKLAR'da çip doğrudan alan 3.
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
