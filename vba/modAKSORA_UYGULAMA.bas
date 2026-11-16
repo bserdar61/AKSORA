@@ -191,6 +191,7 @@ Public Sub SPLASH_GOSTER()
     mExcelGizli = True
 
 
+    AKSORA_ARA_KART_KAPAT
     Load frmSplash
 
     frmSplash.Show vbModeless

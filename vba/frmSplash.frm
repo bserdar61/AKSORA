@@ -54,6 +54,10 @@ Private Const SWP_NOMOVE As Long = &H2
 Private Const SWP_NOSIZE As Long = &H1
 Private Const SWP_SHOWWINDOW As Long = &H40
 
+' Stok arama kipi: kart basliksiz yazi kutusu olur, her harfte tablo suzulur.
+Public AraKipi As Boolean
+Private WithEvents mAraTb As MSForms.TextBox
+
 Public Sub SplashBaslat()
 
     SplashOrtala
@@ -142,7 +146,7 @@ End Sub
 
 ' Kart Alt+F4 ile kapatilamaz; islem bitince kod kapatir.
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then Cancel = True
+    If CloseMode = vbFormControlMenu And Not AraKipi Then Cancel = True
 End Sub
 
 Private Sub SplashOrtala()
@@ -199,3 +203,47 @@ Private Sub SplashOneGetir()
 
 End Sub
 
+Public Sub AraKur(ByVal metin As String)
+    Dim c As Object
+    On Error Resume Next
+    AraKipi = True
+    For Each c In Me.Controls
+        c.Visible = False
+    Next c
+    Me.BackColor = RGB(255, 255, 255)
+    Me.BorderStyle = fmBorderStyleNone
+    Me.Caption = "AKSORA ARA"
+    Set mAraTb = Me.Controls.Add("Forms.TextBox.1", "tbAra", True)
+    With mAraTb
+        .BorderStyle = fmBorderStyleNone
+        .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(255, 255, 255)
+        .ForeColor = RGB(15, 23, 42)
+        .Font.Name = "Segoe UI"
+        .Font.Size = 11
+        .Text = metin
+    End With
+End Sub
+
+Public Sub AraBoyut(ByVal fs As Single)
+    On Error Resume Next
+    With mAraTb
+        .Font.Size = fs
+        .Left = 0: .top = 0
+        .Width = Me.InsideWidth: .Height = Me.InsideHeight
+        .Visible = True
+        .SelStart = Len(.Text)
+        .SetFocus
+    End With
+End Sub
+
+Private Sub mAraTb_Change()
+    If AraKipi Then AKSORA_STOK_ARA_YAZ CStr(mAraTb.Text)
+End Sub
+
+Private Sub mAraTb_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = 13 Or KeyCode = 27 Or KeyCode = 9 Then
+        KeyCode = 0
+        AKSORA_ARA_KART_KAPAT
+    End If
+End Sub

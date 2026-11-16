@@ -287,6 +287,7 @@ Private Sub Workbook_SheetActivate( _
     ' AKSORA_BIRIM_HOOK_SHEET
     ' Birim gorunumundeki bir hata calisma zamani penceresi acip tum durumu sifirlamasin.
     On Error Resume Next
+    AKSORA_ARA_KART_KAPAT
     birimOlay = AKSORA_BIRIM_OLAY(sh)
     If Err.Number <> 0 Then birimOlay = True: Err.Clear
     On Error GoTo 0

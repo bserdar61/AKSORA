@@ -859,3 +859,6 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Depo cipleri depo koduna gore (K001..K999), TUMU basta.
 - Ust bant: tarih iki satir (dar), baslik tasarsa yazi kuculur (T_V2BaslikSigdir).
 - H2 acilir oku kapali; EKRAN_SIGDIR sonunda satir 2 gizliyse A7 secilir (eskiden H2 secilip 5. satirda ok/veri dogrulama hatasi cikiyordu).
+- Duzeltme 3: Excel'de sayfa ActiveX kutulari kapali (pencere aciliyordu). Arama artik frmSplash "arama kipi": AKSORA_ARA_KART_AC (modAKSORA_BIRIM) kutunun ustune basliksiz kart acar, kartta calisma aninda eklenen TextBox (WithEvents mAraTb) her harfte AKSORA_STOK_ARA_YAZ -> T_StokAraUygula. Enter/Esc/Tab kapatir; sayfa degisince, bekleme karti ve splash acilmadan once kapanir. Sayfadaki AKSORA_ARA_TB varsa silinir.
+- Kutuda aranan metin koyu yazilir (T_AraYerYaz).
+- Malzeme sayfalarinda cip tiklaninca (AKFIX_STOK_SECIM kart satirini aciyordu) sonunda AKSORA_STOK_V2 yeniden calisir.

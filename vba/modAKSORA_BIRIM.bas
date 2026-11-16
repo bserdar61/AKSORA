@@ -7484,6 +7484,48 @@ Hata:
     Resume Cikis
 End Sub
 
+'---------- stok arama karti ----------
+' Arama kutusunun tam ustune basliksiz bir yazi kutusu acilir (sayfadaki ActiveX kutulari Excel'de kapali olabilir).
+Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
+    Dim h As LongPtr, st As LongPtr, pn As Object, x1 As Long, y1 As Long, x2 As Long, y2 As Long, z As Double
+    On Error GoTo son
+    AKSORA_ARA_KART_KAPAT
+    If mAdmYukleme Then Exit Sub
+    AKSORA_BEKLE_KIPI = True
+    Load frmSplash
+    AKSORA_BEKLE_KIPI = False
+    frmSplash.StartUpPosition = 0
+    frmSplash.AraKur metin
+    frmSplash.Show vbModeless
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA ARA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA ARA")
+    If h <> 0 Then
+        st = ADMW_GetWindowLong(h, -16)
+        st = st And Not &HC40000
+        ADMW_SetWindowLong h, -16, st
+        Set pn = ActiveWindow.ActivePane
+        x1 = pn.PointsToScreenPixelsX(kutu.Left + 24): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 8)
+        y1 = pn.PointsToScreenPixelsY(kutu.top + 5): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 5)
+        If x2 > x1 And y2 > y1 Then ADMW_SetWindowPos h, 0, x1, y1, x2 - x1, y2 - y1, &H24
+    End If
+    z = ActiveWindow.Zoom / 100
+    frmSplash.AraBoyut application.Max(8, application.Min(14, 11 * z))
+    Exit Sub
+son:
+    AKSORA_BEKLE_KIPI = False
+    AKSORA_ARA_KART_KAPAT
+End Sub
+
+Public Sub AKSORA_ARA_KART_KAPAT()
+    Dim f As Object
+    On Error Resume Next
+    For Each f In VBA.UserForms
+        If TypeName(f) = "frmSplash" Then
+            If f.AraKipi Then Unload f
+        End If
+    Next f
+End Sub
+
 '---------- bekleme karti (tum uzun gecisler) ----------
 ' AKSORA penceresinin tam ortasinda, basliksiz kucuk kart (frmSplash kart olarak yeniden bicimlenir).
 ' Kart kendi penceresinde cizildigi icin Excel ekrani donsa da hemen gorunur; AKSORA hangi ekrandaysa orada acilir.
@@ -7495,6 +7537,7 @@ Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, O
     On Error GoTo son
     If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
     If application.WindowState = xlMinimized Then Exit Function
+    AKSORA_ARA_KART_KAPAT
     AKSORA_BEKLE_KIPI = True
     Load frmSplash
     AKSORA_BEKLE_KIPI = False

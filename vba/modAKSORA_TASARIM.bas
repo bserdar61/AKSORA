@@ -1487,6 +1487,7 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
     Dim metin As String, renk As Long, zemin As Long, y2 As Double, h2 As Double, solX As Double, t As String, gor As Boolean
     Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long, ev As Boolean, sc As Boolean
     If Not AKSORA_STOK_V2_SAYFA(ws) Then Exit Sub
+    AKSORA_ARA_KART_KAPAT
     ev = application.EnableEvents: sc = application.ScreenUpdating
     application.EnableEvents = False: application.ScreenUpdating = False
     On Error Resume Next
@@ -1678,26 +1679,11 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignLeft
     s.OnAction = mak & "AKSORA_STOK_ARA"
     Set s = T_Yazi(ws, AKT_PREFIX & "ARA_YER", "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)", 30, y + 9, 270, 22, 10, RGB(148, 163, 184), False, msoAlignLeft)
-    s.Visible = IIf(Len(sorgu) = 0, msoTrue, msoFalse)
     s.OnAction = mak & "AKSORA_STOK_ARA"
+    T_AraYerYaz ws, sorgu
     Set ob = Nothing
-    On Error Resume Next
     Set ob = ws.OLEObjects("AKSORA_ARA_TB")
-    If ob Is Nothing Then
-        Set ob = ws.OLEObjects.Add(ClassType:="Forms.TextBox.1", Left:=28, Top:=y + 9, Width:=274, Height:=22)
-        If Not ob Is Nothing Then
-            ob.Name = "AKSORA_ARA_TB"
-            ob.Object.BorderStyle = 0: ob.Object.SpecialEffect = 0: ob.Object.BackStyle = 0
-            ob.Object.Font.Name = "Aptos": ob.Object.Font.Size = 11
-            ob.Object.ForeColor = RGB(15, 23, 42)
-            ob.Object.Text = sorgu
-        End If
-    End If
-    If Not ob Is Nothing Then
-        ob.Left = 28: ob.top = y + 9: ob.Width = 274: ob.Height = 22
-        ob.Placement = xlFreeFloating: ob.Visible = True: ob.Locked = False
-        ob.BringToFront
-    End If
+    If Not ob Is Nothing Then ob.Delete
     Err.Clear
     Set s = T_Dik(ws, AKT_PREFIX & "ARA_TEMIZLE", 312, y + 5, 30, 30, RGB(226, 232, 240))
     s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.18
@@ -1719,6 +1705,24 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
         T_Cip ws, adlar(i), kodlar(adlar(i)) & " " & Left$(adlar(i), 12), T_KisaTL(deg(i)), x, cipY, cw, (StrComp(sec, adlar(i), vbTextCompare) = 0), mak
         x = x + cw + 6
     Next i
+End Sub
+
+' Kutudaki yazi: arama yoksa ornekli yer tutucu (gri), varsa aranan metin (koyu).
+Private Sub T_AraYerYaz(ByVal ws As Worksheet, ByVal q As String)
+    Dim s As Shape
+    On Error Resume Next
+    Set s = T_Sekil(ws, AKT_PREFIX & "ARA_YER")
+    If s Is Nothing Then Exit Sub
+    s.Visible = msoTrue
+    If Len(q) = 0 Then
+        s.TextFrame2.TextRange.Text = "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)"
+        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(148, 163, 184)
+        s.TextFrame2.TextRange.Font.bold = msoFalse
+    Else
+        s.TextFrame2.TextRange.Text = q
+        s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(15, 23, 42)
+        s.TextFrame2.TextRange.Font.bold = msoTrue
+    End If
 End Sub
 
 Private Sub T_Cip(ByVal ws As Worksheet, ByVal depo As String, ByVal ust As String, ByVal alt As String, ByVal x As Double, _
@@ -1784,9 +1788,10 @@ Public Sub AKSORA_STOK_DEPO_CIP()
             Next i
         End If
     End If
-    T_StokAramaBandi ws
     ActiveWindow.ScrollRow = 1
     If koruma Then T_KorumaKapat ws, p
+    ' Kart satiri gizli kalir, cipler ve ust bant yeniden cizilir.
+    AKSORA_STOK_V2 ws
     application.EnableEvents = ev: application.ScreenUpdating = True
     Exit Sub
 Hata:
@@ -1799,33 +1804,29 @@ End Sub
 
 ' Arama kutusuna tiklama: yazilabilir kutu varsa imlec oraya; yoksa (ActiveX kapali) pencere ile arama.
 Public Sub AKSORA_STOK_ARA()
-    Dim ws As Worksheet, kutu As Shape, q As String, ob As Object
+    Dim ws As Worksheet, kutu As Shape, q As String
     On Error Resume Next
     Set ws = ActiveSheet
-    Set ob = ws.OLEObjects("AKSORA_ARA_TB")
-    If Not ob Is Nothing Then
-        Err.Clear
-        ob.Activate
-        If Err.Number = 0 Then Exit Sub
-        Err.Clear
-    End If
     Set kutu = ws.Shapes(AKT_PREFIX & "ARA_KUTU")
     On Error GoTo 0
     If kutu Is Nothing Then Exit Sub
-    q = InputBox("Aranacak malzeme (ad, kod ya da par" & ChrW(231) & "as" & ChrW(305) & "):", "AKSORA | STOK ARAMA", kutu.AlternativeText)
-    If StrPtr(q) = 0 Then Exit Sub
-    T_StokAraUygula ws, Trim$(q), False
+    AKSORA_ARA_KART_AC kutu, kutu.AlternativeText
+End Sub
+
+' Arama kartindaki her harf (frmSplash) buraya gelir.
+Public Sub AKSORA_STOK_ARA_YAZ(ByVal q As String)
+    On Error Resume Next
+    If Not AKSORA_STOK_V2_SAYFA(ActiveSheet) Then Exit Sub
+    T_StokAraUygula ActiveSheet, Trim$(q), True
 End Sub
 
 Public Sub AKSORA_STOK_ARA_TEMIZLE()
     Dim ob As Object
     On Error Resume Next
+    AKSORA_ARA_KART_KAPAT
     Set ob = ActiveSheet.OLEObjects("AKSORA_ARA_TB")
-    If Not ob Is Nothing Then
-        ob.Object.Text = vbNullString
-    Else
-        T_StokAraUygula ActiveSheet, vbNullString, False
-    End If
+    If Not ob Is Nothing Then ob.Object.Text = vbNullString
+    T_StokAraUygula ActiveSheet, vbNullString, False
 End Sub
 
 ' Yazilabilir kutu her harfte burayi cagirir (sayfa modulu: AKSORA_ARA_TB_Change).
@@ -1883,8 +1884,7 @@ Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String, ByVal canl
     End If
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
     If Not s Is Nothing Then s.AlternativeText = q
-    Set s = T_Sekil(ws, AKT_PREFIX & "ARA_YER")
-    If Not s Is Nothing Then s.Visible = IIf(Len(q) = 0, msoTrue, msoFalse)
+    T_AraYerYaz ws, q
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_TEMIZLE")
     If Not s Is Nothing Then s.Visible = IIf(Len(q) > 0, msoTrue, msoFalse)
     ws.Calculate
