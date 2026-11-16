@@ -3020,7 +3020,8 @@ Public Sub AKSORA_V2_AC()
     yol = AKSORA_MASAUSTU() & application.PathSeparator & "AKSORA v2.html"
     V2_YAZ yol, html
     If ac Then AKSORA_BEKLE_KAPAT: ac = False
-    ThisWorkbook.FollowHyperlink Address:=yol
+    ' Varsayilan tarayicida acilir (FollowHyperlink Office guvenlik uyarisi cikariyordu).
+    CreateObject("Shell.Application").ShellExecute yol, "", "", "open", 1
     Exit Sub
 Hata:
     hM = Err.Description
