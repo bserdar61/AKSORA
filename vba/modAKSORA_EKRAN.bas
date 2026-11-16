@@ -130,7 +130,9 @@ Cikis:
         End If
         Select Case ad
             Case "CDP_STOK", "EPP_STOK", "ILCE_STOK", "YUKLENICI_STOK"
-                If Len(hataMetni) = 0 Then ws.Range("H2").Select
+                If Len(hataMetni) = 0 Then
+                    If ws.Rows(2).Hidden Then ws.Range("A7").Select Else ws.Range("H2").Select
+                End If
         End Select
         If kapakKilidi Then
             ws.Protect Password:="", DrawingObjects:=True, Contents:=True, _

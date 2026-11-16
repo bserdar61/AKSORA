@@ -1451,6 +1451,37 @@ Private Sub T_V2Kol(ByVal ws As Worksheet, ByRef kod As Long, ByRef tanim As Lon
     End If
 End Sub
 
+' Ust banttaki baslik yazisi tarih alanina tasarsa yazi kuculur (ust uste binmez).
+Private Sub T_V2BaslikSigdir(ByVal ws As Worksheet, ByVal sinir As Double)
+    Dim s As Shape, t As String, alt As Double, k As Long, n As Long, bos As Double
+    On Error Resume Next
+    alt = ws.Rows(1).top + ws.Rows(1).Height - 2
+    For Each s In ws.Shapes
+        t = vbNullString: t = s.OnAction: Err.Clear
+        If s.Visible = msoTrue And s.top < alt And Len(t) = 0 And s.Left > 150 And s.Left < sinir - 40 And s.Left + s.Width > sinir - 4 _
+            And Left$(s.Name, Len(AKT_PREFIX & "STOK_UST")) <> AKT_PREFIX & "STOK_UST" Then
+            If s.HasTextFrame Then
+                If Len(s.TextFrame2.TextRange.Text) > 0 Then
+                    s.TextFrame2.WordWrap = msoFalse
+                    s.TextFrame2.AutoSize = msoAutoSizeNone
+                    s.Width = sinir - 6 - s.Left
+                    bos = s.Width - s.TextFrame2.MarginLeft - s.TextFrame2.MarginRight - 2
+                    n = 0
+                    Do While s.TextFrame2.TextRange.BoundWidth > bos And n < 16
+                        For k = 1 To s.TextFrame2.TextRange.Runs.Count
+                            With s.TextFrame2.TextRange.Runs(k).Font
+                                If .Size > 7.5 Then .Size = .Size - 0.5
+                            End With
+                        Next k
+                        n = n + 1
+                    Loop
+                End If
+            End If
+        End If
+        Err.Clear
+    Next s
+End Sub
+
 Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
     Dim son As Long, w As Double, s As Shape, yas As Double, fc As Object, i As Long, rr As Range, p As Variant, koruma As Boolean
     Dim metin As String, renk As Long, zemin As Long, y2 As Double, h2 As Double, solX As Double, t As String, gor As Boolean
@@ -1479,6 +1510,8 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
         If Left$(t, Len(AKT_PREFIX & "STOK_KPI")) = AKT_PREFIX & "STOK_KPI" Or Left$(t, Len(AKT_PREFIX & "DEPO_KART")) = AKT_PREFIX & "DEPO_KART" _
             Or Left$(t, Len(AKT_PREFIX & "IKON_")) = AKT_PREFIX & "IKON_" Or Left$(t, Len(AKT_PREFIX & "STOK_LED")) = AKT_PREFIX & "STOK_LED" Then s.Visible = msoFalse
     Next s
+    ws.Range("H2").Validation.InCellDropdown = False
+    Err.Clear
     ws.Rows("2:4").Hidden = True
     ws.Rows(5).Hidden = False
     ' 2) Son guncelleme + isik ust bantta, butonlarin solunda
@@ -1502,21 +1535,21 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
         If gor And Len(t) > 0 And s.Left < solX Then solX = s.Left
         Err.Clear
     Next s
-    If IsDate(ws.Range("C2").Value) Then t = "Son g" & ChrW(252) & "ncelleme  " & Format$(CDate(ws.Range("C2").Value), "dd.mm.yyyy hh:nn") Else t = "Son g" & ChrW(252) & "ncelleme  -"
-    Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_TARIH", t, solX - 330, ws.Rows(1).top + 5, 220, 22, 9.5, RGB(207, 227, 243), True, msoAlignRight)
+    If IsDate(ws.Range("C2").Value) Then t = "Son g" & ChrW(252) & "ncelleme" & vbLf & Format$(CDate(ws.Range("C2").Value), "dd.mm.yyyy hh:nn") Else t = "Son g" & ChrW(252) & "ncelleme" & vbLf & "-"
+    y2 = ws.Rows(1).top + ws.Rows(1).Height / 2
+    Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_TARIH", t, solX - 222, y2 - 15, 118, 30, 8.5, RGB(207, 227, 243), True, msoAlignRight)
+    s.TextFrame2.MarginTop = 0: s.TextFrame2.MarginBottom = 0: s.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    s.TextFrame2.TextRange.Paragraphs(1).Font.Size = 7.5: s.TextFrame2.TextRange.Paragraphs(1).Font.bold = msoFalse
     Set s = Nothing
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_UST_LED")
     If s Is Nothing Then Set s = ws.Shapes.AddShape(msoShapeOval, 0, 0, 10, 10): s.Name = AKT_PREFIX & "STOK_UST_LED"
-    T_Yerlestir s, solX - 102, ws.Rows(1).top + 11, 10, 10
+    T_Yerlestir s, solX - 98, y2 - 5, 10, 10
     s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = renk
     s.line.Visible = msoTrue: s.line.ForeColor.RGB = zemin: s.line.Weight = 1.5
     s.ZOrder msoBringToFront
-    Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_LED_YAZI", metin, solX - 88, ws.Rows(1).top + 5, 78, 22, 8.5, renk, True, msoAlignLeft)
+    Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_LED_YAZI", metin, solX - 84, y2 - 11, 78, 22, 8.5, renk, True, msoAlignLeft)
     Set s = Nothing
-    Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")
-    If Not s Is Nothing Then
-        If solX - 340 - s.Left > 60 Then s.Width = solX - 340 - s.Left
-    End If
+    T_V2BaslikSigdir ws, solX - 226
     ' 3) Degerleme rozetleri ve deger cubuklari (eski V2 kurallari silinip yeniden eklenir)
     Err.Clear
     Set rr = ws.Range(ws.Cells(7, deg), ws.Cells(son, deg))
@@ -1548,6 +1581,10 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
     Err.Clear
     T_StokAramaBandi ws
     If koruma Then T_KorumaKapat ws, p
+    Err.Clear
+    If ActiveSheet Is ws Then
+        If ActiveCell.Row < 6 Then ws.Cells(7, 1).Select
+    End If
     Err.Clear
     On Error GoTo 0
     application.EnableEvents = ev: application.ScreenUpdating = sc
@@ -1611,7 +1648,7 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
         Next k
         For i = 1 To n - 1
             For j = i + 1 To n
-                If deg(j) > deg(i) Then
+                If StrComp(kodlar(adlar(j)) & "|" & adlar(j), kodlar(adlar(i)) & "|" & adlar(i), vbTextCompare) < 0 Then
                     tmpD = deg(i): deg(i) = deg(j): deg(j) = tmpD
                     tmpS = adlar(i): adlar(i) = adlar(j): adlar(j) = tmpS
                 End If
@@ -1642,6 +1679,7 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     s.OnAction = mak & "AKSORA_STOK_ARA"
     Set s = T_Yazi(ws, AKT_PREFIX & "ARA_YER", "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)", 30, y + 9, 270, 22, 10, RGB(148, 163, 184), False, msoAlignLeft)
     s.Visible = IIf(Len(sorgu) = 0, msoTrue, msoFalse)
+    s.OnAction = mak & "AKSORA_STOK_ARA"
     Set ob = Nothing
     On Error Resume Next
     Set ob = ws.OLEObjects("AKSORA_ARA_TB")
@@ -1657,7 +1695,7 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     End If
     If Not ob Is Nothing Then
         ob.Left = 28: ob.top = y + 9: ob.Width = 274: ob.Height = 22
-        ob.Placement = xlFreeFloating: ob.Visible = True
+        ob.Placement = xlFreeFloating: ob.Visible = True: ob.Locked = False
         ob.BringToFront
     End If
     Err.Clear
@@ -1765,7 +1803,12 @@ Public Sub AKSORA_STOK_ARA()
     On Error Resume Next
     Set ws = ActiveSheet
     Set ob = ws.OLEObjects("AKSORA_ARA_TB")
-    If Not ob Is Nothing Then ob.Activate: Exit Sub
+    If Not ob Is Nothing Then
+        Err.Clear
+        ob.Activate
+        If Err.Number = 0 Then Exit Sub
+        Err.Clear
+    End If
     Set kutu = ws.Shapes(AKT_PREFIX & "ARA_KUTU")
     On Error GoTo 0
     If kutu Is Nothing Then Exit Sub

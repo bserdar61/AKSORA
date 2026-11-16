@@ -855,3 +855,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Kart satiri (2:4) gizli; tarih + GUNCEL isigi ust bantta butonlarin solunda; 5. satir: canli arama kutusu (ActiveX AKSORA_ARA_TB) + tum depo cipleri; TUMU cipi satir sayisi ve toplam degeri (#.##0,00 TL) gosterir.
 - Cagri: T_StokYap sonu (Malzeme), AKSORA_YATIRIM_GORUNUM (Y_/I_), AKSORA_MUSTERI_TEMA_GORUNUM (M_). M/Y/I'de cip ve arama sonrasi AKSORA_MUSTERI_BANT.
 - AKSORA_ARA_TB_Change: Sayfa1,2,4,7,9,67,69,71,77,79,81,83,89,91,96.
+- Duzeltme 2: arama kutusu ActiveX Locked=False (korumali sayfada yazilamiyordu), etkinlesmezse pencere ile arama; yer tutucu da tiklanir.
+- Depo cipleri depo koduna gore (K001..K999), TUMU basta.
+- Ust bant: tarih iki satir (dar), baslik tasarsa yazi kuculur (T_V2BaslikSigdir).
+- H2 acilir oku kapali; EKRAN_SIGDIR sonunda satir 2 gizliyse A7 secilir (eskiden H2 secilip 5. satirda ok/veri dogrulama hatasi cikiyordu).
