@@ -1934,7 +1934,11 @@ Public Sub AKSORA_CIKTI_AL()
         Exit Sub
     End If
     mSayimExcel = False
+    ' Gecici kitap kapaninca (olaylar kapaliyken) AKSORA'nin uygulama modu kendiliginden donmuyordu.
+    ThisWorkbook.Activate
     ws.Activate
+    UYGULAMA_MODU_AC
+    AKSORA_BIRIM_AKTIF_GORUNUM
     On Error GoTo 0
     If no <> 0 Then MsgBox "Çýktý hazýrlanamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub

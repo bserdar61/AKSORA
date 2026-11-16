@@ -25,7 +25,7 @@ Private Sub mUygApp_WindowActivate(ByVal wb As Workbook, ByVal wn As Window)
         AKSORA_DONUS_UYGULA
         ' Uygulama olayi kitap olayindan sonra gelir: secim ekranlarinin gorunumu yeniden uygulanir.
         If Not AKSORA_BIRIM_AKTIF_GORUNUM() Then
-            If Not AKSORA_GIRIS_ACIK Then AKSORA_V8_KAPAK_GORUNUM
+            If Not AKSORA_GIRIS_DURUM() Then AKSORA_V8_KAPAK_GORUNUM
         End If
     Else
         AKSORA_EXCEL_GORUNUM
@@ -190,7 +190,7 @@ Private Sub Workbook_Activate()
     If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
 
 
-    If Not AKSORA_GIRIS_ACIK Then
+    If Not AKSORA_GIRIS_DURUM() Then
 
         AKSORA_KAPAK_KORU
 
@@ -319,7 +319,7 @@ Private Sub Workbook_SheetActivate( _
     application.EnableEvents = False
 
 
-    If AKSORA_GIRIS_ACIK Then
+    If AKSORA_GIRIS_DURUM() Then
 
         AKSORA_V13_GORUNUM sh
 

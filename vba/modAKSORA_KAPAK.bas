@@ -13,6 +13,24 @@ Private Const PRE As String = "AKSORA_V4_"
 
 Private mResizing As Boolean
 
+' Giris durumu: AKSORA_GIRIS_ACIK degiskeni VBA sifirlaninca (hata, kod duzenleme) kaybolur ve Excel'e geri donuste
+' kapaga atiliyordu. Etkin sayfa Malzeme biriminin bir sayfasiysa giris acik sayilir (degisken de geri yazilir).
+Public Function AKSORA_GIRIS_DURUM() As Boolean
+    Dim ad As String
+    If AKSORA_GIRIS_ACIK Then AKSORA_GIRIS_DURUM = True: Exit Function
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Function
+    ad = AKFIX_NORMAL(ActiveSheet.Name)
+    On Error GoTo 0
+    Select Case ad
+        Case "ANA PANEL", "MALZEME_ARA", "STOK_KARSILASTIRMA", "SATINALMA_KONTROL", "TRANSFER_LISTESI", "ATIL_STOK", _
+             "KRITIK_STOK", "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK", "CDP_RAPOR", "EPP_RAPOR", _
+             "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR"
+            AKSORA_GIRIS_ACIK = True
+            AKSORA_GIRIS_DURUM = True
+    End Select
+End Function
+
 
 '==========================================================
 ' KURULUM / DUZENLEME
