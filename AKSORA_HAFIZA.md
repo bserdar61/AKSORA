@@ -848,3 +848,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
 - Kalite Kontrol birimi: kullanıcıdan MB51 /KK düzeni, IQ09 üretici/garanti alanları ve tasarım onayı bekleniyor.
+
+## Stok V2 tum stok sayfalarinda (2026-11-16)
+- AKSORA_STOK_V2(ws) genel: Malzeme (A:L; kod G, tanim H, degerleme F) ve M_/Y_/I_ *_STOK (A:N; kod E, tanim F, degerleme I) sutun haritasi T_V2Kol.
+- Her adim On Error Resume Next ile korunur (bir sekil hatasi geri kalan cizimi durdurmaz).
+- Kart satiri (2:4) gizli; tarih + GUNCEL isigi ust bantta butonlarin solunda; 5. satir: canli arama kutusu (ActiveX AKSORA_ARA_TB) + tum depo cipleri; TUMU cipi satir sayisi ve toplam degeri (#.##0,00 TL) gosterir.
+- Cagri: T_StokYap sonu (Malzeme), AKSORA_YATIRIM_GORUNUM (Y_/I_), AKSORA_MUSTERI_TEMA_GORUNUM (M_). M/Y/I'de cip ve arama sonrasi AKSORA_MUSTERI_BANT.
+- AKSORA_ARA_TB_Change: Sayfa1,2,4,7,9,67,69,71,77,79,81,83,89,91,96.

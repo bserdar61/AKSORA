@@ -1649,6 +1649,8 @@ Public Sub AKSORA_YATIRIM_GORUNUM(ByVal ws As Worksheet)
     Dim s As Shape, gen As Double, alt As Double, z As Double
     If Not (ActiveSheet Is ws) Then Exit Sub
     Y_DM_KONTROL ws
+    ' Stok sayfalari: arama kutusu, depo cipleri, ust bant tarihi ve isik.
+    If AKSORA_STOK_V2_SAYFA(ws) Then AKSORA_STOK_V2 ws
     For Each s In ws.Shapes
         If s.Visible = msoTrue Then
             gen = application.Max(gen, s.Left + s.Width)

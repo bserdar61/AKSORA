@@ -15,3 +15,9 @@ Private Sub Worksheet_Calculate()
     On Error Resume Next
     AKSORA_MUSTERI_BANT Me
 End Sub
+
+' Akilli arama kutusu: her harfte tablo suzulur.
+Private Sub AKSORA_ARA_TB_Change()
+    On Error Resume Next
+    AKSORA_STOK_CANLI_ARA Me
+End Sub

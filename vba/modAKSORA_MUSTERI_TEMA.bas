@@ -1210,6 +1210,7 @@ Public Sub AKSORA_MUSTERI_TEMA_GORUNUM(ByVal ws As Worksheet)
         End With
     Else
         AKSORA_MUSTERI_DUZEN ws
+        If AKSORA_STOK_V2_SAYFA(ws) Then AKSORA_STOK_V2 ws
     End If
     With ThisWorkbook.Windows(1)
         If .ScrollRow <> 1 Then .ScrollRow = 1

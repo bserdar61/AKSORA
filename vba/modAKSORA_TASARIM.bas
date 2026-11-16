@@ -1427,17 +1427,51 @@ End Sub
 ' arama kutusu ve depo cipleri (TUMU: toplam satir ve deger). Degerleme rozetleri (F) ve deger cubuklari (K).
 ' Her tasarim uygulamasinda (sayfa acilisi, guncelleme) yeniden kurulur; filtreler korunur.
 Private Sub T_StokV2(ByVal ws As Worksheet)
-    Dim son As Long, w As Double, s As Shape, yas As Double, fc As Object, i As Long, rr As Range
-    Dim metin As String, renk As Long, zemin As Long, y2 As Double, h2 As Double, solX As Double, t As String
-    On Error GoTo Hata
-    son = AKSORA_SON_SATIR(ws, "G")
+    AKSORA_STOK_V2 ws
+End Sub
+
+' Stok sayfasi mi (Malzeme 5 sayfa + Musteri / Yatirim / Ilce stok sayfalari)?
+Public Function AKSORA_STOK_V2_SAYFA(ByVal ws As Worksheet) As Boolean
+    Dim ad As String
+    ad = AKFIX_NORMAL(ws.Name)
+    If Left$(ad, 1) = "_" Or ad = "ATIL_STOK" Then Exit Function
+    AKSORA_STOK_V2_SAYFA = (Right$(ad, 5) = "_STOK" Or ad = "STOKLAR")
+End Function
+
+' Sutun haritasi: Malzeme sayfalari A:L (kod G, tanim H, degerleme F); diger birimler A:N (kod E, tanim F, degerleme I).
+Private Sub T_V2Kol(ByVal ws As Worksheet, ByRef kod As Long, ByRef tanim As Long, ByRef deg As Long, ByRef sonKol As Long, ByRef tumKol As Long)
+    Dim c As Long
+    If T_Stok(ws) Then
+        kod = 7: tanim = 8: deg = 6: sonKol = 12: tumKol = 12
+    Else
+        kod = 5: tanim = 6: deg = 9: tumKol = 14: sonKol = 10
+        For c = 14 To 10 Step -1
+            If Not ws.Columns(c).Hidden Then sonKol = c: Exit For
+        Next c
+    End If
+End Sub
+
+Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
+    Dim son As Long, w As Double, s As Shape, yas As Double, fc As Object, i As Long, rr As Range, p As Variant, koruma As Boolean
+    Dim metin As String, renk As Long, zemin As Long, y2 As Double, h2 As Double, solX As Double, t As String, gor As Boolean
+    Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long, ev As Boolean, sc As Boolean
+    If Not AKSORA_STOK_V2_SAYFA(ws) Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False: application.ScreenUpdating = False
+    On Error Resume Next
+    T_KorumaAc ws, p, koruma
+    T_V2Kol ws, kod, tanim, deg, sonKol, tumKol
+    son = AKSORA_SON_SATIR(ws, kod)
     If son < 7 Then son = 7
-    w = ws.Range("A1:L1").Width
-    ' 1) Kart satiri: ustundeki butun sekiller gizlenir, satir gizlenir (kaynak hucreler C2:C4, H2 yerinde kalir).
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    ' 1) Kart satiri: ustundeki sekiller ve satir gizlenir (C2:C4, H2 kaynaklari yerinde kalir).
     y2 = ws.Rows(2).top: h2 = ws.Rows(2).Height
     If Not ws.Rows(2).Hidden Then
         For Each s In ws.Shapes
-            If s.top >= y2 - 1 And s.top < y2 + h2 - 1 Then s.Visible = msoFalse
+            Err.Clear
+            If s.top >= y2 - 1 And s.top < y2 + h2 - 1 Then
+                If Err.Number = 0 Then s.Visible = msoFalse
+            End If
         Next s
     End If
     For Each s In ws.Shapes
@@ -1445,8 +1479,10 @@ Private Sub T_StokV2(ByVal ws As Worksheet)
         If Left$(t, Len(AKT_PREFIX & "STOK_KPI")) = AKT_PREFIX & "STOK_KPI" Or Left$(t, Len(AKT_PREFIX & "DEPO_KART")) = AKT_PREFIX & "DEPO_KART" _
             Or Left$(t, Len(AKT_PREFIX & "IKON_")) = AKT_PREFIX & "IKON_" Or Left$(t, Len(AKT_PREFIX & "STOK_LED")) = AKT_PREFIX & "STOK_LED" Then s.Visible = msoFalse
     Next s
-    ws.Rows(2).Hidden = True
+    ws.Rows("2:4").Hidden = True
+    ws.Rows(5).Hidden = False
     ' 2) Son guncelleme + isik ust bantta, butonlarin solunda
+    Err.Clear
     yas = -1
     If IsDate(ws.Range("C2").Value) Then yas = CDbl(Date) - Int(CDbl(CDate(ws.Range("C2").Value)))
     If yas < 0 Then
@@ -1460,12 +1496,15 @@ Private Sub T_StokV2(ByVal ws As Worksheet)
     End If
     solX = w
     For Each s In ws.Shapes
-        If s.Visible = msoTrue And s.top < ws.Rows(1).top + ws.Rows(1).Height - 2 And s.Left > w * 0.4 And Len(s.OnAction) > 0 Then
-            If s.Left < solX Then solX = s.Left
-        End If
+        gor = False: t = vbNullString
+        gor = (s.Visible = msoTrue And s.top < ws.Rows(1).top + ws.Rows(1).Height - 2 And s.Left > w * 0.4)
+        t = s.OnAction
+        If gor And Len(t) > 0 And s.Left < solX Then solX = s.Left
+        Err.Clear
     Next s
     If IsDate(ws.Range("C2").Value) Then t = "Son g" & ChrW(252) & "ncelleme  " & Format$(CDate(ws.Range("C2").Value), "dd.mm.yyyy hh:nn") Else t = "Son g" & ChrW(252) & "ncelleme  -"
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_TARIH", t, solX - 330, ws.Rows(1).top + 5, 220, 22, 9.5, RGB(207, 227, 243), True, msoAlignRight)
+    Set s = Nothing
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_UST_LED")
     If s Is Nothing Then Set s = ws.Shapes.AddShape(msoShapeOval, 0, 0, 10, 10): s.Name = AKT_PREFIX & "STOK_UST_LED"
     T_Yerlestir s, solX - 102, ws.Rows(1).top + 11, 10, 10
@@ -1473,41 +1512,45 @@ Private Sub T_StokV2(ByVal ws As Worksheet)
     s.line.Visible = msoTrue: s.line.ForeColor.RGB = zemin: s.line.Weight = 1.5
     s.ZOrder msoBringToFront
     Set s = T_Yazi(ws, AKT_PREFIX & "STOK_UST_LED_YAZI", metin, solX - 88, ws.Rows(1).top + 5, 78, 22, 8.5, renk, True, msoAlignLeft)
+    Set s = Nothing
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")
     If Not s Is Nothing Then
         If solX - 340 - s.Left > 60 Then s.Width = solX - 340 - s.Left
     End If
     ' 3) Degerleme rozetleri ve deger cubuklari (eski V2 kurallari silinip yeniden eklenir)
-    Set rr = ws.Range("F7:F" & son)
-    For i = ws.Range("F7:F" & application.Max(son, 2000)).FormatConditions.Count To 1 Step -1
-        Set fc = ws.Range("F7:F" & application.Max(son, 2000)).FormatConditions(i)
+    Err.Clear
+    Set rr = ws.Range(ws.Cells(7, deg), ws.Cells(son, deg))
+    For i = ws.Range(ws.Cells(7, deg), ws.Cells(application.Max(son, 2000), deg)).FormatConditions.Count To 1 Step -1
+        Set fc = ws.Range(ws.Cells(7, deg), ws.Cells(application.Max(son, 2000), deg)).FormatConditions(i)
         If fc.Type = xlTextString Then fc.Delete
     Next i
     T_Rozet rr, "YENI", RGB(220, 252, 231), RGB(22, 101, 52)
     T_Rozet rr, "CIKMA", RGB(226, 232, 240), RGB(71, 85, 105)
     T_Rozet rr, "HURDA", RGB(254, 226, 226), RGB(153, 27, 27)
-    Set rr = ws.Range("K7:K" & son)
-    For i = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions.Count To 1 Step -1
-        Set fc = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions(i)
-        If fc.Type = xlDatabar Then fc.Delete
-    Next i
-    If Len(CStr(ws.Range("G7").Value2)) > 0 Then
-        Set fc = rr.FormatConditions.AddDatabar
-        fc.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
-        fc.MaxPoint.Modify newtype:=xlConditionValueAutomaticMax
-        fc.BarColor.Color = RGB(94, 196, 180)
-        On Error Resume Next
-        fc.BarFillType = xlDataBarFillGradient
-        fc.BarBorder.Type = xlDataBarBorderNone
-        fc.ShowValue = True
-        On Error GoTo Hata
+    Err.Clear
+    If Not ws.Columns(11).Hidden Then
+        Set rr = ws.Range("K7:K" & son)
+        For i = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions.Count To 1 Step -1
+            Set fc = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions(i)
+            If fc.Type = xlDatabar Then fc.Delete
+        Next i
+        If Len(CStr(ws.Cells(7, kod).Value2)) > 0 Then
+            Set fc = rr.FormatConditions.AddDatabar
+            fc.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+            fc.MaxPoint.Modify newtype:=xlConditionValueAutomaticMax
+            fc.BarColor.Color = RGB(94, 196, 180)
+            fc.BarFillType = xlDataBarFillGradient
+            fc.BarBorder.Type = xlDataBarBorderNone
+            fc.ShowValue = True
+        End If
     End If
     ' 4) Arama ve depo bandi (5. satir)
-    T_StokAramaBandi ws
-    Exit Sub
-Hata:
-    ' Gorsel ekler basarisiz olursa sayfa tasarimi durmaz.
     Err.Clear
+    T_StokAramaBandi ws
+    If koruma Then T_KorumaKapat ws, p
+    Err.Clear
+    On Error GoTo 0
+    application.EnableEvents = ev: application.ScreenUpdating = sc
 End Sub
 
 Private Sub T_Rozet(ByVal rr As Range, ByVal anahtar As String, ByVal zemin As Long, ByVal yazi As Long)
@@ -1535,17 +1578,19 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     Dim y As Double, w As Double, s As Shape, sorgu As String, x As Double, sag As Double, cw As Double, x0 As Double
     Dim d As Object, v As Variant, r As Long, k As Variant, adlar() As String, deg() As Double, n As Long, i As Long, j As Long
     Dim tmpS As String, tmpD As Double, sec As String, son As Long, mak As String, kodlar As Object, satir As Long
-    Dim top As Double, ob As Object, satirN As Long, cipY As Double
-    w = ws.Range("A1:L1").Width
+    Dim top As Double, ob As Object, satirN As Long, cipY As Double, kod As Long, tanim As Long, dgk As Long, sonKol As Long, tumKol As Long
+    On Error Resume Next
+    T_V2Kol ws, kod, tanim, dgk, sonKol, tumKol
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
     mak = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!"
-    son = AKSORA_SON_SATIR(ws, "G")
+    son = AKSORA_SON_SATIR(ws, kod)
     ' Depo toplamlari
     Set d = CreateObject("Scripting.Dictionary"): Set kodlar = CreateObject("Scripting.Dictionary")
     If son >= 7 Then
-        v = ws.Range("A7:L" & son).Value2
+        v = ws.Range(ws.Cells(7, 1), ws.Cells(son, tumKol)).Value2
         For r = 1 To UBound(v, 1)
-            If Not IsError(v(r, 3)) And Not IsError(v(r, 11)) And Not IsError(v(r, 7)) Then
-                If Len(Trim$(CStr(v(r, 3)))) > 0 And Len(Trim$(CStr(v(r, 7)))) > 0 Then
+            If Not IsError(v(r, 3)) And Not IsError(v(r, 11)) And Not IsError(v(r, kod)) Then
+                If Len(Trim$(CStr(v(r, 3)))) > 0 And Len(Trim$(CStr(v(r, kod)))) > 0 Then
                     If IsNumeric(v(r, 11)) Then
                         d(CStr(v(r, 3))) = d(CStr(v(r, 3))) + CDbl(v(r, 11)): top = top + CDbl(v(r, 11))
                     Else
@@ -1616,7 +1661,6 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
         ob.BringToFront
     End If
     Err.Clear
-    On Error GoTo 0
     Set s = T_Dik(ws, AKT_PREFIX & "ARA_TEMIZLE", 312, y + 5, 30, 30, RGB(226, 232, 240))
     s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.18
     s.TextFrame2.TextRange.Text = ChrW(215): T_Buton s, RGB(226, 232, 240), RGB(71, 85, 105), 12
@@ -1666,13 +1710,7 @@ Private Sub T_Cip(ByVal ws As Worksheet, ByVal depo As String, ByVal ust As Stri
 End Sub
 
 Private Function T_KisaTL(ByVal x As Double) As String
-    If Abs(x) >= 1000000# Then
-        T_KisaTL = AKSORA_SAYI_METNI(x / 1000000#, "#,##0.00") & " mn TL"
-    ElseIf Abs(x) >= 1000# Then
-        T_KisaTL = AKSORA_SAYI_METNI(x / 1000#, "#,##0.0") & " bin TL"
-    Else
-        T_KisaTL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
-    End If
+    T_KisaTL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
 End Function
 
 ' Depo cipi: secilen depoya suzulur (depo listesi H2 ile ayni yol; STOKLAR'da dogrudan). Arama suzgeci korunur.
@@ -1685,16 +1723,19 @@ Public Sub AKSORA_STOK_DEPO_CIP()
     ev = application.EnableEvents
     application.EnableEvents = False: application.ScreenUpdating = False
     T_KorumaAc ws, p, koruma
-    son = AKSORA_SON_SATIR(ws, "G")
+    Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long
+    T_V2Kol ws, kod, tanim, deg, sonKol, tumKol
+    son = AKSORA_SON_SATIR(ws, kod)
     If son < 7 Then son = 7
-    If AKFIX_NORMAL(ws.Name) = "STOKLAR" Then
-        If Not ws.AutoFilterMode Then ws.Range("A6:L" & son).AutoFilter
+    If AKFIX_NORMAL(ws.Name) = "STOKLAR" Or Not T_Stok(ws) Then
+        If Not ws.AutoFilterMode Then ws.Range(ws.Cells(6, 1), ws.Cells(son, tumKol)).AutoFilter
         If depo = "TUMU" Then
             ws.AutoFilter.Range.AutoFilter Field:=3
         Else
             ws.AutoFilter.Range.AutoFilter Field:=3, Criteria1:="=" & Replace(Replace(Replace(depo, "~", "~~"), "*", "~*"), "?", "~?")
         End If
         ws.Calculate
+        If Not T_Stok(ws) Then AKSORA_MUSTERI_BANT ws
     Else
         ws.Range("H2").Value2 = IIf(depo = "TUMU", "T" & ChrW(220) & "M" & ChrW(220), depo)
         AKFIX_STOK_SECIM ws
@@ -1758,23 +1799,24 @@ End Sub
 Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String, ByVal canli As Boolean)
     Dim son As Long, v As Variant, r As Long, akilli As Variant, desen As String, d As Object, liste() As String, i As Long
     Dim p As Variant, koruma As Boolean, ev As Boolean, k As Variant, tn As String, kod As String, esles As Boolean, hM As String
-    Dim s As Shape, sc As Boolean
+    Dim s As Shape, sc As Boolean, kc As Long, tc As Long, deg As Long, sonKol As Long, tumKol As Long
     On Error GoTo Hata
     ev = application.EnableEvents: sc = application.ScreenUpdating
     application.EnableEvents = False: application.ScreenUpdating = False
     T_KorumaAc ws, p, koruma
-    son = AKSORA_SON_SATIR(ws, "G")
+    T_V2Kol ws, kc, tc, deg, sonKol, tumKol
+    son = AKSORA_SON_SATIR(ws, kc)
     If son < 7 Then son = 7
-    If Not ws.AutoFilterMode Then ws.Range("A6:L" & son).AutoFilter
+    If Not ws.AutoFilterMode Then ws.Range(ws.Cells(6, 1), ws.Cells(son, tumKol)).AutoFilter
     If Len(q) = 0 Then
-        ws.AutoFilter.Range.AutoFilter Field:=8
+        ws.AutoFilter.Range.AutoFilter Field:=tc
     Else
         desen = AKSORA_ARAMA_DESEN(q): akilli = AKSORA_AKILLI_HAZIRLA(q)
         Set d = CreateObject("Scripting.Dictionary")
-        v = ws.Range("A7:L" & son).Value2
+        v = ws.Range(ws.Cells(7, 1), ws.Cells(son, tumKol)).Value2
         For r = 1 To UBound(v, 1)
-            If Not IsError(v(r, 7)) And Not IsError(v(r, 8)) Then
-                kod = CStr(v(r, 7)): tn = CStr(v(r, 8))
+            If Not IsError(v(r, kc)) And Not IsError(v(r, tc)) Then
+                kod = CStr(v(r, kc)): tn = CStr(v(r, tc))
                 If Len(kod) > 0 Then
                     esles = (kod Like desen) Or (tn Like desen)
                     If Not esles Then esles = AKSORA_AKILLI_ESLES(kod & " " & tn, akilli)
@@ -1789,11 +1831,11 @@ Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String, ByVal canl
                 MsgBox "Bu sayfada """ & q & """ ile e" & ChrW(351) & "le" & ChrW(351) & "en malzeme yok.", vbInformation, "AKSORA | STOK ARAMA"
                 Exit Sub
             End If
-            ws.AutoFilter.Range.AutoFilter Field:=8, Criteria1:="=" & ChrW(8709) & ChrW(8709)
+            ws.AutoFilter.Range.AutoFilter Field:=tc, Criteria1:="=" & ChrW(8709) & ChrW(8709)
         Else
             ReDim liste(0 To d.Count - 1)
             For Each k In d.keys: liste(i) = CStr(k): i = i + 1: Next k
-            ws.AutoFilter.Range.AutoFilter Field:=8, Criteria1:=liste, Operator:=xlFilterValues
+            ws.AutoFilter.Range.AutoFilter Field:=tc, Criteria1:=liste, Operator:=xlFilterValues
         End If
     End If
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
@@ -1803,6 +1845,7 @@ Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String, ByVal canl
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_TEMIZLE")
     If Not s Is Nothing Then s.Visible = IIf(Len(q) > 0, msoTrue, msoFalse)
     ws.Calculate
+    If Not T_Stok(ws) Then AKSORA_MUSTERI_BANT ws
     If Not canli Then ActiveWindow.ScrollRow = 1
     If koruma Then T_KorumaKapat ws, p
     application.EnableEvents = ev: application.ScreenUpdating = True
