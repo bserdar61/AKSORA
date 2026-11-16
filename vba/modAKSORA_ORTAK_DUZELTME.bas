@@ -169,7 +169,8 @@ Public Sub AKFIX_STOK_SECIM(ByVal ws As Worksheet)
     If son < 7 Then son = 7
     If Not ws.AutoFilterMode Then ws.Range("A6:L" & son).AutoFilter
     If Len(sec) = 0 Or AKFIX_NORMAL(sec) = "TUMU" Then
-        If ws.FilterMode Then ws.ShowAllData
+        ' Yalniz depo suzgeci kaldirilir (sayfa ici arama suzgeci korunur).
+        If ws.FilterMode Then ws.AutoFilter.Range.AutoFilter Field:=3
     Else
         sec = Replace(sec, "~", "~~")
         sec = Replace(sec, "*", "~*"): sec = Replace(sec, "?", "~?")

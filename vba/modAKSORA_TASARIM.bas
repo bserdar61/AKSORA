@@ -312,7 +312,8 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     If ws.Columns(8).ColumnWidth > 46 Then ws.Columns(8).ColumnWidth = 44
     T_TamGenislik ws, 12
     ws.Rows(1).RowHeight = 32: ws.Rows(2).RowHeight = 46
-    ws.Rows("3:5").Hidden = True: ws.Rows(6).RowHeight = 25
+    ' 5. satir: akilli arama ve depo cipleri bandi (T_StokV2); 3-4 gizli kaynak satirlari.
+    ws.Rows("3:4").Hidden = True: ws.Rows(5).Hidden = False: ws.Rows(5).RowHeight = 40: ws.Rows(6).RowHeight = 25
     ws.Range("A1:L2").Interior.Color = RGB(237, 248, 255)
     ws.Range("A2:L2").Borders.LineStyle = xlNone
     ws.Range("A2:L2").Interior.Color = RGB(235, 243, 249)
@@ -465,6 +466,7 @@ Private Sub T_StokYap(ByVal ws As Worksheet, ByVal yenile As Boolean)
     AKSORA_STOK_AZ ws
     Set s = T_Sekil(ws, AKT_PREFIX & "STOK_BASLIK")
     If sag > 280 Then s.Width = sag - 270 Else s.Visible = msoFalse
+    T_StokV2 ws
     ' Ust satirlar disinda gizli veri satirlari ve filtreler degistirilmez.
 End Sub
 
@@ -1409,6 +1411,7 @@ Public Sub AKSORA_DEPO_KART_SEC()
     application.EnableEvents = False
     ws.Range("H2").Value2 = CStr(secim.List(secim.Value))
     AKFIX_STOK_SECIM ws
+    T_StokAramaBandi ws
     ws.Range("G1").Select
 Cikis:
     On Error Resume Next
@@ -1418,6 +1421,298 @@ Cikis:
 Hata:
     no = Err.Number: metin = Err.Description
     Resume Cikis
+End Sub
+
+' ===================== STOK SAYFASI V2 =====================
+' Guncellik isigi (Son Guncelleme karti), degerleme rozetleri (F), deger cubuklari (K), 5. satirda akilli arama
+' kutusu ve depo cipleri. Her tasarim uygulamasinda (sayfa acilisi, guncelleme) yeniden kurulur; filtreler korunur.
+Private Sub T_StokV2(ByVal ws As Worksheet)
+    Dim son As Long, w As Double, y As Double, h As Double, bw As Double, x As Double, s As Shape, yas As Double
+    Dim fc As Object, i As Long, rr As Range, metin As String, renk As Long, zemin As Long
+    On Error GoTo Hata
+    son = AKSORA_SON_SATIR(ws, "G")
+    If son < 7 Then son = 7
+    w = ws.Range("A1:L1").Width
+    ' 1) Guncellik isigi
+    y = ws.Rows(2).top: h = ws.Rows(2).Height
+    bw = w / IIf(AKFIX_NORMAL(ws.Name) = "STOKLAR", 3, 4)
+    yas = -1
+    If IsDate(ws.Range("C2").Value) Then yas = CDbl(Date) - Int(CDbl(CDate(ws.Range("C2").Value)))
+    If yas < 0 Then
+        renk = RGB(148, 163, 184): zemin = RGB(226, 232, 240): metin = "VERÝ YOK"
+    ElseIf yas < 1 Then
+        renk = RGB(34, 197, 94): zemin = RGB(220, 252, 231): metin = "GÜNCEL"
+    ElseIf yas < 2 Then
+        renk = RGB(234, 138, 12): zemin = RGB(254, 243, 199): metin = "1 GÜN ÖNCE"
+    Else
+        renk = RGB(220, 38, 38): zemin = RGB(254, 226, 226): metin = CLng(yas) & " GÜN ÖNCE"
+    End If
+    Set s = T_Sekil(ws, AKT_PREFIX & "STOK_LED")
+    If s Is Nothing Then Set s = ws.Shapes.AddShape(msoShapeOval, 0, 0, 10, 10): s.Name = AKT_PREFIX & "STOK_LED"
+    T_Yerlestir s, bw - 98, y + 10, 10, 10
+    s.Fill.Visible = msoTrue: s.Fill.Solid: s.Fill.ForeColor.RGB = renk
+    s.line.Visible = msoTrue: s.line.ForeColor.RGB = zemin: s.line.Weight = 2.5
+    s.ZOrder msoBringToFront
+    Set s = T_Yazi(ws, AKT_PREFIX & "STOK_LED_YAZI", metin, bw - 84, y + 6, 78, 18, 8, renk, True, msoAlignLeft)
+    ' 2) Degerleme rozetleri ve 3) deger cubuklari (eski V2 kurallari silinip yeniden eklenir)
+    Set rr = ws.Range("F7:F" & son)
+    For i = ws.Range("F7:F" & application.Max(son, 2000)).FormatConditions.Count To 1 Step -1
+        Set fc = ws.Range("F7:F" & application.Max(son, 2000)).FormatConditions(i)
+        If fc.Type = xlTextString Then fc.Delete
+    Next i
+    T_Rozet rr, "YENI", RGB(220, 252, 231), RGB(22, 101, 52)
+    T_Rozet rr, "CIKMA", RGB(226, 232, 240), RGB(71, 85, 105)
+    T_Rozet rr, "HURDA", RGB(254, 226, 226), RGB(153, 27, 27)
+    Set rr = ws.Range("K7:K" & son)
+    For i = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions.Count To 1 Step -1
+        Set fc = ws.Range("K7:K" & application.Max(son, 2000)).FormatConditions(i)
+        If fc.Type = xlDatabar Then fc.Delete
+    Next i
+    If son > 7 Or Len(CStr(ws.Range("G7").Value2)) > 0 Then
+        Set fc = rr.FormatConditions.AddDatabar
+        fc.MinPoint.Modify newtype:=xlConditionValueNumber, newvalue:=0
+        fc.MaxPoint.Modify newtype:=xlConditionValueAutomaticMax
+        fc.BarColor.Color = RGB(94, 196, 180)
+        On Error Resume Next
+        fc.BarFillType = xlDataBarFillGradient
+        fc.BarBorder.Type = xlDataBarBorderNone
+        fc.ShowValue = True
+        On Error GoTo Hata
+    End If
+    ' 4) Arama bandi (5. satir)
+    T_StokAramaBandi ws
+    Exit Sub
+Hata:
+    ' Gorsel ekler basarisiz olursa sayfa tasarimi durmaz.
+    Err.Clear
+End Sub
+
+Private Sub T_Rozet(ByVal rr As Range, ByVal anahtar As String, ByVal zemin As Long, ByVal yazi As Long)
+    Dim fc As Object
+    Set fc = rr.FormatConditions.Add(Type:=xlTextString, String:=anahtar, TextOperator:=xlContains)
+    fc.Interior.Color = zemin
+    fc.Font.Color = yazi
+    fc.Font.bold = True
+    fc.StopIfTrue = False
+End Sub
+
+' 5. satir: arama kutusu (tikla > arama penceresi), ARA, TEMIZLE, ipucu ve depo cipleri (deger sirasiyla, sigdigi kadar).
+Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
+    Dim y As Double, w As Double, s As Shape, sorgu As String, x As Double, sag As Double, cw As Double
+    Dim d As Object, v As Variant, r As Long, k As Variant, adlar() As String, deg() As Double, n As Long, i As Long, j As Long
+    Dim tmpS As String, tmpD As Double, sec As String, son As Long, mak As String, kod As String, kodlar As Object, aktif As Boolean
+    y = ws.Rows(5).top: w = ws.Range("A1:L1").Width
+    mak = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!"
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_ZEMIN", 0, y, w, ws.Rows(5).Height, RGB(248, 251, 254))
+    Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
+    If Not s Is Nothing Then sorgu = s.AlternativeText
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_KUTU", 6, y + 5, 380, 30, vbWhite)
+    s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.15
+    s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(30, 99, 168): s.line.Weight = 1.5
+    s.AlternativeText = sorgu
+    With s.TextFrame2
+        .MarginLeft = 10: .MarginRight = 6: .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
+        .TextRange.Text = IIf(Len(sorgu) > 0, ChrW(8981) & "  " & sorgu, ChrW(8981) & "  Malzeme ara (ör. 50 kva trafo, aðaç direk 9)")
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 10.5: .TextRange.Font.bold = msoFalse
+        .TextRange.Font.Fill.ForeColor.RGB = IIf(Len(sorgu) > 0, RGB(15, 23, 42), RGB(148, 163, 184))
+        .TextRange.ParagraphFormat.Alignment = msoAlignLeft
+    End With
+    s.OnAction = mak & "AKSORA_STOK_ARA"
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_DUGME", 392, y + 5, 64, 30, RGB(30, 99, 168))
+    s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.15
+    s.TextFrame2.TextRange.Text = "ARA": T_Buton s, RGB(30, 99, 168), vbWhite, 9.5
+    s.OnAction = mak & "AKSORA_STOK_ARA"
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_TEMIZLE", 460, y + 5, 30, 30, RGB(226, 232, 240))
+    s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.15
+    s.TextFrame2.TextRange.Text = ChrW(215): T_Buton s, RGB(226, 232, 240), RGB(71, 85, 105), 12
+    s.line.Visible = msoFalse
+    s.OnAction = mak & "AKSORA_STOK_ARA_TEMIZLE"
+    s.Visible = IIf(Len(sorgu) > 0, msoTrue, msoFalse)
+    Set s = T_Yazi(ws, AKT_PREFIX & "ARA_IPUCU", "Sözcük sýrasý önemsiz, 50 = 0050." & vbLf & "× ile arama temizlenir.", _
+        498, y + 5, 170, 30, 8, RGB(100, 116, 139), False, msoAlignLeft)
+    s.TextFrame2.WordWrap = msoTrue
+    ' Depo cipleri (STOKLAR'da depo secimi yok)
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, Len(AKT_PREFIX & "CIP_")) = AKT_PREFIX & "CIP_" Then ws.Shapes(i).Delete
+    Next i
+    If AKFIX_NORMAL(ws.Name) = "STOKLAR" Then Exit Sub
+    son = AKSORA_SON_SATIR(ws, "G")
+    If son < 7 Then Exit Sub
+    v = ws.Range("A7:L" & son).Value2
+    Set d = CreateObject("Scripting.Dictionary"): Set kodlar = CreateObject("Scripting.Dictionary")
+    For r = 1 To UBound(v, 1)
+        If Not IsError(v(r, 3)) And Not IsError(v(r, 11)) Then
+            If Len(Trim$(CStr(v(r, 3)))) > 0 Then
+                If IsNumeric(v(r, 11)) Then d(CStr(v(r, 3))) = d(CStr(v(r, 3))) + CDbl(v(r, 11)) Else d(CStr(v(r, 3))) = d(CStr(v(r, 3))) + 0
+                If Not kodlar.Exists(CStr(v(r, 3))) And Not IsError(v(r, 2)) Then kodlar(CStr(v(r, 3))) = CStr(v(r, 2))
+            End If
+        End If
+    Next r
+    n = d.Count
+    If n = 0 Then Exit Sub
+    ReDim adlar(1 To n): ReDim deg(1 To n)
+    i = 0
+    For Each k In d.keys
+        i = i + 1: adlar(i) = CStr(k): deg(i) = d(k)
+    Next k
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If deg(j) > deg(i) Then
+                tmpD = deg(i): deg(i) = deg(j): deg(j) = tmpD
+                tmpS = adlar(i): adlar(i) = adlar(j): adlar(j) = tmpS
+            End If
+        Next j
+    Next i
+    sec = Trim$(CStr(ws.Range("H2").Value2))
+    sag = w - 6: x = 680
+    cw = 104
+    aktif = (Len(sec) = 0 Or AKFIX_NORMAL(sec) = "TUMU")
+    T_Cip ws, "TUMU", "TÜMÜ", AKSORA_SAYI_METNI(son - 6, "#,##0") & " satýr", x, y + 5, 74, aktif, mak
+    x = x + 74 + 5
+    For i = 1 To n
+        If x + cw > sag Then Exit For
+        kod = kodlar(adlar(i))
+        T_Cip ws, adlar(i), kod & " " & Left$(adlar(i), 11), T_KisaTL(deg(i)), x, y + 5, cw, (StrComp(sec, adlar(i), vbTextCompare) = 0), mak
+        x = x + cw + 5
+    Next i
+End Sub
+
+Private Sub T_Cip(ByVal ws As Worksheet, ByVal depo As String, ByVal ust As String, ByVal alt As String, ByVal x As Double, _
+    ByVal y As Double, ByVal cw As Double, ByVal aktif As Boolean, ByVal mak As String)
+    Dim s As Shape, ad As String
+    ad = AKT_PREFIX & "CIP_" & Left$(AKFIX_NORMAL(depo), 30)
+    Set s = ws.Shapes.AddShape(msoShapeRoundedRectangle, x, y, cw, 30)
+    s.Name = ad
+    s.Adjustments.Item(1) = 0.5
+    s.Placement = xlFreeFloating
+    s.Fill.Solid: s.Fill.ForeColor.RGB = IIf(aktif, RGB(12, 45, 79), vbWhite)
+    s.line.Visible = msoTrue: s.line.ForeColor.RGB = IIf(aktif, RGB(12, 45, 79), RGB(199, 215, 230)): s.line.Weight = 1
+    s.Shadow.Visible = msoFalse
+    s.AlternativeText = depo
+    With s.TextFrame2
+        .MarginLeft = 4: .MarginRight = 4: .MarginTop = 0: .MarginBottom = 0
+        .VerticalAnchor = msoAnchorMiddle: .WordWrap = msoFalse
+        .TextRange.Text = ust & vbLf & alt
+        .TextRange.Font.Name = "Aptos": .TextRange.Font.Size = 8
+        .TextRange.Font.Fill.ForeColor.RGB = IIf(aktif, RGB(188, 211, 232), RGB(100, 116, 139))
+        .TextRange.ParagraphFormat.Alignment = msoAlignCenter
+        .TextRange.Paragraphs(1).Font.bold = msoTrue
+        .TextRange.Paragraphs(1).Font.Size = 8.5
+        .TextRange.Paragraphs(1).Font.Fill.ForeColor.RGB = IIf(aktif, vbWhite, RGB(15, 23, 42))
+    End With
+    s.OnAction = mak & "AKSORA_STOK_DEPO_CIP"
+    s.ZOrder msoBringToFront
+End Sub
+
+Private Function T_KisaTL(ByVal x As Double) As String
+    If Abs(x) >= 1000000# Then
+        T_KisaTL = AKSORA_SAYI_METNI(x / 1000000#, "#,##0.00") & " mn TL"
+    ElseIf Abs(x) >= 1000# Then
+        T_KisaTL = AKSORA_SAYI_METNI(x / 1000#, "#,##0.0") & " bin TL"
+    Else
+        T_KisaTL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
+    End If
+End Function
+
+' Depo cipi: secilen depoya suzulur (depo listesiyle ayni yol; arama filtresi korunur).
+Public Sub AKSORA_STOK_DEPO_CIP()
+    Dim ws As Worksheet, s As Shape, depo As String, p As Variant, koruma As Boolean, d As Shape, i As Long, ev As Boolean
+    On Error GoTo Hata
+    Set ws = ActiveSheet
+    Set s = ws.Shapes(CStr(application.Caller))
+    depo = s.AlternativeText
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    T_KorumaAc ws, p, koruma
+    ws.Range("H2").Value2 = IIf(depo = "TUMU", "TÜMÜ", depo)
+    AKFIX_STOK_SECIM ws
+    Set d = T_Sekil(ws, AKT_PREFIX & "DEPO_KART_LISTE")
+    If Not d Is Nothing Then
+        For i = 1 To d.ControlFormat.ListCount
+            If CStr(d.ControlFormat.List(i)) = CStr(ws.Range("H2").Value2) Then d.ControlFormat.Value = i: Exit For
+        Next i
+    End If
+    T_StokAramaBandi ws
+    If koruma Then T_KorumaKapat ws, p
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    Dim hM As String
+    hM = Err.Description
+    On Error Resume Next
+    If koruma Then T_KorumaKapat ws, p
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    MsgBox "Depo seçilemedi: " & hM, vbExclamation, "AKSORA"
+End Sub
+
+' Sayfa ici akilli arama: Malzeme Tanimi (H) suzgeci; eslesen satirlarin tanimlari secilir (depo filtresiyle birlikte).
+Public Sub AKSORA_STOK_ARA()
+    Dim ws As Worksheet, kutu As Shape, q As String
+    On Error Resume Next
+    Set ws = ActiveSheet
+    Set kutu = ws.Shapes(AKT_PREFIX & "ARA_KUTU")
+    On Error GoTo 0
+    If kutu Is Nothing Then Exit Sub
+    q = InputBox("Aranacak malzeme (ad, kod ya da parçasý):" & vbLf & "Örnek: 50 kva trafo  •  aðaç direk 9  •  1000006855", _
+        "AKSORA | STOK ARAMA", kutu.AlternativeText)
+    If StrPtr(q) = 0 Then Exit Sub
+    T_StokAraUygula ws, Trim$(q)
+End Sub
+
+Public Sub AKSORA_STOK_ARA_TEMIZLE()
+    On Error Resume Next
+    T_StokAraUygula ActiveSheet, vbNullString
+End Sub
+
+Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String)
+    Dim son As Long, v As Variant, r As Long, akilli As Variant, desen As String, d As Object, liste() As String, i As Long
+    Dim p As Variant, koruma As Boolean, ev As Boolean, k As Variant, tn As String, kod As String, esles As Boolean, hM As String
+    On Error GoTo Hata
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    T_KorumaAc ws, p, koruma
+    son = AKSORA_SON_SATIR(ws, "G")
+    If son < 7 Then son = 7
+    If Not ws.AutoFilterMode Then ws.Range("A6:L" & son).AutoFilter
+    If Len(q) = 0 Then
+        ws.AutoFilter.Range.AutoFilter Field:=8
+    Else
+        desen = AKSORA_ARAMA_DESEN(q): akilli = AKSORA_AKILLI_HAZIRLA(q)
+        Set d = CreateObject("Scripting.Dictionary")
+        v = ws.Range("A7:L" & son).Value2
+        For r = 1 To UBound(v, 1)
+            If Not IsError(v(r, 7)) And Not IsError(v(r, 8)) Then
+                kod = CStr(v(r, 7)): tn = CStr(v(r, 8))
+                If Len(kod) > 0 Then
+                    esles = (kod Like desen) Or (tn Like desen)
+                    If Not esles Then esles = AKSORA_AKILLI_ESLES(kod & " " & tn, akilli)
+                    If esles Then d(tn) = True
+                End If
+            End If
+        Next r
+        If d.Count = 0 Then
+            If koruma Then T_KorumaKapat ws, p
+            application.EnableEvents = ev: application.ScreenUpdating = True
+            MsgBox "Bu sayfada """ & q & """ ile eþleþen malzeme yok.", vbInformation, "AKSORA | STOK ARAMA"
+            Exit Sub
+        End If
+        ReDim liste(0 To d.Count - 1)
+        For Each k In d.keys: liste(i) = CStr(k): i = i + 1: Next k
+        ws.AutoFilter.Range.AutoFilter Field:=8, Criteria1:=liste, Operator:=xlFilterValues
+    End If
+    ws.Shapes(AKT_PREFIX & "ARA_KUTU").AlternativeText = q
+    T_StokAramaBandi ws
+    ws.Calculate
+    ActiveWindow.ScrollRow = 1
+    If koruma Then T_KorumaKapat ws, p
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    Exit Sub
+Hata:
+    hM = Err.Description
+    On Error Resume Next
+    If koruma Then T_KorumaKapat ws, p
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    MsgBox "Arama uygulanamadý: " & hM, vbExclamation, "AKSORA"
 End Sub
 
 Private Sub T_StokListeBicim(ByVal ws As Worksheet, ByVal son As Long)

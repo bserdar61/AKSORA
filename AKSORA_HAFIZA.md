@@ -840,6 +840,8 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 
 - 2026-11-16: AKSORA v2 Bölge Komuta (web sayfası) kullanıcı isteğiyle tamamen kaldırıldı: düğme, AKSORA_V2_AC ve şablon kodu silindi (BX2=16 ile birim seçim ekranı yeniden çizilir). Web sayfası açan özellik istenmiyor.
 
+- 2026-11-16: Malzeme stok sayfaları V2 (T_StokV2, T_StokYap sonunda): güncellik ışığı (C2 yaşı), Değerleme rozetleri (F, xlTextString CF), Değer veri çubuğu (K, AddDatabar), 5. satır görünür (40 pt) arama bandı: arama kutusu (tıkla → InputBox) + ARA + × + depo çipleri (değere göre, sığdığı kadar; STOKLAR'da yok). Arama: eşleşen satırların Malzeme Tanımı değerleriyle AutoFilter Field 8 xlFilterValues (depo filtresi Field 3 ile birlikte). AKFIX_STOK_SECIM TÜMÜ artık yalnız Field 3'ü temizler. Sıradaki: "Dünden Bu Yana" kartı ve Dünden sütunu (günlük stok geçmişi gerekiyor).
+
 ## Sıradaki işler
 - (Canlı güncelleme şeridi tüm birimlere eklendi, yukarıya bakınız.)
 - ATIL kuralı 2 ilk tam okuma (CDP+EPP, 7 dk 52 sn): ATIL 1.509 kalem / 31,35 mn TL; 3 AY 319 / 3,31 mn; 6 AY 368 / 1,84 mn; transfer 906. (Eski kural: 2.435 / 637,6 mn.) Doğruluk testi kullanıcıda.
