@@ -873,3 +873,4 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Oneri (IH_ONERI): eksik = ihtiyac - kendi; once atil depo, YENI parti, ilin toplam stogu en buyuk il, depo miktari.
 - Excel: Talep Listesi (illere istenecekler), Illerdeki Stok, Depo Bazinda. tools/ihtiyac_sim.py: ayni mantigin Python denemesi.
 - Bu dosyaya stok V2 (arama karti, cipler, ust bant) degisiklikleri de eklendi.
+- Ihtiyac Bul duzeltme: her kalem icin yalniz en uygun malzeme (benzerleri yok, yildiz yok). Miktar hucreleri sayi kalir, birimli bicim (10 adet, 15 kg, 10 mt; IH_BIRIM_ADI / IH_MIKTAR_BICIM) ve ortali; giris tablosu ve Excel dahil.

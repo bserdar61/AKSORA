@@ -4652,7 +4652,6 @@ Private Function PRJ_TARIH(ByVal t As String) As Double
     If Month(DateSerial(y, a, g)) <> a Then Exit Function
     PRJ_TARIH = CDbl(DateSerial(y, a, g))
 End Function
-
 '---------- IHTIYAC BUL ----------
 ' Bir ilin ihtiyac listesi butun illerin D depolarinda aranir (SAP gerekmez: her gun yenilenen il stoklari).
 ' Kullanilabilir stok: hurda / demontaj / ariza / sokum (DM) depolari ve HURDA partisi disi.
@@ -4792,6 +4791,37 @@ Private Function IH_UYGUN(ByVal depoAd As String, ByVal parti As String) As Bool
     IH_UYGUN = True
 End Function
 
+' SAP birimi -> okunur kisaltma (10 adet, 15 kg, 10 mt).
+Private Function IH_BIRIM_ADI(ByVal b As String) As String
+    Select Case UCase$(Trim$(b))
+        Case "ADT", "AD", "ADET", "PC", "ST": IH_BIRIM_ADI = "adet"
+        Case "M", "MT", "MTR": IH_BIRIM_ADI = "mt"
+        Case "KG": IH_BIRIM_ADI = "kg"
+        Case "TAK", "TKM", "SET": IH_BIRIM_ADI = "takým"
+        Case "L", "LT": IH_BIRIM_ADI = "lt"
+        Case "TON", "TO": IH_BIRIM_ADI = "ton"
+        Case "M2": IH_BIRIM_ADI = "m2"
+        Case "M3": IH_BIRIM_ADI = "m3"
+        Case Else: IH_BIRIM_ADI = LCase$(Trim$(b))
+    End Select
+End Function
+
+' Miktar hucresi sayi kalir; yaninda birimi yazar ve ortalanir.
+Private Sub IH_MIKTAR_BICIM(ByVal alan As Range, ByVal birim As String)
+    Dim c As Range, v As Variant, ek As String
+    ek = IH_BIRIM_ADI(birim)
+    If Len(ek) > 0 Then ek = " """ & Replace(ek, """", "") & """"
+    For Each c In alan.Cells
+        v = c.Value2
+        If Not IsError(v) And Not IsEmpty(v) Then
+            If VarType(v) <> vbString And IsNumeric(v) Then
+                If Round(CDbl(v), 6) = Int(Round(CDbl(v), 6)) Then c.NumberFormat = "#,##0" & ek Else c.NumberFormat = "#,##0.###" & ek
+            End If
+        End If
+    Next c
+    alan.HorizontalAlignment = xlCenter
+End Sub
+
 Private Function IH_MIKTAR(ByVal x As Double) As String
     If Round(x, 6) = Int(Round(x, 6)) Then
         IH_MIKTAR = AKSORA_SAYI_METNI(x, "#,##0")
@@ -4922,7 +4952,7 @@ Private Function IH_DURUM(ByVal n As Double, ByVal own As Double, ByVal oth As D
         ElseIf own + oth >= n Then
             IH_DURUM = "TRANSFERLE KARÞILANIR"
         ElseIf own + oth > 0 Then
-            IH_DURUM = "KISMEN  •  eksik " & IH_MIKTAR(n - own - oth) & " " & birim
+            IH_DURUM = "KISMEN  •  eksik " & IH_MIKTAR(n - own - oth) & " " & IH_BIRIM_ADI(birim)
         Else
             IH_DURUM = "HÝÇBÝR ÝLDE YOK"
         End If
@@ -5047,7 +5077,7 @@ Private Sub IH_DETAY_EKLE(ByVal detay As Collection, ByVal talep As Collection, 
         If CDbl(x(4)) > 0 Then bd = CDbl(x(5)) / CDbl(x(4))
         renk = 0
         If oneri > 0 Then
-            notu = "ÖNERÝLEN  •  " & IH_MIKTAR(oneri) & " " & CStr(o(1)) & " isteyin": renk = 1
+            notu = "ÖNERÝLEN  •  " & IH_MIKTAR(oneri) & " " & IH_BIRIM_ADI(CStr(o(1))) & " isteyin": renk = 1
         ElseIf Not x(6) Then
             If InStr(Y_NORM(CStr(x(3))), "HURDA") > 0 Then notu = "Kullanýlamaz: hurda parti" Else notu = "Kullanýlamaz: hurda / demontaj / arýza / söküm deposu"
             renk = 3
@@ -5088,7 +5118,7 @@ End Sub
 Private Function IH_OZET(ByVal o As Variant, ByVal il As String, ByRef iller() As String, ByVal onr As Object, _
     ByVal own As Double, ByVal oth As Double) As String
     Dim c As Collection, k As Variant, x As Variant, t As String, j As Long, dIl As Object, m As Double, b As String
-    Set c = o(4): Set dIl = o(3): b = CStr(o(1))
+    Set c = o(4): Set dIl = o(3): b = IH_BIRIM_ADI(CStr(o(1)))
     If onr.Count > 0 Then
         For Each k In onr.keys
             x = c(CLng(k))
@@ -5160,8 +5190,8 @@ Private Sub IH_HESAPLA(ByVal il As String, ByVal giris As Variant, ByRef sonuc()
                         If puan(idx(b)) > puan(idx(a)) Then t = idx(a): idx(a) = idx(b): idx(b) = t
                     Next b
                 Next a
-                mx = m
-                If mx > IH_MAKS_MALZEME Then mx = IH_MAKS_MALZEME
+                ' Yalniz en uygun malzeme gosterilir (benzerleri listeyi kalabaliklastirmaz).
+                mx = 1
                 For a = 1 To mx
                     j = idx(a): o = d(mal(j))
                     du = IH_DURUM(n, own(j), oth(j), CStr(o(1)))
@@ -5179,9 +5209,7 @@ Private Sub IH_HESAPLA(ByVal il As String, ByVal giris As Variant, ByRef sonuc()
                     End If
                     If nDet >= IH_MAKS_DETAY Then Exit For
                 Next a
-                sonuc(i) = ChrW(9733) & " " & mal(j) & "  " & CStr(o(0)) & "  •  " & durum(i) & "  •  " & _
-                    IH_OZET(o, il, iller, onr, own(j), oth(j))
-                If m > 1 Then sonuc(i) = sonuc(i) & "  •  +" & (m - 1) & " benzer malzeme"
+                sonuc(i) = mal(j) & "  " & CStr(o(0)) & "  •  " & durum(i) & "  •  " & IH_OZET(o, il, iller, onr, own(j), oth(j))
                 Select Case Left$(durum(i), 4)
                     Case "KEND": kpi(2) = kpi(2) + 1
                     Case "TRAN", "DÝÐE": kpi(3) = kpi(3) + 1
@@ -5276,7 +5304,7 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
     ws.Rows(r).RowHeight = 30
     r = 12
     Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 13)), Array("#", "Ýhtiyaç (kod / ad)", "Miktar", _
-        "Sonuç  (" & ChrW(9733) & " önerilen malzeme)", "", "", "", "", "", "", "", "", "")
+        "Sonuç", "", "", "", "", "", "", "", "", "")
     ws.Range(ws.Cells(r, 4), ws.Cells(r, 13)).Merge
     ws.Rows(r).RowHeight = 26
     a1 = IH_SATIR1
@@ -5286,7 +5314,8 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
         veri(i, 1) = i: veri(i, 2) = giris(i, 1): veri(i, 3) = giris(i, 2)
     Next i
     ws.Range(ws.Cells(a1, 2), ws.Cells(sonR, 2)).NumberFormat = "@"
-    ws.Range(ws.Cells(a1, 3), ws.Cells(sonR, 3)).NumberFormat = "#,##0.###"
+    ws.Range(ws.Cells(a1, 3), ws.Cells(sonR, 3)).NumberFormat = "General"
+    ws.Range(ws.Cells(a1, 3), ws.Cells(sonR, 3)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 3)).Value2 = veri
     Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 13))
     ws.Range(ws.Rows(a1), ws.Rows(sonR)).RowHeight = 21
@@ -5325,7 +5354,7 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
     ' 2) Illerdeki stok (matris)
     If matris.Count > 0 Then
         Y_BOLUM ws, r, "2) ÝLLERDEKÝ STOK  •  kullanýlabilir D depolarý", _
-            ChrW(9733) & " önerilen malzeme  •  Boþ hücre: o ilde kullanýlabilir stok yok", 13
+            "Boþ hücre: o ilde kullanýlabilir stok yok", 13
         ws.Rows(r).RowHeight = 30
         r = r + 1
         Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 13)), Array("#", "Ýhtiyaç", "Ýhtiyaç miktarý", "Malzeme", "Kýsa metin", "Birim", _
@@ -5341,7 +5370,6 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
             For j = 0 To 12
                 veri(i, j + 1) = x(j)
             Next j
-            If x(13) Then veri(i, 5) = ChrW(9733) & " " & CStr(x(4))
         Next x
         sonR = a1 + n - 1
         ws.Range(ws.Cells(a1, 2), ws.Cells(sonR, 2)).NumberFormat = "@"
@@ -5355,9 +5383,14 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
         ws.Range(ws.Cells(a1, 6), ws.Cells(sonR, 6)).HorizontalAlignment = xlCenter
         ws.Range(ws.Cells(a1, 2), ws.Cells(sonR, 2)).ShrinkToFit = True
         ws.Range(ws.Cells(a1, 5), ws.Cells(sonR, 5)).ShrinkToFit = True
-        For j = 3 To 12
-            If j = 3 Or j >= 7 Then AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, j), ws.Cells(sonR, j))
-        Next j
+        i = 0
+        For Each x In matris
+            i = i + 1
+            IH_MIKTAR_BICIM ws.Cells(a1 + i - 1, 3), CStr(x(5))
+            IH_MIKTAR_BICIM ws.Range(ws.Cells(a1 + i - 1, 7), ws.Cells(a1 + i - 1, 12)), CStr(x(5))
+            ' Giris tablosundaki miktar da ayni birimle yazilir.
+            IH_MIKTAR_BICIM ws.Cells(IH_SATIR1 + CLng(x(0)) - 1, 3), CStr(x(5))
+        Next x
         ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 12)).Font.bold = True
         ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7)).Interior.Color = RGB(239, 246, 255)
         ws.Range(ws.Cells(a1, 12), ws.Cells(sonR, 12)).Font.Color = RGB(21, 128, 61)
@@ -5410,8 +5443,11 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
         ws.Range(ws.Cells(a1, 2), ws.Cells(sonR, 2)).ShrinkToFit = True
         ws.Range(ws.Cells(a1, 5), ws.Cells(sonR, 5)).ShrinkToFit = True
         ws.Range(ws.Cells(a1, 13), ws.Cells(sonR, 13)).ShrinkToFit = True
-        AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7))
-        AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 8), ws.Cells(sonR, 8))
+        i = 0
+        For Each x In detay
+            i = i + 1
+            IH_MIKTAR_BICIM ws.Range(ws.Cells(a1 + i - 1, 7), ws.Cells(a1 + i - 1, 8)), CStr(x(5))
+        Next x
         ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 8)).Font.bold = True
         ws.Range(ws.Cells(a1, 8), ws.Cells(sonR, 8)).Font.Color = RGB(21, 128, 61)
         ws.Range(ws.Cells(a1, 9), ws.Cells(sonR, 10)).NumberFormat = "#,##0.00 ""TL"""
@@ -5500,7 +5536,9 @@ Public Sub AKSORA_IHTIYAC_EXCEL()
             Array(xlCenter, xlLeft, xlCenter, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlCenter, xlLeft), _
             "ÝHTÝYAÇ BUL  |  " & Y_IL_ADI(il) & " için talep listesi  |  " & AKSORA_SAYI_METNI(Round(t, 2), "#,##0.00") & " TL", _
             "Gönderen ilin kendi ihtiyacý teyit edilmeli", "Talep Listesi", Empty
-        AKSORA_V13_MIKTAR_BICIMI wb.Worksheets(sayfa).Range(wb.Worksheets(sayfa).Cells(5, 6), wb.Worksheets(sayfa).Cells(n + 4, 6))
+        For i = 1 To n
+            IH_MIKTAR_BICIM wb.Worksheets(sayfa).Cells(i + 4, 6), CStr(veri(i, 7))
+        Next i
     End If
     sayfa = sayfa + 1
     If sayfa > wb.Worksheets.Count Then wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count)
@@ -5512,7 +5550,6 @@ Public Sub AKSORA_IHTIYAC_EXCEL()
         For j = 0 To 12
             veri(i, j + 1) = x(j)
         Next j
-        If x(13) Then veri(i, 5) = ChrW(9733) & " " & CStr(x(4))
     Next x
     AKSORA_EXCEL_SAYFA wb.Worksheets(sayfa), Array("#", "Ýhtiyaç", "Ýhtiyaç miktarý", "Malzeme", "Kýsa metin", "Birim", _
         Y_IL_ADI(iller(0)) & " (kendi)", Y_IL_ADI(iller(1)), Y_IL_ADI(iller(2)), Y_IL_ADI(iller(3)), Y_IL_ADI(iller(4)), _
@@ -5521,6 +5558,10 @@ Public Sub AKSORA_IHTIYAC_EXCEL()
         Array(xlCenter, xlLeft, xlRight, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlRight, xlRight, xlRight, xlLeft), _
         "ÝHTÝYAÇ BUL  |  " & Y_IL_ADI(il) & "  |  illerdeki kullanýlabilir D depo stoðu", _
         "Hurda, demontaj, arýza ve söküm depolarý hariç", "Ýllerdeki Stok", Empty
+    For i = 1 To n
+        IH_MIKTAR_BICIM wb.Worksheets(sayfa).Cells(i + 4, 3), CStr(veri(i, 6))
+        IH_MIKTAR_BICIM wb.Worksheets(sayfa).Range(wb.Worksheets(sayfa).Cells(i + 4, 7), wb.Worksheets(sayfa).Cells(i + 4, 12)), CStr(veri(i, 6))
+    Next i
     sayfa = sayfa + 1
     wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count)
     n = detay.Count
@@ -5538,6 +5579,9 @@ Public Sub AKSORA_IHTIYAC_EXCEL()
         Array("General", "@", "@", "0", "@", "@", "General", "General", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "dd.mm.yyyy hh:mm", "@", "@"), _
         Array(xlCenter, xlLeft, xlCenter, xlCenter, xlLeft, xlCenter, xlRight, xlRight, xlRight, xlRight, xlCenter, xlCenter, xlLeft), _
         "ÝHTÝYAÇ BUL  |  " & Y_IL_ADI(il) & "  |  depo bazýnda stok", "Bütün illerin D depolarý", "Depo Bazýnda", Empty
+    For i = 1 To n
+        IH_MIKTAR_BICIM wb.Worksheets(sayfa).Range(wb.Worksheets(sayfa).Cells(i + 4, 7), wb.Worksheets(sayfa).Cells(i + 4, 8)), CStr(veri(i, 6))
+    Next i
     wb.Worksheets(1).Activate
     yol = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
         AKSORA_DOSYA_ADI("Ýhtiyaç Bul - " & Y_IL_ADI(il) & " - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
