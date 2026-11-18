@@ -7689,6 +7689,7 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
     frmSplash.lblDurum.Caption = mesaj
     frmSplash.lblBar.Width = application.Max(1, frmSplash.lblBarArka.Width * y)
     frmSplash.Repaint
+    PANEL_EKRAN_CANLI
     If mAdmYukSon = 0 Or Abs(Timer - mAdmYukSon) > 0.5 Then
         iv = application.Interactive
         application.Interactive = False
@@ -7725,7 +7726,6 @@ Public Sub AKSORA_PANEL_EKRAN_ONAR()
     ThisWorkbook.Activate
     If Not (ActiveSheet Is ws) Then ws.Activate
     UYGULAMA_MODU_AC
-    AKSORA_EKRAN_SIGDIR ws
     application.ScreenUpdating = True
     DoEvents
     application.ScreenUpdating = sc
@@ -7734,6 +7734,22 @@ Public Sub AKSORA_PANEL_EKRAN_ONAR()
     If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
     If h <> 0 Then ADMW_SetWindowPos h, 0, 0, 0, 0, 0, &H3
     frmSplash.Repaint
+    On Error GoTo 0
+End Sub
+
+' Ekran yenilemesi kapaliyken Excel penceresi yeniden cizilmek zorunda kalinca (SAP pencereleri, kayit diyaloglari)
+' yalniz hucreleri cizer, resim ve dugmeleri cizmez. Panel guncellemesi surerken ana panel ekrandaysa yenileme
+' en cok 1,5 sn'de bir acilir: Excel paneli tam cizer (ilce birimindeki gibi).
+Private Sub PANEL_EKRAN_CANLI()
+    Static son As Double
+    If Not (mPanelKart And mAdmYukleme) Then Exit Sub
+    If application.ScreenUpdating Then Exit Sub
+    If Abs(Timer - son) < 1.5 Then Exit Sub
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If ActiveSheet.Name <> "ANA PANEL" Then Exit Sub
+    son = Timer
+    application.ScreenUpdating = True
     On Error GoTo 0
 End Sub
 
@@ -7750,6 +7766,7 @@ Public Sub AKSORA_BEKLE_MESAJ(ByVal mesaj As String, Optional ByVal y As Double 
     Else
         frmSplash.lblDurum.Caption = mesaj
         frmSplash.Repaint
+        PANEL_EKRAN_CANLI
         AKSORA_BEKLE_NABIZ
     End If
 End Sub
@@ -7768,6 +7785,7 @@ Public Sub AKSORA_BEKLE_NABIZ()
         Exit Sub
     End If
     On Error Resume Next
+    PANEL_EKRAN_CANLI
     iv = application.Interactive
     application.Interactive = False
     DoEvents
