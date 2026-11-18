@@ -1959,7 +1959,7 @@ Hata:
 End Sub
 
 Private Sub T_StokListeBicim(ByVal ws As Worksheet, ByVal son As Long)
-    Dim bitis As Long, alan As Range, veri As Range, fc As FormatCondition, hucre As Range
+    Dim bitis As Long, alan As Range, veri As Range, fc As Object, hucre As Range
     Dim mavi As Range, r As Long, n As Long, asama As String, no As Long, metin As String
     On Error GoTo Hata
     asama = "Eski serit kurallari"
@@ -1969,6 +1969,7 @@ Private Sub T_StokListeBicim(ByVal ws As Worksheet, ByVal son As Long)
     If bitis < 7 Then Exit Sub
     Set alan = ws.Range("A7:L" & bitis)
     ' Yalniz eski satir seridi kurallari kaldirilir; diger kosullar korunur.
+    ' Kosullar arasinda deger cubugu (Databar) da var: FormatCondition turunde degil (Type mismatch veriyordu).
     For i = alan.FormatConditions.Count To 1 Step -1
         Set fc = alan.FormatConditions(i)
         If fc.Type = xlExpression Then

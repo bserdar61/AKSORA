@@ -880,3 +880,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Arama karti yeniden: kutunun tamamini kaplar (1 px tasar), mavi kenar (form zemini) + beyaz ic etiket + simge + yazi alani + "Enter" ipucu.
 - Arama karti tek tip: kart kutunun icinde (simgeden sonra, kenara degmeden), beyaz/kenarsiz; kutu cercevesi degismez. Bos iken ayni gri ornek yazi (Aptos 10 x zoom), yazinca kaybolur. Aranan metin kutuda koyu ama kalin degil.
 - Arama kutusu 38 pt yuksek (y+3), kart kutunun icinde genis payla (sol 23, sag 18, ust 8, alt 13 pt): olcekli ekranlarda cercevenin ustune tasmasin.
+
+## TUM STOKLARI GUNCELLE hatasi (2026-11-18, temel: kullanicinin 18.11 12:09 dosyasi)
+- "CDP_STOK: Eski serit kurallari | Type mismatch (13)": T_StokListeBicim'de fc As FormatCondition; V2'nin deger cubugu (Databar) FormatCondition degil. fc As Object yapildi. Butun illerde zinciri durduruyordu.
+- Buton taramasi: sekillerdeki ve koddaki 128 OnAction makrosu var, Public ve parametresiz (AKSKV1_SEC_* / AKSORA_V4_SEC_* il ekiyle tamam).
+- SAP teshis dosyasi 19,5 MB'a ulasmisti: MS_Teshis 3 MB'i asinca dosyayi _eski.txt yapar. Disa aktarma menusu her calismada ~150 oge taranip tek tek yaziliyordu: artik yalniz sayi yazilir, bulunan menu islem koduna gore (mDisaMenu) hatirlanir ve once denenir (metni DOSYA/FILE degilse taranir).
+- Sayfa99 = İHTİYAÇ_BUL sayfa modulu (kullanici dosyasinda olustu). frmSplash VB_Base kullanicinin dosyasindan.

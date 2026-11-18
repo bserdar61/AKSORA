@@ -1,5 +1,5 @@
 Attribute VB_Name = "frmSplash"
-Attribute VB_Base = "0{FFE354EA-65B3-4369-B3FF-77D5DCBB8BBB}{D19AC3C6-AD08-455A-9500-AAAFD1EFB576}"
+Attribute VB_Base = "0{2654AC74-46C7-44A3-A636-B92CAC7696C2}{A65B345D-86DD-4CCC-B58E-5D1E26895F04}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -57,6 +57,7 @@ Private Const SWP_SHOWWINDOW As Long = &H40
 ' Stok arama kipi: kart basliksiz yazi kutusu olur, her harfte tablo suzulur.
 Public AraKipi As Boolean
 Private WithEvents mAraTb As MSForms.TextBox
+Attribute mAraTb.VB_VarHelpID = -1
 Private mAraYer As Object
 
 Public Sub SplashBaslat()

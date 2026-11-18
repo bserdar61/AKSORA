@@ -1,5 +1,7 @@
 Attribute VB_Name = "modAKSORA_MUSTERI_SAP"
 Option Explicit
+' Disa aktarma menusu (islem kodu -> wnd[0]/mbar/... yolu): her calismada butun menu taranmaz.
+Private mDisaMenu As Object
 
 '==========================================================
 ' AKSORA - MUSTERI SAP (7155)  | Surum: MB52'siz, fiyat listeli
@@ -144,8 +146,22 @@ Private Function MS_TeshisYolu() As String
 End Function
 
 Private Sub MS_Teshis(ByVal metin As String)
-    Dim f As Integer
+    Static kontrol As Boolean
+    Dim f As Integer, yol As String, eski As String
     On Error Resume Next
+    ' Dosya surekli buyuyordu (19 MB): 3 MB'i asinca _eski olarak saklanir, yenisi baslar.
+    If Not kontrol Or Left$(metin, 5) = "---- " Then
+        kontrol = True
+        yol = MS_TeshisYolu()
+        If Len(Dir$(yol)) > 0 Then
+            If FileLen(yol) > 3000000 Then
+                eski = Left$(yol, Len(yol) - 4) & "_eski.txt"
+                If Len(Dir$(eski)) > 0 Then Kill eski
+                Name yol As eski
+            End If
+        End If
+        Err.Clear
+    End If
     f = FreeFile
     Open MS_TeshisYolu() For Append As #f
     Print #f, metin
@@ -250,7 +266,7 @@ End Sub
 
 Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boolean
     Dim i As Long, adet As Long, bid As String, ipucu As String, tip As String, t As String
-    Dim menuler As Collection, m As Variant, secim As String, puan As Long, enIyi As Long
+    Dim menuler As Collection, m As Variant, secim As String, puan As Long, enIyi As Long, tx As String
     ' 1) ALV arac cubugu
     On Error Resume Next
     adet = alv.ToolbarButtonCount
@@ -276,11 +292,25 @@ Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boo
             Err.Clear
         End If
     Next i
-    ' 2) Menu cubugu: Yerel dosya / Kaydet > Dosya
+    ' 2) Menu cubugu: Yerel dosya / Kaydet > Dosya. Bu islemde daha once bulunan menu once denenir.
+    If mDisaMenu Is Nothing Then Set mDisaMenu = CreateObject("Scripting.Dictionary")
+    tx = vbNullString: tx = ses.Info.Transaction
+    If Len(tx) > 0 And mDisaMenu.Exists(tx) Then
+        Err.Clear
+        t = vbNullString: t = AKFIX_NORMAL(ses.FindById(CStr(mDisaMenu(tx))).Text)
+        If Err.Number = 0 And (InStr(t, "DOSYA") > 0 Or InStr(t, "FILE") > 0) Then
+            ses.FindById(CStr(mDisaMenu(tx))).Select
+            If Err.Number = 0 Then
+                If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+            End If
+        End If
+        Err.Clear
+        mDisaMenu.Remove tx
+    End If
     Set menuler = New Collection
     MS_MenuTopla ses.FindById("wnd[0]/mbar"), "Menü", menuler, 0
+    MS_Teshis "Menü tarandý: " & menuler.Count & " öðe"
     For Each m In menuler
-        MS_Teshis "Menü öðesi: " & m(0) & " | " & m(1)
         t = AKFIX_NORMAL(CStr(m(1))): puan = 0
         If InStr(t, "YEREL DOSYA") > 0 Or InStr(t, "LOCAL FILE") > 0 Then puan = 3
         If puan = 0 And (InStr(t, "KAYDET") > 0 Or InStr(t, "SAVE") > 0) And (InStr(t, "> DOSYA") > 0 Or InStr(t, "> FILE") > 0) Then puan = 2
@@ -292,7 +322,10 @@ Private Function MS_DisaAktarAc(ByVal ses As Object, ByVal alv As Object) As Boo
         MS_Teshis "Menü seçiliyor: " & secim
         ses.FindById(secim).Select
         If Err.Number = 0 Then
-            If Not MS_PencereBekle(ses, 6) Is Nothing Then MS_DisaAktarAc = True: Exit Function
+            If Not MS_PencereBekle(ses, 6) Is Nothing Then
+                If Len(tx) > 0 And InStr(secim, "wnd[0]") > 0 Then mDisaMenu(tx) = Mid$(secim, InStr(secim, "wnd[0]"))
+                MS_DisaAktarAc = True: Exit Function
+            End If
         End If
         MS_Teshis "Menü denemesi sonuçsuz: " & Err.Description
         Err.Clear
