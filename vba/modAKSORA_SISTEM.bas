@@ -160,7 +160,7 @@ Public Sub AKSORA_V13_GORUNUM(ByVal ws As Worksheet)
         Case "ANA PANEL": hucre = "A1"
         Case "MALZEME_ARA", "STOK_KARSILASTIRMA": hucre = "A4"
         Case "CDP_RAPOR", "EPP_RAPOR", "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR": hucre = "A7"
-        Case "CDP_STOK", "EPP_STOK", "ILCE_STOK", "YUKLENICI_STOK": hucre = "H2"
+        Case "CDP_STOK", "EPP_STOK", "ILCE_STOK", "YUKLENICI_STOK": hucre = "A7"
 Case Else: hucre = "M1"
     End Select
     application.CutCopyMode = False
@@ -176,6 +176,11 @@ Case Else: hucre = "M1"
         .ScrollColumn = 1
     End With
     AKSORA_EKRAN_SIGDIR ws
+    ' Stok sayfasi: kart satiri gizli, arama ve depo bandi her giriste yeniden yerlesir.
+    If AKSORA_STOK_V2_SAYFA(ws) Then
+        AKSORA_STOK_V2 ws
+        AKSORA_STOK_EKRAN_TAZELE
+    End If
 End Sub
 
 Public Sub AKSORA_V13_MIKTAR_BICIMI(ByVal alan As Range)

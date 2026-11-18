@@ -1720,6 +1720,39 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     Next i
 End Sub
 
+'' Arama kutusu odakta: yer tutucu gizlenir, kenar mavi ve kalin (yazi alani ustune acilir). Odak bitince eski hali.
+Public Sub AKSORA_STOK_ARA_KUTU(ByVal ws As Worksheet, ByVal aktif As Boolean)
+    Dim s As Shape, p As Variant, koruma As Boolean
+    On Error Resume Next
+    Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
+    If s Is Nothing Then Exit Sub
+    T_KorumaAc ws, p, koruma
+    If aktif Then
+        s.line.ForeColor.RGB = RGB(37, 99, 235): s.line.Weight = 2.25
+        Set s = T_Sekil(ws, AKT_PREFIX & "ARA_YER")
+        If Not s Is Nothing Then s.Visible = msoFalse
+    Else
+        s.line.ForeColor.RGB = RGB(30, 99, 168): s.line.Weight = 1.5
+        T_AraYerYaz ws, s.AlternativeText
+    End If
+    If koruma Then T_KorumaKapat ws, p
+End Sub
+
+' Suzgec / bant degisiminden sonra pencere yeniden cizilir (acilan satirlar bos gorunmesin).
+Public Sub AKSORA_STOK_EKRAN_TAZELE()
+    Dim r As Long, sc As Boolean
+    On Error Resume Next
+    sc = application.ScreenUpdating
+    application.ScreenUpdating = True
+    With ActiveWindow
+        r = .ScrollRow
+        .ScrollRow = r + 1
+        .ScrollRow = r
+    End With
+    DoEvents
+    application.ScreenUpdating = sc
+End Sub
+
 ' Kutudaki yazi: arama yoksa ornekli yer tutucu (gri), varsa aranan metin (koyu).
 Private Sub T_AraYerYaz(ByVal ws As Worksheet, ByVal q As String)
     Dim s As Shape
@@ -1806,6 +1839,7 @@ Public Sub AKSORA_STOK_DEPO_CIP()
     ' Kart satiri gizli kalir, cipler ve ust bant yeniden cizilir.
     AKSORA_STOK_V2 ws
     application.EnableEvents = ev: application.ScreenUpdating = True
+    AKSORA_STOK_EKRAN_TAZELE
     Exit Sub
 Hata:
     hM = Err.Description
@@ -1897,7 +1931,8 @@ Private Sub T_StokAraUygula(ByVal ws As Worksheet, ByVal q As String, ByVal canl
     End If
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
     If Not s Is Nothing Then s.AlternativeText = q
-    T_AraYerYaz ws, q
+    ' Canli aramada kart kutunun ustunde: yer tutucu kart kapaninca yazilir.
+    If Not canli Then T_AraYerYaz ws, q
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_TEMIZLE")
     If Not s Is Nothing Then s.Visible = IIf(Len(q) > 0, msoTrue, msoFalse)
     ws.Calculate

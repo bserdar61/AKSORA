@@ -221,6 +221,7 @@ Public Sub AraKur(ByVal metin As String)
         .ForeColor = RGB(15, 23, 42)
         .Font.Name = "Segoe UI"
         .Font.Size = 11
+        .Font.bold = True
         .Text = metin
     End With
 End Sub
@@ -229,8 +230,9 @@ Public Sub AraBoyut(ByVal fs As Single)
     On Error Resume Next
     With mAraTb
         .Font.Size = fs
-        .Left = 0: .top = 0
-        .Width = Me.InsideWidth: .Height = Me.InsideHeight
+        .Height = application.Min(Me.InsideHeight, fs * 1.9)
+        .Left = 3: .top = (Me.InsideHeight - .Height) / 2
+        .Width = Me.InsideWidth - 3
         .Visible = True
         .SelStart = Len(.Text)
         .SetFocus

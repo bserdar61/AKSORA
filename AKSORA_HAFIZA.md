@@ -874,3 +874,5 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Excel: Talep Listesi (illere istenecekler), Illerdeki Stok, Depo Bazinda. tools/ihtiyac_sim.py: ayni mantigin Python denemesi.
 - Bu dosyaya stok V2 (arama karti, cipler, ust bant) degisiklikleri de eklendi.
 - Ihtiyac Bul duzeltme: her kalem icin yalniz en uygun malzeme (benzerleri yok, yildiz yok). Miktar hucreleri sayi kalir, birimli bicim (10 adet, 15 kg, 10 mt; IH_BIRIM_ADI / IH_MIKTAR_BICIM) ve ortali; giris tablosu ve Excel dahil.
+- Stok V2 duzeltme 4: AKSORA_V13_GORUNUM stok sayfalarinda H2 yerine A7 secer, sonunda AKSORA_STOK_V2 + AKSORA_STOK_EKRAN_TAZELE (EPP ilk giriste bant kaymasi). Cip sonrasi ekran tazelenir (I_BIRLESIK TUMU'de bos gorunen satirlar).
+- Arama karti: pencere 3B cercevesi de kaldirilir (GWL_EXSTYLE), kutunun icine oturur; acikken kutu kenari mavi/kalin, yer tutucu gizli; kapaninca AKSORA_STOK_ARA_KUTU ile eski hali (mAraSayfa).

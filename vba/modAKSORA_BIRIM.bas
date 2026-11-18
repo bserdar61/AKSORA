@@ -90,6 +90,7 @@ Private mAdmZaman As LongPtr
 Private mAdmKutu As LongPtr
 Private mAdmGoster As Boolean
 Private mAdmYukleme As Boolean
+Private mAraSayfa As Worksheet
 Private mAdmMesgul As Boolean
 Private mAdmYukWs As Worksheet
 Private mAdmYukBar As Double
@@ -7492,6 +7493,8 @@ Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
     On Error GoTo son
     AKSORA_ARA_KART_KAPAT
     If mAdmYukleme Then Exit Sub
+    Set mAraSayfa = kutu.Parent
+    AKSORA_STOK_ARA_KUTU mAraSayfa, True
     AKSORA_BEKLE_KIPI = True
     Load frmSplash
     AKSORA_BEKLE_KIPI = False
@@ -7501,16 +7504,20 @@ Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
     h = ADMW_FindWindow("ThunderDFrame", "AKSORA ARA")
     If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA ARA")
     If h <> 0 Then
+        ' Baslik, kenarlik ve 3B cerceve kaldirilir: kart kutunun icinde duz bir yazi alani olur.
         st = ADMW_GetWindowLong(h, -16)
         st = st And Not &HC40000
         ADMW_SetWindowLong h, -16, st
+        st = ADMW_GetWindowLong(h, -20)
+        st = st And Not (&H1 Or &H100 Or &H200 Or &H20000)
+        ADMW_SetWindowLong h, -20, st
         Set pn = ActiveWindow.ActivePane
-        x1 = pn.PointsToScreenPixelsX(kutu.Left + 24): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 8)
-        y1 = pn.PointsToScreenPixelsY(kutu.top + 5): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 5)
+        x1 = pn.PointsToScreenPixelsX(kutu.Left + 22): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 9)
+        y1 = pn.PointsToScreenPixelsY(kutu.top + 4): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 4)
         If x2 > x1 And y2 > y1 Then ADMW_SetWindowPos h, 0, x1, y1, x2 - x1, y2 - y1, &H24
     End If
     z = ActiveWindow.Zoom / 100
-    frmSplash.AraBoyut application.Max(8, application.Min(14, 11 * z))
+    frmSplash.AraBoyut application.Max(8, application.Min(15, 11.5 * z))
     Exit Sub
 son:
     AKSORA_BEKLE_KIPI = False
@@ -7518,13 +7525,16 @@ son:
 End Sub
 
 Public Sub AKSORA_ARA_KART_KAPAT()
-    Dim f As Object
+    Dim f As Object, kapandi As Boolean
     On Error Resume Next
     For Each f In VBA.UserForms
         If TypeName(f) = "frmSplash" Then
-            If f.AraKipi Then Unload f
+            If f.AraKipi Then Unload f: kapandi = True
         End If
     Next f
+    ' Kutu eski gorunumune doner (aranan metin ya da ornekli yer tutucu).
+    If kapandi And Not mAraSayfa Is Nothing Then AKSORA_STOK_ARA_KUTU mAraSayfa, False
+    If kapandi Then Set mAraSayfa = Nothing
 End Sub
 
 '---------- bekleme karti (tum uzun gecisler) ----------
