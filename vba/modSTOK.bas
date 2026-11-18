@@ -133,6 +133,7 @@ Public Function STOK_EXPORT_AL( _
     On Error Resume Next
     wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     STOK_EXPORT_AL = True
@@ -142,6 +143,7 @@ TEMIZ_HATA:
     On Error Resume Next
     If Not wbExport Is Nothing Then wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
     ExportSuresi = STOK_GECEN_SURE(baslangic)
     STOK_EXPORT_AL = False
@@ -156,6 +158,7 @@ Hata:
     On Error Resume Next
     If Not wbExport Is Nothing Then wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     STOK_EXPORT_AL = False
@@ -271,6 +274,7 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
     On Error Resume Next
     wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     STOK_EXPORT_AL_COKLU_DEPO = True
@@ -280,6 +284,7 @@ TEMIZ_HATA:
     On Error Resume Next
     If Not wbExport Is Nothing Then wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
     ExportSuresi = STOK_GECEN_SURE(baslangic)
     STOK_EXPORT_AL_COKLU_DEPO = False
@@ -294,6 +299,7 @@ Hata:
     On Error Resume Next
     If Not wbExport Is Nothing Then wbExport.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     STOK_EXPORT_AL_COKLU_DEPO = False

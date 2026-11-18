@@ -7712,6 +7712,31 @@ Public Sub AKSORA_PANEL_KART_KAPAT()
     AKSORA_BEKLE_KAPAT
 End Sub
 
+' SAP listesi ayri bir Excel kitabina aktarilip kapaninca AKSORA penceresi ekran kapaliyken yeniden ciziliyordu
+' (hucreler geliyor, resim ve dugmeler gelmiyordu). Panel guncellemesi surerken panel bir kez tam cizilir, kart one alinir.
+Public Sub AKSORA_PANEL_EKRAN_ONAR()
+    Dim ws As Worksheet, ev As Boolean, sc As Boolean, h As LongPtr
+    If Not (mPanelKart And mAdmYukleme) Then Exit Sub
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ANA PANEL")
+    If ws Is Nothing Then Exit Sub
+    ev = application.EnableEvents: sc = application.ScreenUpdating
+    application.EnableEvents = False
+    ThisWorkbook.Activate
+    If Not (ActiveSheet Is ws) Then ws.Activate
+    UYGULAMA_MODU_AC
+    AKSORA_EKRAN_SIGDIR ws
+    application.ScreenUpdating = True
+    DoEvents
+    application.ScreenUpdating = sc
+    application.EnableEvents = ev
+    h = ADMW_FindWindow("ThunderDFrame", "AKSORA")
+    If h = 0 Then h = ADMW_FindWindow("ThunderXFrame", "AKSORA")
+    If h <> 0 Then ADMW_SetWindowPos h, 0, 0, 0, 0, 0, &H3
+    frmSplash.Repaint
+    On Error GoTo 0
+End Sub
+
 Public Function AKSORA_PANEL_KART_ACIK() As Boolean
     AKSORA_PANEL_KART_ACIK = mPanelKart And mAdmYukleme
 End Function

@@ -567,6 +567,7 @@ End If
     On Error Resume Next
     wbExport.Close SaveChanges:=False
     wbAna.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     Exit Function
@@ -589,6 +590,7 @@ Hata:
     On Error Resume Next
     If Not wbExport Is Nothing Then wbExport.Close SaveChanges:=False
     wbAna.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
 
     End Function

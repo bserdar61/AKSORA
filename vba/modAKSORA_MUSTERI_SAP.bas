@@ -533,6 +533,7 @@ Private Function MS_ALV_Excel(ByVal ses As Object, ByVal alv As Object, ByRef id
     On Error Resume Next
     wb.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     On Error GoTo 0
     MS_Teshis "Excel'e aktarým baþarýlý: " & CStr(adet) & " satýr"
     mHizliSebep = vbNullString
@@ -545,6 +546,7 @@ Temizle:
     On Error Resume Next
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     MS_Teshis "Excel'e aktarým kullanýlamadý: " & mHizliSebep
     MS_ALV_Excel = Empty
 End Function
@@ -756,6 +758,7 @@ Private Sub MS_DisaKapat()
         If wb.Name Like "EXPORT_*.*" Then wb.Close SaveChanges:=False
     Next wb
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     Set mDisaDosyalar = Nothing
     On Error GoTo 0
 End Sub
@@ -1041,6 +1044,7 @@ Bulundu:
         AKSORA_SAYI_METNI(MS_Gecen(bas), "0.0") & " sn"
     wb.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
     Exit Function
 Hata:
     application.DisplayAlerts = True
@@ -1048,6 +1052,7 @@ Hata:
     On Error Resume Next
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
     ThisWorkbook.Activate
+    AKSORA_PANEL_EKRAN_ONAR
 End Function
 
 Private Function MS_BaslikSatiri(ByVal v As Variant) As Long
