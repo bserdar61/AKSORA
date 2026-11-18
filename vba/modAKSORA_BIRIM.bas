@@ -91,6 +91,7 @@ Private mAdmKutu As LongPtr
 Private mAdmGoster As Boolean
 Private mAdmYukleme As Boolean
 Private mAraSayfa As Worksheet
+Private mPanelKart As Boolean
 Private mAdmMesgul As Boolean
 Private mAdmYukWs As Worksheet
 Private mAdmYukBar As Double
@@ -7569,6 +7570,12 @@ End Sub
 Public Function AKSORA_BEKLE_AC(ByVal baslik As String, ByVal mesaj As String, Optional ByVal y0 As Double = 0.4, _
     Optional ByVal durdur As Boolean = False) As Boolean
     If AKSORA_V13_ACILIS Or AKSORA_ADMIN_TOPLU Or AKSORA_V11_MESGUL Then Exit Function
+    ' Panel guncellemesi kart acikken ara adimlar ayni kartta yazar (kart kapanip acilmaz).
+    If mPanelKart And mAdmYukleme Then
+        On Error Resume Next
+        AKSORA_BEKLE_ILERLE y0, mesaj
+        Exit Function
+    End If
     If mAdmYukleme Then AKSORA_BEKLE_KAPAT
     mAdmYukleme = False
     On Error GoTo son
@@ -7691,6 +7698,35 @@ Public Sub AKSORA_BEKLE_ILERLE(ByVal y As Double, ByVal mesaj As String)
         mAdmYukSon = Timer
     End If
     On Error GoTo 0
+End Sub
+
+' Ana panelden stok guncellemesi: panel ekrani oldugu gibi kalir (yarim cizim gorunmez), ilerleme ortadaki kartta.
+Public Sub AKSORA_PANEL_KART_AC()
+    If mPanelKart Then Exit Sub
+    mPanelKart = AKSORA_BEKLE_AC("AKSORA  |  STOK GÜNCELLEME", "SAP baðlantýsý hazýrlanýyor...", 0.03)
+End Sub
+
+Public Sub AKSORA_PANEL_KART_KAPAT()
+    If Not mPanelKart Then Exit Sub
+    mPanelKart = False
+    AKSORA_BEKLE_KAPAT
+End Sub
+
+Public Function AKSORA_PANEL_KART_ACIK() As Boolean
+    AKSORA_PANEL_KART_ACIK = mPanelKart And mAdmYukleme
+End Function
+
+' Kart acikken yalniz mesaj (y < 0: cubuk yerinde kalir).
+Public Sub AKSORA_BEKLE_MESAJ(ByVal mesaj As String, Optional ByVal y As Double = -1)
+    If Not mAdmYukleme Then Exit Sub
+    On Error Resume Next
+    If y >= 0 Then
+        AKSORA_BEKLE_ILERLE y, mesaj
+    Else
+        frmSplash.lblDurum.Caption = mesaj
+        frmSplash.Repaint
+        AKSORA_BEKLE_NABIZ
+    End If
 End Sub
 
 ' Uzun dongulerde cagrilir: kart acikken yarim saniyede bir mesaj kuyrugunu bosaltir (yazilar degismez).

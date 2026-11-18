@@ -545,7 +545,7 @@ Temizle:
     If mTopluSaatAktif Then AKSORA_TOPLU_SURE_TIK True
     mTopluSaatAktif = False
     ' Sonuc penceresinden hemen once ana panel yenilenip ekrana getirilir (baska sayfada kalinmaz).
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     If basladi Then AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
     If basladi And Len(Hata) = 0 Then sonuc = sonuc & vbCrLf & "Toplam süre: " & AKSORA_SURE_METNI(AK14_GECEN_SURE(toplamBas)) & _

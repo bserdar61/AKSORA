@@ -171,6 +171,18 @@ Public Sub PANEL_CANLI_DURUM(ByVal mesaj As String)
         ws.Range("B6").Value = "Güncelleniyor  •  " & mesaj
     End If
 
+    ' Guncelleme karti acikken ekran dondurulur, adim ve ilerleme kartta gorunur.
+    If AKSORA_PANEL_KART_ACIK() Then
+        Select Case Left$(mesaj, 3)
+            Case "1/3": AKSORA_BEKLE_MESAJ mesaj, 0.1
+            Case "2/3": AKSORA_BEKLE_MESAJ mesaj, 0.6
+            Case "3/3": AKSORA_BEKLE_MESAJ mesaj, 0.8
+            Case Else
+                If InStr(1, mesaj, "karþýlaþtýrma", vbTextCompare) > 0 Then AKSORA_BEKLE_MESAJ mesaj, 0.95 Else AKSORA_BEKLE_MESAJ mesaj
+        End Select
+        GoTo Cikis
+    End If
+
     ThisWorkbook.Activate
     ws.Activate
     UYGULAMA_MODU_AC
@@ -221,12 +233,12 @@ Public Sub PANEL_TUM_STOKLARI_GUNCELLE()
     AKHZ_TEMIZLE
     AKSORA_PANEL_GUNCELLENIYOR "CDP,EPP,ILCE,YUK"
     ANA_TUM_STOKLARI_GUNCELLE_V2
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     AKSORA_ANA_PANEL_GOSTER
     Exit Sub
 Hata:
     no = Err.Number: metin = Err.Description
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
@@ -253,7 +265,7 @@ Public Sub PANEL_CDP_GUNCELLE()
     CDP_STOK_GUNCELLE_V2
     ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     AKSORA_ANA_PANEL_GOSTER
     If PANEL_C2("CDP_STOK") = eski Then
         MsgBox "CDP stoklarý güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
@@ -266,7 +278,7 @@ Public Sub PANEL_CDP_GUNCELLE()
 Hata:
     no = Err.Number: metin = Err.Description
     ANA_SESSIZ_MOD = sessiz
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
@@ -286,7 +298,7 @@ Public Sub PANEL_EPP_GUNCELLE()
     EPP_STOK_GUNCELLE_V2
     ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     AKSORA_ANA_PANEL_GOSTER
     If PANEL_C2("EPP_STOK") = eski Then
         MsgBox "EPP stoklarý güncellenemedi; mevcut veriler deðiþtirilmedi." & vbCrLf & vbCrLf & _
@@ -299,7 +311,7 @@ Public Sub PANEL_EPP_GUNCELLE()
 Hata:
     no = Err.Number: metin = Err.Description
     ANA_SESSIZ_MOD = sessiz
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
@@ -318,7 +330,7 @@ Public Sub PANEL_ILCE_GUNCELLE()
     ILCE_STOK_GUNCELLE_V2
     ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     AKSORA_ANA_PANEL_GOSTER
     MsgBox "Ýlçe stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
@@ -326,7 +338,7 @@ Public Sub PANEL_ILCE_GUNCELLE()
 Hata:
     no = Err.Number: metin = Err.Description
     ANA_SESSIZ_MOD = sessiz
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0
@@ -345,7 +357,7 @@ Public Sub PANEL_YUKLENICI_GUNCELLE()
     YUKLENICI_STOK_GUNCELLE_V2
     ANA_SESSIZ_MOD = sessiz
     AKSORA_PANEL_SURE_KAYDET bas
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     AKSORA_ANA_PANEL_GOSTER
     MsgBox "Yüklenici stok güncellemesi tamamlandý." & vbCrLf & vbCrLf & _
         "Süre: " & AKSORA_SAYI_METNI(AKSORA_PANEL_SON_SURE(), "0.00") & " sn", vbInformation, "AKSORA"
@@ -353,7 +365,7 @@ Public Sub PANEL_YUKLENICI_GUNCELLE()
 Hata:
     no = Err.Number: metin = Err.Description
     ANA_SESSIZ_MOD = sessiz
-    AKSORA_PANEL_CANLI = False
+    AKSORA_PANEL_CANLI = False: AKSORA_PANEL_KART_KAPAT
     On Error Resume Next
     AKSORA_ANA_PANEL_GOSTER
     On Error GoTo 0

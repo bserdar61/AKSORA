@@ -591,6 +591,8 @@ Public Sub AKSORA_PANEL_GUNCELLENIYOR(ByVal gruplar As String)
     AKSORA_PANEL_GUNCELLENEN = UCase$(gruplar)
     AKSORA_PANEL_CANLI = True
     AKSORA_PANEL_SERIT "Güncelleniyor  •  SAP baðlantýsý hazýrlanýyor...", True
+    ' Kartlar "Guncelleniyor" olarak bir kez cizildi; is bitene kadar ilerleme ortadaki kartta.
+    AKSORA_PANEL_KART_AC
     On Error GoTo 0
 End Sub
 
@@ -640,7 +642,11 @@ Public Sub AKSORA_PANEL_SERIT(ByVal metin As String, Optional ByVal calisiyor As
         ws.Range("B6").HorizontalAlignment = xlLeft
         ws.Range("B6").IndentLevel = 1
     End If
-    If ActiveSheet Is ws Then
+    If AKSORA_PANEL_KART_ACIK() Then
+        ' Ekran yenilenmez (Excel yarim cizim gosteriyordu); mesaj kartta.
+        If Left$(metin, Len("Güncelleniyor  •  ")) = "Güncelleniyor  •  " Then metin = Mid$(metin, Len("Güncelleniyor  •  ") + 1)
+        AKSORA_BEKLE_MESAJ metin
+    ElseIf ActiveSheet Is ws Then
         sc = application.ScreenUpdating
         application.ScreenUpdating = True
         DoEvents
