@@ -1736,12 +1736,11 @@ Public Sub AKSORA_STOK_ARA_KUTU(ByVal ws As Worksheet, ByVal aktif As Boolean)
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
     If s Is Nothing Then Exit Sub
     T_KorumaAc ws, p, koruma
+    ' Kutunun cercevesi hic degismez (tek tip gorunum); yalniz ornek yazi kartin altinda gizlenir.
     If aktif Then
-        s.line.ForeColor.RGB = RGB(37, 99, 235): s.line.Weight = 2.25
         Set s = T_Sekil(ws, AKT_PREFIX & "ARA_YER")
         If Not s Is Nothing Then s.Visible = msoFalse
     Else
-        s.line.ForeColor.RGB = RGB(30, 99, 168): s.line.Weight = 1.5
         T_AraYerYaz ws, s.AlternativeText
     End If
     If koruma Then T_KorumaKapat ws, p
@@ -1776,7 +1775,7 @@ Private Sub T_AraYerYaz(ByVal ws As Worksheet, ByVal q As String)
     Else
         s.TextFrame2.TextRange.Text = q
         s.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(15, 23, 42)
-        s.TextFrame2.TextRange.Font.bold = msoTrue
+        s.TextFrame2.TextRange.Font.bold = msoFalse
     End If
 End Sub
 

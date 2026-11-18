@@ -7536,13 +7536,13 @@ Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
         st = st And Not (&H1 Or &H100 Or &H200 Or &H20000)
         ADMW_SetWindowLong h, -20, st
         Set pn = ActiveWindow.ActivePane
-        ' Kart kutunun tamamini (kenar dahil, 1 piksel tasarak) kaplar: alttaki yuvarlak kose gorunmez.
-        x1 = pn.PointsToScreenPixelsX(kutu.Left) - 1: x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width) + 1
-        y1 = pn.PointsToScreenPixelsY(kutu.top) - 1: y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height) + 1
+        ' Kart kutunun icinde, simgeden sonra; kenara degmez (kutunun cercevesi ve gorunusu aynen kalir).
+        x1 = pn.PointsToScreenPixelsX(kutu.Left + 22): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 10)
+        y1 = pn.PointsToScreenPixelsY(kutu.top + 6): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 7)
         If x2 > x1 And y2 > y1 Then ADMW_SetWindowPos h, 0, x1, y1, x2 - x1, y2 - y1, &H24
     End If
     z = ActiveWindow.Zoom / 100
-    frmSplash.AraBoyut application.Max(8, application.Min(15, 11.5 * z))
+    frmSplash.AraBoyut application.Max(7, application.Min(14, 10 * z))
     Exit Sub
 son:
     AKSORA_BEKLE_KIPI = False

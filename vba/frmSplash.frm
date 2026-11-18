@@ -57,9 +57,7 @@ Private Const SWP_SHOWWINDOW As Long = &H40
 ' Stok arama kipi: kart basliksiz yazi kutusu olur, her harfte tablo suzulur.
 Public AraKipi As Boolean
 Private WithEvents mAraTb As MSForms.TextBox
-Private mAraZemin As Object
-Private mAraIkon As Object
-Private mAraIpucu As Object
+Private mAraYer As Object
 
 Public Sub SplashBaslat()
 
@@ -206,6 +204,8 @@ Private Sub SplashOneGetir()
 
 End Sub
 
+' Kart, sayfadaki arama kutusunun ICINE (simgeden sonra) beyaz ve kenarsiz oturur: kutunun gorunusu degismez,
+' yalniz imlec yanip soner. Bos iken ayni gri ornek yazi gorunur, yazinca kaybolur.
 Public Sub AraKur(ByVal metin As String)
     Dim c As Object
     On Error Resume Next
@@ -213,34 +213,23 @@ Public Sub AraKur(ByVal metin As String)
     For Each c In Me.Controls
         c.Visible = False
     Next c
-    ' Kart arama kutusunun tamamini kaplar: mavi kenar (form zemini) + beyaz ic + simge + yazi alani + ipucu.
-    Me.BackColor = RGB(37, 99, 235)
+    Me.BackColor = RGB(255, 255, 255)
     Me.BorderStyle = fmBorderStyleNone
     Me.Caption = "AKSORA ARA"
-    Set mAraZemin = Me.Controls.Add("Forms.Label.1", "lblAraZemin", True)
-    With mAraZemin
-        .Caption = vbNullString: .BackStyle = fmBackStyleOpaque: .BackColor = RGB(255, 255, 255)
-        .BorderStyle = fmBorderStyleNone: .SpecialEffect = fmSpecialEffectFlat
-    End With
-    Set mAraIkon = Me.Controls.Add("Forms.Label.1", "lblAraIkon", True)
-    With mAraIkon
-        .Caption = ChrW(8981): .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(37, 99, 235)
-        .Font.Name = "Segoe UI Symbol": .TextAlign = fmTextAlignCenter
-    End With
-    Set mAraIpucu = Me.Controls.Add("Forms.Label.1", "lblAraIpucu", True)
-    With mAraIpucu
-        .Caption = "Enter " & ChrW(8629): .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(148, 163, 184)
-        .Font.Name = "Segoe UI": .TextAlign = fmTextAlignRight
+    Set mAraYer = Me.Controls.Add("Forms.Label.1", "lblAraYer", True)
+    With mAraYer
+        .Caption = "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)"
+        .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(148, 163, 184)
+        .Font.Name = "Aptos": .WordWrap = False
     End With
     Set mAraTb = Me.Controls.Add("Forms.TextBox.1", "tbAra", True)
     With mAraTb
         .BorderStyle = fmBorderStyleNone
         .SpecialEffect = fmSpecialEffectFlat
-        .BackColor = RGB(255, 255, 255)
+        .BackStyle = fmBackStyleTransparent
         .ForeColor = RGB(15, 23, 42)
-        .Font.Name = "Segoe UI"
-        .Font.Size = 11
-        .Font.bold = True
+        .Font.Name = "Aptos"
+        .Font.bold = False
         .Text = metin
     End With
 End Sub
@@ -249,29 +238,27 @@ Public Sub AraBoyut(ByVal fs As Single)
     Dim w As Single, h As Single
     On Error Resume Next
     w = Me.InsideWidth: h = Me.InsideHeight
-    With mAraZemin
-        .Left = 2: .top = 2: .Width = w - 4: .Height = h - 4
-    End With
-    With mAraIkon
-        .Font.Size = fs + 1
-        .Left = 6: .Width = 18: .Height = fs * 1.8: .top = (h - .Height) / 2
-    End With
-    With mAraIpucu
-        .Font.Size = application.Max(7, fs - 2.5)
-        .Width = 56: .Left = w - .Width - 8: .Height = fs * 1.6: .top = (h - .Height) / 2 + 1
-    End With
     With mAraTb
         .Font.Size = fs
-        .Height = application.Min(h - 6, fs * 1.9)
-        .Left = 26: .top = (h - .Height) / 2
-        .Width = application.Max(40, w - 26 - 68)
-        .Visible = True
-        .SelStart = Len(.Text)
-        .SetFocus
+        .Height = application.Min(h, fs * 1.75)
+        .Left = 0: .top = (h - .Height) / 2
+        .Width = w
     End With
+    With mAraYer
+        .Font.Size = fs
+        .Left = 3: .Width = w - 3: .Height = mAraTb.Height: .top = mAraTb.top + 2
+        .Visible = (Len(mAraTb.Text) = 0)
+    End With
+    mAraTb.ZOrder 0
+    mAraTb.Visible = True
+    mAraTb.SelStart = Len(mAraTb.Text)
+    mAraTb.SetFocus
 End Sub
 
 Private Sub mAraTb_Change()
+    On Error Resume Next
+    mAraYer.Visible = (Len(mAraTb.Text) = 0)
+    On Error GoTo 0
     If AraKipi Then AKSORA_STOK_ARA_YAZ CStr(mAraTb.Text)
 End Sub
 
