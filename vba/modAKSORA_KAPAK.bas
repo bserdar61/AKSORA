@@ -24,7 +24,7 @@ Public Function AKSORA_GIRIS_DURUM() As Boolean
     On Error GoTo 0
     Select Case ad
         Case "ANA PANEL", "MALZEME_ARA", "STOK_KARSILASTIRMA", "SATINALMA_KONTROL", "TRANSFER_LISTESI", "ATIL_STOK", _
-             "KRITIK_STOK", "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK", "CDP_RAPOR", "EPP_RAPOR", _
+             "KRITIK_STOK", "IHTIYAC_BUL", "CDP_STOK", "EPP_STOK", "STOKLAR", "ILCE_STOK", "YUKLENICI_STOK", "CDP_RAPOR", "EPP_RAPOR", _
              "RAPORLAR", "ILCE_RAPORLAR", "YUKLENICI_RAPOR"
             AKSORA_GIRIS_ACIK = True
             AKSORA_GIRIS_DURUM = True
@@ -709,6 +709,13 @@ Private Sub AKSORA_GIRIS_AC()
     On Error GoTo Hata
     If Not ws Is Nothing Then
         If AKSORA_TRANSFER_SAYFA(ws) Then ws.Visible = xlSheetVisible
+    End If
+    Set ws = Nothing
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("ÝHTÝYAÇ_BUL")
+    On Error GoTo Hata
+    If Not ws Is Nothing Then
+        If AKSORA_IHTIYAC_SAYFA(ws) Then ws.Visible = xlSheetVisible
     End If
 
 

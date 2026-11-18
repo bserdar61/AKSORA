@@ -862,3 +862,14 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Duzeltme 3: Excel'de sayfa ActiveX kutulari kapali (pencere aciliyordu). Arama artik frmSplash "arama kipi": AKSORA_ARA_KART_AC (modAKSORA_BIRIM) kutunun ustune basliksiz kart acar, kartta calisma aninda eklenen TextBox (WithEvents mAraTb) her harfte AKSORA_STOK_ARA_YAZ -> T_StokAraUygula. Enter/Esc/Tab kapatir; sayfa degisince, bekleme karti ve splash acilmadan once kapanir. Sayfadaki AKSORA_ARA_TB varsa silinir.
 - Kutuda aranan metin koyu yazilir (T_AraYerYaz).
 - Malzeme sayfalarinda cip tiklaninca (AKFIX_STOK_SECIM kart satirini aciyordu) sonunda AKSORA_STOK_V2 yeniden calisir.
+
+## IHTIYAC BUL sayfasi (2026-11-18, temel: kullanicinin 18.11 dosyasi)
+- Yeni Malzeme birimi sayfasi "İHTİYAÇ_BUL" (modAKSORA_ANALIZ sonu, IH_*). Calisma aninda M_CDP_RAPOR kopyasiyla kurulur (AN_SAYFA_KUR, BX1 = AKSORA_IHTIYAC_V1). ANA PANEL'de "İHTİYAÇ BUL" dugmesi (goIhtiyac, T_PanelHizala; alt sira 11 dugme).
+- Veri: canli il CDP_STOK + EPP_STOK, diger iller _AKLIVE_<IL>_CDP/_EPP (SAP yok). Yalniz D### depolari.
+- Kullanilabilir: depo adinda HURDA / DEMONTAJ / ARIZA / " DM " yok ve parti HURDA degil. Diger satirlar "Kullanilamaz" notuyla depo tablosunda gorunur.
+- Giris: B13:C32 (20 kalem; kod, kod parcasi, ad; miktar istege bagli). BX20 secili il, BX21=1 giris tablosu var.
+- Esleme: 10 haneli kod tam; yalniz rakam (>=3) kod parcasi; yoksa akilli sozcuk (AKSORA_AKILLI_SOZCUK kurali) ya da metin parcasi.
+- Sirala: tam kod > kendi ilinde yeter > illerle yeter > toplam stok. En fazla 25 malzeme / kalem, depo tablosu 80 satir / kalem.
+- Oneri (IH_ONERI): eksik = ihtiyac - kendi; once atil depo, YENI parti, ilin toplam stogu en buyuk il, depo miktari.
+- Excel: Talep Listesi (illere istenecekler), Illerdeki Stok, Depo Bazinda. tools/ihtiyac_sim.py: ayni mantigin Python denemesi.
+- Bu dosyaya stok V2 (arama karti, cipler, ust bant) degisiklikleri de eklendi.
