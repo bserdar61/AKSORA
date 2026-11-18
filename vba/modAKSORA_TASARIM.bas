@@ -1591,6 +1591,14 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
             fc.ShowValue = True
         End If
     End If
+    ' Musteri / yatirim / ilce: depo sutunu bos satirlar (eski kayit) tablonun basinda bos gorunmesin.
+    Err.Clear
+    If Not T_Stok(ws) And son > 7 Then
+        If application.WorksheetFunction.CountBlank(ws.Range(ws.Cells(7, 3), ws.Cells(son, 3))) > 0 Then
+            If Not ws.AutoFilterMode Then ws.Range(ws.Cells(6, 1), ws.Cells(son, tumKol)).AutoFilter
+            If Len(T_DepoFiltresi(ws)) = 0 Then ws.AutoFilter.Range.AutoFilter Field:=3, Criteria1:="<>"
+        End If
+    End If
     ' 4) Arama ve depo bandi (5. satir)
     Err.Clear
     T_StokAramaBandi ws
@@ -1620,6 +1628,7 @@ Private Function T_DepoFiltresi(ByVal ws As Worksheet) As String
     If Not ws.AutoFilterMode Then Exit Function
     If Not ws.AutoFilter.Filters(3).On Then Exit Function
     c = CStr(ws.AutoFilter.Filters(3).Criteria1)
+    If c = "<>" Then Exit Function
     If Left$(c, 1) = "=" Then c = Mid$(c, 2)
     T_DepoFiltresi = Replace(Replace(Replace(c, "~*", "*"), "~?", "?"), "~~", "~")
 End Function
@@ -1818,7 +1827,8 @@ Public Sub AKSORA_STOK_DEPO_CIP()
     If AKFIX_NORMAL(ws.Name) = "STOKLAR" Or Not T_Stok(ws) Then
         If Not ws.AutoFilterMode Then ws.Range(ws.Cells(6, 1), ws.Cells(son, tumKol)).AutoFilter
         If depo = "TUMU" Then
-            ws.AutoFilter.Range.AutoFilter Field:=3
+            ' Depo sutunu bos satirlar (tablo basinda bos gorunuyordu) gosterilmez.
+            ws.AutoFilter.Range.AutoFilter Field:=3, Criteria1:="<>"
         Else
             ws.AutoFilter.Range.AutoFilter Field:=3, Criteria1:="=" & Replace(Replace(Replace(depo, "~", "~~"), "*", "~*"), "?", "~?")
         End If

@@ -57,6 +57,9 @@ Private Const SWP_SHOWWINDOW As Long = &H40
 ' Stok arama kipi: kart basliksiz yazi kutusu olur, her harfte tablo suzulur.
 Public AraKipi As Boolean
 Private WithEvents mAraTb As MSForms.TextBox
+Private mAraZemin As Object
+Private mAraIkon As Object
+Private mAraIpucu As Object
 
 Public Sub SplashBaslat()
 
@@ -210,9 +213,25 @@ Public Sub AraKur(ByVal metin As String)
     For Each c In Me.Controls
         c.Visible = False
     Next c
-    Me.BackColor = RGB(255, 255, 255)
+    ' Kart arama kutusunun tamamini kaplar: mavi kenar (form zemini) + beyaz ic + simge + yazi alani + ipucu.
+    Me.BackColor = RGB(37, 99, 235)
     Me.BorderStyle = fmBorderStyleNone
     Me.Caption = "AKSORA ARA"
+    Set mAraZemin = Me.Controls.Add("Forms.Label.1", "lblAraZemin", True)
+    With mAraZemin
+        .Caption = vbNullString: .BackStyle = fmBackStyleOpaque: .BackColor = RGB(255, 255, 255)
+        .BorderStyle = fmBorderStyleNone: .SpecialEffect = fmSpecialEffectFlat
+    End With
+    Set mAraIkon = Me.Controls.Add("Forms.Label.1", "lblAraIkon", True)
+    With mAraIkon
+        .Caption = ChrW(8981): .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(37, 99, 235)
+        .Font.Name = "Segoe UI Symbol": .TextAlign = fmTextAlignCenter
+    End With
+    Set mAraIpucu = Me.Controls.Add("Forms.Label.1", "lblAraIpucu", True)
+    With mAraIpucu
+        .Caption = "Enter " & ChrW(8629): .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(148, 163, 184)
+        .Font.Name = "Segoe UI": .TextAlign = fmTextAlignRight
+    End With
     Set mAraTb = Me.Controls.Add("Forms.TextBox.1", "tbAra", True)
     With mAraTb
         .BorderStyle = fmBorderStyleNone
@@ -227,12 +246,25 @@ Public Sub AraKur(ByVal metin As String)
 End Sub
 
 Public Sub AraBoyut(ByVal fs As Single)
+    Dim w As Single, h As Single
     On Error Resume Next
+    w = Me.InsideWidth: h = Me.InsideHeight
+    With mAraZemin
+        .Left = 2: .top = 2: .Width = w - 4: .Height = h - 4
+    End With
+    With mAraIkon
+        .Font.Size = fs + 1
+        .Left = 6: .Width = 18: .Height = fs * 1.8: .top = (h - .Height) / 2
+    End With
+    With mAraIpucu
+        .Font.Size = application.Max(7, fs - 2.5)
+        .Width = 56: .Left = w - .Width - 8: .Height = fs * 1.6: .top = (h - .Height) / 2 + 1
+    End With
     With mAraTb
         .Font.Size = fs
-        .Height = application.Min(Me.InsideHeight, fs * 1.9)
-        .Left = 3: .top = (Me.InsideHeight - .Height) / 2
-        .Width = Me.InsideWidth - 3
+        .Height = application.Min(h - 6, fs * 1.9)
+        .Left = 26: .top = (h - .Height) / 2
+        .Width = application.Max(40, w - 26 - 68)
         .Visible = True
         .SelStart = Len(.Text)
         .SetFocus

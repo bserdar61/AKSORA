@@ -1895,8 +1895,32 @@ Private Sub Y_KORU(ByVal ws As Worksheet)
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
 End Sub
 
+Private Function Y_BOS_SATIR_AT(ByVal a As Variant) As Variant
+    Dim r As Long, c As Long, n As Long, k As Long, s() As Variant, m As Long
+    Y_BOS_SATIR_AT = a
+    If Not IsArray(a) Then Exit Function
+    m = UBound(a, 2)
+    For r = 1 To UBound(a, 1)
+        If Len(I_TEMIZ(a(r, 2))) > 0 Or Len(I_TEMIZ(a(r, 5))) > 0 Then n = n + 1
+    Next r
+    If n = UBound(a, 1) Then Exit Function
+    If n = 0 Then Y_BOS_SATIR_AT = Empty: Exit Function
+    ReDim s(1 To n, 1 To m)
+    For r = 1 To UBound(a, 1)
+        If Len(I_TEMIZ(a(r, 2))) > 0 Or Len(I_TEMIZ(a(r, 5))) > 0 Then
+            k = k + 1
+            For c = 1 To m
+                s(k, c) = a(r, c)
+            Next c
+        End If
+    Next r
+    Y_BOS_SATIR_AT = s
+End Function
+
 Private Sub Y_STOK_YAZ(ByVal ws As Worksheet, ByVal a As Variant, ByVal il As String, ByVal tarih As Variant)
     Dim son As Long, n As Long
+    ' Malzeme kodu ve deposu bos satirlar atilir (A-Z siralamada tablonun basina dusuyordu).
+    a = Y_BOS_SATIR_AT(a)
     If IsEmpty(a) Then n = 0 Else n = UBound(a, 1)
     ' Stok sayfalari malzeme adina gore A-Z (sonra malzeme kodu, depo, seri no).
     If n > 1 Then a = AKSORA_STOK_DIZI_AZ(a, Array(6, 5, 2, 10))
@@ -7512,8 +7536,9 @@ Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
         st = st And Not (&H1 Or &H100 Or &H200 Or &H20000)
         ADMW_SetWindowLong h, -20, st
         Set pn = ActiveWindow.ActivePane
-        x1 = pn.PointsToScreenPixelsX(kutu.Left + 22): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 9)
-        y1 = pn.PointsToScreenPixelsY(kutu.top + 4): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 4)
+        ' Kart kutunun tamamini (kenar dahil, 1 piksel tasarak) kaplar: alttaki yuvarlak kose gorunmez.
+        x1 = pn.PointsToScreenPixelsX(kutu.Left) - 1: x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width) + 1
+        y1 = pn.PointsToScreenPixelsY(kutu.top) - 1: y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height) + 1
         If x2 > x1 And y2 > y1 Then ADMW_SetWindowPos h, 0, x1, y1, x2 - x1, y2 - y1, &H24
     End If
     z = ActiveWindow.Zoom / 100
