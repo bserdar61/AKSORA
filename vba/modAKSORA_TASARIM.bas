@@ -1691,8 +1691,8 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     ' Arama kutusu: yuvarlak zemin + yer tutucu yazi + yazilabilir kutu (ActiveX). Kutu kurulamazsa tiklayinca pencere acilir.
     Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
     If Not s Is Nothing Then sorgu = s.AlternativeText
-    Set s = T_Dik(ws, AKT_PREFIX & "ARA_KUTU", 6, y + 5, 300, 30, vbWhite)
-    s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.18
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_KUTU", 6, y + 3, 300, 38, vbWhite)
+    s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.14
     s.line.Visible = msoTrue: s.line.ForeColor.RGB = RGB(30, 99, 168): s.line.Weight = 1.5
     s.AlternativeText = sorgu
     s.TextFrame2.TextRange.Text = ChrW(8981)
@@ -1700,14 +1700,14 @@ Private Sub T_StokAramaBandi(ByVal ws As Worksheet)
     s.TextFrame2.MarginLeft = 9: s.TextFrame2.VerticalAnchor = msoAnchorMiddle
     s.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignLeft
     s.OnAction = mak & "AKSORA_STOK_ARA"
-    Set s = T_Yazi(ws, AKT_PREFIX & "ARA_YER", "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)", 30, y + 9, 270, 22, 10, RGB(148, 163, 184), False, msoAlignLeft)
+    Set s = T_Yazi(ws, AKT_PREFIX & "ARA_YER", "Malzeme ara: kod ya da ad (" & ChrW(246) & "r. 6533, 50 kva trafo)", 30, y + 11, 270, 22, 10, RGB(148, 163, 184), False, msoAlignLeft)
     s.OnAction = mak & "AKSORA_STOK_ARA"
     T_AraYerYaz ws, sorgu
     Set ob = Nothing
     Set ob = ws.OLEObjects("AKSORA_ARA_TB")
     If Not ob Is Nothing Then ob.Delete
     Err.Clear
-    Set s = T_Dik(ws, AKT_PREFIX & "ARA_TEMIZLE", 312, y + 5, 30, 30, RGB(226, 232, 240))
+    Set s = T_Dik(ws, AKT_PREFIX & "ARA_TEMIZLE", 312, y + 7, 30, 30, RGB(226, 232, 240))
     s.AutoShapeType = msoShapeRoundedRectangle: s.Adjustments.Item(1) = 0.18
     s.TextFrame2.TextRange.Text = ChrW(215): T_Buton s, RGB(226, 232, 240), RGB(71, 85, 105), 12
     s.line.Visible = msoFalse

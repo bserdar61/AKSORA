@@ -879,3 +879,4 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Duzeltme 5: I_BIRLESIK basinda bos satirlar gercek veriydi (depo/kod bos satirlar A-Z'de basa dusuyor). Y_STOK_YAZ once Y_BOS_SATIR_AT ile bos satirlari atar; TUMU cipi ve V2 (bos depo varsa) alan 3'u "<>" ile suzer (T_DepoFiltresi "<>"'i TUMU sayar).
 - Arama karti yeniden: kutunun tamamini kaplar (1 px tasar), mavi kenar (form zemini) + beyaz ic etiket + simge + yazi alani + "Enter" ipucu.
 - Arama karti tek tip: kart kutunun icinde (simgeden sonra, kenara degmeden), beyaz/kenarsiz; kutu cercevesi degismez. Bos iken ayni gri ornek yazi (Aptos 10 x zoom), yazinca kaybolur. Aranan metin kutuda koyu ama kalin degil.
+- Arama kutusu 38 pt yuksek (y+3), kart kutunun icinde genis payla (sol 23, sag 18, ust 8, alt 13 pt): olcekli ekranlarda cercevenin ustune tasmasin.
