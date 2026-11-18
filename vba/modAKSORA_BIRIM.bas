@@ -7537,8 +7537,9 @@ Public Sub AKSORA_ARA_KART_AC(ByVal kutu As Shape, ByVal metin As String)
         ADMW_SetWindowLong h, -20, st
         Set pn = ActiveWindow.ActivePane
         ' Kart kutunun icinde, simgeden sonra; kenara degmez (kutunun cercevesi ve gorunusu aynen kalir).
-        x1 = pn.PointsToScreenPixelsX(kutu.Left + 22): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 10)
-        y1 = pn.PointsToScreenPixelsY(kutu.top + 6): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 7)
+        ' Ekran olceklemesinde (125-150 %) birkac piksel kayma olabilir: kenarlardan genis pay birakilir.
+        x1 = pn.PointsToScreenPixelsX(kutu.Left + 23): x2 = pn.PointsToScreenPixelsX(kutu.Left + kutu.Width - 18)
+        y1 = pn.PointsToScreenPixelsY(kutu.top + 8): y2 = pn.PointsToScreenPixelsY(kutu.top + kutu.Height - 13)
         If x2 > x1 And y2 > y1 Then ADMW_SetWindowPos h, 0, x1, y1, x2 - x1, y2 - y1, &H24
     End If
     z = ActiveWindow.Zoom / 100
