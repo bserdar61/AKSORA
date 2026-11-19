@@ -895,3 +895,4 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## Genel inceleme (2026-11-19, temel: kullanicinin 19.11 13:33 dosyasi + 54 ekran goruntusu)
 - Tutarlar: ADM_TL_KISA artik tam "#.##0,00 TL" (mn TL / bin TL kaldirildi; yonetim merkezi, saha / proje, demontaj ozetleri). Atil stok 4. kart da tam TL; atil kart deger yazisi 13 pt.
 - Ekran goruntusu makrosu: M_ stok sayfalari AKSORA_STOK_V2 ile cizilip alinir (eski kart satirli gorunum cikiyordu).
+- Final (sahip karari): Ihtiyac Bul yalniz YENI parti (IH_UYGUN; cikma/bedelsiz Malzeme Aramadan). Surum v3.1 (kapak, panel). PANEL_YENILE sonunda eski baslik hucreleri B2, B3, B5, B23 temizlenir (yalniz yerlesim alani olarak kullaniliyorlar).

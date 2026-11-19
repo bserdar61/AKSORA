@@ -4787,7 +4787,8 @@ Private Function IH_UYGUN(ByVal depoAd As String, ByVal parti As String) As Bool
     Dim t As String
     t = " " & Y_NORM(depoAd) & " "
     If InStr(t, "HURDA") > 0 Or InStr(t, "DEMONTAJ") > 0 Or InStr(t, "ARIZA") > 0 Or InStr(t, " DM ") > 0 Then Exit Function
-    If InStr(Y_NORM(parti), "HURDA") > 0 Then Exit Function
+    ' Ihtiyac aramasi yalniz YENI partiyle yapilir (cikma / bedelsiz malzeme malzeme aramasindan bakilir).
+    If InStr(Y_NORM(parti), "YENI") = 0 Then Exit Function
     IH_UYGUN = True
 End Function
 
@@ -4866,15 +4867,15 @@ Private Function IH_STOK(ByVal tarihler As Object, ByVal sadeceTarih As Boolean)
                         If depo Like "D###" Then
                             mal = Y_KOD_NORM(v(i, 7))
                             x = I_SAYI(v(i, 9))
-                            If Len(mal) > 0 And x > 0 Then
+                            parti = UCase$(I_TEMIZ(v(i, 6))): dAd = I_TEMIZ(v(i, 3))
+                            uygun = IH_UYGUN(dAd, parti)
+                            If Len(mal) > 0 And x > 0 And uygun Then
                                 If Not d.Exists(mal) Then
                                     tn = I_TEMIZ(v(i, 8))
                                     d.Add mal, Array(tn, I_TEMIZ(v(i, 10)), AKSORA_AKILLI_SOZCUK(tn), _
                                         CreateObject("Scripting.Dictionary"), New Collection, Y_NORM(tn))
                                 End If
                                 o = d(mal)
-                                parti = UCase$(I_TEMIZ(v(i, 6))): dAd = I_TEMIZ(v(i, 3))
-                                uygun = IH_UYGUN(dAd, parti)
                                 Set c = o(4)
                                 c.Add Array(CStr(il), depo, dAd, parti, x, I_SAYI(v(i, 11)), uygun, ATIL_SISTEM(I_TEMIZ(v(i, 1))))
                                 If uygun Then
@@ -5290,7 +5291,7 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
             eski = True
         End If
     Next i
-    bilgi = bilgi & "•  Kullanýlabilir stok: hurda, demontaj, arýza ve söküm (DM) depolarý ile HURDA partisi hariç"
+    bilgi = bilgi & "•  Yalnýz YENÝ parti; hurda, demontaj, arýza ve söküm (DM) depolarý hariç (çýkma / bedelsiz: MALZEME ARAMA)"
     If eski Then bilgi = ChrW(9888) & "  Bazý illerin stoðu bugün güncellenmedi   |   " & bilgi
     ws.Range("A9").Value2 = bilgi
     With ws.Range("A9").Font
@@ -5353,7 +5354,7 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
     End If
     ' 2) Illerdeki stok (matris)
     If matris.Count > 0 Then
-        Y_BOLUM ws, r, "2) ÝLLERDEKÝ STOK  •  kullanýlabilir D depolarý", _
+        Y_BOLUM ws, r, "2) ÝLLERDEKÝ STOK  •  YENÝ parti, kullanýlabilir D depolarý", _
             "Boþ hücre: o ilde kullanýlabilir stok yok", 13
         ws.Rows(r).RowHeight = 30
         r = r + 1

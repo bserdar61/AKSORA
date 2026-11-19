@@ -133,6 +133,12 @@ Public Sub PANEL_YENILE()
     AKSORA_PANEL_IL_GORSELI_YENILE
     PANEL_BUTON_BAGLANTILARINI_YENILE
     AKSORA_PANEL_ORTA_HIZALA ws
+    ' Eski tasarimdan kalan baslik hucreleri (banner altinda; ekran bozulunca "MB52 STOK YONETIM PANELI" gorunuyordu).
+    On Error Resume Next
+    ws.Range("B2").MergeArea.ClearContents
+    ws.Range("B3").MergeArea.ClearContents
+    ws.Range("B5").MergeArea.ClearContents
+    ws.Range("B23").MergeArea.ClearContents
 Cikis:
     application.ScreenUpdating = ekran
 
@@ -494,7 +500,7 @@ Private Sub PANEL_UST_BASLIK(ByVal ws As Worksheet)
 
     With ws.Range("B5:T5")
         .Merge
-        .Value = PANEL_AKTIF_IL_ADI() & " Ýl Müdürlüðü  •  Malzeme ve Stok Yönetimi  •  v3.0"
+        .Value = PANEL_AKTIF_IL_ADI() & " Ýl Müdürlüðü  •  Malzeme ve Stok Yönetimi  •  v3.1"
         .Interior.Color = RGB(20, 55, 95)
         .Font.Color = RGB(215, 225, 238)
         .Font.Size = 10
