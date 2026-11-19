@@ -8207,15 +8207,9 @@ Public Function ADM_TL(ByVal x As Double) As String
     ADM_TL = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
 End Function
 
-' Buyuk tutarlar kisa: 12,4 mn TL
+' Tutarlar her yerde tam yazilir (#.##0,00 TL); "mn TL / bin TL" kisaltmasi kullanilmaz.
 Public Function ADM_TL_KISA(ByVal x As Double) As String
-    If Abs(x) >= 1000000# Then
-        ADM_TL_KISA = AKSORA_SAYI_METNI(x / 1000000#, "#,##0.0") & " mn TL"
-    ElseIf Abs(x) >= 1000# Then
-        ADM_TL_KISA = AKSORA_SAYI_METNI(x / 1000#, "#,##0.0") & " bin TL"
-    Else
-        ADM_TL_KISA = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
-    End If
+    ADM_TL_KISA = AKSORA_SAYI_METNI(x, "#,##0.00") & " TL"
 End Function
 
 Public Function ADM_ADET(ByVal x As Double) As String

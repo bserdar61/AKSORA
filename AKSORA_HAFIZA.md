@@ -891,3 +891,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - PANEL_EKRAN_CANLI: panel karti acik ve ANA PANEL ekrandayken bekleme karti her guncellendiginde (en cok 1,5 sn'de bir) ScreenUpdating acilir; Excel yenileme kapaliyken pencereyi yalniz hucrelerle yeniden ciziyordu (Malzeme panelinde resim/dugme yok gorunumu). ONAR'dan EKRAN_SIGDIR cikarildi.
 - Malzeme panel guncellemesi: canli panel denemeleri (ONAR yeniden cizim, PANEL_EKRAN_CANLI) sonuc vermedi, kaldirildi. Panel karti (PANEL_KART_TAM_EKRAN) Excel penceresinin tamamini kaplar: logo, baslik, adim, ilerleme cubugu, alt not. Bitince ana panel acilir. ONAR yalniz karti tam ekran ve one alir.
 - Excel ciktisi sonrasi formul cubugu / Excel gorunumu kaliyordu: AKSORA_UYG_TEKRAR_PLANLA (OnTime 1 sn -> AKSORA_UYG_TEKRAR -> UYGULAMA_MODU_AC, yalniz AKSORA etkinse). Workbook_Activate, mUygApp_WindowActivate, T_ExcelBitir (kapatilan kitap), TOPLU_AKTAR cikisinda cagrilir. Temel: kullanicinin 19.11 dosyasi.
+
+## Genel inceleme (2026-11-19, temel: kullanicinin 19.11 13:33 dosyasi + 54 ekran goruntusu)
+- Tutarlar: ADM_TL_KISA artik tam "#.##0,00 TL" (mn TL / bin TL kaldirildi; yonetim merkezi, saha / proje, demontaj ozetleri). Atil stok 4. kart da tam TL; atil kart deger yazisi 13 pt.
+- Ekran goruntusu makrosu: M_ stok sayfalari AKSORA_STOK_V2 ile cizilip alinir (eski kart satirli gorunum cikiyordu).

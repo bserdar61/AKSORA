@@ -1644,7 +1644,7 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     For Each x In ATIL_ISLEM_HESAPLA(c, ilSec)
         If x(0) = 5 Then t(0) = t(0) + 1: t(1) = t(1) + x(7)
     Next x
-    ws.Range("BZ24").Value2 = AKSORA_SAYI_METNI(Round(t(1) / 1000000, 1), "#,##0.0") & " mn TL  •  " & t(0) & " kalem"
+    ws.Range("BZ24").Value2 = ADM_TL(t(1)) & "  •  " & t(0) & " kalem"
     ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
     ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 30: ws.Rows(9).RowHeight = 20: ws.Rows(10).RowHeight = 30: ws.Rows(11).RowHeight = 8
     y = ws.Rows(3).top + 1
@@ -1655,7 +1655,7 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "SAT / HURDA / ÝADE ADAYI", "$BZ$24", RGB(124, 58, 237)
     For i = 1 To 4
         Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
-        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 15
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 13
     Next i
 
     '--- il secimi ve islemler

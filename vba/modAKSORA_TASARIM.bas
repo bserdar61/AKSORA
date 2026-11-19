@@ -3415,6 +3415,9 @@ Public Sub AKSORA_EKRAN_GORUNTULERI()
             AKSORA_YATIRIM_GORUNUM ws
         ElseIf Left$(ws.Name, 2) <> "M_" Then
             AKSORA_EKRAN_SIGDIR ws
+        ElseIf AKSORA_STOK_V2_SAYFA(ws) Then
+            ' Musteri stok sayfalari ekran goruntusunde de yeni stok gorunumuyle (arama, depo cipleri) alinir.
+            AKSORA_STOK_V2 ws
         End If
         Err.Clear
         ' Duzen yordami baska sayfaya gecirdiyse (panel yenileme vb.) sayfaya geri donulur.
