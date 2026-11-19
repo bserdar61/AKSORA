@@ -29,6 +29,21 @@ Private mSplashYuzde As Double
 '==========================================================
 ' UYGULAMA MODUNU AC
 '==========================================================
+' Excel'e aktarilan kitap acilip kapaninca Excel formul cubugunu / seridi AKSORA penceresinde de aciyordu; donus
+' olaylari kapali ya da kitap gec kapandiysa uygulama modu geri gelmiyordu. 1 sn sonra bir kez daha uygulanir.
+Public Sub AKSORA_UYG_TEKRAR_PLANLA()
+    On Error Resume Next
+    application.OnTime Now + TimeSerial(0, 0, 1), "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_UYG_TEKRAR"
+End Sub
+
+Public Sub AKSORA_UYG_TEKRAR()
+    On Error Resume Next
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If AKSORA_V13_ACILIS Or AKSORA_V13_GECIS Then Exit Sub
+    If AKSORA_PENCERE_KUCUK(ThisWorkbook.Windows(1)) Then Exit Sub
+    UYGULAMA_MODU_AC
+End Sub
+
 Public Sub UYGULAMA_MODU_AC()
 
     On Error Resume Next

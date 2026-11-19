@@ -2412,6 +2412,9 @@ Cikis:
     mExcelAktar = False: mExcelToplu = False: mExcelKapat = False: mExcelKlasor = vbNullString
     mDepoFiltre = vbNullString: mExcelYol = vbNullString: Set mTopluAdlar = Nothing
     ThisWorkbook.Activate: ws.Activate
+    UYGULAMA_MODU_AC
+    AKSORA_BIRIM_AKTIF_GORUNUM
+    AKSORA_UYG_TEKRAR_PLANLA
     application.Cursor = xlDefault
     application.EnableEvents = ev: application.ScreenUpdating = True
     If ac Then AKSORA_BEKLE_KAPAT
@@ -3098,6 +3101,11 @@ Private Sub T_ExcelBitir(ByVal wb As Workbook, ByVal c As Worksheet, ByVal ilkSa
     If Len(mExcelYol) > 0 Then mExcelSonuc = T_Kaydet(wb, mExcelYol)
     If mExcelKapat Then
         wb.Close SaveChanges:=False
+        ' Kitap kapaninca AKSORA penceresi uygulama moduna doner (olaylar kapali olabilir).
+        On Error Resume Next
+        If ActiveWorkbook Is ThisWorkbook Then UYGULAMA_MODU_AC
+        AKSORA_UYG_TEKRAR_PLANLA
+        On Error GoTo 0
         Exit Sub
     End If
     ' Yeni kitap normal Excel gorunumunde (serit, formul cubugu, sistem ayraclari); AKSORA penceresine dokunulmaz.
