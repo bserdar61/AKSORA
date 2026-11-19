@@ -177,10 +177,7 @@ Case Else: hucre = "M1"
     End With
     AKSORA_EKRAN_SIGDIR ws
     ' Stok sayfasi: kart satiri gizli, arama ve depo bandi her giriste yeniden yerlesir.
-    If AKSORA_STOK_V2_SAYFA(ws) Then
-        AKSORA_STOK_V2 ws
-        AKSORA_STOK_EKRAN_TAZELE
-    End If
+    If AKSORA_STOK_V2_SAYFA(ws) Then AKSORA_STOK_V2 ws
 End Sub
 
 Public Sub AKSORA_V13_MIKTAR_BICIMI(ByVal alan As Range)

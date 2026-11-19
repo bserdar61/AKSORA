@@ -7745,13 +7745,24 @@ Private Sub PANEL_KART_TAM_EKRAN()
         With .lblBar
             .Left = w * 0.25: .top = y: .Height = 10
         End With
-        y = y + 30
-        With .lblAltBaslik
+        y = y + 26
+        With .lblImza
             .Visible = True: .Left = 0: .Width = w: .top = y: .Height = 20
             .Caption = "Lütfen bekleyin  •  Güncelleme bitince ana panel yeni verilerle açýlýr"
-            .Font.Size = 10: .TextAlign = fmTextAlignCenter: .BackStyle = fmBackStyleTransparent
+            .Font.Name = "Segoe UI": .Font.Size = 10: .Font.bold = False
+            .ForeColor = RGB(100, 116, 139): .BackStyle = fmBackStyleTransparent
+            .TextAlign = fmTextAlignCenter: .BorderStyle = fmBorderStyleNone
         End With
-        .lblImza.Visible = False
+        y = y + 34
+        ' Guncelleme surerken baska programlarla calisilabilsin: ekran ve Excel arkaya gonderilir (ikinci tik one getirir).
+        With .lblAltBaslik
+            .Visible = True: .Width = 220: .Height = 32: .Left = (w - 220) / 2: .top = y
+            .Caption = IIf(AKSORA_ARKA_PLAN, "ARKA PLANDA  " & ChrW(8226) & "  " & ChrW(214) & "NE GET" & ChrW(304) & "R", "ARKA PLANA AL")
+            .Font.Name = "Segoe UI": .Font.Size = 11: .Font.bold = True: .Font.Italic = False
+            .ForeColor = vbWhite: .BackStyle = fmBackStyleOpaque
+            .BackColor = IIf(AKSORA_ARKA_PLAN, RGB(21, 128, 61), RGB(20, 103, 173))
+            .TextAlign = fmTextAlignCenter: .BorderStyle = fmBorderStyleNone: .WordWrap = False
+        End With
         Set c = .Controls("lblTelif")
         If Not c Is Nothing Then c.Left = 0: c.Width = w: c.top = hg - 22
         .Repaint
@@ -7763,6 +7774,8 @@ Public Sub AKSORA_PANEL_KART_KAPAT()
     If Not mPanelKart Then Exit Sub
     mPanelKart = False
     AKSORA_BEKLE_KAPAT
+    ' Arka plana alindiysa is bitince Excel one gelir.
+    If AKSORA_ARKA_PLAN Then AKSORA_ONE_GETIR
 End Sub
 
 ' SAP listesi ayri bir Excel kitabina aktarilip kapaninca AKSORA penceresi ekran kapaliyken yeniden ciziliyordu

@@ -10,6 +10,8 @@ Private mCalisiyor As Boolean
 Private mKurulum As Boolean
 Private mExcelAktar As Boolean
 Private mAzImza As Object
+' Stok sayfasi bandi son cizildigi hal (sayfa -> imza): sayfa gecislerinde degisiklik yoksa yeniden cizilmez (titreme).
+Private mV2Imza As Object
 ' Excel'e aktar: hedef dosya, toplu mod (klasor + tek depo filtresi), kaydedilen dosya.
 Private mExcelYol As String
 Private mExcelKapat As Boolean
@@ -185,7 +187,8 @@ Public Sub AKSORA_TASARIM_SAYFA(ByVal ws As Worksheet, Optional ByVal yenile As 
     If ws.Name = "ANA PANEL" Then
         T_Panel ws
     ElseIf T_Stok(ws) Then
-        T_StokYap ws, yenile
+        ' Sayfa gecisinde veri / pencere / suzgec degismediyse tasarim yeniden kurulmaz (hucre yazilari titremiyordu).
+        If yenile Or Not AKSORA_STOK_V2_GUNCEL(ws) Then T_StokYap ws, yenile
     Else
         T_RaporYap ws
     End If
@@ -1495,20 +1498,71 @@ Private Sub T_V2BaslikSigdir(ByVal ws As Worksheet, ByVal sinir As Double)
     Next s
 End Sub
 
+Public Function AKSORA_STOK_V2_GUNCEL(ByVal ws As Worksheet) As Boolean
+    Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long, son As Long, w As Double
+    On Error GoTo Yok
+    If Not AKSORA_STOK_V2_SAYFA(ws) Then Exit Function
+    T_V2Kol ws, kod, tanim, deg, sonKol, tumKol
+    son = AKSORA_SON_SATIR(ws, kod)
+    If son < 7 Then son = 7
+    w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    AKSORA_STOK_V2_GUNCEL = T_V2Ayni(ws, T_V2Imza(ws, son, sonKol, w))
+Yok:
+End Function
+
+Private Function T_V2Imza(ByVal ws As Worksheet, ByVal son As Long, ByVal sonKol As Long, ByVal w As Double) As String
+    Dim t As String, s As Shape, top As Double
+    On Error Resume Next
+    t = son & "|" & sonKol & "|" & CLng(w) & "|" & CStr(ws.Range("C2").Value2)
+    t = t & "|W=" & CLng(ThisWorkbook.Windows(1).UsableWidth) & "x" & CLng(ThisWorkbook.Windows(1).UsableHeight)
+    top = application.WorksheetFunction.Sum(ws.Range(ws.Cells(7, 11), ws.Cells(son, 11)))
+    t = t & "|" & Format$(top, "0.00")
+    If ws.AutoFilterMode Then
+        If ws.AutoFilter.Filters(3).On Then t = t & "|F3=" & CStr(ws.AutoFilter.Filters(3).Criteria1)
+    End If
+    Set s = T_Sekil(ws, AKT_PREFIX & "ARA_KUTU")
+    If Not s Is Nothing Then t = t & "|Q=" & s.AlternativeText
+    T_V2Imza = t
+End Function
+
+' Bant ekranda ve yerinde mi (baska bir duzen yordami satirlari / sekilleri degistirdiyse yeniden kurulur).
+Private Function T_V2Ayni(ByVal ws As Worksheet, ByVal imza As String) As Boolean
+    Dim s As Shape
+    On Error GoTo Yok
+    If mV2Imza Is Nothing Then Exit Function
+    If Not mV2Imza.Exists(ws.Name) Then Exit Function
+    If CStr(mV2Imza(ws.Name)) <> imza Then Exit Function
+    If Not ws.Rows(2).Hidden Or ws.Rows(5).Hidden Then Exit Function
+    Set s = ws.Shapes(AKT_PREFIX & "ARA_KUTU")
+    If s.Visible <> msoTrue Then Exit Function
+    If Abs(s.top - (ws.Rows(5).top + 3)) > 1.5 Then Exit Function
+    Set s = ws.Shapes(AKT_PREFIX & "ARA_ZEMIN")
+    If Abs(s.Height - ws.Rows(5).Height) > 1.5 Then Exit Function
+    T_V2Ayni = True
+Yok:
+End Function
+
 Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
     Dim son As Long, w As Double, s As Shape, yas As Double, fc As Object, i As Long, rr As Range, p As Variant, koruma As Boolean
     Dim metin As String, renk As Long, zemin As Long, y2 As Double, h2 As Double, solX As Double, t As String, gor As Boolean
-    Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long, ev As Boolean, sc As Boolean
+    Dim kod As Long, tanim As Long, deg As Long, sonKol As Long, tumKol As Long, ev As Boolean, sc As Boolean, imza As String
     If Not AKSORA_STOK_V2_SAYFA(ws) Then Exit Sub
     AKSORA_ARA_KART_KAPAT
     ev = application.EnableEvents: sc = application.ScreenUpdating
     application.EnableEvents = False: application.ScreenUpdating = False
     On Error Resume Next
-    T_KorumaAc ws, p, koruma
     T_V2Kol ws, kod, tanim, deg, sonKol, tumKol
     son = AKSORA_SON_SATIR(ws, kod)
     If son < 7 Then son = 7
     w = ws.Range(ws.Cells(1, 1), ws.Cells(1, sonKol)).Width
+    ' Veri, suzgec, arama ve yerlesim degismediyse bant yeniden kurulmaz (sayfa gecisinde titreme olmuyor).
+    imza = T_V2Imza(ws, son, sonKol, w)
+    If T_V2Ayni(ws, imza) Then
+        application.EnableEvents = ev: application.ScreenUpdating = sc
+        On Error GoTo 0
+        Exit Sub
+    End If
+    T_KorumaAc ws, p, koruma
     ' 1) Kart satiri: ustundeki sekiller ve satir gizlenir (C2:C4, H2 kaynaklari yerinde kalir).
     y2 = ws.Rows(2).top: h2 = ws.Rows(2).Height
     If Not ws.Rows(2).Hidden Then
@@ -1603,6 +1657,9 @@ Public Sub AKSORA_STOK_V2(ByVal ws As Worksheet)
     Err.Clear
     T_StokAramaBandi ws
     If koruma Then T_KorumaKapat ws, p
+    Err.Clear
+    If mV2Imza Is Nothing Then Set mV2Imza = CreateObject("Scripting.Dictionary")
+    mV2Imza(ws.Name) = T_V2Imza(ws, son, sonKol, w)
     Err.Clear
     If ActiveSheet Is ws Then
         If ActiveCell.Row < 6 Then ws.Cells(7, 1).Select
@@ -1848,7 +1905,6 @@ Public Sub AKSORA_STOK_DEPO_CIP()
     ' Kart satiri gizli kalir, cipler ve ust bant yeniden cizilir.
     AKSORA_STOK_V2 ws
     application.EnableEvents = ev: application.ScreenUpdating = True
-    AKSORA_STOK_EKRAN_TAZELE
     Exit Sub
 Hata:
     hM = Err.Description

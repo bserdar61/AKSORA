@@ -129,7 +129,7 @@ End Sub
 
 ' ARKA PLANA AL: Excel simge durumuna alinir, guncelleme surer; bitince pencere geri acilir.
 Private Sub lblAltBaslik_Click()
-    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR) Then Exit Sub
+    If Not (AKSORA_ADMIN_TOPLU Or AKSORA_ATIL_CALISIYOR Or AKSORA_PANEL_KART_ACIK()) Then Exit Sub
     ' Tiklama aninda gorunur geri bildirim (pencere arkaya gidince baska pencere yoksa degisiklik fark edilmiyordu).
     If AKSORA_ARKA_PLAN Then
         Me.lblAltBaslik.Caption = "ARKA PLANA AL"
