@@ -6223,8 +6223,8 @@ Private Sub I_ARMATUR_DAGIT(ByVal grup As Object, Optional ByVal notlar As Objec
                                 al = application.Min(kalan(i), g(0) - g(1))
                                 g(1) = g(1) + al: kalan(i) = kalan(i) - al
                                 If Not notlar Is Nothing Then
-                                    I_NOT_EKLE notlar, CStr(x), I_MAL_KISA(Split(CStr(veren(i)(0)), "|")(2)) & " " & I_MIKTAR_METNI(al)
-                                    I_NOT_EKLE notlar, CStr(veren(i)(0)), I_MAL_KISA(Split(CStr(x), "|")(2)) & " " & I_MIKTAR_METNI(al)
+                                    I_NOT_EKLE notlar, CStr(x), I_MAL_KISA(Split(CStr(veren(i)(0)), "|")(2), al)
+                                    I_NOT_EKLE notlar, "V|" & CStr(veren(i)(0)), I_MAL_KISA(Split(CStr(x), "|")(2), al)
                                 End If
                             End If
                         Next i
@@ -6244,13 +6244,13 @@ Private Sub I_NOT_EKLE(ByVal notlar As Object, ByVal k As String, ByVal metin As
     If notlar.Exists(k) Then notlar(k) = notlar(k) & ", " & metin Else notlar(k) = metin
 End Sub
 
-Private Function I_MAL_KISA(ByVal mal As String) As String
+Private Function I_MAL_KISA(ByVal mal As String, ByVal q As Double) As String
     Dim b As Variant, t As String
     b = I_MAL_BILGI(mal)
     t = Trim$(CStr(b(1)))
     If Left$(UCase$(t), 6) = "IPTAL." Then t = Trim$(Mid$(t, 7))
     If Len(t) = 0 Then t = mal
-    I_MAL_KISA = t & IIf(Len(Trim$(CStr(b(2)))) > 0, " (" & Trim$(CStr(b(2))) & ")", "")
+    I_MAL_KISA = t & " " & ChrW(8226) & " " & I_MIKTAR_METNI(q) & IIf(Len(Trim$(CStr(b(2)))) > 0, " " & Trim$(CStr(b(2))), "")
 End Function
 
 ' Kablo / iletken turu (kesit haric): AER ve ROSE ayni aile. Kablo degilse bos.
@@ -6566,7 +6566,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                     durum = "DEMONTAJ GÝRÝÞ": nDm = nDm + 1: sira = 5: kontrol = "Demontaj giriþi"
                     ' Baska kesit / turun yerine girildiyse: "X yerine".
                     gk = p(0) & "|" & p(1) & "|" & p(2)
-                    If notlar.Exists(gk) Then kontrol = "Demontaj giriþi  •  " & CStr(notlar(gk)) & " yerine"
+                    If notlar.Exists("V|" & gk) Then kontrol = "Þunun yerine: " & CStr(notlar("V|" & gk))
                 Else
                     durum = "ARTTI": nAr = nAr + 1: sira = 4
                     If I_NAKIL_D(nak, CStr(k), 1) > 0.0005 Then kontrol = "Ýlçeler arasý nakil  •  " & I_NAKIL_METIN(nak, CStr(k), depolar) & " deposundan bu depoya"
@@ -6598,7 +6598,13 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                     If nk > 0.0005 And InStr(kontrol, "nakil") = 0 Then kontrol = kontrol & "  •  nakil " & I_NAKIL_METIN(nak, CStr(k), depolar)
                     ' Kesit / tur farkli demontaj: "Bunun yerine X girilmis".
                     gk = p(0) & "|" & p(1) & "|" & p(2)
-                    If notlar.Exists(gk) And InStr(kontrol, "YAPINIZ") = 0 Then kontrol = kontrol & "  •  Bunun yerine " & CStr(notlar(gk)) & " girilmiþ"
+                    If notlar.Exists(gk) And InStr(kontrol, "YAPINIZ") = 0 Then
+                        If kontrol = "Demontaj girildi" Then
+                            kontrol = "Yerine girilen: " & CStr(notlar(gk))
+                        Else
+                            kontrol = kontrol & "  •  yerine: " & CStr(notlar(gk))
+                        End If
+                    End If
                 End If
             End If
             n = n + 1
@@ -6639,6 +6645,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
         ws.Range("K16:M" & n + 15).NumberFormat = "#,##0.00 ""TL"";[Red]-#,##0.00 ""TL"""
         ws.Range("A16:A" & n + 15).Font.bold = True
         ws.Range("N16:N" & n + 15).HorizontalAlignment = xlCenter
+        ' Uzun aciklamalar (ikame, nakil) hucreye sigar.
+        ws.Range("N16:N" & n + 15).WrapText = False: ws.Range("N16:N" & n + 15).ShrinkToFit = True
         For r = 16 To n + 15
             If (r And 255) = 0 Then AKSORA_BEKLE_NABIZ
             For j = 8 To 10
@@ -6654,7 +6662,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 ws.Cells(r, 14).Interior.Color = RGB(220, 38, 38): ws.Cells(r, 14).Font.Color = RGB(255, 255, 255): ws.Cells(r, 14).Font.bold = True
             ElseIf Left$(kontrol, 5) = "EKSÝK" Then
                 ws.Cells(r, 14).Interior.Color = RGB(254, 243, 199): ws.Cells(r, 14).Font.Color = RGB(180, 83, 9): ws.Cells(r, 14).Font.bold = True
-            ElseIf Left$(kontrol, 16) = "Demontaj girildi" And InStr(kontrol, "yerine") > 0 Then
+            ElseIf Left$(kontrol, 14) = "Yerine girilen" Or Left$(kontrol, 12) = "Þunun yerine" Then
                 ' Ikame (farkli kesit / tur): turkuaz, kalin.
                 ws.Cells(r, 14).Font.Color = RGB(15, 118, 110): ws.Cells(r, 14).Font.bold = True
                 ws.Cells(r, 14).Interior.Color = RGB(204, 251, 241)
@@ -6662,9 +6670,8 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
                 ws.Cells(r, 14).Font.Color = RGB(21, 128, 61)
             ElseIf InStr(kontrol, "nakil") > 0 Then
                 ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
-            ElseIf Left$(kontrol, 15) = "Demontaj giriþi" Then
+            ElseIf kontrol = "Demontaj giriþi" Then
                 ws.Cells(r, 14).Font.Color = RGB(29, 78, 216)
-                If InStr(kontrol, "yerine") > 0 Then ws.Cells(r, 14).Interior.Color = RGB(204, 251, 241)
             ElseIf InStr(kontrol, "gerekmez") > 0 Or InStr(kontrol, "kontrolü dýþý") > 0 Then
                 ws.Cells(r, 14).Font.Color = RGB(100, 116, 139): ws.Cells(r, 14).Font.Italic = True
             End If
@@ -6859,11 +6866,11 @@ End Sub
 ' Iki tarih arasi demontaj eksikleri: ilce STOK/DEMONTAJ ekraniyla birebir ayni kural (nakil + ikame dahil), yalniz kritik malzemeler
 ' (trafo, pano, armatur, kablo, direk, hucre). Grup: depo + uretim yeri + malzeme.
 ' Donus: Collection of Array(depo, ilce, malzeme, tanim, kategori, kullanilan, girilen, eksik, birim, eksik TL, durum, uretim yeri)
-Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal yeniT As String) As Collection
+Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal yeniT As String, Optional ByVal ikameDahil As Boolean) As Collection
     Dim dE As Object, dY As Object, anahtar As Object, grup As Object, bilgi As Object, disi As Object, isgL As Object
     Dim depolar As Object, k As Variant, x As Variant, p() As String, gk As String, g As Variant, t As Variant
     Dim mEs As Double, mYe As Double, vEs As Double, i As Long, eksik As Double, b As Variant, ad As String
-    Dim nak As Object, dq As Double
+    Dim nak As Object, dq As Double, notlar As Object
     Set I_DEM_EKSIK = New Collection
     Set dE = I_GECMIS_OKU(il, eskiT): Set dY = I_GECMIS_OKU(il, yeniT)
     ' Ekranla ayni kural: ilceler arasi nakil kullanim sayilmaz, ekipman ikamesi (I_ARMATUR_DAGIT) uygulanir.
@@ -6905,15 +6912,24 @@ Private Function I_DEM_EKSIK(ByVal il As String, ByVal eskiT As String, ByVal ye
             End If
         End If
     Next k
-    I_ARMATUR_DAGIT grup
+    Set notlar = CreateObject("Scripting.Dictionary"): notlar.CompareMode = vbTextCompare
+    I_ARMATUR_DAGIT grup, notlar
     For Each k In grup.keys
         g = grup(k)
+        ' Farkli kesit / tur yerine girilmis demontaj: sahada yanlis kod / isimden dusum olabilir, teyit icin listelenir.
+        If ikameDahil And notlar.Exists(CStr(k)) And g(0) > 0.0005 And g(1) + 0.0005 >= g(0) Then
+            p = Split(CStr(k), "|"): b = bilgi(k)
+            If depolar.Exists(p(0)) Then ad = I_DEPO_KISA(CStr(depolar(p(0)))) Else ad = I_DEPO_KISA(CStr(b(0)))
+            I_DEM_EKSIK.Add Array(p(0), ad, p(2), CStr(b(1)), I_KATEGORI(p(2)), g(0), g(1), 0#, CStr(b(2)), _
+                0#, "ÝKAME - TEYÝT EDÝN", p(1), "Yerine girilen: " & CStr(notlar(k)))
+        End If
         If g(0) > 0.0005 And g(1) + 0.0005 < g(0) Then
             p = Split(CStr(k), "|"): b = bilgi(k)
             eksik = g(0) - g(1)
             If depolar.Exists(p(0)) Then ad = I_DEPO_KISA(CStr(depolar(p(0)))) Else ad = I_DEPO_KISA(CStr(b(0)))
             I_DEM_EKSIK.Add Array(p(0), ad, p(2), CStr(b(1)), I_KATEGORI(p(2)), g(0), g(1), eksik, CStr(b(2)), _
-                Round(g(2) * eksik / g(0), 2), IIf(g(1) <= 0.0005, "GÝRÝÞ YOK", "EKSÝK GÝRÝÞ"), p(1))
+                Round(g(2) * eksik / g(0), 2), IIf(g(1) <= 0.0005, "GÝRÝÞ YOK", "EKSÝK GÝRÝÞ"), p(1), _
+                IIf(notlar.Exists(CStr(k)), "Kýsmen yerine girilen: " & CStr(notlar(CStr(k))), ""))
         End If
     Next k
 End Function
@@ -6936,11 +6952,11 @@ Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
     ac = AKSORA_BEKLE_AC("AKSORA  |  DEMONTAJ EKSÝKLERÝ", Y_IL_ADI(il) & "  •  demontaj eksikleri hesaplanýyor...", 0.05)
     ev = application.EnableEvents
     application.EnableEvents = False: application.ScreenUpdating = False
-    Set liste = I_DEM_EKSIK(il, eskiT, yeniT)
+    Set liste = I_DEM_EKSIK(il, eskiT, yeniT, True)
     If liste.Count = 0 Then
         application.EnableEvents = ev: application.ScreenUpdating = True
         If ac Then AKSORA_BEKLE_KAPAT
-        MsgBox "Seçilen tarihler arasýnda (" & eskiT & " - " & yeniT & ") demontaj giriþi eksik kritik malzeme yok.", vbInformation, "AKSORA"
+        MsgBox "Seçilen tarihler arasýnda (" & eskiT & " - " & yeniT & ") demontaj giriþi eksik ya da farklý kesit / tür yerine girilmiþ kritik malzeme yok.", vbInformation, "AKSORA"
         Exit Sub
     End If
     Set gruplar = CreateObject("Scripting.Dictionary"): gruplar.CompareMode = vbTextCompare
@@ -6976,6 +6992,7 @@ Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
             veri(i, 1) = x(0): veri(i, 2) = x(1): veri(i, 3) = x(2): veri(i, 4) = x(3): veri(i, 5) = x(4)
             veri(i, 6) = Round(x(5), 3): veri(i, 7) = Round(x(6), 3): veri(i, 8) = Round(x(7), 3)
             veri(i, 9) = x(8): veri(i, 10) = x(9): veri(i, 11) = x(10)
+            If UBound(x) >= 12 Then veri(i, 12) = x(12)
         Next x
         If sira <= n Then
             t = c(1)(1)
