@@ -5782,6 +5782,7 @@ Private Sub SK_GOSTER(ByVal il As String)
 Cikis:
     On Error Resume Next
     mYonlendirme = False
+    application.DisplayAlerts = True
     application.Calculation = hesap
     application.EnableEvents = ev: application.ScreenUpdating = True
     On Error GoTo 0
@@ -5852,18 +5853,71 @@ Public Sub AKSORA_SAPK_OKU()
     SK_CALISTIR vbNullString
 End Sub
 
-' Secim ekraninda alanin adi (ornek WERKS, RM_WERKS): adi "...<anahtar>-LOW" ile biten ilk giris alani; haric gecen alinmaz.
-Private Function SK_ALAN(ByVal ses As Object, ByVal anahtar As String, Optional ByVal haric As String) As String
-    Dim usr As Object, i As Long, n As Long, c As Object, ad As String
+' Secim ekraninda alanin adi (ornek WERKS, S_WERKS, RM_WERKS): adi "...<anahtar>-LOW" ile biten giris alani; alanlar
+' kutu / alt ekran icinde olabilir (ic ice aranir). Bulunamazsa ekrandaki giris alanlarinin adlari teshise yazilir.
+Private Function SK_ALAN(ByVal ses As Object, ByVal anahtar As String, Optional ByVal haric As String, Optional ByVal etiket As String) As String
+    Dim usr As Object, adlar As String
     On Error Resume Next
     Set usr = ses.FindById("wnd[0]/usr")
-    n = usr.Children.Count
+    On Error GoTo 0
+    If usr Is Nothing Then Exit Function
+    SK_ALAN = SK_ALAN_ARA(usr, UCase$(anahtar), UCase$(haric), adlar, 0)
+    If Len(SK_ALAN) = 0 Then AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | " & anahtar & " alaný yok. Ekrandaki alanlar: " & Left$(adlar, 1500) & " | " & ATIL_SBAR(ses)
+End Function
+
+Private Function SK_ALAN_ARA(ByVal o As Object, ByVal anahtar As String, ByVal haric As String, ByRef adlar As String, ByVal derinlik As Long) As String
+    Dim i As Long, n As Long, c As Object, ad As String, t As String
+    If derinlik > 8 Then Exit Function
+    On Error Resume Next
+    n = -1: n = o.Children.Count
     For i = 0 To n - 1
-        Set c = Nothing: Set c = usr.Children(i)
+        Set c = Nothing: Set c = o.Children(i)
         If Not c Is Nothing Then
-            ad = vbNullString: ad = UCase$(c.Name)
-            If Right$(ad, Len(anahtar) + 4) = anahtar & "-LOW" Then
-                If Len(haric) = 0 Or InStr(ad, haric) = 0 Then SK_ALAN = Left$(c.Name, Len(c.Name) - 4): Exit Function
+            ad = vbNullString: ad = UCase$(c.Name): t = vbNullString: t = c.Type
+            If t = "GuiCTextField" Or t = "GuiTextField" Then
+                If Len(adlar) < 1500 Then adlar = adlar & IIf(Len(adlar) > 0, ", ", "") & c.Name
+                If Right$(ad, Len(anahtar) + 4) = anahtar & "-LOW" Then
+                    If Len(haric) = 0 Or InStr(ad, haric) = 0 Then SK_ALAN_ARA = Left$(c.Name, Len(c.Name) - 4): Exit Function
+                End If
+            End If
+            If c.ContainerType Then
+                SK_ALAN_ARA = SK_ALAN_ARA(c, anahtar, haric, adlar, derinlik + 1)
+                If Len(SK_ALAN_ARA) > 0 Then Exit Function
+            End If
+        End If
+    Next i
+End Function
+
+' Coklu secim (5 ilin uretim yerleri). Alan alt ekranda olsa da dugme adi ayni kalibi izler; yoksa hata.
+Private Sub SK_COKLU(ByVal ses As Object, ByVal alan As String, ByRef uy() As String)
+    Dim b As Object
+    Set b = SK_BUL(ses.FindById("wnd[0]/usr"), "btn%_" & UCase$(alan) & "_%_APP_%-VALU_PUSH", 0)
+    If b Is Nothing Then Err.Raise vbObjectError + 2361, , "üretim yeri çoklu seçim düðmesi yok (" & alan & ")"
+    ATIL_PANO_YAZ Join(uy, vbCrLf)
+    b.Press: ATIL_BEKLE ses
+    ATIL_COKLU_SIL ses
+    Dim pb As Object, ilk As String
+    On Error Resume Next
+    ses.FindById("wnd[1]/usr/tabsTAB_STRIP/tabpSIVA").Select
+    On Error GoTo 0
+    Set pb = ses.FindById("wnd[1]/tbar[0]/btn[24]", False)
+    If pb Is Nothing Then Err.Raise vbObjectError + 2343, , "SAP 'Panodan yükle' düðmesi bulunamadý."
+    pb.Press: ATIL_BEKLE ses
+    ses.FindById("wnd[1]/tbar[0]/btn[8]").Press: ATIL_BEKLE ses
+End Sub
+
+Private Function SK_BUL(ByVal o As Object, ByVal ad As String, ByVal derinlik As Long) As Object
+    Dim i As Long, n As Long, c As Object
+    If derinlik > 8 Or o Is Nothing Then Exit Function
+    On Error Resume Next
+    n = -1: n = o.Children.Count
+    For i = 0 To n - 1
+        Set c = Nothing: Set c = o.Children(i)
+        If Not c Is Nothing Then
+            If UCase$(c.Name) = ad Then Set SK_BUL = c: Exit Function
+            If c.ContainerType Then
+                Set SK_BUL = SK_BUL(c, ad, derinlik + 1)
+                If Not SK_BUL Is Nothing Then Exit Function
             End If
         End If
     Next i
@@ -5947,9 +6001,9 @@ Private Function SK_MB5T(ByVal ses As Object, ByVal sis As String, ByRef uy() As
     Set SK_MB5T = c
     On Error GoTo Hata
     ses.StartTransaction "MB5T": ATIL_BEKLE ses
-    alan = SK_ALAN(ses, "WERKS", "RESWK")
-    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (" & ATIL_SBAR(ses) & ")": Exit Function
-    ATIL_COKLU_PANO ses, alan, uy
+    alan = SK_ALAN(ses, "WERKS", "RESWK", "MB5T_" & sis)
+    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (alan adlarý teþhiste)": Exit Function
+    SK_COKLU ses, alan, uy
     v = SK_CALISTIR_AL(ses, "MB5T_" & sis, hata)
     If Not IsArray(v) Then Exit Function
     h = SK_BASLIK(v)
@@ -5991,9 +6045,9 @@ Private Function SK_MB25(ByVal ses As Object, ByVal sis As String, ByRef uy() As
     Set SK_MB25 = c
     On Error GoTo Hata
     ses.StartTransaction "MB25": ATIL_BEKLE ses
-    alan = SK_ALAN(ses, "WERKS")
-    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (" & ATIL_SBAR(ses) & ")": Exit Function
-    ATIL_COKLU_PANO ses, alan, uy
+    alan = SK_ALAN(ses, "WERKS", , "MB25_" & sis)
+    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (alan adlarý teþhiste)": Exit Function
+    SK_COKLU ses, alan, uy
     v = SK_CALISTIR_AL(ses, "MB25_" & sis, hata)
     If Not IsArray(v) Then Exit Function
     h = SK_BASLIK(v)
@@ -6071,9 +6125,15 @@ Private Function SK_VERI_SAYFA(ByVal ad As String) As Worksheet
     Dim ws As Worksheet, gor As Boolean
     Set ws = ADM_WS(ad)
     If ws Is Nothing Then
+        Dim onceki As Object
+        Set onceki = ActiveSheet
         Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = ad
         ws.Visible = xlSheetVeryHidden
+        ' Yeni sayfa eklenince Excel baska sayfaya geciyordu: onceki sayfaya donulur.
+        On Error Resume Next
+        If Not onceki Is Nothing Then onceki.Activate
+        On Error GoTo 0
     End If
     Set SK_VERI_SAYFA = ws
 End Function
@@ -6223,7 +6283,9 @@ Private Sub SK_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Dim s As Shape, w As Double, y As Double, kw As Double, bw As Double, i As Long, j As Long, r As Long, a1 As Long, n As Long, sonR As Long
     Dim yolda As Collection, rez As Collection, kal As Collection, fiyat As Object, x As Variant, veri() As Variant, ilv As Variant
     Dim il As String, ilG As String, g As Long, dg As Double, tY As Double, nY As Long, nY7 As Long, nR As Long, nRg As Long, tR As Double
-    Dim f As Variant, durum As String, bilgi As String, liste As Collection, o As Variant
+    Dim f As Variant, durum As String, bilgi As String, liste As Collection, o As Variant, da As Boolean
+    da = application.DisplayAlerts
+    application.DisplayAlerts = False
     ws.Unprotect ""
     Y_SAYFA_SIFIRLA ws
     For i = ws.Shapes.Count To 1 Step -1
@@ -6444,6 +6506,7 @@ Private Sub SK_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Y_FILIGRAN ws
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
     ws.EnableSelection = xlNoRestrictions
+    application.DisplayAlerts = da
 End Sub
 
 Private Function SK_VERI_HATA(ByVal ad As String) As String
