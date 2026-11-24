@@ -1,5 +1,5 @@
 Attribute VB_Name = "frmSplash"
-Attribute VB_Base = "0{02B6DF6F-E128-404D-8D78-58EA44473EDC}{45721DCF-74BF-4B21-A1F8-79BB5C5868EB}"
+Attribute VB_Base = "0{F0264C32-17CE-4414-97ED-5AB762E9B65E}{D8FCD892-48A2-476F-BADE-358200390638}"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -24,7 +24,7 @@ Option Explicit
         ByVal hWndInsertAfter As LongPtr, _
         ByVal x As Long, _
         ByVal y As Long, _
-        ByVal cx As Long, _
+        ByVal cX As Long, _
         ByVal cy As Long, _
         ByVal wFlags As Long) As Long
 #Else

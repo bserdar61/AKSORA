@@ -5669,7 +5669,7 @@ Public Sub AKSORA_ATIL_EXCEL()
         m = 0: top = 0
         For i = 1 To n
             x = satir(idx(i))
-            If il = "TUM" Or CStr(x(0)) = il Then m = m + 1: top = top + x(22)
+            If il = "TUM" Or CStr(x(0)) = il Then m = m + 1: top = top + Round(x(22), 2)
         Next i
         If m > 0 Then
             sayfa = sayfa + 1
