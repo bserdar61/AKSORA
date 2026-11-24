@@ -30,6 +30,11 @@ Private Const IH_SATIR1 As Long = 13
 Private Const IH_KALEM As Long = 20
 Private Const IH_MAKS_MALZEME As Long = 25
 Private Const IH_MAKS_DETAY As Long = 80
+Private Const SK_SAYFA As String = "SAP_KONTROL"
+Private Const SK_ETIKET As String = "AKSORA_SAPK_V1"
+Private Const SK_YOLDA As String = "_SAPK_YOLDA"
+Private Const SK_REZERV As String = "_SAPK_REZERV"
+Private mSkRezerv As Variant
 Private Declare PtrSafe Function ATIL_OpenClipboard Lib "user32" Alias "OpenClipboard" (ByVal hWnd As LongPtr) As Long
 Private Declare PtrSafe Function ATIL_EmptyClipboard Lib "user32" Alias "EmptyClipboard" () As Long
 Private Declare PtrSafe Function ATIL_CloseClipboard Lib "user32" Alias "CloseClipboard" () As Long
@@ -4839,9 +4844,16 @@ End Function
 Private Function IH_STOK(ByVal tarihler As Object, ByVal sadeceTarih As Boolean) As Object
     Dim d As Object, il As Variant, kaynak As Variant, kx As Variant, sh As Worksheet, canli As String, t As Variant, tIl As Date
     Dim v As Variant, son As Long, i As Long, depo As String, mal As String, x As Double, o As Variant, tn As String
-    Dim uygun As Boolean, parti As String, dAd As String, dIl As Object, c As Collection
+    Dim uygun As Boolean, parti As String, dAd As String, dIl As Object, c As Collection, rez As Object, rk As String, rk0 As Variant, al As Double, xo As Double
     Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
     canli = IH_CANLI()
+    ' Acik rezervasyonlar (SAP KONTROL / MB25) kullanilabilir stoktan duser (kopya: her okumada bastan).
+    Set rez = CreateObject("Scripting.Dictionary"): rez.CompareMode = vbTextCompare
+    If Not sadeceTarih Then
+        On Error Resume Next
+        For Each rk0 In AKSORA_SAPK_REZERV().keys: rez(CStr(rk0)) = AKSORA_SAPK_REZERV()(rk0): Next rk0
+        On Error GoTo 0
+    End If
     For Each il In ADM_ILLER()
         tIl = 0
         If CStr(il) = canli Then
@@ -4870,7 +4882,15 @@ Private Function IH_STOK(ByVal tarihler As Object, ByVal sadeceTarih As Boolean)
                             x = I_SAYI(v(i, 9))
                             parti = UCase$(I_TEMIZ(v(i, 6))): dAd = I_TEMIZ(v(i, 3))
                             uygun = IH_UYGUN(dAd, parti)
-                            If Len(mal) > 0 And x > 0 And uygun Then
+                            xo = x
+                            If Len(mal) > 0 And x > 0 And uygun And rez.Count > 0 Then
+                                rk = I_TEMIZ(v(i, 1)) & "|" & depo & "|" & mal
+                                If rez.Exists(rk) Then
+                                    al = application.Min(x, CDbl(rez(rk)))
+                                    If al > 0 Then x = x - al: rez(rk) = CDbl(rez(rk)) - al
+                                End If
+                            End If
+                            If Len(mal) > 0 And x > 0.0005 And uygun Then
                                 If Not d.Exists(mal) Then
                                     tn = I_TEMIZ(v(i, 8))
                                     d.Add mal, Array(tn, I_TEMIZ(v(i, 10)), AKSORA_AKILLI_SOZCUK(tn), _
@@ -4878,7 +4898,7 @@ Private Function IH_STOK(ByVal tarihler As Object, ByVal sadeceTarih As Boolean)
                                 End If
                                 o = d(mal)
                                 Set c = o(4)
-                                c.Add Array(CStr(il), depo, dAd, parti, x, I_SAYI(v(i, 11)), uygun, ATIL_SISTEM(I_TEMIZ(v(i, 1))))
+                                c.Add Array(CStr(il), depo, dAd, parti, x, I_SAYI(v(i, 11)) * x / xo, uygun, ATIL_SISTEM(I_TEMIZ(v(i, 1))))
                                 If uygun Then
                                     Set dIl = o(3)
                                     dIl(CStr(il)) = IH_DS(dIl, CStr(il)) + x
@@ -5293,6 +5313,7 @@ Private Sub IH_CIZ(ByVal ws As Worksheet, ByVal il As String, ByVal giris As Var
         End If
     Next i
     bilgi = bilgi & "•  Yalnýz YENÝ parti; hurda, demontaj, arýza ve söküm (DM) depolarý hariç (çýkma / bedelsiz: MALZEME ARAMA)"
+    If AKSORA_SAPK_REZERV().Count > 0 Then bilgi = bilgi & "  •  Açýk rezervasyonlar düþüldü (MB25 " & SK_OKUMA_BILGI(SK_REZERV) & ")"
     If eski Then bilgi = ChrW(9888) & "  Bazý illerin stoðu bugün güncellenmedi   |   " & bilgi
     ws.Range("A9").Value2 = bilgi
     With ws.Range("A9").Font
@@ -5705,4 +5726,822 @@ Hata:
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     MsgBox "Atýl stok Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+'---------- SAP KONTROL: yoldaki stok (MB5T), acik rezervasyonlar (MB25), malzeme veri kalitesi ----------
+' SAP'ye kayit atilmaz; yalniz okunur. Okunan listeler gizli sayfalarda saklanir (_SAPK_YOLDA, _SAPK_REZERV).
+'   yolda satiri : Array(0 sistem, 1 alan UY, 2 gonderen UY, 3 malzeme, 4 tanim, 5 miktar, 6 birim, 7 deger, 8 belge, 9 tarih)
+'   rezerv satiri: Array(0 sistem, 1 UY, 2 depo, 3 malzeme, 4 tanim, 5 acik miktar, 6 birim, 7 ihtiyac tarihi, 8 rezervasyon, 9 alici)
+
+Public Function AKSORA_SAPK_SAYFA(ByVal sh As Object) As Boolean
+    If Not TypeOf sh Is Worksheet Then Exit Function
+    If sh.Name <> SK_SAYFA Then Exit Function
+    AKSORA_SAPK_SAYFA = (CStr(sh.Range("BX1").Value2) = SK_ETIKET)
+End Function
+
+Public Sub AKSORA_SAPK_AC()
+    SK_CALISTIR vbNullString
+End Sub
+
+Public Sub AKSORA_SAPK_IL_SEC()
+    Dim il As String
+    On Error Resume Next
+    il = ThisWorkbook.Worksheets(SK_SAYFA).Shapes(CStr(application.Caller)).AlternativeText
+    On Error GoTo 0
+    If Len(il) = 0 Then il = "TUM"
+    SK_CALISTIR il
+End Sub
+
+Private Sub SK_CALISTIR(ByVal il As String)
+    Dim ac As Boolean, no As Long, metin As String
+    If AKSORA_V11_MESGUL Or AKSORA_V13_GECIS Or AKSORA_V13_ACILIS Or AKSORA_ATIL_CALISIYOR Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  SAP KONTROL", "Yoldaki stok, rezervasyonlar ve malzeme verisi hazýrlanýyor...")
+    On Error GoTo son
+    SK_GOSTER il
+son:
+    no = Err.Number: metin = Err.Description
+    If ac Then AKSORA_BEKLE_KAPAT
+    If no <> 0 Then MsgBox "SAP kontrol sayfasý açýlamadý: " & metin, vbExclamation, "AKSORA"
+End Sub
+
+Private Sub SK_GOSTER(ByVal il As String)
+    Dim ws As Worksheet, ev As Boolean, hesap As XlCalculation, no As Long, metin As String
+    ev = application.EnableEvents: hesap = application.Calculation
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    application.Calculation = xlCalculationManual
+    Set ws = AN_SAYFA_KUR(SK_SAYFA, SK_ETIKET, TR_SAYFA)
+    If Len(il) = 0 Then il = CStr(ws.Range("BX20").Value2)
+    If Len(il) = 0 Then il = "TUM"
+    SK_CIZ ws, il
+    ws.Visible = xlSheetVisible
+    mYonlendirme = True
+    ws.Select Replace:=True
+    mYonlendirme = False
+    AKSORA_YATIRIM_GORUNUM ws
+Cikis:
+    On Error Resume Next
+    mYonlendirme = False
+    application.Calculation = hesap
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    On Error GoTo 0
+    If no <> 0 Then Err.Raise no, "SK_GOSTER", metin
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    Resume Cikis
+End Sub
+
+'--- SAP okuma
+Public Sub AKSORA_SAPK_OKU()
+    Dim ac As Boolean, sis As Variant, ses As Object, h As String, uy() As String, il As Variant, i As Long
+    Dim yolda As Collection, rez As Collection, hatalar As String, c As Collection, ev As Boolean, x As Variant
+    If AKSORA_V11_MESGUL Or AKSORA_ATIL_CALISIYOR Then Exit Sub
+    If MsgBox("SAP'den okunacak (yalnýz okuma, kayýt atýlmaz):" & vbCrLf & vbCrLf & _
+        "•  MB5T  –  iller arasý yoldaki stok" & vbCrLf & "•  MB25  –  açýk rezervasyonlar" & vbCrLf & vbCrLf & _
+        "CDP ve EPP SAP oturumlarý açýk olmalý. Devam edilsin mi?", vbQuestion + vbYesNo, "AKSORA | SAP KONTROL") <> vbYes Then Exit Sub
+    ac = AKSORA_BEKLE_AC("AKSORA  |  SAP KONTROL", "SAP oturumu aranýyor...", 0.03)
+    ev = application.EnableEvents
+    application.EnableEvents = False: application.ScreenUpdating = False
+    Set yolda = New Collection: Set rez = New Collection
+    For Each sis In Array("CDP", "EPP")
+        i = i + 1
+        h = vbNullString
+        Set ses = Nothing
+        On Error Resume Next
+        Set ses = SAP_SESSION_AL(CStr(sis), h)
+        On Error GoTo 0
+        If ses Is Nothing Then
+            hatalar = hatalar & vbCrLf & sis & ": SAP oturumu bulunamadý " & h
+        Else
+            ReDim uy(0 To 4)
+            Dim j As Long: j = 0
+            For Each il In ADM_ILLER()
+                uy(j) = AKSORA_IL_TESIS(CStr(il), CStr(sis)): j = j + 1
+            Next il
+            AKSORA_BEKLE_ILERLE 0.05 + 0.45 * (i - 1), sis & "  •  MB5T yoldaki stok okunuyor..."
+            h = vbNullString
+            Set c = SK_MB5T(ses, CStr(sis), uy, h)
+            If Len(h) > 0 Then hatalar = hatalar & vbCrLf & sis & " MB5T: " & h
+            If Not c Is Nothing Then
+                For Each x In c: yolda.Add x: Next x
+            End If
+            AKSORA_BEKLE_ILERLE 0.25 + 0.45 * (i - 1), sis & "  •  MB25 açýk rezervasyonlar okunuyor..."
+            h = vbNullString
+            Set c = SK_MB25(ses, CStr(sis), uy, h)
+            If Len(h) > 0 Then hatalar = hatalar & vbCrLf & sis & " MB25: " & h
+            If Not c Is Nothing Then
+                For Each x In c: rez.Add x: Next x
+            End If
+        End If
+    Next sis
+    AKSORA_BEKLE_ILERLE 0.95, "Kaydediliyor..."
+    On Error Resume Next
+    SK_KAYDET SK_YOLDA, yolda, 10, hatalar
+    SK_KAYDET SK_REZERV, rez, 10, hatalar
+    mSkRezerv = Empty
+    On Error GoTo 0
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(hatalar) > 0 Then
+        MsgBox "SAP okumasý tamamlandý; bazý adýmlar okunamadý:" & hatalar & vbCrLf & vbCrLf & _
+            "Okunanlar kaydedildi. Ayrýntý: AKSORA_SAP_TESHIS.txt", vbExclamation, "AKSORA | SAP KONTROL"
+    End If
+    SK_CALISTIR vbNullString
+End Sub
+
+' Secim ekraninda alanin adi (ornek WERKS, RM_WERKS): adi "...<anahtar>-LOW" ile biten ilk giris alani; haric gecen alinmaz.
+Private Function SK_ALAN(ByVal ses As Object, ByVal anahtar As String, Optional ByVal haric As String) As String
+    Dim usr As Object, i As Long, n As Long, c As Object, ad As String
+    On Error Resume Next
+    Set usr = ses.FindById("wnd[0]/usr")
+    n = usr.Children.Count
+    For i = 0 To n - 1
+        Set c = Nothing: Set c = usr.Children(i)
+        If Not c Is Nothing Then
+            ad = vbNullString: ad = UCase$(c.Name)
+            If Right$(ad, Len(anahtar) + 4) = anahtar & "-LOW" Then
+                If Len(haric) = 0 Or InStr(ad, haric) = 0 Then SK_ALAN = Left$(c.Name, Len(c.Name) - 4): Exit Function
+            End If
+        End If
+    Next i
+End Function
+
+' Calistir (F8), bos sonuc / SAP penceresi kontrolu, ALV tablosu metin olarak. Bos ise Empty.
+Private Function SK_CALISTIR_AL(ByVal ses As Object, ByVal etiket As String, ByRef hata As String) As Variant
+    Dim pop As Object, t As String, alv As Object
+    ses.FindById("wnd[0]/tbar[1]/btn[8]").Press
+    ATIL_BEKLE ses
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | " & ATIL_SBAR(ses)
+    Set pop = ses.FindById("wnd[1]", False)
+    If Not pop Is Nothing Then
+        t = vbNullString
+        On Error Resume Next
+        t = pop.Text
+        On Error GoTo 0
+        ATIL_METIN_TOPLA pop, t, 0
+        AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | SAP penceresi: " & t
+        On Error Resume Next
+        pop.SendVKey 0: ATIL_BEKLE ses
+        On Error GoTo 0
+        If Not ATIL_BOS_MESAJ(t) Then hata = "SAP penceresi: " & Trim$(Left$(t, 150))
+        Exit Function
+    End If
+    Set alv = SA_GRID_BUL(ses)
+    If alv Is Nothing Then
+        t = ATIL_SBAR(ses)
+        If Not ATIL_BOS_MESAJ(t) Then hata = "liste ALV tablosu olarak açýlmadý (" & Trim$(t) & ")"
+        Exit Function
+    End If
+    SK_CALISTIR_AL = AKSORA_ALV_METIN_AL(ses, alv, etiket)
+    If Not IsArray(SK_CALISTIR_AL) Then hata = "liste okunamadý (yerel dosya)"
+End Function
+
+Private Function SK_BASLIK(ByVal v As Variant) As Long
+    Dim r As Long, c As Long, a As String
+    For r = 1 To application.Min(UBound(v, 1), 40)
+        For c = 1 To UBound(v, 2)
+            a = Y_NORM(CStr(v(r, c)))
+            If a = "MALZEME" Or a = "MATERIAL" Then SK_BASLIK = r: Exit Function
+        Next c
+    Next r
+End Function
+
+' Basligi anahtarlardan birini iceren (haric kelimeleri icermeyen) ilk sutun; tam esitlik once.
+Private Function SK_KOL(ByVal v As Variant, ByVal h As Long, ByVal anahtar As Variant, Optional ByVal haric As Variant) As Long
+    Dim c As Long, a As String, k As Variant, z As Variant, ok As Boolean, tur As Long
+    For tur = 1 To 2
+        For c = 1 To UBound(v, 2)
+            a = Y_NORM(CStr(v(h, c)))
+            For Each k In anahtar
+                If (tur = 1 And a = CStr(k)) Or (tur = 2 And InStr(a, CStr(k)) > 0) Then
+                    ok = True
+                    If IsArray(haric) Then
+                        For Each z In haric
+                            If InStr(a, CStr(z)) > 0 Then ok = False
+                        Next z
+                    End If
+                    If ok Then SK_KOL = c: Exit Function
+                End If
+            Next k
+        Next c
+    Next tur
+End Function
+
+Private Function SK_HB(ByVal v As Variant, ByVal h As Long) As String
+    Dim c As Long
+    For c = 1 To UBound(v, 2): SK_HB = SK_HB & " | " & CStr(v(h, c)): Next c
+End Function
+
+Private Function SK_SAYI(ByVal v As Variant) As Double
+    Dim x As Double
+    If ATIL_SAYI_DENE(v, x) Then SK_SAYI = x
+End Function
+
+Private Function SK_MB5T(ByVal ses As Object, ByVal sis As String, ByRef uy() As String, ByRef hata As String) As Collection
+    Dim c As Collection, alan As String, v As Variant, h As Long, r As Long
+    Dim cM As Long, cA As Long, cG As Long, cQ As Long, cB As Long, cV As Long, cD As Long, cT As Long, cN As Long, q As Double
+    Set c = New Collection
+    Set SK_MB5T = c
+    On Error GoTo Hata
+    ses.StartTransaction "MB5T": ATIL_BEKLE ses
+    alan = SK_ALAN(ses, "WERKS", "RESWK")
+    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (" & ATIL_SBAR(ses) & ")": Exit Function
+    ATIL_COKLU_PANO ses, alan, uy
+    v = SK_CALISTIR_AL(ses, "MB5T_" & sis, hata)
+    If Not IsArray(v) Then Exit Function
+    h = SK_BASLIK(v)
+    If h = 0 Then hata = "listede 'Malzeme' sütunu yok": Exit Function
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol MB5T " & sis & " | baþlýk" & SK_HB(v, h)
+    cM = SK_KOL(v, h, Array("MALZEME", "MATERIAL"))
+    cG = SK_KOL(v, h, Array("SAGLAYAN", "GONDEREN", "SUPPLYING", "SAG.UY", "SAGLAYAN UY", "TEDARIK EDEN"))
+    cA = SK_KOL(v, h, Array("UY", "URETIM YERI", "URETIM YR", "PLANT"), Array("SAGLAYAN", "GONDEREN", "SUPPLY", "TEDARIK"))
+    cQ = SK_KOL(v, h, Array("YOLDA", "TRANSIT", "SEVK"), Array("DEGER", "VALUE", "TUTAR"))
+    If cQ = 0 Then cQ = SK_KOL(v, h, Array("MIKTAR", "QUANTITY"), Array("DEGER", "VALUE"))
+    cV = SK_KOL(v, h, Array("DEGER", "VALUE", "TUTAR"))
+    cB = SK_KOL(v, h, Array("BIRIM", "TOB", "OLCU", "UNIT", "BRM"), Array("FIYAT", "PRICE", "DEGER"))
+    cD = SK_KOL(v, h, Array("SATINALMA BELGESI", "SAS", "BELGE", "PURCHASING", "DOCUMENT"), Array("TARIH", "DATE", "KALEM"))
+    cT = SK_KOL(v, h, Array("TARIH", "DATE"))
+    cN = SK_KOL(v, h, Array("KISA METIN", "TANIM", "TEXT", "DESCRIPTION"))
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol MB5T " & sis & " | sütunlar: malzeme " & cM & ", alan " & cA & ", gönderen " & cG & ", miktar " & cQ & ", deðer " & cV & ", belge " & cD & ", tarih " & cT
+    If cM = 0 Or cQ = 0 Then hata = "malzeme / miktar sütunu bulunamadý. Baþlýk:" & Left$(SK_HB(v, h), 200): Exit Function
+    For r = h + 1 To UBound(v, 1)
+        If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+        If Len(Y_KOD_NORM(v(r, cM))) > 0 And Left$(Trim$(CStr(v(r, cM))), 1) <> "*" And Y_NORM(CStr(v(r, cM))) <> "MALZEME" Then
+            q = SK_SAYI(v(r, cQ))
+            If q > 0.0005 Then
+                c.Add Array(sis, IIf(cA > 0, I_TEMIZ(v(r, IIf(cA > 0, cA, 1))), ""), IIf(cG > 0, I_TEMIZ(v(r, IIf(cG > 0, cG, 1))), ""), _
+                    Y_KOD_NORM(v(r, cM)), IIf(cN > 0, I_TEMIZ(v(r, IIf(cN > 0, cN, 1))), ""), q, _
+                    IIf(cB > 0, I_TEMIZ(v(r, IIf(cB > 0, cB, 1))), ""), IIf(cV > 0, SK_SAYI(v(r, IIf(cV > 0, cV, 1))), 0#), _
+                    IIf(cD > 0, I_TEMIZ(v(r, IIf(cD > 0, cD, 1))), ""), IIf(cT > 0, CDbl(ATIL_TARIH(CStr(v(r, IIf(cT > 0, cT, 1))))), 0#))
+            End If
+        End If
+    Next r
+    Exit Function
+Hata:
+    hata = Err.Description
+End Function
+
+Private Function SK_MB25(ByVal ses As Object, ByVal sis As String, ByRef uy() As String, ByRef hata As String) As Collection
+    Dim c As Collection, alan As String, v As Variant, h As Long, r As Long, q As Double, cek As Double
+    Dim cM As Long, cU As Long, cD As Long, cQ As Long, cE As Long, cB As Long, cT As Long, cR As Long, cN As Long, cX As Long
+    Set c = New Collection
+    Set SK_MB25 = c
+    On Error GoTo Hata
+    ses.StartTransaction "MB25": ATIL_BEKLE ses
+    alan = SK_ALAN(ses, "WERKS")
+    If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (" & ATIL_SBAR(ses) & ")": Exit Function
+    ATIL_COKLU_PANO ses, alan, uy
+    v = SK_CALISTIR_AL(ses, "MB25_" & sis, hata)
+    If Not IsArray(v) Then Exit Function
+    h = SK_BASLIK(v)
+    If h = 0 Then hata = "listede 'Malzeme' sütunu yok": Exit Function
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol MB25 " & sis & " | baþlýk" & SK_HB(v, h)
+    cM = SK_KOL(v, h, Array("MALZEME", "MATERIAL"))
+    cU = SK_KOL(v, h, Array("UY", "URETIM YERI", "URETIM YR", "PLANT"))
+    cD = SK_KOL(v, h, Array("DPYR", "DEPO YERI", "DEPO", "SLOC", "STORAGE"))
+    cQ = SK_KOL(v, h, Array("IHTIYAC MIKTARI", "GEREKSINIM MIKTARI", "REQUIREMENT QTY", "REQMT QTY", "IHT.MIKTARI", "MIKTAR"), Array("CEKILEN", "ALINAN", "WITHDRAWN", "ONAYLANAN"))
+    cE = SK_KOL(v, h, Array("CEKILEN", "ALINAN", "WITHDRAWN", "CIKISI YAPILAN"))
+    cB = SK_KOL(v, h, Array("BIRIM", "TOB", "OLCU", "UNIT", "BRM"))
+    cT = SK_KOL(v, h, Array("IHTIYAC TARIHI", "GEREKSINIM TARIHI", "REQUIREMENT DATE", "REQMTS DATE", "TARIH", "DATE"))
+    cR = SK_KOL(v, h, Array("REZERVASYON", "RESERVATION", "REZ."))
+    cN = SK_KOL(v, h, Array("KISA METIN", "TANIM", "TEXT", "DESCRIPTION"))
+    cX = SK_KOL(v, h, Array("MALIYET YERI", "COST CENTER", "PYP", "WBS", "SIPARIS", "ORDER", "KABUL EDEN", "RECIPIENT", "ALICI"))
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol MB25 " & sis & " | sütunlar: malzeme " & cM & ", ÜY " & cU & ", depo " & cD & ", ihtiyaç " & cQ & ", çekilen " & cE & ", tarih " & cT & ", rez " & cR
+    If cM = 0 Or cQ = 0 Then hata = "malzeme / ihtiyaç miktarý sütunu bulunamadý. Baþlýk:" & Left$(SK_HB(v, h), 200): Exit Function
+    For r = h + 1 To UBound(v, 1)
+        If (r And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+        If Len(Y_KOD_NORM(v(r, cM))) > 0 And Left$(Trim$(CStr(v(r, cM))), 1) <> "*" And Y_NORM(CStr(v(r, cM))) <> "MALZEME" Then
+            q = SK_SAYI(v(r, cQ)): cek = 0
+            If cE > 0 Then cek = SK_SAYI(v(r, cE))
+            If q - cek > 0.0005 Then
+                c.Add Array(sis, IIf(cU > 0, I_TEMIZ(v(r, IIf(cU > 0, cU, 1))), ""), UCase$(IIf(cD > 0, I_TEMIZ(v(r, IIf(cD > 0, cD, 1))), "")), _
+                    Y_KOD_NORM(v(r, cM)), IIf(cN > 0, I_TEMIZ(v(r, IIf(cN > 0, cN, 1))), ""), q - cek, _
+                    IIf(cB > 0, I_TEMIZ(v(r, IIf(cB > 0, cB, 1))), ""), IIf(cT > 0, CDbl(ATIL_TARIH(CStr(v(r, IIf(cT > 0, cT, 1))))), 0#), _
+                    IIf(cR > 0, I_TEMIZ(v(r, IIf(cR > 0, cR, 1))), ""), IIf(cX > 0, I_TEMIZ(v(r, IIf(cX > 0, cX, 1))), ""))
+            End If
+        End If
+    Next r
+    Exit Function
+Hata:
+    hata = Err.Description
+End Function
+
+'--- Kayit (gizli sayfa): A1 okuma zamani, A2 hatalar, 3. satirdan veri (ayni sistem okunamadiysa eski satirlari korunur)
+Private Sub SK_KAYDET(ByVal ad As String, ByVal yeni As Collection, ByVal k As Long, ByVal hatalar As String)
+    Dim ws As Worksheet, eski As Collection, x As Variant, n As Long, veri() As Variant, i As Long, j As Long, son As Long, v As Variant
+    Dim okunan As Object
+    Set ws = SK_VERI_SAYFA(ad)
+    Set okunan = CreateObject("Scripting.Dictionary")
+    For Each x In yeni: okunan(CStr(x(0))) = True: Next x
+    ' Hatasiz okunan sistem satirlari (0 satir dahil) yenilenir; okunamayan sistemin eski satirlari kalir.
+    For Each x In Array("CDP", "EPP")
+        If InStr(hatalar, CStr(x) & " ") = 0 And InStr(hatalar, CStr(x) & ":") = 0 Then okunan(CStr(x)) = True
+    Next x
+    Set eski = SK_OKU(ad)
+    n = yeni.Count
+    For Each x In eski
+        If Not okunan.Exists(CStr(x(0))) Then n = n + 1
+    Next x
+    ws.Cells.ClearContents
+    ws.Range("A1").Value2 = Format$(Now, "dd.mm.yyyy hh:nn")
+    ws.Range("A2").Value2 = Mid$(Replace(hatalar, vbCrLf, " | "), 4)
+    If n = 0 Then Exit Sub
+    ReDim veri(1 To n, 1 To k)
+    For Each x In yeni
+        i = i + 1
+        For j = 1 To k: veri(i, j) = x(j - 1): Next j
+    Next x
+    For Each x In eski
+        If Not okunan.Exists(CStr(x(0))) Then
+            i = i + 1
+            For j = 1 To k: veri(i, j) = x(j - 1): Next j
+        End If
+    Next x
+    ws.Range("A3").Resize(n, k).NumberFormat = "@"
+    For j = 1 To k
+        If (ad = SK_YOLDA And (j = 6 Or j = 8 Or j = 10)) Or (ad = SK_REZERV And (j = 6 Or j = 8)) Then ws.Range(ws.Cells(3, j), ws.Cells(n + 2, j)).NumberFormat = "General"
+    Next j
+    ws.Range("A3").Resize(n, k).Value2 = veri
+End Sub
+
+Private Function SK_VERI_SAYFA(ByVal ad As String) As Worksheet
+    Dim ws As Worksheet, gor As Boolean
+    Set ws = ADM_WS(ad)
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ad
+        ws.Visible = xlSheetVeryHidden
+    End If
+    Set SK_VERI_SAYFA = ws
+End Function
+
+Private Function SK_OKU(ByVal ad As String) As Collection
+    Dim ws As Worksheet, c As Collection, son As Long, v As Variant, r As Long, a() As Variant, j As Long, k As Long
+    Set c = New Collection
+    Set SK_OKU = c
+    Set ws = ADM_WS(ad)
+    If ws Is Nothing Then Exit Function
+    son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If son < 3 Then Exit Function
+    k = 10
+    v = ws.Range(ws.Cells(3, 1), ws.Cells(son, k)).Value2
+    For r = 1 To UBound(v, 1)
+        If Len(Trim$(CStr(v(r, 4)))) > 0 Then
+            ReDim a(0 To k - 1)
+            For j = 1 To k: a(j - 1) = v(r, j): Next j
+            For j = 0 To k - 1
+                If IsEmpty(a(j)) Then a(j) = vbNullString
+            Next j
+            c.Add a
+        End If
+    Next r
+End Function
+
+Private Function SK_OKUMA_BILGI(ByVal ad As String) As String
+    Dim ws As Worksheet
+    Set ws = ADM_WS(ad)
+    If ws Is Nothing Then SK_OKUMA_BILGI = "okunmadý": Exit Function
+    SK_OKUMA_BILGI = CStr(ws.Range("A1").Value2)
+    If Len(SK_OKUMA_BILGI) = 0 Then SK_OKUMA_BILGI = "okunmadý"
+End Function
+
+' Acik rezervasyonlar: UY|depo|malzeme -> acik miktar (Ihtiyac Bul kullanilabilir stoktan duser).
+Public Function AKSORA_SAPK_REZERV() As Object
+    Dim d As Object, x As Variant, k As String
+    If IsObject(mSkRezerv) Then Set AKSORA_SAPK_REZERV = mSkRezerv: Exit Function
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    On Error Resume Next
+    For Each x In SK_OKU(SK_REZERV)
+        k = CStr(x(1)) & "|" & UCase$(CStr(x(2))) & "|" & Y_KOD_NORM(x(3))
+        d(k) = CDbl(d(k)) + CDbl(x(5))
+    Next x
+    On Error GoTo 0
+    Set mSkRezerv = d
+    Set AKSORA_SAPK_REZERV = d
+End Function
+
+'--- Malzeme veri kalitesi (SAP'siz, butun illerin stok listelerinden)
+' Donus: Collection of Array(0 kontrol, 1 il, 2 depo, 3 malzeme, 4 tanim, 5 miktar, 6 birim, 7 deger, 8 aciklama)
+Private Function SK_KALITE(ByVal ilSec As String, ByVal fiyat As Object) As Collection
+    Dim c As Collection, il As Variant, kaynak As Variant, kx As Variant, sh As Worksheet, canli As String, v As Variant, son As Long, i As Long
+    Dim mal As String, tn As String, depo As String, parti As String, q As Double, dg As Double, br As String, nt As Object, brm As Object
+    Dim k As Variant, a As Variant, x As Variant, kod As Variant, mt As Object
+    Set c = New Collection
+    Set SK_KALITE = c
+    Set nt = CreateObject("Scripting.Dictionary"): nt.CompareMode = vbTextCompare
+    Set brm = CreateObject("Scripting.Dictionary"): brm.CompareMode = vbTextCompare
+    Set mt = CreateObject("Scripting.Dictionary"): mt.CompareMode = vbTextCompare
+    canli = IH_CANLI()
+    For Each il In ADM_ILLER()
+        If CStr(il) = canli Then
+            kaynak = Array("CDP_STOK", "EPP_STOK", "ÝLÇE_STOK")
+        Else
+            kaynak = Array("_AKLIVE_" & il & "_CDP", "_AKLIVE_" & il & "_EPP", "_AKLIVE_" & il & "_ILC")
+        End If
+        For Each kx In kaynak
+            Set sh = ADM_WS(CStr(kx))
+            If Not sh Is Nothing Then
+                son = AKSORA_SON_SATIR(sh, 7)
+                If son >= 7 Then
+                    v = sh.Range(sh.Cells(7, 1), sh.Cells(son, 11)).Value2
+                    For i = 1 To UBound(v, 1)
+                        If (i And 2047) = 0 Then AKSORA_BEKLE_NABIZ
+                        mal = Y_KOD_NORM(v(i, 7)): q = I_SAYI(v(i, 9))
+                        If Len(mal) > 0 And q > 0 Then
+                            tn = I_TEMIZ(v(i, 8)): depo = UCase$(I_TEMIZ(v(i, 2))): parti = UCase$(I_TEMIZ(v(i, 6)))
+                            dg = I_SAYI(v(i, 11)): br = UCase$(I_TEMIZ(v(i, 10)))
+                            mt(mal) = tn
+                            ' ayni kodun birimleri
+                            If Not brm.Exists(mal) Then brm.Add mal, CreateObject("Scripting.Dictionary")
+                            brm(mal)(br) = CStr(il) & " " & depo
+                            ' ayni tanim (bosluk / noktalama farki olmadan) farkli kodlar
+                            k = Replace(Replace(Replace(Replace(Y_NORM(Replace(tn, "IPTAL.", "")), " ", ""), ",", ""), ".", ""), "-", "")
+                            If Len(k) >= 6 Then
+                                If Not nt.Exists(k) Then nt.Add k, CreateObject("Scripting.Dictionary")
+                                nt(k)(mal) = tn
+                            End If
+                            If ilSec = "TUM" Or CStr(il) = ilSec Then
+                                If Left$(Y_NORM(tn), 6) = "IPTAL." Then
+                                    c.Add Array("ÝPTAL KODLU STOK", Y_IL_ADI(CStr(il)), depo, mal, tn, q, br, dg, _
+                                        "Kod iptal edilmiþ ama stokta: geçerli koda aktarýlmalý / düþüm bu koddan yapýlmamalý")
+                                ElseIf InStr(parti, "YENI") > 0 And dg < 0.05 * q Then
+                                    c.Add Array("FÝYATSIZ STOK", Y_IL_ADI(CStr(il)), depo, mal, tn, q, br, dg, _
+                                        "YENÝ partide deðer yok / çok düþük: fiyat (deðerleme) kontrol edilmeli")
+                                End If
+                            End If
+                        End If
+                    Next i
+                End If
+            End If
+        Next kx
+    Next il
+    For Each k In nt.keys
+        If nt(k).Count > 1 Then
+            a = vbNullString
+            For Each kod In nt(k).keys: a = a & IIf(Len(a) > 0, ", ", "") & CStr(kod): Next kod
+            For Each kod In nt(k).keys
+                c.Add Array("AYNI TANIM, FARKLI KOD", "Tüm iller", "", CStr(kod), CStr(nt(k)(kod)), Empty, "", Empty, _
+                    "Ayný isimli kodlar: " & a & "  •  sahada yanlýþ koddan düþüm riski")
+            Next kod
+        End If
+    Next k
+    For Each k In brm.keys
+        If brm(k).Count > 1 Then
+            a = vbNullString
+            For Each x In brm(k).keys: a = a & IIf(Len(a) > 0, ", ", "") & CStr(x) & " (" & brm(k)(x) & ")": Next x
+            c.Add Array("BÝRÝM TUTARSIZ", "Tüm iller", "", CStr(k), CStr(mt(k)), Empty, "", Empty, "Ayný kod farklý birimlerle: " & a)
+        End If
+    Next k
+End Function
+
+' Malzeme -> birim fiyat (butun illerin YENI partili stokundan); rezervasyon / yolda degeri icin.
+Private Function SK_FIYAT() As Object
+    Dim d As Object, tarih As Object, rr As Object, k As Variant, o As Variant, c As Collection, x As Variant, q As Double, dg As Double
+    Set d = CreateObject("Scripting.Dictionary"): d.CompareMode = vbTextCompare
+    Set tarih = CreateObject("Scripting.Dictionary")
+    Set rr = IH_STOK(tarih, False)
+    For Each k In rr.keys
+        o = rr(k): Set c = o(4): q = 0: dg = 0
+        For Each x In c
+            q = q + CDbl(x(4)): dg = dg + CDbl(x(5))
+        Next x
+        If q > 0 Then d(CStr(k)) = Array(dg / q, CStr(o(0)), CStr(o(1)))
+    Next k
+    Set SK_FIYAT = d
+End Function
+
+Private Function SK_GUN(ByVal t As Variant) As Long
+    If IsNumeric(t) Then
+        If CDbl(t) > 0 Then SK_GUN = Int(CDbl(Now)) - Int(CDbl(t))
+    End If
+End Function
+
+Private Sub SK_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
+    Dim s As Shape, w As Double, y As Double, kw As Double, bw As Double, i As Long, j As Long, r As Long, a1 As Long, n As Long, sonR As Long
+    Dim yolda As Collection, rez As Collection, kal As Collection, fiyat As Object, x As Variant, veri() As Variant, ilv As Variant
+    Dim il As String, ilG As String, g As Long, dg As Double, tY As Double, nY As Long, nY7 As Long, nR As Long, nRg As Long, tR As Double
+    Dim f As Variant, durum As String, bilgi As String, liste As Collection, o As Variant
+    ws.Unprotect ""
+    Y_SAYFA_SIFIRLA ws
+    For i = ws.Shapes.Count To 1 Step -1
+        If InStr(ws.Shapes(i).Name, "FILIGRAN") > 0 Then ws.Shapes(i).Delete
+    Next i
+    Set s = Y_SEKIL(ws, "btnAnaPanelDon")
+    If Not s Is Nothing Then s.AlternativeText = vbNullString: s.OnAction = BIRIM_MAKRO("ANA_PANELE_DON")
+    Y_YAZ Y_SEKIL(ws, "AKT1_RAPOR_BASLIK"), "AKSORA | SAP KONTROL  |  " & IIf(ilSec = "TUM", "Tüm Ýller", Y_IL_ADI(ilSec)) & "  |  yoldaki stok, rezervasyon, malzeme verisi"
+    Set s = Y_SEKIL(ws, "AKT1_RAPOR_UST_ZEMIN")
+    If s Is Nothing Then w = 1544 Else w = s.Width
+    Y_KOLONLAR ws, Array(140, 110, 70, 100, 280, 85, 60, 120, 120, 95, 70, application.Max(200, w - 1250))
+    ws.Range("BX20").Value2 = ilSec
+    Set fiyat = SK_FIYAT()
+    ' Yoldaki stok
+    Set liste = New Collection
+    For Each x In SK_OKU(SK_YOLDA)
+        il = ATIL_TESIS_IL(CStr(x(1))): ilG = ATIL_TESIS_IL(CStr(x(2)))
+        If ilSec = "TUM" Or il = ilSec Or ilG = ilSec Then
+            dg = SK_SAYI(x(7))
+            If dg <= 0 And fiyat.Exists(Y_KOD_NORM(x(3))) Then dg = SK_SAYI(x(5)) * fiyat(Y_KOD_NORM(x(3)))(0)
+            g = SK_GUN(x(9))
+            liste.Add Array(x, il, ilG, dg, g)
+            tY = tY + dg: nY = nY + 1
+            If g >= 7 Then nY7 = nY7 + 1
+        End If
+    Next x
+    Set yolda = liste
+    ' Acik rezervasyonlar
+    Set liste = New Collection
+    For Each x In SK_OKU(SK_REZERV)
+        il = ATIL_TESIS_IL(CStr(x(1)))
+        If ilSec = "TUM" Or il = ilSec Then
+            dg = 0
+            If fiyat.Exists(Y_KOD_NORM(x(3))) Then dg = SK_SAYI(x(5)) * fiyat(Y_KOD_NORM(x(3)))(0)
+            g = SK_GUN(x(7))
+            liste.Add Array(x, il, "", dg, g)
+            tR = tR + dg: nR = nR + 1
+            If g > 30 Then nRg = nRg + 1
+        End If
+    Next x
+    Set rez = liste
+    Set kal = SK_KALITE(ilSec, fiyat)
+    ' Kartlar
+    ws.Range("BZ21").Value2 = ADM_TL(tY) & "  •  " & nY & " kalem"
+    ws.Range("BZ22").Value2 = nY7 & " kalem"
+    ws.Range("BZ23").Value2 = nR & " kalem  •  " & ADM_TL(tR)
+    ws.Range("BZ24").Value2 = nRg & " kalem"
+    ws.Range(ws.Rows(3), ws.Rows(6)).RowHeight = 16.95
+    ws.Rows(7).RowHeight = 10: ws.Rows(8).RowHeight = 30: ws.Rows(9).RowHeight = 18
+    y = ws.Rows(3).top + 1
+    kw = (w - 3 * 12) / 4
+    Y_KPI ws, 1, 0, y, kw, 63.7, "YOLDAKÝ STOK (MB5T)", "$BZ$21", RGB(35, 119, 204)
+    Y_KPI ws, 2, kw + 12, y, kw, 63.7, "7 GÜNDEN UZUN YOLDA – GÝRÝÞ YAPILMALI", "$BZ$22", RGB(220, 38, 38)
+    Y_KPI ws, 3, 2 * (kw + 12), y, kw, 63.7, "AÇIK REZERVASYON (MB25)", "$BZ$23", RGB(124, 58, 237)
+    Y_KPI ws, 4, 3 * (kw + 12), y, kw, 63.7, "30 GÜNÜ GEÇEN REZERVASYON", "$BZ$24", RGB(234, 88, 12)
+    For i = 1 To 4
+        Set s = Y_SEKIL(ws, "Y_KPI_DEGER_" & i)
+        If Not s Is Nothing Then s.TextFrame2.TextRange.Font.Size = 14
+    Next i
+    y = ws.Rows(8).top + 1
+    bw = 108: i = 0
+    For Each ilv In Array("TUM", "ARTVIN", "TRABZON", "GUMUSHANE", "GIRESUN", "RIZE")
+        Set s = Y_DUGME(ws, "SK_IL_" & i, IIf(CStr(ilv) = "TUM", "TÜM ÝLLER", ATIL_IL_BUYUK(CStr(ilv))), i * (bw + 6), y, bw, 28, _
+            IIf(CStr(ilv) = ilSec, RGB(0, 125, 110), RGB(148, 163, 184)), "AKSORA_SAPK_IL_SEC")
+        s.AlternativeText = CStr(ilv)
+        i = i + 1
+    Next ilv
+    Y_DUGME ws, "SK_EXCEL", "EXCEL'E AKTAR", w - 150, y, 150, 28, RGB(33, 115, 70), "AKSORA_SAPK_EXCEL"
+    Y_DUGME ws, "SK_SAP", "SAP'DEN OKU (MB5T + MB25)", w - 150 - 12 - 210, y, 210, 28, RGB(12, 45, 79), "AKSORA_SAPK_OKU"
+    bilgi = "MB5T okumasý: " & SK_OKUMA_BILGI(SK_YOLDA) & "   |   MB25 okumasý: " & SK_OKUMA_BILGI(SK_REZERV) & _
+        "   |   Malzeme verisi: illerin günlük stok listelerinden (SAP gerekmez)   |   SAP'ye kayýt atýlmaz, yalnýz okunur"
+    On Error Resume Next
+    If Len(CStr(SK_VERI_HATA(SK_YOLDA))) > 0 Then bilgi = ChrW(9888) & "  Son okumada: " & SK_VERI_HATA(SK_YOLDA) & "   |   " & bilgi
+    On Error GoTo 0
+    ws.Range("A9").Value2 = bilgi
+    With ws.Range("A9").Font
+        .Name = "Aptos": .Size = 9: .Italic = (Left$(bilgi, 1) <> ChrW(9888)): .bold = (Left$(bilgi, 1) = ChrW(9888))
+        .Color = IIf(Left$(bilgi, 1) = ChrW(9888), RGB(185, 28, 28), RGB(100, 116, 139))
+    End With
+    ' 1) Yoldaki stok
+    r = 11
+    Y_BOLUM ws, r, "1) YOLDAKÝ STOK  •  " & nY & " kalem  •  " & ADM_TL(tY), _
+        "Gönderen ilin stoðundan düþtü, alan ilde giriþ yapýlmadý. 7 gün ve üstü: alan il giriþi unutmuþ olabilir.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Alan il (ÜY)", "Gönderen il (ÜY)", "Sistem", "Malzeme", "Kýsa metin", _
+        "Yoldaki miktar", "Birim", "Deðer", "Belge", "Tarih", "Gün", "Durum")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    If yolda.Count = 0 Then
+        ws.Cells(a1, 1).Value2 = IIf(SK_OKUMA_BILGI(SK_YOLDA) = "okunmadý", "Henüz okunmadý: SAP'DEN OKU (MB5T + MB25).", "Yoldaki stok yok.")
+        ws.Cells(a1, 1).Font.Italic = True: ws.Cells(a1, 1).Font.Color = RGB(100, 116, 139)
+        r = a1 + 2
+    Else
+        n = application.Min(yolda.Count, 800)
+        ReDim veri(1 To n, 1 To 12)
+        i = 0
+        For Each o In SK_SIRALI(yolda, 4)
+            i = i + 1: If i > n Then Exit For
+            x = o(0)
+            veri(i, 1) = IIf(Len(o(1)) > 0, Y_IL_ADI(CStr(o(1))), "") & " (" & x(1) & ")"
+            veri(i, 2) = IIf(Len(o(2)) > 0, Y_IL_ADI(CStr(o(2))), "") & IIf(Len(CStr(x(2))) > 0, " (" & x(2) & ")", "")
+            veri(i, 3) = x(0): veri(i, 4) = x(3): veri(i, 5) = x(4)
+            If Len(CStr(veri(i, 5))) = 0 And fiyat.Exists(Y_KOD_NORM(x(3))) Then veri(i, 5) = fiyat(Y_KOD_NORM(x(3)))(1)
+            veri(i, 6) = SK_SAYI(x(5)): veri(i, 7) = x(6)
+            If Len(CStr(veri(i, 7))) = 0 And fiyat.Exists(Y_KOD_NORM(x(3))) Then veri(i, 7) = fiyat(Y_KOD_NORM(x(3)))(2)
+            veri(i, 8) = Round(o(3), 2): veri(i, 9) = x(8)
+            If SK_SAYI(x(9)) > 0 Then veri(i, 10) = SK_SAYI(x(9)): veri(i, 11) = o(4)
+            If o(4) >= 7 Then
+                veri(i, 12) = "GÝRÝÞ YAPILMALI"
+            ElseIf o(4) >= 3 Then
+                veri(i, 12) = "TAKÝP EDÝN"
+            Else
+                veri(i, 12) = "YOLDA"
+            End If
+        Next o
+        sonR = a1 + n - 1
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 9), ws.Cells(sonR, 9)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 12), ws.Cells(sonR, 12)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 12)).Value2 = veri
+        SK_TABLO ws, a1, sonR
+        ws.Range(ws.Cells(a1, 10), ws.Cells(sonR, 10)).NumberFormat = "dd.mm.yyyy"
+        For i = 1 To n
+            SK_DURUM_RENK ws.Cells(a1 + i - 1, 12)
+        Next i
+        ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(sonR, 12)).AutoFilter
+        r = sonR + 2
+    End If
+    ' 2) Acik rezervasyonlar
+    Y_BOLUM ws, r, "2) AÇIK REZERVASYONLAR  •  " & nR & " kalem  •  " & ADM_TL(tR), _
+        "Ýhtiyaç tarihi geçmiþ ve çekilmemiþ rezervasyonlar stoðu kilitliyor: kullanýlacaksa çekin, kullanýlmayacaksa kapatýn.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Ýl (ÜY)", "Depo", "Sistem", "Malzeme", "Kýsa metin", _
+        "Açýk miktar", "Birim", "Deðer (stok fiyatýyla)", "Rezervasyon", "Ýhtiyaç tarihi", "Gecikme (gün)", "Durum / alýcý")
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    If rez.Count = 0 Then
+        ws.Cells(a1, 1).Value2 = IIf(SK_OKUMA_BILGI(SK_REZERV) = "okunmadý", "Henüz okunmadý: SAP'DEN OKU (MB5T + MB25).", "Açýk rezervasyon yok.")
+        ws.Cells(a1, 1).Font.Italic = True: ws.Cells(a1, 1).Font.Color = RGB(100, 116, 139)
+        r = a1 + 2
+    Else
+        n = application.Min(rez.Count, 1500)
+        ReDim veri(1 To n, 1 To 12)
+        i = 0
+        For Each o In SK_SIRALI(rez, 4)
+            i = i + 1: If i > n Then Exit For
+            x = o(0)
+            veri(i, 1) = IIf(Len(o(1)) > 0, Y_IL_ADI(CStr(o(1))), "") & " (" & x(1) & ")"
+            veri(i, 2) = x(2): veri(i, 3) = x(0): veri(i, 4) = x(3): veri(i, 5) = x(4)
+            If Len(CStr(veri(i, 5))) = 0 And fiyat.Exists(Y_KOD_NORM(x(3))) Then veri(i, 5) = fiyat(Y_KOD_NORM(x(3)))(1)
+            veri(i, 6) = SK_SAYI(x(5)): veri(i, 7) = x(6)
+            If Len(CStr(veri(i, 7))) = 0 And fiyat.Exists(Y_KOD_NORM(x(3))) Then veri(i, 7) = fiyat(Y_KOD_NORM(x(3)))(2)
+            veri(i, 8) = Round(o(3), 2): veri(i, 9) = x(8)
+            If SK_SAYI(x(7)) > 0 Then veri(i, 10) = SK_SAYI(x(7))
+            If o(4) > 0 Then veri(i, 11) = o(4)
+            If o(4) > 30 Then
+                durum = "TARÝHÝ GEÇTÝ – ÇEK / KAPAT"
+            ElseIf o(4) > 0 Then
+                durum = "TARÝHÝ GEÇTÝ"
+            Else
+                durum = "AÇIK"
+            End If
+            veri(i, 12) = durum & IIf(Len(CStr(x(9))) > 0, "  •  " & x(9), "")
+        Next o
+        sonR = a1 + n - 1
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 9), ws.Cells(sonR, 9)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 12), ws.Cells(sonR, 12)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 12)).Value2 = veri
+        SK_TABLO ws, a1, sonR
+        ws.Range(ws.Cells(a1, 10), ws.Cells(sonR, 10)).NumberFormat = "dd.mm.yyyy"
+        For i = 1 To n
+            SK_DURUM_RENK ws.Cells(a1 + i - 1, 12)
+        Next i
+        ws.Range(ws.Cells(a1 - 1, 1), ws.Cells(sonR, 12)).AutoFilter
+        r = sonR + 2
+    End If
+    ' 3) Malzeme veri kalitesi
+    Y_BOLUM ws, r, "3) MALZEME VERÝ KALÝTESÝ  •  " & kal.Count & " bulgu", _
+        "Ýptal kodlu stok, fiyatsýz YENÝ stok, ayný isimli farklý kodlar, ayný kodun farklý birimleri. Sahada yanlýþ koddan düþümün kaynaðý.", 12
+    ws.Rows(r).RowHeight = 30
+    r = r + 1
+    Y_BASLIK_SATIRI ws.Range(ws.Cells(r, 1), ws.Cells(r, 12)), Array("Kontrol", "Ýl", "Depo", "Malzeme", "Kýsa metin", _
+        "Miktar", "Birim", "Deðer", "Açýklama", "", "", "")
+    ws.Range(ws.Cells(r, 9), ws.Cells(r, 12)).Merge
+    ws.Rows(r).RowHeight = 30
+    a1 = r + 1
+    If kal.Count = 0 Then
+        ws.Cells(a1, 1).Value2 = "Bulgu yok."
+        ws.Cells(a1, 1).Font.Italic = True: ws.Cells(a1, 1).Font.Color = RGB(100, 116, 139)
+        r = a1 + 2
+    Else
+        n = application.Min(kal.Count, 1500)
+        ReDim veri(1 To n, 1 To 12)
+        i = 0
+        For Each x In kal
+            i = i + 1: If i > n Then Exit For
+            For j = 0 To 7: veri(i, j + 1) = x(j): Next j
+            If Not IsEmpty(x(7)) Then veri(i, 8) = Round(CDbl(x(7)), 2)
+            veri(i, 9) = x(8)
+        Next x
+        sonR = a1 + n - 1
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 5)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7)).NumberFormat = "@"
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 12)).Value2 = veri
+        For i = 1 To n
+            ws.Range(ws.Cells(a1 + i - 1, 9), ws.Cells(a1 + i - 1, 12)).Merge
+        Next i
+        SK_TABLO ws, a1, sonR
+        ws.Range(ws.Cells(a1, 9), ws.Cells(sonR, 12)).HorizontalAlignment = xlLeft
+        ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 1)).Font.Color = RGB(180, 83, 9)
+        r = sonR + 2
+    End If
+    Y_FILIGRAN ws
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, UserInterfaceOnly:=True, AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
+End Sub
+
+Private Function SK_VERI_HATA(ByVal ad As String) As String
+    Dim ws As Worksheet
+    Set ws = ADM_WS(ad)
+    If ws Is Nothing Then Exit Function
+    SK_VERI_HATA = CStr(ws.Range("A2").Value2)
+    Set ws = ADM_WS(SK_REZERV)
+    If Not ws Is Nothing Then
+        If Len(SK_VERI_HATA) = 0 Then SK_VERI_HATA = CStr(ws.Range("A2").Value2)
+    End If
+End Function
+
+' Liste (Array(veri, il, ilG, deger, gun)) gune gore azalan, sonra degere gore.
+Private Function SK_SIRALI(ByVal c As Collection, ByVal kol As Long) As Collection
+    Dim anah() As String, idx() As Long, n As Long, i As Long, x As Variant, s As Collection, ar() As Variant
+    Set s = New Collection
+    Set SK_SIRALI = s
+    n = c.Count
+    If n = 0 Then Exit Function
+    ReDim anah(1 To n): ReDim idx(1 To n): ReDim ar(1 To n)
+    For Each x In c
+        i = i + 1: idx(i) = i: ar(i) = x
+        anah(i) = Format$(99999 - application.Max(0, application.Min(99999, CLng(x(kol)))), "00000") & Format$(999999999999# - Round(CDbl(x(3)), 0), "000000000000")
+    Next x
+    Y_SIRALA anah, idx, 1, n
+    For i = 1 To n: s.Add ar(idx(i)): Next i
+End Function
+
+Private Sub SK_TABLO(ByVal ws As Worksheet, ByVal a1 As Long, ByVal sonR As Long)
+    Y_TABLO_GOVDE ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 12))
+    ws.Range(ws.Rows(a1), ws.Rows(sonR)).RowHeight = 20
+    ws.Range(ws.Cells(a1, 1), ws.Cells(sonR, 1)).Font.bold = True
+    ws.Range(ws.Cells(a1, 3), ws.Cells(sonR, 4)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 7), ws.Cells(sonR, 7)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 9), ws.Cells(sonR, 11)).HorizontalAlignment = xlCenter
+    ws.Range(ws.Cells(a1, 5), ws.Cells(sonR, 5)).ShrinkToFit = True
+    ws.Range(ws.Cells(a1, 12), ws.Cells(sonR, 12)).ShrinkToFit = True
+    AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(a1, 6), ws.Cells(sonR, 6))
+    ws.Range(ws.Cells(a1, 6), ws.Cells(sonR, 6)).Font.bold = True
+    ws.Range(ws.Cells(a1, 8), ws.Cells(sonR, 8)).NumberFormat = "#,##0.00 ""TL"""
+End Sub
+
+Private Sub SK_DURUM_RENK(ByVal c As Range)
+    Dim t As String
+    t = CStr(c.Value2)
+    c.Font.bold = True: c.HorizontalAlignment = xlCenter
+    If Left$(t, 15) = "GÝRÝÞ YAPILMALI" Or Left$(t, 12) = "TARÝHÝ GEÇTÝ" And InStr(t, "KAPAT") > 0 Then
+        c.Interior.Color = RGB(254, 226, 226): c.Font.Color = RGB(185, 28, 28)
+    ElseIf Left$(t, 10) = "TAKÝP EDÝN" Or Left$(t, 12) = "TARÝHÝ GEÇTÝ" Then
+        c.Interior.Color = RGB(254, 243, 199): c.Font.Color = RGB(180, 83, 9)
+    Else
+        c.Interior.Color = RGB(219, 234, 254): c.Font.Color = RGB(30, 64, 175)
+    End If
+End Sub
+
+Public Sub AKSORA_SAPK_EXCEL()
+    Dim ws As Worksheet, wb As Workbook, ac As Boolean, ev As Boolean, no As Long, metin As String, yol As String
+    Dim kaynak As Range, son As Long, ilSec As String
+    Set ws = ADM_WS(SK_SAYFA)
+    If ws Is Nothing Then Exit Sub
+    ilSec = CStr(ws.Range("BX20").Value2)
+    AKSORA_DONUS_KAYDET True
+    ac = AKSORA_BEKLE_AC("AKSORA  |  SAP KONTROL", "Excel hazýrlanýyor...", 0.2)
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    ' Sayfadaki uc tablo oldugu gibi (bicimleriyle) yeni kitaba kopyalanir.
+    son = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If son < 12 Then son = 12
+    AKSORA_DONUS_KAYDET
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    ws.Range(ws.Cells(11, 1), ws.Cells(son, 12)).Copy
+    wb.Worksheets(1).Range("A4").PasteSpecial xlPasteColumnWidths
+    wb.Worksheets(1).Range("A4").PasteSpecial xlPasteAll
+    application.CutCopyMode = False
+    With wb.Worksheets(1)
+        .Name = "SAP Kontrol"
+        .Range("A1").Value2 = "SAP KONTROL  |  " & IIf(ilSec = "TUM" Or Len(ilSec) = 0, "Tüm iller", Y_IL_ADI(ilSec)) & "  |  yoldaki stok, açýk rezervasyon, malzeme verisi"
+        .Range("A1").Font.bold = True: .Range("A1").Font.Size = 12
+        .Range("A2").Value2 = "Hazýrlama: " & Format$(Now, "dd.mm.yyyy hh:nn") & "  |  " & CStr(ws.Range("A9").Value2) & "  |  AKSORA"
+        .Range("A2").Font.Size = 9: .Range("A2").Font.Color = RGB(89, 89, 89)
+        .Range("A1").Select
+    End With
+    yol = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("SAP Kontrol - " & IIf(ilSec = "TUM" Or Len(ilSec) = 0, "Tüm Ýller", Y_IL_ADI(ilSec)) & " - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(yol) > 0 Then application.StatusBar = "Masaüstüne kaydedildi: " & yol
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    application.CutCopyMode = False
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "SAP kontrol Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub

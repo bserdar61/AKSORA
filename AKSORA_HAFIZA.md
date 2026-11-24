@@ -904,3 +904,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - ATIL STOK: "EXCEL'E AKTAR" (AKSORA_ATIL_EXCEL): atil + 3 ay + 6 ay kalan butun kalemler; Tum Iller + diger iller + en sonda kendi ili sayfalari; depolar, riskli miktar/deger, durum renkli, transfer onerisi.
 - modAKSORA_BIRIM'de LF-only satirlar (onceki eklemeden) CRLF'e cevrildi.
 - Demontaj ikame metni kisa: kullanilan 'Yerine girilen: TANIM • 25 M', demontaj girisi 'Şunun yerine: TANIM • 25 M' (notlar veren anahtari 'V|'); N sutunu ShrinkToFit. DEMONTAJ EKSIKLERI EXCEL'E AKTAR artik ikameleri de 'İKAME - TEYİT EDİN' durumuyla ve Aciklama sutunuyla listeler (I_DEM_EKSIK ikameDahil).
+
+## SAP KONTROL sayfasi (2026-11-24)
+- Yeni Malzeme birimi sayfasi "SAP_KONTROL" (modAKSORA_ANALIZ sonu, SK_*), ANA PANEL'de "SAP KONTROL" dugmesi (goSapKontrol, alt sira 12 dugme).
+- SAP'DEN OKU (MB5T + MB25): her sistem (CDP, EPP) icin 5 ilin uretim yerleri coklu secimle (ATIL_COKLU_PANO; alan adi secim ekranindan bulunur: SK_ALAN "...WERKS-LOW", MB5T'de RESWK haric). Sonuc ALV tablosu metin olarak (AKSORA_ALV_METIN_AL); sutunlar basliktan (SK_KOL). Yalniz okuma.
+- Kayit: gizli _SAPK_YOLDA / _SAPK_REZERV (A1 okuma zamani, A2 hatalar, 3. satirdan 10 sutun). Okunamayan sistemin eski satirlari korunur.
+- Sayfa: kartlar (yoldaki stok degeri, 7+ gun yolda, acik rezervasyon, 30+ gun gecmis rezervasyon), il secimi, 1) yoldaki stok (GIRIS YAPILMALI >= 7 gun), 2) acik rezervasyonlar (TARIHI GECTI - CEK / KAPAT > 30 gun), 3) malzeme veri kalitesi (SK_KALITE: IPTAL kodlu stok, fiyatsiz YENI stok, ayni tanim farkli kod, ayni kod farkli birim; SAP'siz). Deger yoksa stok birim fiyati (SK_FIYAT). EXCEL'E AKTAR sayfayi bicimleriyle kopyalar.
+- Ihtiyac Bul: acik rezervasyonlar (UY|depo|malzeme) kullanilabilir stoktan duser (AKSORA_SAPK_REZERV).
+- SAP ekran / sutun adlari bu sistemde denenmedi: ilk okumada AKSORA_SAP_TESHIS.txt'deki "SAP kontrol" satirlari (baslik, sutun eslesmesi) kontrol edilmeli.

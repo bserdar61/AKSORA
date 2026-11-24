@@ -893,10 +893,23 @@ Private Sub T_PanelHizala(ByVal ws As Worksheet)
         s.TextFrame2.TextRange.Text = "ÝHTÝYAÇ BUL"
         s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_IHTIYAC_AC"
     End If
+    ' SAP KONTROL dugmesi (yoldaki stok, rezervasyon, malzeme verisi).
+    Set s = T_Sekil(ws, "goSapKontrol")
+    If s Is Nothing Then
+        Set s = T_Sekil(ws, "goStokKarsilastir")
+        If Not s Is Nothing Then
+            Set s = s.Duplicate
+            s.Name = "goSapKontrol"
+        End If
+    End If
+    If Not s Is Nothing Then
+        s.TextFrame2.TextRange.Text = "SAP KONTROL"
+        s.OnAction = "'" & Replace(ThisWorkbook.Name, "'", "''") & "'!AKSORA_SAPK_AC"
+    End If
     Set r = ws.Range("B25:T26")
-    bw = (r.Width - 10 * 8) / 11
+    bw = (r.Width - 11 * 8) / 12
     i = 0
-    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma", "goTransfer", "goIhtiyac")
+    For Each ad In Array("goStok", "goRapor", "goCDP", "goEPP", "goIlce", "goYuk", "goStokKarsilastir", "goAtilStok", "goSatinalma", "goTransfer", "goIhtiyac", "goSapKontrol")
         Set s = T_Sekil(ws, CStr(ad))
         If Not s Is Nothing Then T_Yerlestir s, r.Left + i * (bw + 8), r.top + 1, bw, r.Height - 2
         i = i + 1

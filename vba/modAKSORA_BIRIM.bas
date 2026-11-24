@@ -361,7 +361,7 @@ Public Function AKSORA_BIRIM_OLAY(ByVal sh As Object) As Boolean
         AKSORA_BIRIM_OLAY = True
         Exit Function
     End If
-    If AKSORA_ATIL_SAYFA(sh) Or AKSORA_SATINALMA_SAYFA(sh) Or AKSORA_KRITIK_SAYFA(sh) Or AKSORA_TRANSFER_SAYFA(sh) Or AKSORA_IHTIYAC_SAYFA(sh) Then
+    If AKSORA_ATIL_SAYFA(sh) Or AKSORA_SATINALMA_SAYFA(sh) Or AKSORA_KRITIK_SAYFA(sh) Or AKSORA_TRANSFER_SAYFA(sh) Or AKSORA_IHTIYAC_SAYFA(sh) Or AKSORA_SAPK_SAYFA(sh) Then
         AKSORA_YATIRIM_GORUNUM sh
         AKSORA_BIRIM_OLAY = True
         Exit Function
@@ -381,7 +381,7 @@ Public Function AKSORA_BIRIM_AKTIF_GORUNUM() As Boolean
     End If
     If AKSORA_YATIRIM_SAYFA(ActiveSheet) Or AKSORA_ILCE_SAYFA(ActiveSheet) Or AKSORA_ATIL_SAYFA(ActiveSheet) Or _
         AKSORA_SATINALMA_SAYFA(ActiveSheet) Or AKSORA_KRITIK_SAYFA(ActiveSheet) Or AKSORA_TRANSFER_SAYFA(ActiveSheet) Or _
-        AKSORA_IHTIYAC_SAYFA(ActiveSheet) Then
+        AKSORA_IHTIYAC_SAYFA(ActiveSheet) Or AKSORA_SAPK_SAYFA(ActiveSheet) Then
         AKSORA_YATIRIM_GORUNUM ActiveSheet
         AKSORA_BIRIM_AKTIF_GORUNUM = True
         Exit Function
