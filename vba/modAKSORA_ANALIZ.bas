@@ -5931,22 +5931,10 @@ Private Function SK_ALAN_ARA(ByVal o As Object, ByVal anahtar As String, ByVal h
     Next i
 End Function
 
-' Coklu secim (5 ilin uretim yerleri). Alan alt ekranda olsa da dugme adi ayni kalibi izler; yoksa hata.
+' Coklu secim (5 ilin uretim yerleri): MB51 ile ayni yol (secim ekrani kimlikleri duz: wnd[0]/usr/btn%_<alan>_%_APP_%-VALU_PUSH).
+' MB5T: "Alan uretim yeri" (WERKS), MB25: "Uretim yeri" (WERKS). Diger alanlar SAP varsayilaninda kalir (MB25: Acik rezervasyonlar).
 Private Sub SK_COKLU(ByVal ses As Object, ByVal alan As String, ByRef uy() As String)
-    Dim b As Object
-    Set b = SK_BUL(ses.FindById("wnd[0]/usr"), "btn%_" & UCase$(alan) & "_%_APP_%-VALU_PUSH", 0)
-    If b Is Nothing Then Err.Raise vbObjectError + 2361, , "üretim yeri çoklu seçim düðmesi yok (" & alan & ")"
-    ATIL_PANO_YAZ Join(uy, vbCrLf)
-    b.Press: ATIL_BEKLE ses
-    ATIL_COKLU_SIL ses
-    Dim pb As Object, ilk As String
-    On Error Resume Next
-    ses.FindById("wnd[1]/usr/tabsTAB_STRIP/tabpSIVA").Select
-    On Error GoTo 0
-    Set pb = ses.FindById("wnd[1]/tbar[0]/btn[24]", False)
-    If pb Is Nothing Then Err.Raise vbObjectError + 2343, , "SAP 'Panodan yükle' düðmesi bulunamadý."
-    pb.Press: ATIL_BEKLE ses
-    ses.FindById("wnd[1]/tbar[0]/btn[8]").Press: ATIL_BEKLE ses
+    ATIL_COKLU_PANO ses, alan, uy
 End Sub
 
 Private Function SK_BUL(ByVal o As Object, ByVal ad As String, ByVal derinlik As Long) As Object
