@@ -1670,6 +1670,7 @@ Private Sub ATIL_CIZ(ByVal ws As Worksheet, ByVal ilSec As String)
     Next il
     Y_DUGME ws, "ATIL_YENILE", "YENÝLE", w - 300 - 6, y, 150, 28, RGB(20, 103, 173), "AKSORA_ATIL_AC"
     Y_DUGME ws, "ATIL_SAP", "SAP'DEN OKU (MB51)", w - 150, y, 150, 28, RGB(12, 45, 79), "AKSORA_ATIL_SAP_OKU"
+    Y_DUGME ws, "ATIL_EXCEL", "EXCEL'E AKTAR", w - 450 - 12, y, 150, 28, RGB(33, 115, 70), "AKSORA_ATIL_EXCEL"
     If gec Then
         okMetin = "Atýl: eldeki stoðun 24 aydan eski giriþe ait kýsmý  •  D, K ve yüklenici depolarý   |   SAP okumasý: CDP " & _
             IIf(bilgi(0) > 0, Format$(bilgi(0), "dd.mm.yyyy"), "-") & "  •  EPP " & IIf(bilgi(1) > 0, Format$(bilgi(1), "dd.mm.yyyy"), "-") & _
@@ -5599,4 +5600,109 @@ Hata:
     If ac Then AKSORA_BEKLE_KAPAT
     On Error GoTo 0
     MsgBox "Ýhtiyaç listesi Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
+End Sub
+
+' ATIL STOK: atil ve atila yaklasan (6 ay / 3 ay kaldi) butun malzemeler Excel'e: tum iller + her il ayri sayfa
+' (once diger iller, en sonda kendi ili). Il kendisi incelesin diye transfer onerisi de yazilir.
+Public Sub AKSORA_ATIL_EXCEL()
+    Dim c As Collection, bilgi As Variant, x As Variant, wb As Workbook, ac As Boolean, ev As Boolean, no As Long, metin As String
+    Dim satir() As Variant, anah() As String, idx() As Long, n As Long, i As Long, j As Long, sayfa As Long, kendi As String
+    Dim iller As Collection, il As Variant, veri() As Variant, m As Long, top As Double, yol As String, ws As Worksheet, k As Long
+    If AKSORA_V11_MESGUL Or AKSORA_ATIL_CALISIYOR Then Exit Sub
+    AKSORA_DONUS_KAYDET True
+    ac = AKSORA_BEKLE_AC("AKSORA  |  ATIL STOK", "Atýl stok listesi Excel'e hazýrlanýyor...", 0.1)
+    ev = application.EnableEvents
+    On Error GoTo Hata
+    application.EnableEvents = False: application.ScreenUpdating = False
+    AN_ONB_AC
+    Set c = ATIL_HESAPLA(bilgi)
+    AN_ONB_KAPAT
+    For Each x In c
+        If x(10) >= 1 Then n = n + 1
+    Next x
+    If n = 0 Then
+        application.EnableEvents = ev: application.ScreenUpdating = True
+        If ac Then AKSORA_BEKLE_KAPAT
+        MsgBox "Atýl ya da atýla yaklaþan malzeme yok (önce SAP'DEN OKU (MB51)).", vbInformation, "AKSORA"
+        Exit Sub
+    End If
+    ReDim satir(1 To n): ReDim anah(1 To n): ReDim idx(1 To n)
+    For Each x In c
+        If x(10) >= 1 Then
+            i = i + 1: satir(i) = x: idx(i) = i
+            anah(i) = CStr(x(0)) & "|" & CStr(9 - x(10)) & Format$(999999999999# - Round(x(22), 0), "000000000000") & CStr(x(3))
+        End If
+    Next x
+    Y_SIRALA anah, idx, 1, n
+    kendi = vbNullString
+    kendi = AKSORA_AKTIF_IL()
+    Set iller = New Collection
+    iller.Add "TUM"
+    For Each il In ADM_ILLER()
+        If CStr(il) <> kendi Then iller.Add CStr(il)
+    Next il
+    If Len(kendi) > 0 Then iller.Add kendi
+    AKSORA_DONUS_KAYDET
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    For Each il In iller
+        m = 0: top = 0
+        For i = 1 To n
+            x = satir(idx(i))
+            If il = "TUM" Or CStr(x(0)) = il Then m = m + 1: top = top + x(22)
+        Next i
+        If m > 0 Then
+            sayfa = sayfa + 1
+            If sayfa > wb.Worksheets.Count Then wb.Worksheets.Add After:=wb.Worksheets(wb.Worksheets.Count)
+            Set ws = wb.Worksheets(sayfa)
+            ReDim veri(1 To m, 1 To 14)
+            j = 0
+            For i = 1 To n
+                x = satir(idx(i))
+                If il = "TUM" Or CStr(x(0)) = il Then
+                    j = j + 1
+                    veri(j, 1) = Y_IL_ADI(CStr(x(0))): veri(j, 2) = x(1): veri(j, 3) = CStr(x(3)): veri(j, 4) = x(4)
+                    veri(j, 5) = x(5): veri(j, 6) = ATIL_DEPO_METIN(x(15)): veri(j, 7) = x(6): veri(j, 8) = x(7)
+                    veri(j, 9) = x(21): veri(j, 10) = Round(x(22), 2): veri(j, 11) = CStr(x(9)): veri(j, 12) = x(11)
+                    veri(j, 13) = ATIL_DURUM_ADI(CLng(x(10)))
+                    If Len(x(13)) > 0 Then veri(j, 14) = Y_IL_ADI(CStr(x(13))) & " (" & x(18) & ")" Else veri(j, 14) = vbNullString
+                End If
+            Next i
+            AKSORA_EXCEL_SAYFA ws, Array("Ýl", "Sistem", "Malzeme", "Taným", "Kategori", "Depolar (adet)", "Stok", "Birim", _
+                "Riskli miktar", "Riskli deðer (TL)", "Riskli giriþ", "Gün sayacý", "Durum", "Transfer önerisi"), veri, m, _
+                Array(12, 8, 13, 42, 11, 34, 11, 7, 12, 17, 12, 18, 13, 22), _
+                Array("@", "@", "0", "@", "@", "@", "General", "@", "General", "#,##0.00 ""TL""", "@", "@", "@", "@"), _
+                Array(xlCenter, xlCenter, xlCenter, xlLeft, xlCenter, xlLeft, xlRight, xlCenter, xlRight, xlRight, xlCenter, xlCenter, xlCenter, xlLeft), _
+                "ATIL STOK  |  " & IIf(il = "TUM", "Tüm iller", Y_IL_ADI(CStr(il))) & "  |  " & m & " kalem  |  riskli deðer " & _
+                    AKSORA_SAYI_METNI(Round(top, 2), "#,##0.00") & " TL", _
+                "Atýl: 24 aydan eski giriþ; 3 / 6 ay kaldý: atýla yaklaþan  •  D, K ve yüklenici depolarý", _
+                IIf(il = "TUM", "Tüm Ýller", Y_IL_ADI(CStr(il)) & IIf(CStr(il) = kendi, " (kendi)", "")), Empty
+            AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(5, 7), ws.Cells(m + 4, 7))
+            AKSORA_V13_MIKTAR_BICIMI ws.Range(ws.Cells(5, 9), ws.Cells(m + 4, 9))
+            For k = 1 To m
+                Select Case CStr(veri(k, 13))
+                    Case "ATIL": ws.Cells(k + 4, 13).Interior.Color = RGB(220, 38, 38): ws.Cells(k + 4, 13).Font.Color = vbWhite
+                    Case "3 AY KALDI": ws.Cells(k + 4, 13).Interior.Color = RGB(253, 186, 116)
+                    Case "6 AY KALDI": ws.Cells(k + 4, 13).Interior.Color = RGB(254, 240, 138)
+                End Select
+            Next k
+            ws.Range(ws.Cells(5, 13), ws.Cells(m + 4, 13)).Font.bold = True
+        End If
+    Next il
+    wb.Worksheets(1).Activate
+    yol = AKSORA_EXCEL_BITIR(wb, AKSORA_MASAUSTU() & application.PathSeparator & _
+        AKSORA_DOSYA_ADI("Atýl Stok - Tüm Ýller - " & Format$(Date, "dd.mm.yyyy")) & ".xlsx", False)
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    If Len(yol) > 0 Then application.StatusBar = "Masaüstüne kaydedildi: " & yol
+    Exit Sub
+Hata:
+    no = Err.Number: metin = Err.Description
+    On Error Resume Next
+    AN_ONB_KAPAT
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    ThisWorkbook.Activate
+    application.EnableEvents = ev: application.ScreenUpdating = True
+    If ac Then AKSORA_BEKLE_KAPAT
+    On Error GoTo 0
+    MsgBox "Atýl stok Excel'e aktarýlamadý." & vbCrLf & vbCrLf & metin & " (" & no & ")", vbExclamation, "AKSORA"
 End Sub
