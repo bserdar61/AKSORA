@@ -2794,6 +2794,7 @@ Public Sub AKSORA_SATINALMA_EXCEL()
         Array("@", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0", "#,##0", "#,##0.00 ""TL""", "#,##0.00 ""TL""", "#,##0", "#,##0", "#,##0"), _
         Array(xlLeft, xlCenter, xlCenter, xlRight, xlCenter, xlCenter, xlRight, xlRight, xlCenter, xlCenter, xlCenter), ust, _
         "Tasarruf: atýl stoktan karþýlanabilen miktar (paylaþtýrmalý) x AKSORA stok birim deðeri", "Özet", Empty
+    c.Range("A2").Value2 = Replace(CStr(c.Range("A2").Value2), "  |  " & i & " kalem", "  |  " & (i - 1) & " il")
     c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 11)).Font.bold = True
     c.Range(c.Cells(i + 4, 1), c.Cells(i + 4, 11)).Interior.Color = RGB(226, 236, 247)
     c.Range(c.Cells(5, 8), c.Cells(i + 4, 8)).Font.bold = True
@@ -3494,6 +3495,8 @@ Private Function KS_AY_SAYISI(ByVal t As String) As Long
             If x > 0.0005 Then n = n + 1
         End If
     Next p
+    ' Son 6 ay penceresi 7 takvim ayina dokunabilir; gosterim 6 ile sinirli.
+    If n > 6 Then n = 6
     KS_AY_SAYISI = n
 End Function
 

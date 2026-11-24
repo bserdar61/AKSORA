@@ -916,3 +916,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - SAP KONTROL: islem /n<kod> ile acilir (SK_ISLEM_AC); acilista islem kodu, program, baslik, durum cubugu ve varsa SAP penceresi (yetki vb.) teshise ve hata mesajina yazilir. Alan once bilinen adlarla (WERKS, S_, SO_, P_, RM_) dogrudan denenir. Ilk denemede ekranda hic giris alani yoktu (secim ekrani acilmamis).
 - SAP KONTROL: MB5T (RM07MTRB) ve MB25 (RM07RESLH) secim ekranlari kullanicidan goruldu: MB5T 'Alan uretim yeri' = WERKS, MB25 'Uretim yeri' = WERKS. Coklu secim dugmesi icin ATIL_COKLU_PANO (duz kimlik btn%_WERKS_%_APP_%-VALU_PUSH); onceki ic ice arama Name ile Id farkindan dugmeyi bulamiyordu.
 - Atil / Transfer Excel incelemesi (24.11): atil 1770 satirin stok, depo toplami, riskli miktar/deger, gun sayaci guncel stokla birebir; transfer 313 satirda gonderen stogu yeterli, gerekcedeki alici stoklari dogru, mukerrer / celisen yok. Atil Excel baslik toplami satirlarin yuvarlanmis toplamiyla (kurus farki vardi).
+
+## 24.11.2026 - Mudur oncesi Excel kontrolu (Transfer / Atil / Satin Alma)
+- Transfer (313 satir) ve Atil (1770 satir) stokla birebir tutarli; baslik toplamlari satir toplamlariyla ayni.
+- Satin Alma: talep/siparis serbest stok (D/K), atil paylastirmasi (ayni il once, sonra en buyuk il), tasarruf = karsilanir x alan ilin birim degeri, Ozet = detay toplamlari: hepsi tutarli.
+  Satin Alinacaklar = Stok Kapsami'ndaki KRITIK/AZALIYOR ve alinacak > 0 kalemleri; alinacak formulu ve durum kurallari dogrulandi.
+- Duzeltme: "Sarf olan ay sayisi" 6 ile sinirli (son 6 ay penceresi 7 takvim ayina dokunuyordu); Ozet basligi "6 kalem" yerine "5 il".
