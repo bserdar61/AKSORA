@@ -5856,13 +5856,56 @@ End Sub
 ' Secim ekraninda alanin adi (ornek WERKS, S_WERKS, RM_WERKS): adi "...<anahtar>-LOW" ile biten giris alani; alanlar
 ' kutu / alt ekran icinde olabilir (ic ice aranir). Bulunamazsa ekrandaki giris alanlarinin adlari teshise yazilir.
 Private Function SK_ALAN(ByVal ses As Object, ByVal anahtar As String, Optional ByVal haric As String, Optional ByVal etiket As String) As String
-    Dim usr As Object, adlar As String
+    Dim usr As Object, adlar As String, k As Variant
+    ' Bilinen adlar once dogrudan denenir.
+    For Each k In Array(anahtar, "S_" & anahtar, "SO_" & anahtar, "P_" & anahtar, "RM_" & anahtar)
+        If Not ses.FindById("wnd[0]/usr/ctxt" & k & "-LOW", False) Is Nothing Then SK_ALAN = CStr(k): Exit Function
+    Next k
     On Error Resume Next
     Set usr = ses.FindById("wnd[0]/usr")
     On Error GoTo 0
     If usr Is Nothing Then Exit Function
     SK_ALAN = SK_ALAN_ARA(usr, UCase$(anahtar), UCase$(haric), adlar, 0)
-    If Len(SK_ALAN) = 0 Then AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | " & anahtar & " alaný yok. Ekrandaki alanlar: " & Left$(adlar, 1500) & " | " & ATIL_SBAR(ses)
+    If Len(SK_ALAN) = 0 Then AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | " & anahtar & " alaný yok. Ekrandaki alanlar: " & Left$(adlar, 1500) & " | " & SK_EKRAN(ses)
+End Function
+
+' Ekran bilgisi (teshis): islem kodu, pencere basligi, durum cubugu, acik SAP penceresi.
+Private Function SK_EKRAN(ByVal ses As Object) As String
+    Dim t As String, p As Object
+    On Error Resume Next
+    t = "iþlem: " & ses.Info.Transaction & "  |  program: " & ses.Info.Program & "  |  baþlýk: " & ses.FindById("wnd[0]").Text & "  |  " & ATIL_SBAR(ses)
+    Set p = ses.FindById("wnd[1]", False)
+    If Not p Is Nothing Then
+        Dim pt As String
+        pt = p.Text
+        ATIL_METIN_TOPLA p, pt, 0
+        t = t & "  |  SAP penceresi: " & Left$(pt, 300)
+    End If
+    SK_EKRAN = t
+End Function
+
+' Islem acilir; SAP penceresi (yetki / islem yok) cikarsa metni hata olarak doner.
+Private Function SK_ISLEM_AC(ByVal ses As Object, ByVal tx As String, ByVal etiket As String) As String
+    Dim p As Object, t As String
+    On Error Resume Next
+    ses.FindById("wnd[0]/tbar[0]/okcd").Text = "/n" & tx
+    ses.FindById("wnd[0]").SendVKey 0
+    If Err.Number <> 0 Then Err.Clear: ses.StartTransaction tx
+    On Error GoTo 0
+    ATIL_BEKLE ses
+    AKSORA_SAP_TESHIS_YAZ "SAP kontrol " & etiket & " | açýldý: " & SK_EKRAN(ses)
+    Set p = ses.FindById("wnd[1]", False)
+    If Not p Is Nothing Then
+        On Error Resume Next
+        t = p.Text
+        ATIL_METIN_TOPLA p, t, 0
+        p.SendVKey 0: ATIL_BEKLE ses
+        On Error GoTo 0
+        SK_ISLEM_AC = "SAP penceresi: " & Trim$(Left$(t, 200))
+        Exit Function
+    End If
+    t = ATIL_SBAR(ses)
+    If InStr(t, "[E]") > 0 Or InStr(t, "[A]") > 0 Then SK_ISLEM_AC = "SAP: " & Trim$(t)
 End Function
 
 Private Function SK_ALAN_ARA(ByVal o As Object, ByVal anahtar As String, ByVal haric As String, ByRef adlar As String, ByVal derinlik As Long) As String
@@ -6000,7 +6043,8 @@ Private Function SK_MB5T(ByVal ses As Object, ByVal sis As String, ByRef uy() As
     Set c = New Collection
     Set SK_MB5T = c
     On Error GoTo Hata
-    ses.StartTransaction "MB5T": ATIL_BEKLE ses
+    hata = SK_ISLEM_AC(ses, "MB5T", "MB5T_" & sis)
+    If Len(hata) > 0 Then Exit Function
     alan = SK_ALAN(ses, "WERKS", "RESWK", "MB5T_" & sis)
     If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (alan adlarý teþhiste)": Exit Function
     SK_COKLU ses, alan, uy
@@ -6044,7 +6088,8 @@ Private Function SK_MB25(ByVal ses As Object, ByVal sis As String, ByRef uy() As
     Set c = New Collection
     Set SK_MB25 = c
     On Error GoTo Hata
-    ses.StartTransaction "MB25": ATIL_BEKLE ses
+    hata = SK_ISLEM_AC(ses, "MB25", "MB25_" & sis)
+    If Len(hata) > 0 Then Exit Function
     alan = SK_ALAN(ses, "WERKS", , "MB25_" & sis)
     If Len(alan) = 0 Then hata = "seçim ekranýnda üretim yeri alaný bulunamadý (alan adlarý teþhiste)": Exit Function
     SK_COKLU ses, alan, uy
