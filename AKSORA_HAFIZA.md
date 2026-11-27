@@ -956,3 +956,6 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - DUZELTME: "/PANEL BS" baskasinin duzeni (Parti yok, Birim fiyat/Deger yer degistirmis, PB var) -> kabul GERI ALINDI. Yalniz PANEL ve /PANEL.
   Sahipte CDP'de genel "/PANEL - MLZ STOK PANEL" var (arkadasin CDP'si bu yuzden calisti); EPP'de yalniz kullaniciya ozel "PANEL" var.
   Cozum sahipte: EPP MB52'de PANEL'i "/PANEL" (MLZ STOK PANEL, kullaniciya ozel isaretsiz) olarak kaydetmek.
+- /PANEL artik bulunuyor ama arkadasin EPP listesinde Parti sutunu YOK (duzende var). Sebep: MB52 secim ekraninda parti stoklari kutusu
+  kullaniciya gore isaretsiz -> SAP CHARG alanini cikarir. AKHZ_PARTI_AC: once wnd[0]/usr/chkXMCHB, yoksa metninde "PARTI" gecen
+  (GOSTERME/GIZLE icermeyen) kutu isaretlenir; tum kutular teshise yazilir ("MB52 <sis> kutular: ..."). Parti sutunu yoksa net mesaj.

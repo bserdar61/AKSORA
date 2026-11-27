@@ -1035,6 +1035,34 @@ Private Function AKHZ_GRID(ByVal ses As Object, ByVal saniye As Double) As Objec
     Loop
 End Function
 
+' MB52 seçim ekraný: parti stoklarý gösterilmezse SAP Parti sütununu listeden çýkarýr (düzende olsa da).
+' Kullanýcýdan kullanýcýya deðiþen bu kutu her okumada iþaretlenir; ekrandaki kutular teþhise yazýlýr.
+Private Sub AKHZ_PARTI_AC(ByVal ses As Object, ByVal sistem As String)
+    Dim usr As Object, k As Object, i As Long, t As String, bulundu As Boolean, kayit As String
+    On Error Resume Next
+    Set k = ses.FindById("wnd[0]/usr/chkXMCHB", False)
+    If Not k Is Nothing Then
+        If Not k.Selected Then k.Selected = True
+        bulundu = True
+    End If
+    Set usr = ses.FindById("wnd[0]/usr", False)
+    If Not usr Is Nothing Then
+        For i = 0 To usr.Children.Count - 1
+            Set k = usr.Children(CLng(i))
+            If k.Type = "GuiCheckBox" Then
+                t = Y_NORM(CStr(k.Text))
+                kayit = kayit & " | " & Mid$(CStr(k.Id), InStrRev(CStr(k.Id), "/") + 1) & "=" & IIf(k.Selected, "X", "-") & " " & CStr(k.Text)
+                If Not bulundu And InStr(t, "PARTI") > 0 And InStr(t, "GOSTERME") = 0 And InStr(t, "GIZLE") = 0 Then
+                    If Not k.Selected Then k.Selected = True
+                    bulundu = True
+                End If
+            End If
+        Next i
+    End If
+    AKSORA_SAP_TESHIS_YAZ "MB52 " & sistem & " kutular:" & kayit & IIf(bulundu, " | parti kutusu iþaretlendi", " | parti kutusu bulunamadý")
+    Err.Clear
+End Sub
+
 Private Function AKHZ_PANEL(ByVal ses As Object) As Boolean
     Dim duzen As Object, i As Long, ad As String, tanim As String, bulunan As Long, bas As Double
     On Error GoTo Hata
@@ -1108,6 +1136,8 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
     ses.FindById("wnd[0]").SendVKey 0
     AKHZ_BEKLE 0.3
+    adim = "MB52 parti stoklarý"
+    AKHZ_PARTI_AC ses, sistem
     adim = "MB52 çalýþtýrma"
     ses.FindById("wnd[0]").SendVKey 8
     Set alv = AKHZ_GRID(ses, 900)
@@ -1155,6 +1185,9 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " ilk satýr:" & t & " | kayma " & kayma
     If kayma < 0 Then mesaj = "Üretim yeri sütunu bulunamadý": Exit Function
     If UBound(v, 2) - kayma < 12 Then mesaj = "Metin dosyasýnda 12 sütun yok": Exit Function
+    If InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 6))), "PARTI") = 0 Then
+        mesaj = "Listede Parti sütunu yok (MB52 seçim ekranýnda 'parti stoklarý' kutusu iþaretli olmalý)": Exit Function
+    End If
     ' Sutun sirasi dogrulamasi: farkli siradaki bir duzenle yanlis sutun okunmasin.
     If InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 7))), "MALZEME") = 0 Or _
        InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 9))), "TAHD") = 0 Or _
