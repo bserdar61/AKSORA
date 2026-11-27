@@ -3374,6 +3374,37 @@ Public Function AKSORA_PANEL_DUZEN_MI(ByVal ad As String) As Boolean
     AKSORA_PANEL_DUZEN_MI = (ad = "PANEL")
 End Function
 
+' MB52 PANEL duzeni sutun sirasi: 6. Parti (CHARG), 7. Malzeme (MATNR), 9. Tahditsiz (LABST).
+' Farkli siradaki duzenle ilk 12 sutun kayar, stok sayfasi bozulur (atil, transfer de bozulur): okuma durdurulur.
+' Bos donus: sorun yok (kontrol yapilamazsa da bos doner, okuma engellenmez).
+Public Function AKSORA_PANEL_KOLON_HATA(ByVal alv As Object) As String
+    Dim co As Object
+    On Error GoTo Yok
+    If alv Is Nothing Then Exit Function
+    Set co = alv.ColumnOrder
+    If CLng(co.Count) < 12 Then AKSORA_PANEL_KOLON_HATA = "PANEL düzeninde 12 sütun yok.": Exit Function
+    If Not AK_KOLON_UYAR(alv, CStr(co.Item(5)), "CHARG", "PARTI", "") Or _
+       Not AK_KOLON_UYAR(alv, CStr(co.Item(6)), "MATNR", "MALZEME", "METN") Or _
+       Not AK_KOLON_UYAR(alv, CStr(co.Item(8)), "LABST", "TAHD", "") Then
+        AKSORA_PANEL_KOLON_HATA = "Seçilen SAP düzeni AKSORA PANEL düzeni deðil: 6. sütun Parti, 7. Malzeme, 9. Tahditsiz olmalý. " & _
+            "Stok sayfasý deðiþtirilmedi. SAP'de /PANEL düzenini kontrol edin."
+    End If
+    Exit Function
+Yok:
+End Function
+
+Private Function AK_KOLON_UYAR(ByVal alv As Object, ByVal id As String, ByVal teknik As String, ByVal baslik As String, ByVal haric As String) As Boolean
+    Dim t As Object, i As Long, b As String
+    If UCase$(id) = teknik Then AK_KOLON_UYAR = True: Exit Function
+    On Error Resume Next
+    Set t = alv.GetColumnTitles(id)
+    If t Is Nothing Then Exit Function
+    For i = 0 To CLng(t.Count) - 1
+        b = Y_NORM(CStr(t.Item(i)))
+        If InStr(b, baslik) > 0 And (Len(haric) = 0 Or InStr(b, haric) = 0) Then AK_KOLON_UYAR = True: Exit Function
+    Next i
+End Function
+
 Public Function AKSORA_SAYFA(ByVal ad As String) As Worksheet
     Dim ws As Worksheet, hedef As String
     hedef = Y_NORM(ad)

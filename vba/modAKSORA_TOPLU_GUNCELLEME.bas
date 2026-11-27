@@ -1152,6 +1152,7 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     Set alv = AKHZ_GRID(ses, 60)
     If alv Is Nothing Then mesaj = "Liste hazýr olmadý": Exit Function
     If CLng(alv.ColumnOrder.Count) < 12 Then mesaj = "PANEL düzeninde 12 sütun yok": Exit Function
+    mesaj = AKSORA_PANEL_KOLON_HATA(alv): If Len(mesaj) > 0 Then Exit Function
     adim = "liste dýþa aktarma"
     satirSayisi = CLng(alv.RowCount)
     v = AKSORA_ALV_METIN_AL(ses, alv, "TOPLU_" & sistem)

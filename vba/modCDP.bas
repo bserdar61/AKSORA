@@ -952,6 +952,7 @@ HedefSatir = HedefSatir + 1
     On Error GoTo Hata
     Set kolon = alv.ColumnOrder
     If CLng(kolon.Count) < 12 Then Err.Raise vbObjectError + 803, , "PANEL duzeninde 12 sutun yok."
+    If Len(AKSORA_PANEL_KOLON_HATA(alv)) > 0 Then Err.Raise vbObjectError + 806, , AKSORA_PANEL_KOLON_HATA(alv)
     For j = 1 To 12
         ids(j) = CStr(kolon.Item(j - 1))
     Next j

@@ -94,6 +94,8 @@ Public Function STOK_EXPORT_AL( _
 
     CORE_DURUM SistemAdi & " PANEL düzeni seçiliyor..."
     If Not STOK_PANEL_DUZEN_SEC(SAPSession, hataMesaji) Then Exit Function
+    hataMesaji = AKSORA_PANEL_KOLON_HATA(SAPSession.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False))
+    If Len(hataMesaji) > 0 Then Exit Function
 
     If Not STOK_ALV_BEKLE(SAPSession, 10) Then
         hataMesaji = "PANEL düzeni seçildikten sonra MB52 tablosu hazýr olmadý."
@@ -235,6 +237,8 @@ Public Function STOK_EXPORT_AL_COKLU_DEPO( _
     End If
 
     If Not STOK_PANEL_DUZEN_SEC(SAPSession, hataMesaji) Then Exit Function
+    hataMesaji = AKSORA_PANEL_KOLON_HATA(SAPSession.FindById("wnd[0]/usr/cntlGRID1/shellcont/shell", False))
+    If Len(hataMesaji) > 0 Then Exit Function
 
     If Not STOK_ALV_BEKLE(SAPSession, 10) Then
         hataMesaji = "PANEL düzeni seçildikten sonra MB52 tablosu hazýr olmadý."

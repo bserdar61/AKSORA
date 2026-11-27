@@ -1103,6 +1103,8 @@ If CLng(KolonSirasi.Count) < 12 Then
     hataMesaji = "EPP PANEL düzeninde 12 sütun bulunamadý."
     Exit Function
 End If
+hataMesaji = AKSORA_PANEL_KOLON_HATA(alv)
+If Len(hataMesaji) > 0 Then Exit Function
 
 For c = 1 To 12
     KolonID(c) = CStr(KolonSirasi.Item(c - 1))
@@ -1318,6 +1320,7 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
     On Error GoTo Hata
     Set kolon = alv.ColumnOrder
     If CLng(kolon.Count) < 12 Then Err.Raise vbObjectError + 872, , "PANEL 12 sutun icermiyor."
+    If Len(AKSORA_PANEL_KOLON_HATA(alv)) > 0 Then Err.Raise vbObjectError + 806, , AKSORA_PANEL_KOLON_HATA(alv)
     For j = 1 To 12
         ids(j) = CStr(kolon.Item(j - 1))
     Next j
@@ -1532,6 +1535,7 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
     On Error GoTo Hata
     Set kolon = alv.ColumnOrder
     If CLng(kolon.Count) < 12 Then Err.Raise vbObjectError + 872, , "PANEL 12 sutun icermiyor."
+    If Len(AKSORA_PANEL_KOLON_HATA(alv)) > 0 Then Err.Raise vbObjectError + 806, , AKSORA_PANEL_KOLON_HATA(alv)
     For j = 1 To 12
         ids(j) = CStr(kolon.Item(j - 1))
     Next j

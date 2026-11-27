@@ -377,6 +377,8 @@ End If
                     hataMesaji = "EPP PANEL düzeninde 12 sütun bulunamadý."
                     Exit Function
                 End If
+                hataMesaji = AKSORA_PANEL_KOLON_HATA(alv)
+                If Len(hataMesaji) > 0 Then Exit Function
 
                 For c = 1 To 12
                     KolonID(c) = CStr(KolonSirasi.Item(c - 1))

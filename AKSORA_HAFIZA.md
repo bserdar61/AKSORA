@@ -959,3 +959,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - /PANEL artik bulunuyor ama arkadasin EPP listesinde Parti sutunu YOK (duzende var). Sebep: MB52 secim ekraninda parti stoklari kutusu
   kullaniciya gore isaretsiz -> SAP CHARG alanini cikarir. AKHZ_PARTI_AC: once wnd[0]/usr/chkXMCHB, yoksa metninde "PARTI" gecen
   (GOSTERME/GIZLE icermeyen) kutu isaretlenir; tum kutular teshise yazilir ("MB52 <sis> kutular: ..."). Parti sutunu yoksa net mesaj.
+
+## 27.11.2026 - Eski il il okuyucularda kör 12 sütun (stok bozulma riski)
+- modCDP/modEPP/modILCE(3)/modYUKLENICI(3)/modSTOK(2) MB52'de ColumnOrder'in ILK 12 sutununu sirayla aliyordu. Parti'siz duzende
+  (or. arkadasin /PANEL'i, /PANEL BS) sutunlar kayar, stok sayfasina yanlis sutun yazilir -> atil/transfer bozulur.
+- AKSORA_PANEL_KOLON_HATA(alv) (modAKSORA_BIRIM): 6. CHARG/Parti, 7. MATNR/Malzeme (METN haric), 9. LABST/Tahd; teknik ad ya da
+  GetColumnTitles. Uymazsa okuma durur, sayfa degismez. API hata verirse bos doner (engellemez). Hizli okumaya da eklendi.
+- Arkadasin dosyasi (rev4) onun PC'sinde kaydedilmis: ThisWorkbook modul adi "BuÇalismaKitabi" olarak bozulmus (cp1252 best-fit),
+  vbakod cikar acamadi. Dagitim tabani olarak sahibin dosyasi kullanilir. Arkadasin _ATIL ve stok sayfalari sahibinkiyle ayni (saglam).
+- Atil "yenileyince her seyi aliyor" (arkadasta): kanit yok; en guclu aday SAP kullanici tarih/ondalik bicimi farki (BUDAT girisi ve
+  ATIL_TARIH dd.mm varsayimi). Arkadasin atil teshisi bekleniyor.
