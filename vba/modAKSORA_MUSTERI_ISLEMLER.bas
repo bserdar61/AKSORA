@@ -31,8 +31,8 @@ End Function
 Private Function M_RAPOR_KAYNAK(ByVal ad As String) As Worksheet
     Select Case ad
         Case "M_CDP_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_CDP_STOK")
-        Case "M_ÝLÇE_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_ÝLÇE_STOK")
-        Case "M_YÜKLENÝCÝ_RAPOR": Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets("M_YÜKLENÝCÝ_STOK")
+        Case "M_ÝLÇE_RAPOR": Set M_RAPOR_KAYNAK = AKSORA_SAYFA("M_ÝLÇE_STOK")
+        Case "M_YÜKLENÝCÝ_RAPOR": Set M_RAPOR_KAYNAK = AKSORA_SAYFA("M_YÜKLENÝCÝ_STOK")
         Case Else
             If (Left$(ad, 2) = "Y_" Or Left$(ad, 2) = "I_") And Right$(ad, 6) = "_RAPOR" Then _
                 Set M_RAPOR_KAYNAK = ThisWorkbook.Worksheets(Left$(ad, Len(ad) - 6) & "_STOK")
@@ -942,7 +942,7 @@ Public Sub AKSORA_MUSTERI_YEREL_ARA()
     ReDim buffer(1 To 14, 1 To 500)
     ' Butun tanimli iller aranir: ekrandaki il sayfalardan, digerleri kendi kaydindan.
     If ilc Then
-        ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2)))
+        ekran = UCase$(Trim$(CStr(AKSORA_SAYFA("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2)))
     ElseIf yat Then
         ekran = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_CDP_YATIRIM_STOK").Range("BX19").Value2)))
     Else

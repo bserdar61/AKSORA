@@ -278,7 +278,7 @@ Public Sub AKSORA_KARS_ALT_YAZI_SABITLE()
 
     On Error GoTo Hata
 
-    Set ws = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
     Set buton = ws.Shapes("AKSKV1_ARTVIN")
 
     icerik = ws.ProtectContents

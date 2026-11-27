@@ -1517,7 +1517,7 @@ Private Sub YUK_V2_STOK_ALT_BOSLUK_TEMIZLE()
 Dim ws As Worksheet
 Dim sonSatir As Long
 
-Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK")
+Set ws = AKSORA_SAYFA("YÜKLENÝCÝ_STOK")
 sonSatir = AKSORA_SON_SATIR(ws, "A")
 
 If sonSatir >= 7 Then

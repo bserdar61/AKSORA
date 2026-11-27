@@ -717,7 +717,7 @@ End Sub
 Public Sub AKSORA_V12_YUK_ALT_SABITLE()
     Dim ws As Worksheet, r As Long, c As Long, son As Long
     Dim v As Variant
-    Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_RAPOR")
+    Set ws = AKSORA_SAYFA("YÜKLENÝCÝ_RAPOR")
     son = AKSORA_SON_SATIR(ws, "A")
     ' Some older versions used cell text. Remove only matching footer text.
     For r = 9 To son
@@ -815,7 +815,7 @@ Public Sub AKSORA_V12_GORSEL_ONAR()
 
     adim = "4 - Karþýlaþtýrma açýklamasý"
     AKSORA_V11_KARS_UYARI _
-        ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+        AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
 
     adim = "5 - Yüklenici raporu alt yazýsý"
     AKSORA_V12_YUK_ALT_SABITLE
@@ -1406,7 +1406,7 @@ Public Sub AKSORA_KARS_BUTUN_ILLER()
     If AKSORA_V11_MESGUL Then Exit Sub
     On Error GoTo Hata
     STOK_KARS_PANEL_AC
-    Set ws = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
     If ActiveSheet Is ws Then
         AKSORA_KARS_IL_GECIS_YENILE
         If Len(CStr(ws.Range("B6").Value2)) > 0 And Len(CStr(ws.Range("I6").Value2)) > 0 Then STOK_KARSILASTIR

@@ -712,7 +712,7 @@ Private Sub AKSORA_GIRIS_AC()
     End If
     Set ws = Nothing
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets("ÝHTÝYAÇ_BUL")
+    Set ws = AKSORA_SAYFA("ÝHTÝYAÇ_BUL")
     On Error GoTo Hata
     If Not ws Is Nothing Then
         If AKSORA_IHTIYAC_SAYFA(ws) Then ws.Visible = xlSheetVisible

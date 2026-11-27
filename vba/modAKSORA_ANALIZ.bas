@@ -1532,7 +1532,7 @@ Private Function ATIL_SAYFA_KUR() As Worksheet
     ws.Range("BX1:BX40").ClearContents
     ws.Range("BX1").Value2 = ATIL_ETIKET
     On Error Resume Next
-    ws.Move After:=ThisWorkbook.Worksheets("YÜKLENÝCÝ_RAPOR")
+    ws.Move After:=AKSORA_SAYFA("YÜKLENÝCÝ_RAPOR")
     On Error GoTo 0
     Set ATIL_SAYFA_KUR = ws
 End Function

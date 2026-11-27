@@ -2949,7 +2949,7 @@ Private Sub Y_TEMINAT_KUR(ByVal il As String)
     Dim satirlar() As Variant, sira() As Long, j As Long, tmp As Long, rr As Range, db As Databar, liste As Shape, x As Variant
     Dim anahT() As String
     Dim tarih As Variant, nD As Long, nL As Long, sis As String, blok() As Variant
-    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    Set ws = AKSORA_SAYFA("Y_TEMÝNAT")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
     Y_TEMINAT_KAYDET ws
@@ -3296,7 +3296,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_KONUM_SEC()
     Dim ws As Worksheet, r As Long, a As Long, b As Long, t As String, ev As Boolean
     On Error GoTo son
-    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    Set ws = AKSORA_SAYFA("Y_TEMÝNAT")
     t = CStr(application.CommandBars.ActionControl.Parameter)
     r = mKonumSatir
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
@@ -3323,7 +3323,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_TEMINAT_ARA()
     Dim ws As Worksheet, ev As Boolean
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    Set ws = AKSORA_SAYFA("Y_TEMÝNAT")
     If Len(CStr(ws.Range("BX29").Value2)) = 0 Then Exit Sub
     ev = application.EnableEvents
     application.EnableEvents = True
@@ -3334,7 +3334,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_TEMINAT_SEC()
     Dim ws As Worksheet, s As Shape, t As String, a As Long, b As Long
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_TEMÝNAT")
+    Set ws = AKSORA_SAYFA("Y_TEMÝNAT")
     Set s = ws.Shapes("Y_TM_SECIM")
     t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
@@ -3363,6 +3363,16 @@ Public Function Y_NORM(ByVal t As String) As String
     t = Replace(t, "Ü", "U"): t = Replace(t, "Ö", "O"): t = Replace(t, "Ç", "C")
     t = Replace(t, "þ", "S"): t = Replace(t, "ð", "G"): t = Replace(t, "ü", "U"): t = Replace(t, "ö", "O"): t = Replace(t, "ç", "C")
     Y_NORM = t
+End Function
+
+' Sayfayi adiyla bulur; Turkce 'I' harfi yuzunden Worksheets(ad) Turkce olmayan Windows'ta
+' bulamaz (Hata 9). Ad ASCII'ye cevrilip (Y_NORM) ikili karsilastirmayla eslenir: her dilde calisir.
+Public Function AKSORA_SAYFA(ByVal ad As String) As Worksheet
+    Dim ws As Worksheet, hedef As String
+    hedef = Y_NORM(ad)
+    For Each ws In ThisWorkbook.Worksheets
+        If StrComp(Y_NORM(ws.Name), hedef, vbBinaryCompare) = 0 Then Set AKSORA_SAYFA = ws: Exit Function
+    Next ws
 End Function
 
 Public Function Y_KOD_NORM(ByVal v As Variant) As String
@@ -3480,7 +3490,7 @@ Public Sub AKSORA_YATIRIM_PROJE_YUKLE()
     Dim n As Long, enN As Long, enAd As String, il As String, ws As Worksheet, g As Worksheet, k As Variant, r As Long, a As Variant
     Dim sc As Boolean, ev As Boolean, da As Boolean, blok() As Variant, guv As Long
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
     f = application.GetOpenFilename("Excel ve CSV (*.xlsx;*.xlsm;*.xls;*.xlsb;*.csv),*.xlsx;*.xlsm;*.xls;*.xlsb;*.csv", , "Proje malzeme listesini seçin")
     If VarType(f) = vbBoolean Then Exit Sub
@@ -3757,7 +3767,7 @@ End Sub
 Public Sub AKSORA_YATIRIM_HAKEDIS_SEC()
     Dim ws As Worksheet, s As Shape, t As String, ev As Boolean, sc As Boolean
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     Set s = ws.Shapes("Y_HK_DEPO")
     If s.ControlFormat.Value = 1 Then t = "" Else t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     ev = application.EnableEvents: sc = application.ScreenUpdating
@@ -3803,7 +3813,7 @@ Public Sub AKSORA_YATIRIM_HAKEDIS_PDF()
     Dim ws As Worksheet, yol As String, kart As Boolean
     kart = AKSORA_BEKLE_AC("AKSORA  |  HAKEDÝÞ", "PDF hazýrlanýyor...", 0.3)
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     ' Yazdirma alani her zaman guncel tablo boyuna gore (proje sonradan yuklendiyse kesik cikmaz).
     On Error Resume Next
     If Val(CStr(ws.Range("BX28").Value2)) > 0 Then ws.PageSetup.PrintArea = "$A$1:$K$" & CLng(Val(CStr(ws.Range("BX28").Value2)))
@@ -3909,7 +3919,7 @@ Private Sub Y_ALT_SAYFALAR(ByVal il As String)
     Y_TEMINAT_KUR il
     If Err.Number <> 0 Then Y_SERIT "Teminat sayfasý kurulamadý: " & Err.Description, 3: Err.Clear
     ' Hakedis sayfasi yalniz il veya tasarim surumu degisince yeniden kurulur (girisler korunur).
-    With ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    With AKSORA_SAYFA("Y_HAKEDÝÞ")
         If CStr(.Range("BX22").Value2) <> UCase$(Trim$(il)) Or CStr(.Range("BX25").Value2) <> "PRJ_V4" Then
             Y_HAKEDIS_KUR il
         End If
@@ -4211,7 +4221,7 @@ End Sub
 Private Sub I_ESKI_KARS_SIL()
     Dim ws As Worksheet, da As Boolean
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
     If Left$(CStr(ws.Range("BX25").Value2), 3) = "IK_" Then Exit Sub
@@ -4341,9 +4351,9 @@ End Function
 ' Il degisince stok sayfasi o ilin kaydindan yuklenir (kayit yoksa bos).
 Private Sub I_IL_VERI(ByVal kod As String)
     Dim ar As Worksheet, a As Variant, tarih As Variant
-    If CStr(ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2) = kod And _
-        CStr(ThisWorkbook.Worksheets("I_EPP_ÝLÇELER_STOK").Range("BX19").Value2) = kod And _
-        CStr(ThisWorkbook.Worksheets("I_BÝRLEÞÝK_STOK").Range("BX19").Value2) = kod Then Exit Sub
+    If CStr(AKSORA_SAYFA("I_CDP_ÝLÇELER_STOK").Range("BX19").Value2) = kod And _
+        CStr(AKSORA_SAYFA("I_EPP_ÝLÇELER_STOK").Range("BX19").Value2) = kod And _
+        CStr(AKSORA_SAYFA("I_BÝRLEÞÝK_STOK").Range("BX19").Value2) = kod Then Exit Sub
     Set ar = I_ARSIV_SAYFA(kod, False)
     If Not ar Is Nothing Then
         tarih = ar.Range("A1").Value
@@ -4359,17 +4369,17 @@ Private Sub I_STOK_YAZ(ByVal il As String, ByVal a As Variant, ByVal tarih As Va
     Dim ac As Variant, aE As Variant, wb As Worksheet
     ac = I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "CDP"))
     aE = I_SISTEM_SATIRLARI(a, AKSORA_IL_TESIS(il, "EPP"))
-    Y_STOK_YAZ ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK"), ac, il, tarih
-    Y_STOK_YAZ ThisWorkbook.Worksheets("I_EPP_ÝLÇELER_STOK"), aE, il, tarih
+    Y_STOK_YAZ AKSORA_SAYFA("I_CDP_ÝLÇELER_STOK"), ac, il, tarih
+    Y_STOK_YAZ AKSORA_SAYFA("I_EPP_ÝLÇELER_STOK"), aE, il, tarih
     AKSORA_BEKLE_NABIZ
     ' Birlesik sayfalar sonradan eklendi: birim hic acilmadan guncelleme yapilirsa once kurulur.
     On Error Resume Next
-    Set wb = ThisWorkbook.Worksheets("I_BÝRLEÞÝK_STOK")
+    Set wb = AKSORA_SAYFA("I_BÝRLEÞÝK_STOK")
     If wb Is Nothing Then
         Y_KUR True
-        Set wb = ThisWorkbook.Worksheets("I_BÝRLEÞÝK_STOK")
-        If Not wb Is Nothing Then wb.Visible = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK").Visible
-        If Not wb Is Nothing Then ThisWorkbook.Worksheets("I_BÝRLEÞÝK_RAPOR").Visible = wb.Visible
+        Set wb = AKSORA_SAYFA("I_BÝRLEÞÝK_STOK")
+        If Not wb Is Nothing Then wb.Visible = AKSORA_SAYFA("I_CDP_ÝLÇELER_STOK").Visible
+        If Not wb Is Nothing Then AKSORA_SAYFA("I_BÝRLEÞÝK_RAPOR").Visible = wb.Visible
     End If
     On Error GoTo 0
     If Not wb Is Nothing Then Y_STOK_YAZ wb, I_BIRLESTIR(ac, aE), il, tarih
@@ -4452,7 +4462,7 @@ Private Function I_GUNCELLE(ByVal il As String, ByVal kapsam As String, ByVal se
     On Error GoTo Hata
     il = UCase$(Trim$(il))
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets("I_CDP_ÝLÇELER_STOK")
+    Set ws = AKSORA_SAYFA("I_CDP_ÝLÇELER_STOK")
     If Not ws Is Nothing Then ekran = (CStr(ws.Range("BX19").Value2) = il)
     On Error GoTo Hata
     Y_CANLI_BASLAT "I_ANA PANEL", Y_IL_ADI(il) & "  •  SAP baðlantýsý hazýrlanýyor..."
@@ -4649,7 +4659,7 @@ Private Sub I_PANEL_YENILE()
     Dim ws As Worksheet, sh As Worksheet, isg As Worksheet, i As Long, k As String, d As Object, il As String
     Dim satir As Long, deger As Double, tarih As Date, depo As Long, x As Variant, t As Variant
     Set ws = ThisWorkbook.Worksheets("I_ANA PANEL")
-    Set isg = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set isg = AKSORA_SAYFA("I_ÝSG_MALZEMELERÝ")
     il = I_AKTIF_IL()
     ws.Unprotect ""
     ' Depo sayisi: ilin butun ilce depolari (stogu olmasa da).
@@ -6422,7 +6432,7 @@ End Sub
 Private Sub ILCE_KARS_LISTE_ASIL()
     Dim ws As Worksheet, s As Shape, k As String, ev As Boolean
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     Set s = ws.Shapes("I_KV_SECIM")
     If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     ev = application.EnableEvents
@@ -6453,7 +6463,7 @@ Private Sub I_KARS_KUR(ByVal il As String, ByVal sifirla As Boolean)
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, sira As Long, g As Variant
     Dim nAz As Long, nAr As Long, nDm As Long, nEk As Long, durum As String, kontrol As String, demontaj As Boolean
     Dim birimler() As String, isgL As Object, nak As Object, nk As Double, notlar As Object
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     Set isgL = I_ISG_LISTE()
     il = UCase$(Trim$(il))
     ws.Unprotect ""
@@ -6716,7 +6726,7 @@ End Function
 Private Sub I_KARS_FILTRE(ByVal tur As String)
     Dim ws As Worksheet, son As Long
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     ws.Unprotect ""
     If ws.FilterMode Then ws.ShowAllData
     son = AKSORA_SON_SATIR(ws, 4)
@@ -6750,7 +6760,7 @@ Public Sub AKSORA_ILCE_ISG_AKTAR()
     Dim gorV As Variant, t As String, ev As Boolean, ust As String, ad As String, sonuc As String, no As Long, metin As String
     Dim top(1 To 5) As Double, tarih As String, durum As String, hz As Range, bTop As Double
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set ws = AKSORA_SAYFA("I_ÝSG_MALZEMELERÝ")
     p = Split(CStr(ws.Range("BX27").Value2), "|")
     If UBound(p) < 1 Then MsgBox "Önce ÝSG sayfasý oluþturulmalý (ilçe stoklarýný güncelleyin).", vbInformation, "AKSORA": Exit Sub
     a2 = CLng(Val(p(0))): b2 = CLng(Val(p(1))): a1 = 10: b1 = a2 - 7
@@ -6942,7 +6952,7 @@ Public Sub AKSORA_ILCE_DEMONTAJ_AKTAR()
     Dim klasor As String, ust As String, ok As Long, Hata As String, toplam As Double, no As Long, metin As String
     Dim bas As Variant, gen As Variant, bicim As Variant, hiza As Variant, sonuc As String, sira As Long, kodlar() As String, t As String
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
     eskiT = Trim$(CStr(ws.Range("B6").Value2)): yeniT = Trim$(CStr(ws.Range("I6").Value2))
     If Len(il) = 0 Or Len(eskiT) = 0 Or Len(yeniT) = 0 Or eskiT = yeniT Then
@@ -7080,7 +7090,7 @@ End Sub
 Private Sub ILCE_KARS_SEC_ASIL()
     Dim ws As Worksheet, ev As Boolean, k As String
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     k = ws.Shapes(CStr(application.Caller)).AlternativeText
     ev = application.EnableEvents
     application.ScreenUpdating = False: application.EnableEvents = False
@@ -7115,7 +7125,7 @@ End Sub
 Private Sub ILCE_KARS_YENILE_ASIL()
     Dim ws As Worksheet, ev As Boolean
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("I_STOK_KARÞILAÞTIRMA")
     If Len(CStr(ws.Range("BX34").Value2)) = 0 Then Exit Sub
     ev = application.EnableEvents
     application.ScreenUpdating = False: application.EnableEvents = False
@@ -7190,7 +7200,7 @@ Private Sub I_ISG_KUR(ByVal il As String)
     Dim blok() As Variant, anah() As String, idx() As Long, sonuc() As Variant, y As Double, kw As Double
     Dim zK As Long, zM As Double, sk As Long, sM As Double, toplam As Double, rr As Range, bw As Double
     Dim dd As Shape, secim As String, birim As String, o As Variant, bK As Long
-    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set ws = AKSORA_SAYFA("I_ÝSG_MALZEMELERÝ")
     il = UCase$(Trim$(il))
     ws.Unprotect ""
     secim = CStr(ws.Range("BX30").Value2)
@@ -7406,7 +7416,7 @@ End Sub
 Private Sub I_ISG_FILTRE(ByVal alan As Long, ByVal deger As String)
     Dim ws As Worksheet, a As Long, b As Long
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set ws = AKSORA_SAYFA("I_ÝSG_MALZEMELERÝ")
     If Not Y_ARALIK(ws, "BX27", a, b) Then Exit Sub
     ws.Unprotect ""
     If Not ws.AutoFilterMode Then ws.Range(ws.Cells(a - 1, 1), ws.Cells(b, 9)).AutoFilter
@@ -7426,7 +7436,7 @@ End Sub
 Public Sub AKSORA_ILCE_ISG_SEC()
     Dim ws As Worksheet, s As Shape, k As String
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("I_ÝSG_MALZEMELERÝ")
+    Set ws = AKSORA_SAYFA("I_ÝSG_MALZEMELERÝ")
     Set s = ws.Shapes("I_ISG_SECIM")
     If s.ControlFormat.Value > 1 Then k = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     I_ISG_FILTRE 1, k
@@ -10610,7 +10620,7 @@ End Function
 Private Sub Y_HAKEDIS_KUR(ByVal il As String)
     Dim ws As Worksheet, w As Double, kw As Double, y As Double, s As Shape, liste As Shape, secim As String
     Dim i As Long, p As Long, x As Variant, o As Variant, top(0 To 9) As Double, r As Long, j As Long, np As Long
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     il = UCase$(Trim$(il))
     Y_KAYIT_SAYFA "_Y_KESIF"
     ws.Unprotect ""
@@ -10907,7 +10917,7 @@ End Function
 Public Sub AKSORA_YATIRIM_PRJ_EXCEL()
     Dim ws As Worksheet, wb As Workbook, h As Worksheet, son As Long, il As String, yol As String, sc As Boolean, ev As Boolean, i As Long
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     il = UCase$(Trim$(CStr(ws.Range("BX22").Value2)))
     son = application.Max(AKSORA_SON_SATIR(ws, 1), AKSORA_SON_SATIR(ws, 2))
     If son < 12 Then MsgBox "Aktarýlacak veri yok.", vbInformation, "AKSORA": Exit Sub
@@ -11295,7 +11305,7 @@ End Function
 Public Sub AKSORA_YATIRIM_PRJ_SEC()
     Dim ws As Worksheet, s As Shape, t As String, ev As Boolean, sc As Boolean
     On Error GoTo Hata
-    Set ws = ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Set ws = AKSORA_SAYFA("Y_HAKEDÝÞ")
     Set s = ws.Shapes("Y_PRJ_SECIM")
     If s.ControlFormat.Value <= 1 Then t = "" Else t = Trim$(Split(CStr(s.ControlFormat.List(s.ControlFormat.Value)) & "  -  ", "  -  ")(0))
     ev = application.EnableEvents: sc = application.ScreenUpdating
@@ -11321,7 +11331,7 @@ Public Sub AKSORA_YATIRIM_PRJ_SAP()
     Dim sv As Variant, sBilgi As String, hN As Long, hS As String
     If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
     If AKSORA_V11_MESGUL Then Exit Sub
-    il = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_HAKEDÝÞ").Range("BX22").Value2)))
+    il = UCase$(Trim$(CStr(AKSORA_SAYFA("Y_HAKEDÝÞ").Range("BX22").Value2)))
     If Len(il) = 0 Then il = Y_AKTIF_IL()
     If MsgBox(Y_IL_ADI(il) & " projeleri için SAP MB51 okunacak:" & vbCrLf & vbCrLf & _
         "Üretim yeri " & AKSORA_IL_TESIS(il, "EPP") & "  •  D002 ve yüklenici depolarý  •  " & Format$(DateSerial(Year(Date), 1, 1), "dd.mm.yyyy") & _
@@ -11384,7 +11394,7 @@ Hata:
     On Error Resume Next
     If kart Then AKSORA_BEKLE_KAPAT
     application.EnableEvents = ev: application.ScreenUpdating = True
-    Y_KORU ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Y_KORU AKSORA_SAYFA("Y_HAKEDÝÞ")
     On Error GoTo 0
     MsgBox "SAP okunamadý: " & hM, vbExclamation, "AKSORA | PROJE MALZEME TAKÝBÝ"
 End Sub
@@ -11461,7 +11471,7 @@ Public Sub AKSORA_YATIRIM_KESIF_YUKLE()
     Dim tek As Object, pyp As String, ad As String, dosya As String, cnt As Long
     If AKSORA_YAYIN_MODU() Then AKSORA_YAYIN_UYARI: Exit Sub
     On Error GoTo Hata
-    il = UCase$(Trim$(CStr(ThisWorkbook.Worksheets("Y_HAKEDÝÞ").Range("BX22").Value2)))
+    il = UCase$(Trim$(CStr(AKSORA_SAYFA("Y_HAKEDÝÞ").Range("BX22").Value2)))
     If Len(il) = 0 Then il = Y_AKTIF_IL()
     f = application.GetOpenFilename("Excel (*.xlsx;*.xlsm;*.xls;*.xlsb),*.xlsx;*.xlsm;*.xls;*.xlsb", , "Keþif dosyasýný seçin (proje sütunlu ya da tek proje)")
     If VarType(f) = vbBoolean Then Exit Sub
@@ -11549,7 +11559,7 @@ Hata:
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
     application.StatusBar = False
     application.ScreenUpdating = True: application.EnableEvents = True: application.DisplayAlerts = True
-    Y_KORU ThisWorkbook.Worksheets("Y_HAKEDÝÞ")
+    Y_KORU AKSORA_SAYFA("Y_HAKEDÝÞ")
     On Error GoTo 0
     MsgBox "Keþif okunamadý: " & hM, vbExclamation, "AKSORA | KEÞÝF"
 End Sub

@@ -926,3 +926,10 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 ## 27.11.2026 - Dagitim (arkadaslara paylasim)
 - KUR.bat eklendi: AKSORA klasorunun icine konup calistirilinca masaustu + baslat menusu "AKSORA" simgesi olusturur (AKSORA_BASLAT.hta hedef, GORSELLER\LOGO\AKSORA.ico simge). PowerShell ile Unicode-guvenli; yonetici izni gerekmez; dosya silmez.
 - Kod korumasi: VBA projesi sifreli (DPB) ve vbakod.py derle bu kilidi korur. Ham .bas yalniz ozel repoda; dagitilan sadece derlenmis .xlsm. Not: Excel VBA sifresi caydiricidir, kirilabilir - %100 koruma yok.
+
+## 27.11.2026 - KRITIK: Turkce "I" sayfa adi hatasi (Hata 9, baska PClerde)
+- Belirti: Musteri ekraninda "Musteri tema kurulumu / Kaynak kontrolu - Hata 9: Subscript out of range". Sahibin PCsinde yok, arkadasin PCsinde var (muhtemelen Office dili farkli).
+- Sebep: Worksheets("İLÇE_STOK") gibi Turkce 'İ' (U+0130) iceren sayfa adi aramalari, Turkce olmayan Windows/Office'te buyuk-kucuk harf eslemesinde bulunamiyor. Sayfa adi ile kod literali birebir ayni (ikisi de U+0130) olsa da Excel'in indeks aramasi dile bagli.
+- Cozum: modAKSORA_BIRIM'e Public AKSORA_SAYFA(ad) eklendi - Y_NORM ile ASCII'ye cevirip ikili karsilastirmayla esler (her dilde calisir). Tum `ThisWorkbook.Worksheets("<turkce>")` literal aramalari (58 yer) AKSORA_SAYFA(...) ile degistirildi. modAKSORA_MUSTERI_TEMA'daki degiskenli kaynaklar(i)/adlar(i) aramalari da AKSORA_SAYFA'ya cevrildi + kaynak yoksa net hata.
+- Not: Option Compare Text yok (= karsilastirmalari zaten binary/guvenli). Canli/arsiv stok okuma zaten AK_CANLI_SAYFA/AKSORA_ARSIV_SAYFA ile yerel-guvenliydi. Normalize cakismasi yok (kontrol edildi).
+- KUR.bat ve dagitim paketi (AKSORA_Kurulum.zip) bu surumle guncellendi.

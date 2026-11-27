@@ -45,10 +45,11 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
     kaynaklar = TEMA_KAYNAKLAR(): adlar = TEMA_ADLAR()
     ' Tum kaynaklar ve isim cakismalari yazmadan once kontrol edilir.
     For i = 0 To 7
-        Set kaynak = ThisWorkbook.Worksheets(CStr(kaynaklar(i)))
+        Set kaynak = AKSORA_SAYFA(CStr(kaynaklar(i)))
+        If kaynak Is Nothing Then Err.Raise vbObjectError + 1701, , "Kaynak sayfa bulunamadi: " & CStr(kaynaklar(i))
         Set ws = Nothing
         On Error Resume Next
-        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        Set ws = AKSORA_SAYFA(CStr(adlar(i)))
         On Error GoTo Hata
         If Not ws Is Nothing Then
             If Not AKSORA_MUSTERI_TEMA_SAYFA(ws) Then _
@@ -58,7 +59,7 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
     For i = 0 To 7
         Set ws = Nothing
         On Error Resume Next
-        Set ws = ThisWorkbook.Worksheets(CStr(adlar(i)))
+        Set ws = AKSORA_SAYFA(CStr(adlar(i)))
         On Error GoTo Hata
         If ws Is Nothing Then
             Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
@@ -67,7 +68,8 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
         End If
         ws.Visible = xlSheetVisible
         If Val(CStr(ws.Range("BX2").Value2)) < 9 Then
-            Set kaynak = ThisWorkbook.Worksheets(CStr(kaynaklar(i)))
+            Set kaynak = AKSORA_SAYFA(CStr(kaynaklar(i)))
+            If kaynak Is Nothing Then Err.Raise vbObjectError + 1701, , "Kaynak sayfa bulunamadi: " & CStr(kaynaklar(i))
             TEMA_KOPYALA kaynak, ws, i
         End If
         mAsama = ws.Name & " / il basligi"
@@ -91,7 +93,7 @@ Public Sub AKSORA_MUSTERI_TEMA_AC()
         ws.Visible = xlSheetVisible
     Next i
     mAsama = "Ana paneli gösterme"
-    ThisWorkbook.Worksheets(CStr(adlar(0))).Select Replace:=True
+    AKSORA_SAYFA(CStr(adlar(0))).Select Replace:=True
     For Each k In ThisWorkbook.Worksheets
         If Not AKSORA_MUSTERI_TEMA_SAYFA(k) Then
             If k.Visible = xlSheetVisible Then k.Visible = xlSheetVeryHidden

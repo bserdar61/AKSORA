@@ -47,8 +47,8 @@ PANEL_CANLI_DURUM "2/3 | Ýlçe stoklarý SAP'den alýnýyor..."
 ILCE_STOK_GUNCELLE_V2
 
 tIlce = ANA_TUM_GECEN_SURE(t0): t0 = Timer
-IlceSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("ÝLÇE_STOK").Range("C3"))
-IlceDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("ÝLÇE_STOK").Range("C4"))
+IlceSatir = ANA_TUM_LONG(AKSORA_SAYFA("ÝLÇE_STOK").Range("C3"))
+IlceDeger = ANA_TUM_DOUBLE(AKSORA_SAYFA("ÝLÇE_STOK").Range("C4"))
 If IlceSatir <= 0 Then Err.Raise vbObjectError + 6011, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Ýlçe stok güncellemesi sonrasýnda veri bulunamadý."
 ANA_TUM_ILCE_RAPOR_DOGRULA IlceDeger
 
@@ -57,8 +57,8 @@ PANEL_CANLI_DURUM "3/3 | Yüklenici stoklarý SAP'den alýnýyor..."
 YUKLENICI_STOK_GUNCELLE_V2
 
 tYuk = ANA_TUM_GECEN_SURE(t0): t0 = Timer
-YukSatir = ANA_TUM_LONG(ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK").Range("C3"))
-YukDeger = ANA_TUM_DOUBLE(ThisWorkbook.Worksheets("YÜKLENÝCÝ_STOK").Range("C4"))
+YukSatir = ANA_TUM_LONG(AKSORA_SAYFA("YÜKLENÝCÝ_STOK").Range("C3"))
+YukDeger = ANA_TUM_DOUBLE(AKSORA_SAYFA("YÜKLENÝCÝ_STOK").Range("C4"))
 If YukSatir <= 0 Then Err.Raise vbObjectError + 6021, "ANA_TUM_STOKLARI_GUNCELLE_V2", "Yüklenici stok güncellemesi sonrasýnda veri bulunamadý."
 ANA_TUM_YUK_RAPOR_DOGRULA YukDeger
 
@@ -159,7 +159,7 @@ End Sub
 
 Private Sub ANA_TUM_ILCE_RAPOR_DOGRULA(ByVal BeklenenDeger As Double)
 Dim ws As Worksheet, sonSatir As Long, i As Long, toplamSatiri As Long, RaporDeger As Double
-Set ws = ThisWorkbook.Worksheets("ÝLÇE_RAPORLAR")
+Set ws = AKSORA_SAYFA("ÝLÇE_RAPORLAR")
 sonSatir = AKSORA_SON_SATIR(ws, "A")
 For i = 9 To sonSatir
     If UCase$(Trim$(CStr(ws.Cells(i, 1).Value2))) = "TOPLAM" Then toplamSatiri = i: Exit For
@@ -171,7 +171,7 @@ End Sub
 
 Private Sub ANA_TUM_YUK_RAPOR_DOGRULA(ByVal BeklenenDeger As Double)
 Dim ws As Worksheet, sonSatir As Long, i As Long, toplamSatiri As Long, RaporDeger As Double
-Set ws = ThisWorkbook.Worksheets("YÜKLENÝCÝ_RAPOR")
+Set ws = AKSORA_SAYFA("YÜKLENÝCÝ_RAPOR")
 sonSatir = AKSORA_SON_SATIR(ws, "A")
 For i = 9 To sonSatir
     If UCase$(Trim$(CStr(ws.Cells(i, 1).Value2))) = "TOPLAM" Then toplamSatiri = i: Exit For

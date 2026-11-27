@@ -210,7 +210,7 @@ Public Sub AKFIX_NORMAL_STOK_HAZIRLA(ByVal ws As Worksheet)
 End Sub
 
 Public Function AKFIX_KARS_IL() As String
-    AKFIX_KARS_IL = AKFIX_NORMAL(CStr(ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA").Range("AA2").Value2))
+    AKFIX_KARS_IL = AKFIX_NORMAL(CStr(AKSORA_SAYFA("STOK_KARÞILAÞTIRMA").Range("AA2").Value2))
     Select Case AKFIX_KARS_IL
         Case "ARTVIN", "RIZE", "TRABZON", "GUMUSHANE", "GIRESUN", "TUMU"
         Case Else: AKFIX_KARS_IL = AKSORA_CANLI_STOK_IL()
@@ -231,7 +231,7 @@ Public Sub AKFIX_KARS_TARIHLER()
     Dim k As Variant, n As Long, alt As String, eskiSatir As Long, gun As Double
     Dim hataNo As Long, hataMetni As String
     On Error GoTo Hata
-    Set w = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    Set w = AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
     AKFIX_KARS_GECMIS_FARK = 0
     sec = AKFIX_KARS_IL()
     If sec = "TUMU" Then
@@ -330,7 +330,7 @@ End Sub
 
 Public Function AKFIX_KARS_TARIH(ByVal id As String) As Date
     Dim w As Worksheet, r As Long, son As Long
-    Set w = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    Set w = AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
     son = AKSORA_SON_SATIR(w, "Y")
     For r = 2 To son
         If CStr(w.Cells(r, "Y").Value2) = id Then

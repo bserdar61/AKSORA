@@ -1124,7 +1124,7 @@ End Function
 
 Public Sub STOK_KARS_FILTRE_TAKIP_TICK()
     On Error Resume Next
-    ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA").STOK_KARS_FILTRE_TAKIP_BASLAT
+    AKSORA_SAYFA("STOK_KARÞILAÞTIRMA").STOK_KARS_FILTRE_TAKIP_BASLAT
     On Error GoTo 0
 End Sub
 Public Sub AKSORA_KARS_IL_GECIS_YENILE()
@@ -1138,7 +1138,7 @@ Public Sub AKSORA_KARS_IL_GECIS_YENILE()
 
     On Error GoTo Hata
 
-    Set ws = ThisWorkbook.Worksheets("STOK_KARÞILAÞTIRMA")
+    Set ws = AKSORA_SAYFA("STOK_KARÞILAÞTIRMA")
 
     cizim = ws.ProtectDrawingObjects
     icerik = ws.ProtectContents
