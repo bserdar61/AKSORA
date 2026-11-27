@@ -383,7 +383,7 @@ Private Sub Workbook_WindowResize(ByVal wn As Window)
     If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
     ' AKSORA_BIRIM_HOOK_RESIZE
     If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
-    If Not AKSORA_GIRIS_ACIK And ActiveSheet.Name <> "KAPAK" Then Exit Sub
+    If Not AKSORA_GIRIS_DURUM() And ActiveSheet.Name <> "KAPAK" Then Exit Sub
     AKSORA_EKRAN_SIGDIR ActiveSheet
 End Sub
 
@@ -395,7 +395,7 @@ Private Sub Workbook_WindowActivate(ByVal wn As Window)
     If Not TypeOf ActiveSheet Is Worksheet Then Exit Sub
     ' AKSORA_BIRIM_HOOK_WINDOW
     If AKSORA_BIRIM_AKTIF_GORUNUM() Then Exit Sub
-    If Not AKSORA_GIRIS_ACIK And ActiveSheet.Name <> "KAPAK" Then Exit Sub
+    If Not AKSORA_GIRIS_DURUM() And ActiveSheet.Name <> "KAPAK" Then Exit Sub
     AKSORA_EKRAN_SIGDIR ActiveSheet
 End Sub
 

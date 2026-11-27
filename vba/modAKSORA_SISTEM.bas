@@ -105,7 +105,7 @@ Public Sub AKSORA_V13_GIT(ByVal sayfaAdi As String)
     On Error GoTo Hata
     Set ws = ThisWorkbook.Worksheets(sayfaAdi)
     If Left$(ws.Name, 1) = "_" Then Err.Raise vbObjectError + 1301, , "Ýç veri sayfasý hýzlý eriþimle açýlamaz."
-    If Not AKSORA_GIRIS_ACIK And ws.Name <> "KAPAK" Then Err.Raise vbObjectError + 1302, , "Önce kapaktan panele giriþ yapýn."
+    If Not AKSORA_GIRIS_DURUM() And ws.Name <> "KAPAK" Then Err.Raise vbObjectError + 1302, , "Önce kapaktan panele giriþ yapýn."
     AKSORA_V13_GECIS = True
     application.EnableEvents = False
     application.ScreenUpdating = False

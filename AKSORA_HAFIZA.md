@@ -943,3 +943,11 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Derleme: python3 tools/vbakod.py derle <taban.xlsm> rawb final/AKSORA.xlsm  (raw/ ve vba/*.bas OKUNABILIR kalir).
 - Kullanicidan gelen xlsm'den cikan kod artik ChrW$ biciminde olur: raw ile karsilastirirken once tr_chrw(raw) uygula.
 - Acil gecici yol (eski dosya icin): Denetim Masasi > Bolge > Yonetimsel > Sistem yerel ayarini degistir > Turkce (yeniden baslatma).
+
+## 27.11.2026 - Baska PC: SAP "PANEL" duzeni + giris durumu
+- Dil duzeltmesi tuttu (arkadasin PC'sinde MsgBox Turkce dogru).
+- Butun SAP okumalari (CDP/EPP/ILCE/YUKLENICI MB52, musteri) kullanicinin SAP'de kayitli "PANEL" ALV duzenini (tanim "MLZ STOK PANEL") secer.
+  Duzen kullaniciya ve sisteme (CDP/EPP ayri) ozel. Arkadasta CDP'de var, EPP'de yok -> "PANEL duzeni secilemedi".
+  Kod artik genel duzen "/PANEL" adini da kabul eder (Replace(ad,"/","")). Sahip duzeni "/PANEL" (kullaniciya ozel isareti kaldirilmis) kaydederse herkes kullanir.
+  Mesajlar ne yapilacagini soyluyor.
+- "Once kapaktan panele giris yapin": hata sonrasi VBA sifirlaninca AKSORA_GIRIS_ACIK kayboluyordu. AKSORA_V13_GIT ve Workbook resize/activate kontrolleri AKSORA_GIRIS_DURUM() kullanir (etkin sayfadan geri kurar).

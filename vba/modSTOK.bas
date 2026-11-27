@@ -612,7 +612,7 @@ Private Function STOK_PANEL_DUZEN_SEC( _
         DuzenTanimi = Trim$(CStr(LayoutGrid.GetCellValue(satir, "TEXT")))
         On Error GoTo Hata
 
-        If StrComp(DuzenAdi, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(DuzenAdi, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(DuzenTanimi, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             BulunanSatir = satir
             Exit For

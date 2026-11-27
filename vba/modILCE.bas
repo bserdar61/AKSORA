@@ -1196,7 +1196,7 @@ For r = 0 To n - 1
     v = Trim$(CStr(g.GetCellValue(r, "VARIANT")))
     t = Trim$(CStr(g.GetCellValue(r, "TEXT")))
     On Error GoTo Hata
-    If StrComp(v, "PANEL", vbTextCompare) = 0 Or StrComp(t, "MLZ STOK PANEL", vbTextCompare) = 0 Then
+    If StrComp(Replace(v, "/", ""), "PANEL", vbTextCompare) = 0 Or StrComp(t, "MLZ STOK PANEL", vbTextCompare) = 0 Then
         bulunan = r
         Exit For
     End If
@@ -1215,7 +1215,7 @@ ILCE_V2_EPP_PANEL_SEC = True
 Exit Function
 
 Hata:
-hataMesaji = "EPP PANEL düzeni seçilemedi." & vbCrLf & Err.Description
+hataMesaji = "EPP PANEL düzeni seçilemedi (SAP'de bu kullanýcýda 'PANEL' liste düzeni olmalý)." & vbCrLf & Err.Description
 ILCE_V2_EPP_PANEL_SEC = False
 End Function
 
@@ -1301,7 +1301,7 @@ Public Function ILCE_CDP_BLOK_AL(ByRef veri As Variant, _
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             secili = i: Exit For
         End If
@@ -1515,7 +1515,7 @@ Public Function ILCE_EPP_BLOK_AL(ByRef veri As Variant, _
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             secili = i: Exit For
         End If

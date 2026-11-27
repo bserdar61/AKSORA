@@ -933,7 +933,7 @@ HedefSatir = HedefSatir + 1
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             bulunan = i
             Exit For

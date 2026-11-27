@@ -574,7 +574,7 @@ Hata:
                     DuzenTanimi = Trim$(CStr(LayoutGrid.GetCellValue(satir, "TEXT")))
                     On Error GoTo Hata
 
-                    If StrComp(DuzenAdi, "PANEL", vbTextCompare) = 0 Or _
+                    If StrComp(Replace(DuzenAdi, "/", ""), "PANEL", vbTextCompare) = 0 Or _
                        StrComp(DuzenTanimi, "MLZ STOK PANEL", vbTextCompare) = 0 Then
                         BulunanSatir = satir
                         Exit For
@@ -600,7 +600,7 @@ Hata:
 
 Hata:
                 hataMesaji = _
-                    "EPP PANEL düzeni seçilemedi." & vbCrLf & _
+                    "EPP PANEL düzeni seçilemedi (SAP'de bu kullanýcýda 'PANEL' liste düzeni olmalý)." & vbCrLf & _
                     "Hata No: " & Err.Number & vbCrLf & _
                     "Açýklama: " & Err.Description
 

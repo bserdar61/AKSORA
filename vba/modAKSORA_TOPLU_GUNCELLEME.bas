@@ -1049,7 +1049,7 @@ Private Function AKHZ_PANEL(ByVal ses As Object) As Boolean
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             bulunan = i: Exit For
         End If
     Next i
@@ -1112,7 +1112,7 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     ses.FindById("wnd[0]").SendVKey 8
     Set alv = AKHZ_GRID(ses, 900)
     If alv Is Nothing Then mesaj = "MB52 listesi açýlmadý": Exit Function
-    If Not AKHZ_PANEL(ses) Then mesaj = "PANEL düzeni seçilemedi": Exit Function
+    If Not AKHZ_PANEL(ses) Then mesaj = "SAP 'de bu kullanýcýda 'PANEL' liste düzeni yok (MB52 - Düzen - PANEL kurulmalý)": Exit Function
     Set alv = AKHZ_GRID(ses, 120)
     If alv Is Nothing Then mesaj = "PANEL listesi açýlmadý": Exit Function
     On Error Resume Next

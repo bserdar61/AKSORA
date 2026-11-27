@@ -1567,7 +1567,7 @@ Public Function YUK_CDP_BLOK_AL(ByRef veri As Variant, _
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             secili = i: Exit For
         End If
@@ -1781,7 +1781,7 @@ Public Function YUK_EPP_BLOK_AL(ByRef veri As Variant, _
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(ad, "PANEL", vbTextCompare) = 0 Or _
+        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or _
            StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             secili = i: Exit For
         End If
