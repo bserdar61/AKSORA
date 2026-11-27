@@ -20,6 +20,9 @@ Private mOnbZaman As Double
 Private mOnbTum As Object
 Private mOnbHes As Collection
 Private mOnbBilgi As Variant
+' SAP kullanici tarih bicimi: oturum Id -> "DMY." / "MDY/" / ... ; ATIL_TARIH okuma sirasi (bos: gun-ay).
+Private mSapTarih As Object
+Private mTarihSira As String
 Private Const AN_ESKI_GUN As Long = 7
 Private Const TR_SAYFA As String = "TRANSFER_LISTESI"
 Private mAdmIsler As Collection
@@ -499,12 +502,55 @@ Private Sub ATIL_COKLU_SIL(ByVal ses As Object)
     ATIL_BEKLE ses
 End Sub
 
+' SAP kullanici tarih bicimi (Sistem > Kullanici ayarlari > Kendi verileri > Varsayilanlar) kisiden kisiye degisir.
+' Secim ekranindaki tarih alanina gunu 25 olan (gun/ay karismayan) bir tarih yazilip Enter'a basilir; SAP'nin hata
+' vermedigi bicim kullanicinin bicimidir. Oturum basina bir kez denenir, teshise yazilir.
+Private Function ATIL_SAP_BICIM(ByVal ses As Object, ByVal alanId As String) As String
+    Dim a As Variant, f As Object, k As String, tip As String, prob As Date
+    On Error Resume Next
+    If mSapTarih Is Nothing Then Set mSapTarih = CreateObject("Scripting.Dictionary")
+    k = CStr(ses.Id)
+    If mSapTarih.Exists(k) Then ATIL_SAP_BICIM = mSapTarih(k): Exit Function
+    ATIL_SAP_BICIM = "DMY."
+    Set f = ses.FindById(alanId, False)
+    If f Is Nothing Then Exit Function
+    prob = DateSerial(2024, 1, 25)
+    For Each a In Array("DMY.", "MDY/", "MDY-", "YMD.", "YMD/", "YMD-")
+        f.Text = ATIL_TARIH_YAZ(prob, CStr(a))
+        ses.FindById("wnd[0]").SendVKey 0
+        ATIL_BEKLE ses
+        If Not ses.FindById("wnd[1]", False) Is Nothing Then ses.FindById("wnd[1]").SendVKey 0: ATIL_BEKLE ses
+        tip = vbNullString
+        tip = UCase$(CStr(ses.FindById("wnd[0]/sbar").MessageType))
+        If tip <> "E" And tip <> "A" Then ATIL_SAP_BICIM = CStr(a): Exit For
+        Set f = ses.FindById(alanId, False)
+    Next a
+    Set f = ses.FindById(alanId, False)
+    If Not f Is Nothing Then f.Text = vbNullString
+    mSapTarih(k) = ATIL_SAP_BICIM
+    AKSORA_SAP_TESHIS_YAZ "SAP tarih biçimi (" & k & "): " & ATIL_SAP_BICIM & " | " & ATIL_TARIH_YAZ(prob, ATIL_SAP_BICIM)
+    Err.Clear
+End Function
+
+Private Function ATIL_TARIH_YAZ(ByVal d As Date, ByVal bic As String) As String
+    Dim g As String, a As String, y As String, s As String
+    g = Right$("0" & CStr(Day(d)), 2): a = Right$("0" & CStr(Month(d)), 2): y = CStr(Year(d)): s = Right$(bic, 1)
+    If Len(bic) < 4 Then s = "."
+    Select Case Left$(bic, 3)
+        Case "MDY": ATIL_TARIH_YAZ = a & s & g & s & y
+        Case "YMD": ATIL_TARIH_YAZ = y & s & a & s & g
+        Case Else: ATIL_TARIH_YAZ = g & s & a & s & y
+    End Select
+End Function
+
 Private Function ATIL_TARIH(ByVal t As String) As Date
-    Dim g As Long, a As Long, y As Long
+    Dim g As Long, a As Long, y As Long, x As Long
     On Error GoTo Yok
     t = Trim$(t)
     If t Like "##.##.####" Or t Like "##/##/####" Or t Like "##-##-####" Then
         g = CLng(Left$(t, 2)): a = CLng(Mid$(t, 4, 2)): y = CLng(Mid$(t, 7, 4))
+        ' SAP kullanicisi ay/gun/yil biciminde ise (MB51 okumasinda tespit edilir) gun ile ay yer degistirir.
+        If mTarihSira = "MDY" Then x = g: g = a: a = x
     ElseIf t Like "####-##-##" Or t Like "####.##.##" Or t Like "####/##/##" Then
         y = CLng(Left$(t, 4)): a = CLng(Mid$(t, 6, 2)): g = CLng(Mid$(t, 9, 2))
     ElseIf t Like "########" Then
@@ -860,6 +906,8 @@ End Sub
 Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar() As String, ByVal bas As Date, ByVal son As Date, _
     ByVal etiket As String, ByRef turler() As String) As Collection
     Dim sat As Collection, alv As Object, v As Variant, n As Long, pop As Object, t As String, b0 As Double, varsayilan As Boolean
+    Dim bic As String
+    mTarihSira = vbNullString
     Set sat = New Collection
     Set ATIL_MB51 = sat
     n = UBound(mallar) - LBound(mallar) + 1
@@ -882,8 +930,9 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
     ses.FindById("wnd[0]/usr/ctxtLGORT-HIGH").Text = vbNullString
     On Error GoTo 0
     ATIL_COKLU_PANO ses, "BWART", turler
-    ses.FindById("wnd[0]/usr/ctxtBUDAT-LOW").Text = Format$(bas, "dd.mm.yyyy")
-    ses.FindById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = Format$(son, "dd.mm.yyyy")
+    bic = ATIL_SAP_BICIM(ses, "wnd[0]/usr/ctxtBUDAT-LOW")
+    ses.FindById("wnd[0]/usr/ctxtBUDAT-LOW").Text = ATIL_TARIH_YAZ(bas, bic)
+    ses.FindById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = ATIL_TARIH_YAZ(son, bic)
     ATIL_DUZ_LISTE ses, etiket
     ses.FindById("wnd[0]/usr/ctxtALV_DEF").Text = "/ATIL"
 Calistir:
@@ -922,7 +971,9 @@ Calistir:
     End If
     v = AKSORA_ALV_METIN_AL(ses, alv, "ATIL_" & uy)
     If Not IsArray(v) Then Err.Raise vbObjectError + 2348, , "MB51 listesi okunamadý (yerel dosya). Ayrýntý: AKSORA_SAP_TESHIS.txt"
+    mTarihSira = Left$(bic, 3)
     ATIL_MB51_COZ v, uy, sat, etiket
+    mTarihSira = vbNullString
 End Function
 
 Private Function ATIL_DIZI(ByVal d As Object) As String()

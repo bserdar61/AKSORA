@@ -969,3 +969,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   vbakod cikar acamadi. Dagitim tabani olarak sahibin dosyasi kullanilir. Arkadasin _ATIL ve stok sayfalari sahibinkiyle ayni (saglam).
 - Atil "yenileyince her seyi aliyor" (arkadasta): kanit yok; en guclu aday SAP kullanici tarih/ondalik bicimi farki (BUDAT girisi ve
   ATIL_TARIH dd.mm varsayimi). Arkadasin atil teshisi bekleniyor.
+- ATIL "her seyi atil sayiyor" (arkadasta, yenileyince): ATIL_YAS girisle karsilanmayan stogu ATIL sayar; MB51 girisleri okunamazsa
+  her sey atil olur. Aday sebep SAP kullanici tarih bicimi (SU3): BUDAT her zaman dd.mm.yyyy yaziliyordu, MB51 ciktisi ##/##/####
+  gun-ay varsayiliyordu (MDY'de 12'den buyuk gunler atlanir, digerleri yer degistirir).
+  Cozum: ATIL_SAP_BICIM(ses, alan) secim ekraninda gun=25 deneme tarihiyle (DMY. MDY/ MDY- YMD. YMD/ YMD-) Enter + sbar E kontrolu,
+  oturum basina onbellek, teshise "SAP tarih bicimi (...)" yazar. ATIL_TARIH_YAZ elle bicimler (Format$ "/" yerel ayiraca donusur).
+  mTarihSira="MDY" iken ATIL_TARIH gun/ay degistirir (yalniz ATIL_MB51_COZ sirasinda).
