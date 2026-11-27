@@ -922,3 +922,7 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Satin Alma: talep/siparis serbest stok (D/K), atil paylastirmasi (ayni il once, sonra en buyuk il), tasarruf = karsilanir x alan ilin birim degeri, Ozet = detay toplamlari: hepsi tutarli.
   Satin Alinacaklar = Stok Kapsami'ndaki KRITIK/AZALIYOR ve alinacak > 0 kalemleri; alinacak formulu ve durum kurallari dogrulandi.
 - Duzeltme: "Sarf olan ay sayisi" 6 ile sinirli (son 6 ay penceresi 7 takvim ayina dokunuyordu); Ozet basligi "6 kalem" yerine "5 il".
+
+## 27.11.2026 - Dagitim (arkadaslara paylasim)
+- KUR.bat eklendi: AKSORA klasorunun icine konup calistirilinca masaustu + baslat menusu "AKSORA" simgesi olusturur (AKSORA_BASLAT.hta hedef, GORSELLER\LOGO\AKSORA.ico simge). PowerShell ile Unicode-guvenli; yonetici izni gerekmez; dosya silmez.
+- Kod korumasi: VBA projesi sifreli (DPB) ve vbakod.py derle bu kilidi korur. Ham .bas yalniz ozel repoda; dagitilan sadece derlenmis .xlsm. Not: Excel VBA sifresi caydiricidir, kirilabilir - %100 koruma yok.
