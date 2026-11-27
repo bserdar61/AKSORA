@@ -916,6 +916,7 @@ Private Function ATIL_MB51(ByVal ses As Object, ByVal uy As String, ByRef mallar
     ses.StartTransaction "MB51": ATIL_BEKLE ses
     If ses.FindById("wnd[0]/usr/ctxtWERKS-LOW", False) Is Nothing Then _
         Err.Raise vbObjectError + 2342, , "MB51 seçim ekraný açýlmadý: " & ATIL_SBAR(ses)
+    ATIL_SECIM_TEMIZLE ses, etiket
     ATIL_COKLU_PANO ses, "MATNR", mallar
     ses.FindById("wnd[0]/usr/ctxtWERKS-LOW").Text = uy
     On Error Resume Next
@@ -975,6 +976,54 @@ Calistir:
     ATIL_MB51_COZ v, uy, sat, etiket
     mTarihSira = vbNullString
 End Function
+
+' Kullanicinin MB51 varsayilanlari (kendi varyanti, kullanici parametreleri: or. Kullanici adi) secim ekranina dolu gelir
+' ve gizli filtre olur: MB51 bos doner, girissiz stok ATIL sayilir. AKSORA'nin kullanmadigi dolu alanlar temizlenir;
+' temizlenen alanlar ve secili radyo dugmeleri / kutular teshise yazilir.
+Private Sub ATIL_SECIM_TEMIZLE(ByVal ses As Object, ByVal etiket As String)
+    Dim kayit As String, secim As String
+    On Error Resume Next
+    ATIL_ALAN_TEMIZLE ses.FindById("wnd[0]/usr"), kayit, secim, 0
+    If Len(kayit) > 0 Then AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | MB51 ekranýnda dolu gelip temizlenen alanlar:" & kayit
+    If InStr(etiket, "1/3") > 0 Then AKSORA_SAP_TESHIS_YAZ "Atýl " & etiket & " | MB51 seçili seçenekler:" & secim
+    Err.Clear
+End Sub
+
+Private Sub ATIL_ALAN_TEMIZLE(ByVal kok As Object, ByRef kayit As String, ByRef secim As String, ByVal d As Long)
+    Dim i As Long, c As Object, ad As String, taban As String, p As Long, tip As String
+    On Error Resume Next
+    If kok Is Nothing Or d > 3 Then Exit Sub
+    For i = 0 To kok.Children.Count - 1
+        Set c = Nothing
+        Set c = kok.Children(CLng(i))
+        If Not c Is Nothing Then
+            tip = CStr(c.Type)
+            ad = Mid$(CStr(c.Id), InStrRev(CStr(c.Id), "/") + 1)
+            If tip = "GuiCTextField" Or tip = "GuiTextField" Then
+                taban = ad
+                If Left$(taban, 4) = "ctxt" Then
+                    taban = Mid$(taban, 5)
+                ElseIf Left$(taban, 3) = "txt" Then
+                    taban = Mid$(taban, 4)
+                End If
+                p = InStr(taban, "-")
+                If p > 0 Then taban = Left$(taban, p - 1)
+                If Len(Trim$(CStr(c.Text))) > 0 And c.Changeable Then
+                    Select Case UCase$(taban)
+                        Case "MATNR", "WERKS", "LGORT", "BWART", "BUDAT", "ALV_DEF"
+                        Case Else
+                            kayit = kayit & " | " & ad & "=" & CStr(c.Text)
+                            c.Text = vbNullString
+                    End Select
+                End If
+            ElseIf tip = "GuiRadioButton" Or tip = "GuiCheckBox" Then
+                If c.Selected Then secim = secim & " | " & ad & " " & CStr(c.Text)
+            ElseIf tip = "GuiSimpleContainer" Or tip = "GuiScrollContainer" Or tip = "GuiTabStrip" Or tip = "GuiTab" Then
+                ATIL_ALAN_TEMIZLE c, kayit, secim, d + 1
+            End If
+        End If
+    Next i
+End Sub
 
 Private Function ATIL_DIZI(ByVal d As Object) As String()
     Dim a() As String, k As Variant, i As Long
@@ -2105,6 +2154,9 @@ Private Function ATIL_SISTEM_OKU(ByVal ses As Object, ByVal sis As String, ByVal
             stokT = CDate(Int(tum(CStr(il))(1)))
             If stokT <= 0 Or stokT > bugun Then stokT = bugun
             Set sat = ATIL_MB51(ses, uy, mallar, DateAdd("m", -24, stokT), stokT, sis & " " & uy & " 1/3", tGiris)
+            ' Yuzlerce malzemede 24 ay boyunca hic giris gelmemesi gercek degil (gizli filtre / yetki): kayit bozulmasin.
+            If kendi.Count >= 30 And sat.Count * 50 < kendi.Count Then Err.Raise vbObjectError + 2352, , _
+                "MB51 " & kendi.Count & " malzeme için son 24 ayda neredeyse hiç giriþ döndürmedi (" & sat.Count & " satýr; SAP seçim ekranýnda gizli filtre ya da yetki). Önceki kayýt korundu; ayrýntý AKSORA_SAP_TESHIS.txt"
             For Each x In sat
                 If ATIL_KAPSAM_MI(uy, CStr(x(4))) And Not ATIL_PARTI_DISI(CStr(x(5))) Then
                     g = ATIL_GIRIS_KATKI(CStr(x(3)), CDbl(x(2)))

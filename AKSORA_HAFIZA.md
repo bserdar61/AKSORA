@@ -975,3 +975,9 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Cozum: ATIL_SAP_BICIM(ses, alan) secim ekraninda gun=25 deneme tarihiyle (DMY. MDY/ MDY- YMD. YMD/ YMD-) Enter + sbar E kontrolu,
   oturum basina onbellek, teshise "SAP tarih bicimi (...)" yazar. ATIL_TARIH_YAZ elle bicimler (Format$ "/" yerel ayiraca donusur).
   mTarihSira="MDY" iken ATIL_TARIH gun/ay degistirir (yalniz ATIL_MB51_COZ sirasinda).
+- KANIT (arkadasin teshisi 15:29): SAP tarih bicimi DMY (tahmin yanlisti). MB51 butun sorgularda bos donuyor (dosya 3-4 satir,
+  okunan 0; 7152'de 1, 7052'de 5). Girissiz stok ATIL_YAS'ta ATIL -> 4983 kalem "5+ yildir giris yok".
+  Aday: kullanicinin MB51 varsayilan degerleri (varyant/kullanici parametresi, or. Kullanici adi) gizli filtre.
+  ATIL_SECIM_TEMIZLE: MATNR/WERKS/LGORT/BWART/BUDAT/ALV_DEF disindaki dolu metin alanlari temizlenir, teshise yazilir;
+  secili radyo/kutular (1/3 adiminda) teshise yazilir.
+  KORUMA: ATIL_SISTEM_OKU 1/3'te kendi>=30 ve satir*50 < malzeme ise hata -> o sistem okunmadi sayilir, eski kayit korunur.
