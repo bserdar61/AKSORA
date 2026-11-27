@@ -3367,6 +3367,12 @@ End Function
 
 ' Sayfayi adiyla bulur; Turkce 'I' harfi yuzunden Worksheets(ad) Turkce olmayan Windows'ta
 ' bulamaz (Hata 9). Ad ASCII'ye cevrilip (Y_NORM) ikili karsilastirmayla eslenir: her dilde calisir.
+' SAP MB52 stok duzeni: kullanici duzeni "PANEL" ya da genel "/PANEL", "/PANEL BS" (bolge ortak duzeni).
+Public Function AKSORA_PANEL_DUZEN_MI(ByVal ad As String) As Boolean
+    ad = UCase$(Trim$(Replace(ad, "/", "")))
+    AKSORA_PANEL_DUZEN_MI = (ad = "PANEL" Or ad = "PANEL BS")
+End Function
+
 Public Function AKSORA_SAYFA(ByVal ad As String) As Worksheet
     Dim ws As Worksheet, hedef As String
     hedef = Y_NORM(ad)

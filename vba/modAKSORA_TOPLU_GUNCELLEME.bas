@@ -1049,7 +1049,7 @@ Private Function AKHZ_PANEL(ByVal ses As Object) As Boolean
     For i = 0 To CLng(duzen.RowCount) - 1
         ad = Trim$(CStr(duzen.GetCellValue(i, "VARIANT")))
         tanim = Trim$(CStr(duzen.GetCellValue(i, "TEXT")))
-        If StrComp(Replace(ad, "/", ""), "PANEL", vbTextCompare) = 0 Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
+        If AKSORA_PANEL_DUZEN_MI(ad) Or StrComp(tanim, "MLZ STOK PANEL", vbTextCompare) = 0 Then
             bulunan = i: Exit For
         End If
     Next i
@@ -1155,6 +1155,12 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     AKSORA_SAP_TESHIS_YAZ "Toplu " & sistem & " ilk satýr:" & t & " | kayma " & kayma
     If kayma < 0 Then mesaj = "Üretim yeri sütunu bulunamadý": Exit Function
     If UBound(v, 2) - kayma < 12 Then mesaj = "Metin dosyasýnda 12 sütun yok": Exit Function
+    ' Sutun sirasi dogrulamasi: farkli siradaki bir duzenle yanlis sutun okunmasin.
+    If InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 7))), "MALZEME") = 0 Or _
+       InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 9))), "TAHD") = 0 Or _
+       InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 11))), "DEGER") = 0 Then
+        mesaj = "PANEL düzeninin sütun sýrasý farklý (7. Malzeme, 9. Tahditsiz, 11. Deðer olmalý)": Exit Function
+    End If
     veriSatiri = UBound(v, 1) - baslik
     ' Eksik satir kabul edilmez: dosya ALV ile birebir ayni olmali.
     If veriSatiri <> satirSayisi Then

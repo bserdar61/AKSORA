@@ -1159,7 +1159,7 @@ Private Function MS_MB52_Oku(ByVal ses As Object) As Variant
     ses.FindById("wnd[0]").SendVKey 8
     Set alv = MS_GridBekle(ses, 600)
     If alv Is Nothing Then Err.Raise vbObjectError + 1970, , "MB52 sonuç listesi açýlmadý."
-    MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL"), "MB52"
+    MS_DuzenSec ses, alv, Array("PANEL", "/PANEL", "MLZ STOK PANEL", "/PANEL BS"), "MB52"
     Set alv = MS_GridBekle(ses, 60)
     MS_Durum "MB52 listesi alýnýyor..."
     v = MS_AlvMetin(ses, alv, "MB52")

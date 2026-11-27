@@ -951,3 +951,5 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
   Kod artik genel duzen "/PANEL" adini da kabul eder (Replace(ad,"/","")). Sahip duzeni "/PANEL" (kullaniciya ozel isareti kaldirilmis) kaydederse herkes kullanir.
   Mesajlar ne yapilacagini soyluyor.
 - "Once kapaktan panele giris yapin": hata sonrasi VBA sifirlaninca AKSORA_GIRIS_ACIK kayboluyordu. AKSORA_V13_GIT ve Workbook resize/activate kontrolleri AKSORA_GIRIS_DURUM() kullanir (etkin sayfadan geri kurar).
+- EPP'de ortak duzen adi "/PANEL BS" (sahibin genel duzeni). AKSORA_PANEL_DUZEN_MI(ad): PANEL, /PANEL, /PANEL BS kabul (9 secim yeri + musteri MB52 listesi).
+- Hizli okumaya baslik dogrulamasi: kayma+7 MALZEME, +9 TAHD, +11 DEGER olmali; degilse "PANEL duzeninin sutun sirasi farkli".

@@ -574,7 +574,7 @@ Hata:
                     DuzenTanimi = Trim$(CStr(LayoutGrid.GetCellValue(satir, "TEXT")))
                     On Error GoTo Hata
 
-                    If StrComp(Replace(DuzenAdi, "/", ""), "PANEL", vbTextCompare) = 0 Or _
+                    If AKSORA_PANEL_DUZEN_MI(DuzenAdi) Or _
                        StrComp(DuzenTanimi, "MLZ STOK PANEL", vbTextCompare) = 0 Then
                         BulunanSatir = satir
                         Exit For
