@@ -933,3 +933,13 @@ AKSORA\KAYITLAR           AKSORA_SAP_TESHIS.txt, AKSORA_BIRIM/TASARIM_ONCESI_* y
 - Cozum: modAKSORA_BIRIM'e Public AKSORA_SAYFA(ad) eklendi - Y_NORM ile ASCII'ye cevirip ikili karsilastirmayla esler (her dilde calisir). Tum `ThisWorkbook.Worksheets("<turkce>")` literal aramalari (58 yer) AKSORA_SAYFA(...) ile degistirildi. modAKSORA_MUSTERI_TEMA'daki degiskenli kaynaklar(i)/adlar(i) aramalari da AKSORA_SAYFA'ya cevrildi + kaynak yoksa net hata.
 - Not: Option Compare Text yok (= karsilastirmalari zaten binary/guvenli). Canli/arsiv stok okuma zaten AK_CANLI_SAYFA/AKSORA_ARSIV_SAYFA ile yerel-guvenliydi. Normalize cakismasi yok (kontrol edildi).
 - KUR.bat ve dagitim paketi (AKSORA_Kurulum.zip) bu surumle guncellendi.
+
+## 27.11.2026 - ASIL SEBEP: Windows "Unicode olmayan programlar" dili (kod sayfasi)
+- Arkadasin PCsinde ekranda "SEÇÝLÝ ÝL", "MÜÞTERÝ BÝRÝMÝ" goruldu: cp1254 baytlari cp1252 ile okunuyor.
+  VBA kaynak metnini sistemin ANSI kod sayfasiyla cozer; Turkce olmayan PC'de koddaki "İ" -> "Ý", "Ş" -> "Þ", "Ğ" -> "Ð".
+  Kod "ÝLÇE_STOK" arar, sayfa "İLÇE_STOK" -> Hata 9. (AKSORA_SAYFA tek basina yetmedi: Y_NORM'un kendi harfleri de bozuluyordu.)
+- KALICI COZUM (DERLEME ADIMI, ZORUNLU): tools/tr_chrw.py raw rawb  -> metinlerdeki TUM ASCII disi karakterler ChrW$(kod) olur;
+  Private Const (Turkce) -> modul sonunda Private Function. Uzun satirlar " & _" ile bolunur (<=850, 24 devam siniri kontrollu).
+  Derleme: python3 tools/vbakod.py derle <taban.xlsm> rawb final/AKSORA.xlsm  (raw/ ve vba/*.bas OKUNABILIR kalir).
+- Kullanicidan gelen xlsm'den cikan kod artik ChrW$ biciminde olur: raw ile karsilastirirken once tr_chrw(raw) uygula.
+- Acil gecici yol (eski dosya icin): Denetim Masasi > Bolge > Yonetimsel > Sistem yerel ayarini degistir > Turkce (yeniden baslatma).
