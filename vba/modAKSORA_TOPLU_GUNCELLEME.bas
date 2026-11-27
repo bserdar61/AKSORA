@@ -1159,7 +1159,7 @@ Private Function AKHZ_SISTEM_OKU_1(ByVal sistem As String, ByRef mesaj As String
     If InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 7))), "MALZEME") = 0 Or _
        InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 9))), "TAHD") = 0 Or _
        InStr(Y_NORM(AKHZ_TEMIZ(v(baslik, kayma + 11))), "DEGER") = 0 Then
-        mesaj = "PANEL düzeninin sütun sýrasý farklý (7. Malzeme, 9. Tahditsiz, 11. Deðer olmalý)": Exit Function
+        mesaj = "Seçilen düzen AKSORA PANEL düzeni deðil (sütun sýrasý farklý). SAP'de '/PANEL' genel düzeni kurulmalý": Exit Function
     End If
     veriSatiri = UBound(v, 1) - baslik
     ' Eksik satir kabul edilmez: dosya ALV ile birebir ayni olmali.
